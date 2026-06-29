@@ -542,8 +542,23 @@ class YoklamaUygulamasi(AltPencerelerMixin):
     
             
     # --- ANA ARAYÜZ ---
+    # --- ANA ARAYÜZ ---
     def arayuzu_olustur(self):
-        ana = tk.Frame(self.root, padx=25, pady=25)
+        # 1. SEKME MOTORUNU (NOTEBOOK) OLUŞTUR VE ANA PENCEREYE YAPIŞTIR
+        self.notebook = ttk.Notebook(self.root)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+
+        # 2. İKİ FARKLI SAYFA (FRAME) YARAT
+        bg_main_color = "#0F172A" if self.is_dark_mode else "#F1F5F9"
+        self.sekme_izin = tk.Frame(self.notebook, bg=bg_main_color)
+        self.sekme_teblig = tk.Frame(self.notebook, bg=bg_main_color)
+
+        # 3. SAYFALARI DEFTERE (NOTEBOOK) EKLE
+        self.notebook.add(self.sekme_izin, text="📄 İzin Dilekçesi")
+        self.notebook.add(self.sekme_teblig, text="🖋️ Yazı Tebliği")
+
+        # 4. ESKİ "ANA" ÇERÇEVEYİ ARTIK "ROOT" YERİNE "SEKME_IZIN" İÇİNE HAPSEDİYORUZ
+        ana = tk.Frame(self.sekme_izin, padx=25, pady=25)
         ana.pack(fill=tk.BOTH, expand=True)
         self.kayit_ekle(ana, "bg_main")
 
@@ -700,6 +715,101 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         self.root.bind("<Control-P>", lambda e: self.pdf_ciktisi_al() if getattr(self, 'secili_ogrenci', None) else None)
         self.root.bind("<Control-s>", lambda e: self.manuel_yedek_al())
         self.root.bind("<Control-S>", lambda e: self.manuel_yedek_al())
+        self.teblig_arayuzunu_olustur()
+
+    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ ---
+    def teblig_arayuzunu_olustur(self):
+        teblig_ana = tk.Frame(self.sekme_teblig, padx=25, pady=25)
+        teblig_ana.pack(fill=tk.BOTH, expand=True)
+        self.kayit_ekle(teblig_ana, "bg_main")
+
+        # ÜST PANEL: KONTROL VE YÜKLEME BUTONLARI
+        ust_panel = tk.Frame(teblig_ana, highlightthickness=1, padx=20, pady=15)
+        ust_panel.pack(fill=tk.X, pady=(0, 15))
+        self.kayit_ekle(ust_panel, "bg_card")
+
+        tk.Label(ust_panel, text="TEBLİĞ-TEBELLÜĞ BELGESİ OLUŞTURUCU", font=(UI_FONT, 14, "bold"), fg="#4F46E5").pack(side=tk.LEFT)
+        self.kayit_ekle(ust_panel.winfo_children()[0], "bg_card")
+
+        btn_pdf_yukle = tk.Button(ust_panel, text="📄 MEB Yazısı (PDF) Yükle", command=self.pdf_yukle_motoru, padx=15, pady=6)
+        btn_pdf_yukle.pack(side=tk.RIGHT, padx=5)
+        self.style_button(btn_pdf_yukle, "#EF4444", "#FFFFFF", "#DC2626", font_size=10)
+
+        btn_personel_yukle = tk.Button(ust_panel, text="👥 Personel Listesi (Excel) Yükle", command=self.personel_yukle_motoru, padx=15, pady=6)
+        btn_personel_yukle.pack(side=tk.RIGHT, padx=5)
+        self.style_button(btn_personel_yukle, "#10B981", "#FFFFFF", "#059669", font_size=10)
+
+        # ORTA PANEL: İKİYE BÖLÜNMÜŞ EKRAN (SOL: YAZI BİLGİLERİ, SAĞ: PERSONEL FİLTRE)
+        paned_teblig = ttk.PanedWindow(teblig_ana, orient=tk.HORIZONTAL)
+        paned_teblig.pack(fill=tk.BOTH, expand=True)
+
+        # SOL KISIM: OTOMATİK ÇEKİLECEK YAZI BİLGİLERİ
+        sol_yazi_bilgi = tk.Frame(paned_teblig, highlightthickness=1, padx=15, pady=15)
+        paned_teblig.add(sol_yazi_bilgi, weight=1)
+        self.kayit_ekle(sol_yazi_bilgi, "bg_card")
+        self.kayit_ekle(sol_yazi_bilgi, "border")
+
+        tk.Label(sol_yazi_bilgi, text="Resmi Yazı Detayları", font=(UI_FONT, 12, "bold")).pack(anchor=tk.W, pady=(0,10))
+
+        def yazi_kutu_ekle(parent, etiket):
+            frm = tk.Frame(parent)
+            frm.pack(fill=tk.X, pady=5)
+            self.kayit_ekle(frm, "bg_card")
+            lbl = tk.Label(frm, text=etiket, width=10, anchor=tk.W, font=(UI_FONT, 10, "bold"))
+            lbl.pack(side=tk.LEFT)
+            self.kayit_ekle(lbl, "bg_card"); self.kayit_ekle(lbl, "fg_main")
+            ent = tk.Entry(frm, font=(UI_FONT, 10), relief="solid", bd=1)
+            ent.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10,0), ipady=3)
+            return ent
+
+        self.ent_teblig_sayi = yazi_kutu_ekle(sol_yazi_bilgi, "Sayı:")
+        self.ent_teblig_konu = yazi_kutu_ekle(sol_yazi_bilgi, "Konu:")
+        self.ent_teblig_tarih = yazi_kutu_ekle(sol_yazi_bilgi, "Tarih:")
+
+        tk.Label(sol_yazi_bilgi, text="* PDF yüklendiğinde bu alanlar otomatik dolar.\nİsterseniz manuel de değiştirebilirsiniz.", fg="gray", font=(UI_FONT, 9), justify=tk.LEFT).pack(anchor=tk.W, pady=10)
+
+        # SAĞ KISIM: PERSONEL LİSTESİ VE FİLTRELEME
+        sag_personel = tk.Frame(paned_teblig, highlightthickness=1, padx=15, pady=15)
+        paned_teblig.add(sag_personel, weight=2)
+        self.kayit_ekle(sag_personel, "bg_card")
+        self.kayit_ekle(sag_personel, "border")
+
+        filtre_frame = tk.Frame(sag_personel)
+        filtre_frame.pack(fill=tk.X, pady=(0, 10))
+        self.kayit_ekle(filtre_frame, "bg_card")
+        
+        tk.Label(filtre_frame, text="Personel Seçimi & Filtreleme", font=(UI_FONT, 12, "bold")).pack(side=tk.LEFT)
+        self.kayit_ekle(filtre_frame.winfo_children()[0], "bg_card"); self.kayit_ekle(filtre_frame.winfo_children()[0], "fg_main")
+
+        self.combo_teblig_brans = ttk.Combobox(filtre_frame, values=["Tüm Branşlar"], state="readonly", width=15)
+        self.combo_teblig_brans.pack(side=tk.RIGHT)
+        self.combo_teblig_brans.current(0)
+        
+        tk.Label(filtre_frame, text="Branş:").pack(side=tk.RIGHT, padx=5)
+        self.kayit_ekle(filtre_frame.winfo_children()[2], "bg_card"); self.kayit_ekle(filtre_frame.winfo_children()[2], "fg_main")
+
+        # KONTROL EDİLEBİLİR PERSONEL LİSTESİ (AÇIKLAMA: Tik atılabilir liste)
+        tree_scroll = ttk.Scrollbar(sag_personel, orient="vertical")
+        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        self.tree_personel = ttk.Treeview(sag_personel, columns=("Durum", "Brans", "Ad"), show="headings", yscrollcommand=tree_scroll.set)
+        tree_scroll.config(command=self.tree_personel.yview)
+        
+        self.tree_personel.heading("Durum", text="[X] Seç", anchor=tk.CENTER)
+        self.tree_personel.heading("Brans", text="Branşı", anchor=tk.W)
+        self.tree_personel.heading("Ad", text="Adı Soyadı", anchor=tk.W)
+        
+        self.tree_personel.column("Durum", width=60, anchor=tk.CENTER, stretch=False)
+        self.tree_personel.column("Brans", width=150, anchor=tk.W)
+        self.tree_personel.column("Ad", width=250, anchor=tk.W)
+        self.tree_personel.pack(fill=tk.BOTH, expand=True)
+        self.tree_personel.bind("<ButtonRelease-1>", self.personel_secim_toggle)
+        self.combo_teblig_brans.bind("<<ComboboxSelected>>", lambda e: self.personel_tablosunu_doldur())
+
+        # ÇIKTI BUTONU
+        btn_teblig_olustur = tk.Button(sag_personel, text="📑 Seçili Personel İçin Tebliğ Listesi Oluştur", command=self.teblig_ciktisi_al, pady=10)
+        btn_teblig_olustur.pack(fill=tk.X, pady=(15, 0))
+        self.style_button(btn_teblig_olustur, "#4F46E5", "#FFFFFF", "#4338CA", font_size=11)
         
     def sag_tik_goster(self, event):
         item = self.tree_tum_liste.identify_row(event.y)
@@ -1541,7 +1651,186 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         except Exception as e: 
             self.bildirim_goster(f"PDF hatası: {e}", "hata")
             print(f"PDF Hatası: {e}")  
+     # --- YAZI TEBLİĞİ PERSONEL YÜKLEME MOTORU ---
+    # --- YAZI TEBLİĞİ PERSONEL YÜKLEME MOTORU (GÜNCELLENMİŞ) ---
+    def personel_yukle_motoru(self):
+        dosya_yolu = filedialog.askopenfilename(title="Personel Excel Listesini Seçin", filetypes=[("Excel", "*.xlsx *.xls")])
+        if not dosya_yolu: return
+        
+        try:
+            import pandas as pd
+            df = pd.read_excel(dosya_yolu)
             
+            # ZIRH 1: Sütun isimlerindeki gizli boşlukları temizle ve büyük harf yap (örn: 'ADI SOYADI ')
+            df.columns = df.columns.str.strip().str.upper()
+            
+            # Sütun isimlerini kontrol et
+            if 'ADI SOYADI' not in df.columns:
+                self.bildirim_goster("Excel dosyasında 'ADI SOYADI' başlığı bulunamadı!", "hata")
+                return
+                
+            self.personel_listesi = []
+            branslar = set()
+            
+            for index, row in df.iterrows():
+                ad = str(row['ADI SOYADI']).strip()
+                
+                # ZIRH 2: Branş bilgisini al, '-' olanlara dokunma, boş olanları '-' yap
+                brans = "-"
+                if 'BRANŞI' in df.columns:
+                    okunan_brans = str(row['BRANŞI']).strip()
+                    if okunan_brans and okunan_brans.lower() != 'nan':
+                        brans = okunan_brans
+                
+                if ad and ad.lower() != 'nan':
+                    # Herkesi varsayılan olarak seçili ([X]) yapıyoruz
+                    self.personel_listesi.append({'durum': '[X]', 'brans': brans, 'ad': ad})
+                    branslar.add(brans)
+            
+            # Branş filtresini güncelle
+            if hasattr(self, 'combo_teblig_brans'):
+                self.combo_teblig_brans['values'] = ["Tüm Branşlar"] + sorted(list(branslar))
+                self.combo_teblig_brans.current(0)
+            
+            self.personel_tablosunu_doldur()
+            self.bildirim_goster(f"{len(self.personel_listesi)} personel başarıyla yüklendi.", "bilgi")
+            
+        except Exception as e:
+            self.bildirim_goster(f"Personel Excel'i okunurken hata oluştu:\n{e}", "hata")
+
+    def personel_tablosunu_doldur(self):
+        self.tree_personel.delete(*self.tree_personel.get_children())
+        if not hasattr(self, 'personel_listesi'): return
+        
+        secili_brans = self.combo_teblig_brans.get()
+        
+        for p in self.personel_listesi:
+            if secili_brans != "Tüm Branşlar" and p['brans'] != secili_brans:
+                continue
+            
+            # Duruma göre renk ataması (Seçiliyse yeşilimsi, değilse kırmızımsı)
+            tag = "secili" if p['durum'] == "[X]" else "haric"
+            self.tree_personel.insert("", tk.END, values=(p['durum'], p['brans'], p['ad']), tags=(tag,))
+            
+        self.tree_personel.tag_configure('secili', background='#F0FDF4' if not self.is_dark_mode else '#064E3B', foreground='#166534' if not self.is_dark_mode else '#A7F3D0')
+        self.tree_personel.tag_configure('haric', background='#FEF2F2' if not self.is_dark_mode else '#7F1D1D', foreground='#991B1B' if not self.is_dark_mode else '#FECACA')
+
+    def personel_secim_toggle(self, event):
+        item_id = self.tree_personel.identify_row(event.y)
+        col_id = self.tree_personel.identify_column(event.x)
+        
+        # Sadece "Durum" (1. sütun) tıklandığında tetiklensin
+        if item_id and col_id == '#1':
+            item = self.tree_personel.item(item_id)
+            vals = list(item['values'])
+            
+            mevcut_durum = vals[0]
+            personel_adi = vals[2]
+            
+            # X ise boş yap, boş ise X yap
+            yeni_durum = "[ ]" if mevcut_durum == "[X]" else "[X]"
+            
+            # RAM'deki listeyi güncelle
+            for p in self.personel_listesi:
+                if p['ad'] == personel_adi:
+                    p['durum'] = yeni_durum
+                    break
+                    
+            # Arayüzü tazele
+            self.personel_tablosunu_doldur()
+    
+    # --- YAZI TEBLİĞİ PDF OKUMA MOTORU ---
+    def pdf_yukle_motoru(self):
+        dosya_yolu = filedialog.askopenfilename(title="MEB Resmi Yazısını (PDF) Seçin", filetypes=[("PDF Dosyaları", "*.pdf")])
+        if not dosya_yolu: return
+
+        try:
+            import PyPDF2
+            import re
+
+            with open(dosya_yolu, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                # DYS yazılarında ana bilgiler her zaman ilk sayfadadır
+                ilk_sayfa = reader.pages[0].extract_text()
+
+            # 1. TARİH DEDEKTİFİ (Örn: 29.06.2026 formatını arar)
+            tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
+            tarih = tarih_match.group(0) if tarih_match else ""
+
+            # 2. SAYI DEDEKTİFİ (Örn: E-84692172-918.99-163211388 formatını arar)
+            sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
+            if not sayi_match:
+                # DYS dışı eski formatlar için alternatif arama
+                sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
+            sayi = sayi_match.group(1) if sayi_match else ""
+
+            # 3. KONU DEDEKTİFİ (DYS'nin karmaşık yapısına uygun)
+            konu = ""
+            # "Konu :" veya alt satırına geçmiş metinleri "İlgi", "T.C." veya "DAĞITIM" kelimelerine kadar tarar
+            konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
+            
+            if konu_match:
+                # Bulunan metindeki yeni satırları ve gereksiz boşlukları temizle
+                konu_ham = konu_match.group(1).strip()
+                konu = " ".join(konu_ham.split())
+                # Eğer "Sayı" ile ilgili bir veri karışmışsa (Örn: ": E-123... Çalışanların...") onu filtrele
+                if sayi and sayi in konu:
+                    konu = konu.replace(sayi, "").replace(":", "").strip()
+
+            # 4. BİLGİLERİ KUTULARA YERLEŞTİRME
+            self.ent_teblig_sayi.delete(0, tk.END)
+            self.ent_teblig_sayi.insert(0, sayi)
+            
+            self.ent_teblig_konu.delete(0, tk.END)
+            # Konu çok uzunsa ilk kısmını alıp gerisini düzeltmesi için öğretmene bırakırız
+            self.ent_teblig_konu.insert(0, konu if len(konu) < 80 else konu[:80] + "...") 
+            
+            self.ent_teblig_tarih.delete(0, tk.END)
+            self.ent_teblig_tarih.insert(0, tarih)
+            
+            self.bildirim_goster("PDF başarıyla analiz edildi.", "bilgi")
+
+        except ImportError:
+            self.bildirim_goster("PyPDF2 kütüphanesi eksik! Terminale 'pip install PyPDF2' yazıp Enter'a basın.", "hata")
+        except Exception as e:
+            self.bildirim_goster(f"PDF analiz edilirken hata oluştu:\n{e}", "hata")
+
+    # --- YAZI TEBLİĞİ ÇIKTI ALMA MOTORU ---
+    def teblig_ciktisi_al(self):
+        # 1. Ekranda yazan yazının bilgilerini al
+        sayi = self.ent_teblig_sayi.get().strip()
+        konu = self.ent_teblig_konu.get().strip()
+        tarih = self.ent_teblig_tarih.get().strip()
+
+        # 2. Listeden sadece yanına tik ([X]) atılmış personeli süz
+        secili_personeller = [p for p in getattr(self, 'personel_listesi', []) if p['durum'] == '[X]']
+
+        if not secili_personeller:
+            self.bildirim_goster("Lütfen listeden tebliğ edilecek en az bir personel seçin!", "hata")
+            return
+
+        # 3. Dosyayı nereye kaydedeceğini sor
+        otomatik_isim = f"Teblig_Listesi_{datetime.now().strftime('%d_%m_%Y')}.pdf"
+        yol = filedialog.asksaveasfilename(initialfile=otomatik_isim, defaultextension=".pdf", filetypes=[("PDF", "*.pdf")], title="Tebliğ Listesini Kaydet")
+        
+        if not yol: return
+
+        # 4. Matbaayı (pdf_motoru.py) çalıştır ve bilgileri bas!
+        win = self.goster_yukleme_penceresi("Tebliğ Listesi Hazırlanıyor...")
+        
+        def islem():
+            try:
+                motor = PDFYoneticisi(self.ayarlar)
+                # İlgili fonksiyonu birazdan pdf_motoru içerisine yazacağız
+                motor.teblig_tebellug_ciz(sayi, konu, tarih, secili_personeller, yol)
+                
+                self.root.after(0, lambda: self.rapor_tamam(win, yol, None, "Tebliğ listesi başarıyla oluşturuldu."))
+            except Exception as e:
+                self.root.after(0, lambda: self.hata_goster(win, f"PDF oluşturulamadı:\n{e}"))
+                
+        import threading
+        threading.Thread(target=islem, daemon=True).start()
+        
 # BU KISIM ARTIK pdf_olustur fonksiyonunun DIŞINDA VE EN SOLDAN BAŞLAMALI:
 if __name__ == "__main__":
     root = tk.Tk()

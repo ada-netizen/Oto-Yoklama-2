@@ -148,3 +148,105 @@ class PDFYoneticisi:
 
         c.save()
         return True, ""
+
+    def teblig_tebellug_ciz(self, sayi, konu, tarih, personel_listesi, kayit_yeri):
+        """A4 Boyutunda Resmi Tebliğ-Tebellüğ İmza Sirküsü Çizer"""
+        from reportlab.lib.pagesizes import A4
+        genislik, yukseklik = A4
+        c = canvas.Canvas(kayit_yeri, pagesize=(genislik, yukseklik))
+        
+        def sayfa_basligi_ciz():
+            # Kurum Adı ve Logolar
+            orta_y = yukseklik - 50
+            
+            # Logolar (Varsa)
+            meb_logo_yolu = self.ayarlar.get("meb_logosu", "")
+            if meb_logo_yolu and os.path.exists(meb_logo_yolu):
+                c.drawImage(meb_logo_yolu, 40, orta_y - 20, width=50, height=50, preserveAspectRatio=True, mask='auto')
+                
+            okul_logo_yolu = self.ayarlar.get("okul_logosu", "")
+            if okul_logo_yolu and os.path.exists(okul_logo_yolu):
+                c.drawImage(okul_logo_yolu, genislik - 90, orta_y - 20, width=50, height=50, preserveAspectRatio=True, mask='auto')
+
+            # Okul Adı
+            c.setFont(self.font_bold, 12)
+            okul_adi = self.ayarlar.get("okul_adi", "Okul Adı")
+            c.drawCentredString(genislik / 2, orta_y, self.metin_duzelt(okul_adi))
+            
+            # Ana Başlık
+            c.setFont(self.font_bold, 14)
+            c.drawCentredString(genislik / 2, orta_y - 25, self.metin_duzelt("TEBLİĞ - TEBELLÜĞ BELGESİ"))
+            c.line(40, orta_y - 35, genislik - 40, orta_y - 35)
+            
+            # Yazı Bilgileri (Sayı, Konu, Tarih)
+            c.setFont(self.font, 10)
+            c.drawString(45, orta_y - 55, self.metin_duzelt(f"Sayı  : {sayi}"))
+            c.drawString(45, orta_y - 70, self.metin_duzelt(f"Tarih : {tarih}"))
+            
+            # Konu metni uzun olabilir, parçalayarak yazdırıyoruz
+            konu_metni = self.metin_duzelt(f"Konu : {konu}")
+            style = ParagraphStyle(name='Normal', fontName=self.font, fontSize=10, leading=12)
+            p_konu = Paragraph(konu_metni, style)
+            p_konu.wrapOn(c, genislik - 90, 40)
+            p_konu.drawOn(c, 45, orta_y - 85 - (p_konu.height - 12))
+            
+            y_metin_baslangic = orta_y - 95 - (p_konu.height - 12)
+            
+            # Açıklama Metni
+            c.setFont(self.font_bold, 10)
+            aciklama = "Yukarıda sayısı, tarihi ve konusu belirtilen resmi yazı tarafımdan okunmuş ve tebellüğ edilmiştir."
+            c.drawCentredString(genislik / 2, y_metin_baslangic - 15, self.metin_duzelt(aciklama))
+            
+            return y_metin_baslangic - 35
+
+        y_pos = sayfa_basligi_ciz()
+        
+        # Tablo Başlıkları
+        def tablo_basligi_ciz(y):
+            c.setFont(self.font_bold, 10)
+            c.setFillColorRGB(0.9, 0.9, 0.9) # Hafif gri arka plan
+            c.rect(40, y - 5, genislik - 80, 20, fill=1)
+            c.setFillColorRGB(0, 0, 0)
+            
+            c.drawString(45, y, "S.N")
+            c.drawString(80, y, self.metin_duzelt("Görev / Branş"))
+            c.drawString(200, y, "Ad Soyad")
+            c.drawString(370, y, "Tarih")
+            c.drawString(450, y, self.metin_duzelt("İmza"))
+            
+            c.line(40, y - 5, genislik - 40, y - 5)
+            c.line(40, y + 15, genislik - 40, y + 15)
+            # Dikey çizgiler
+            for x in [40, 75, 195, 365, 440, genislik - 40]:
+                c.line(x, y - 5, x, y + 15)
+            return y - 20
+
+        y_pos = tablo_basligi_ciz(y_pos)
+        
+        # Personel Listesini Yazdırma
+        c.setFont(self.font, 10)
+        satir_yuksekligi = 25
+        
+        for i, personel in enumerate(personel_listesi, 1):
+            if y_pos < 50: # Sayfa sonuna gelindiyse yeni sayfa aç
+                c.showPage()
+                y_pos = sayfa_basligi_ciz()
+                y_pos = tablo_basligi_ciz(y_pos)
+                c.setFont(self.font, 10)
+                
+            # Yatay çizgi (Satır altı)
+            c.line(40, y_pos - 5, genislik - 40, y_pos - 5)
+            
+            # Veriler
+            c.drawString(45, y_pos + 5, str(i))
+            c.drawString(80, y_pos + 5, self.metin_duzelt(personel['brans'][:22])) # Uzun branşları kırp
+            c.drawString(200, y_pos + 5, self.metin_duzelt(personel['ad'][:30]))
+            
+            # Dikey çizgiler (Hücreleri ayırmak için)
+            for x in [40, 75, 195, 365, 440, genislik - 40]:
+                c.line(x, y_pos + 20, x, y_pos - 5)
+                
+            y_pos -= satir_yuksekligi
+            
+        c.save()
+        return True, ""
