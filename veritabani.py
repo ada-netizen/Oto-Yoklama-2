@@ -19,6 +19,10 @@ class VeritabaniYoneticisi:
         # 2. ADIM: İNDEKSLER (Fihrist Motoru - "self" takısı eklendi ve tablo adları devamsizliklar olarak düzeltildi)
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_no ON ogrenciler (no)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
+        
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT)")
+        self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
+        
         self.conn.commit()
 
     def yukle(self):

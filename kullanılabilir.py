@@ -406,8 +406,23 @@ class YoklamaUygulamasi(AltPencerelerMixin):
 
     def verileri_yukle(self):
         self.ogrenci_listesi, self.devamsizlik_listesi = self.db.yukle()
-        self.onbellek_guncelle() # Program ilk açıldığında herkesi bir kere hesapla
-        print(f"Yüklenen öğrenci sayısı: {len(self.ogrenci_listesi)}")
+        self.onbellek_guncelle()
+        
+        # --- PERSONEL VERİTABANI BAĞLANTISI (GRUP DESTEKLİ) ---
+        try:
+            self.db.cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
+            # Eski sürümden kalan tabloya 'grup' sütunu ekleme zırhı
+            self.db.cursor.execute("PRAGMA table_info(personel)")
+            sutunlar = [col[1] for col in self.db.cursor.fetchall()]
+            if 'grup' not in sutunlar:
+                self.db.cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT DEFAULT 'Diğer Personel'")
+            self.db.conn.commit()
+            
+            self.db.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel")
+            self.personel_listesi = [{'ad': r[0], 'brans': r[1], 'gorev': r[2], 'grup': r[3], 'haric': False} for r in self.db.cursor.fetchall()]
+        except Exception as e:
+            self.personel_listesi = []
+            print(f"Personel yükleme hatası: {e}")
 
     def onbellek_guncelle(self):
         """100 Milyon işlemi 50 Bine düşüren Hızlı Gruplama (Dictionary Mapping) Motoru"""
@@ -718,12 +733,14 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         self.teblig_arayuzunu_olustur()
 
     # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ ---
+    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ (GELİŞMİŞ TASARIM) ---
+    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ (YENİ SADE TASARIM) ---
+    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ (AKILLI FİLTRELİ) ---
     def teblig_arayuzunu_olustur(self):
         teblig_ana = tk.Frame(self.sekme_teblig, padx=25, pady=25)
         teblig_ana.pack(fill=tk.BOTH, expand=True)
         self.kayit_ekle(teblig_ana, "bg_main")
 
-        # ÜST PANEL: KONTROL VE YÜKLEME BUTONLARI
         ust_panel = tk.Frame(teblig_ana, highlightthickness=1, padx=20, pady=15)
         ust_panel.pack(fill=tk.X, pady=(0, 15))
         self.kayit_ekle(ust_panel, "bg_card")
@@ -739,78 +756,145 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         btn_personel_yukle.pack(side=tk.RIGHT, padx=5)
         self.style_button(btn_personel_yukle, "#10B981", "#FFFFFF", "#059669", font_size=10)
 
-        # ORTA PANEL: İKİYE BÖLÜNMÜŞ EKRAN (SOL: YAZI BİLGİLERİ, SAĞ: PERSONEL FİLTRE)
         paned_teblig = ttk.PanedWindow(teblig_ana, orient=tk.HORIZONTAL)
         paned_teblig.pack(fill=tk.BOTH, expand=True)
 
-        # SOL KISIM: OTOMATİK ÇEKİLECEK YAZI BİLGİLERİ
-        sol_yazi_bilgi = tk.Frame(paned_teblig, highlightthickness=1, padx=15, pady=15)
-        paned_teblig.add(sol_yazi_bilgi, weight=1)
-        self.kayit_ekle(sol_yazi_bilgi, "bg_card")
-        self.kayit_ekle(sol_yazi_bilgi, "border")
+        # === SOL KISIM ===
+        sol_panel = tk.Frame(paned_teblig)
+        paned_teblig.add(sol_panel, weight=45) 
+        self.kayit_ekle(sol_panel, "bg_main")
+        
+        sol_yazi = tk.Frame(sol_panel, highlightthickness=1, padx=15, pady=15)
+        sol_yazi.pack(fill=tk.X, pady=(0, 15))
+        self.kayit_ekle(sol_yazi, "bg_card"); self.kayit_ekle(sol_yazi, "border")
 
-        tk.Label(sol_yazi_bilgi, text="Resmi Yazı Detayları", font=(UI_FONT, 12, "bold")).pack(anchor=tk.W, pady=(0,10))
+        tk.Label(sol_yazi, text="Resmi Yazı Detayları", font=(UI_FONT, 11, "bold")).pack(anchor=tk.W, pady=(0,10))
+        self.kayit_ekle(sol_yazi.winfo_children()[0], "bg_card"); self.kayit_ekle(sol_yazi.winfo_children()[0], "fg_main")
 
         def yazi_kutu_ekle(parent, etiket):
             frm = tk.Frame(parent)
             frm.pack(fill=tk.X, pady=5)
             self.kayit_ekle(frm, "bg_card")
-            lbl = tk.Label(frm, text=etiket, width=10, anchor=tk.W, font=(UI_FONT, 10, "bold"))
+            lbl = tk.Label(frm, text=etiket, width=8, anchor=tk.W, font=(UI_FONT, 10, "bold"))
             lbl.pack(side=tk.LEFT)
             self.kayit_ekle(lbl, "bg_card"); self.kayit_ekle(lbl, "fg_main")
             ent = tk.Entry(frm, font=(UI_FONT, 10), relief="solid", bd=1)
-            ent.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(10,0), ipady=3)
+            ent.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,0), ipady=3)
             return ent
 
-        self.ent_teblig_sayi = yazi_kutu_ekle(sol_yazi_bilgi, "Sayı:")
-        self.ent_teblig_konu = yazi_kutu_ekle(sol_yazi_bilgi, "Konu:")
-        self.ent_teblig_tarih = yazi_kutu_ekle(sol_yazi_bilgi, "Tarih:")
+        self.ent_teblig_sayi = yazi_kutu_ekle(sol_yazi, "Sayı:")
+        self.ent_teblig_konu = yazi_kutu_ekle(sol_yazi, "Konu:")
+        self.ent_teblig_tarih = yazi_kutu_ekle(sol_yazi, "Tarih:")
 
-        tk.Label(sol_yazi_bilgi, text="* PDF yüklendiğinde bu alanlar otomatik dolar.\nİsterseniz manuel de değiştirebilirsiniz.", fg="gray", font=(UI_FONT, 9), justify=tk.LEFT).pack(anchor=tk.W, pady=10)
+        sol_liste = tk.Frame(sol_panel, highlightthickness=1, padx=15, pady=15)
+        sol_liste.pack(fill=tk.BOTH, expand=True)
+        self.kayit_ekle(sol_liste, "bg_card"); self.kayit_ekle(sol_liste, "border")
 
-        # SAĞ KISIM: PERSONEL LİSTESİ VE FİLTRELEME
-        sag_personel = tk.Frame(paned_teblig, highlightthickness=1, padx=15, pady=15)
-        paned_teblig.add(sag_personel, weight=2)
-        self.kayit_ekle(sag_personel, "bg_card")
-        self.kayit_ekle(sag_personel, "border")
+        tk.Label(sol_liste, text="Personel Filtreleri", font=(UI_FONT, 11, "bold")).pack(anchor=tk.W, pady=(0,15))
+        self.kayit_ekle(sol_liste.winfo_children()[0], "bg_card"); self.kayit_ekle(sol_liste.winfo_children()[0], "fg_main")
 
-        filtre_frame = tk.Frame(sag_personel)
-        filtre_frame.pack(fill=tk.X, pady=(0, 10))
-        self.kayit_ekle(filtre_frame, "bg_card")
+        # AKILLI GRUP FİLTRESİ
+        f_grup = tk.Frame(sol_liste); f_grup.pack(fill=tk.X, pady=5)
+        self.kayit_ekle(f_grup, "bg_card")
+        tk.Label(f_grup, text="Grup:", width=8, anchor=tk.W, font=(UI_FONT, 10)).pack(side=tk.LEFT)
+        self.kayit_ekle(f_grup.winfo_children()[0], "bg_card"); self.kayit_ekle(f_grup.winfo_children()[0], "fg_main")
         
-        tk.Label(filtre_frame, text="Personel Seçimi & Filtreleme", font=(UI_FONT, 12, "bold")).pack(side=tk.LEFT)
-        self.kayit_ekle(filtre_frame.winfo_children()[0], "bg_card"); self.kayit_ekle(filtre_frame.winfo_children()[0], "fg_main")
+        self.combo_teblig_grup = ttk.Combobox(f_grup, state="readonly")
+        self.combo_teblig_grup.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        # BRANŞ FİLTRESİ (Sadece Öğretmen Seçilince Çıkar)
+        self.f_brans = tk.Frame(sol_liste) 
+        self.kayit_ekle(self.f_brans, "bg_card")
+        tk.Label(self.f_brans, text="Branş:", width=8, anchor=tk.W, font=(UI_FONT, 10)).pack(side=tk.LEFT)
+        self.kayit_ekle(self.f_brans.winfo_children()[0], "bg_card"); self.kayit_ekle(self.f_brans.winfo_children()[0], "fg_main")
+        
+        self.combo_teblig_brans = ttk.Combobox(self.f_brans, values=["Tümü"], state="readonly")
+        self.combo_teblig_brans.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        self.combo_teblig_brans = ttk.Combobox(filtre_frame, values=["Tüm Branşlar"], state="readonly", width=15)
-        self.combo_teblig_brans.pack(side=tk.RIGHT)
-        self.combo_teblig_brans.current(0)
-        
-        tk.Label(filtre_frame, text="Branş:").pack(side=tk.RIGHT, padx=5)
-        self.kayit_ekle(filtre_frame.winfo_children()[2], "bg_card"); self.kayit_ekle(filtre_frame.winfo_children()[2], "fg_main")
+        btn_yonet = tk.Button(sol_liste, text="⚙️ Personel Yönetimi (Ekle / Çıkar)", command=self.personel_yonetim_penceresi_ac, pady=10)
+        btn_yonet.pack(fill=tk.X, side=tk.BOTTOM, pady=(15, 0))
+        self.style_button(btn_yonet, "#475569", "#FFFFFF", "#334155", font_size=11)
 
-        # KONTROL EDİLEBİLİR PERSONEL LİSTESİ (AÇIKLAMA: Tik atılabilir liste)
-        tree_scroll = ttk.Scrollbar(sag_personel, orient="vertical")
-        tree_scroll.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        self.tree_personel = ttk.Treeview(sag_personel, columns=("Durum", "Brans", "Ad"), show="headings", yscrollcommand=tree_scroll.set)
-        tree_scroll.config(command=self.tree_personel.yview)
-        
-        self.tree_personel.heading("Durum", text="[X] Seç", anchor=tk.CENTER)
-        self.tree_personel.heading("Brans", text="Branşı", anchor=tk.W)
-        self.tree_personel.heading("Ad", text="Adı Soyadı", anchor=tk.W)
-        
-        self.tree_personel.column("Durum", width=60, anchor=tk.CENTER, stretch=False)
-        self.tree_personel.column("Brans", width=150, anchor=tk.W)
-        self.tree_personel.column("Ad", width=250, anchor=tk.W)
-        self.tree_personel.pack(fill=tk.BOTH, expand=True)
-        self.tree_personel.bind("<ButtonRelease-1>", self.personel_secim_toggle)
-        self.combo_teblig_brans.bind("<<ComboboxSelected>>", lambda e: self.personel_tablosunu_doldur())
+        # === SAĞ KISIM (ÖNİZLEME - SÜTUNLAR KESİN OLARAK AYRILDI) ===
+        sag_panel = tk.Frame(paned_teblig, highlightthickness=1, padx=15, pady=15)
+        paned_teblig.add(sag_panel, weight=55)
+        self.kayit_ekle(sag_panel, "bg_card"); self.kayit_ekle(sag_panel, "border")
 
-        # ÇIKTI BUTONU
-        btn_teblig_olustur = tk.Button(sag_personel, text="📑 Seçili Personel İçin Tebliğ Listesi Oluştur", command=self.teblig_ciktisi_al, pady=10)
+        sag_ust = tk.Frame(sag_panel)
+        sag_ust.pack(fill=tk.X, pady=(0, 10))
+        self.kayit_ekle(sag_ust, "bg_card")
+        
+        tk.Label(sag_ust, text="Tebliğ Edilecekler (Önizleme)", font=(UI_FONT, 12, "bold")).pack(side=tk.LEFT)
+        self.kayit_ekle(sag_ust.winfo_children()[0], "bg_card"); self.kayit_ekle(sag_ust.winfo_children()[0], "fg_main")
+        
+        self.lbl_teblig_sayi = tk.Label(sag_ust, text="0 Kişi", font=(UI_FONT, 11, "bold"), fg="#EA580C")
+        self.lbl_teblig_sayi.pack(side=tk.RIGHT)
+        self.kayit_ekle(self.lbl_teblig_sayi, "bg_card")
+
+        tree_scroll_sag = ttk.Scrollbar(sag_panel, orient="vertical")
+        tree_scroll_sag.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.tree_teblig_onizleme = ttk.Treeview(sag_panel, columns=("Gorev", "Brans", "Ad"), show="headings", yscrollcommand=tree_scroll_sag.set)
+        tree_scroll_sag.config(command=self.tree_teblig_onizleme.yview)
+
+        # SÜTUN HİZALAMASI (Görevi İlk, Branşı İkinci Sütun)
+        self.tree_teblig_onizleme.heading("Gorev", text="Görevi", anchor=tk.W)
+        self.tree_teblig_onizleme.heading("Brans", text="Branşı", anchor=tk.W)
+        self.tree_teblig_onizleme.heading("Ad", text="Adı Soyadı", anchor=tk.W)
+        self.tree_teblig_onizleme.column("Gorev", width=110, anchor=tk.W)
+        self.tree_teblig_onizleme.column("Brans", width=110, anchor=tk.W)
+        self.tree_teblig_onizleme.column("Ad", width=160, anchor=tk.W)
+        self.tree_teblig_onizleme.pack(fill=tk.BOTH, expand=True)
+
+        btn_islem = tk.Frame(sag_panel, bg="#FFFFFF" if not self.is_dark_mode else "#1E293B")
+        btn_islem.pack(fill=tk.X, pady=(10, 0))
+        self.kayit_ekle(btn_islem, "bg_card")
+        
+        btn_cikar = tk.Button(btn_islem, text="⬅ Seçili Kişiyi Çıkar", command=self.detay_onizleme_cikar, pady=5)
+        btn_cikar.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
+        self.style_button(btn_cikar, "#EF4444", "#FFFFFF", "#DC2626")
+
+        btn_temizle_oniz = tk.Button(btn_islem, text="Tümünü Sıfırla", command=self.detay_onizleme_temizle, pady=5)
+        btn_temizle_oniz.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5, 0))
+        self.style_button(btn_temizle_oniz, "#94A3B8", "#FFFFFF", "#64748B")
+
+        btn_teblig_olustur = tk.Button(sag_panel, text="📑 Önizlemedeki Liste İçin Çıktı Al", command=self.teblig_ciktisi_al, pady=10)
         btn_teblig_olustur.pack(fill=tk.X, pady=(15, 0))
         self.style_button(btn_teblig_olustur, "#4F46E5", "#FFFFFF", "#4338CA", font_size=11)
+
+        self.combo_teblig_grup.bind("<<ComboboxSelected>>", self.grup_degisti_motoru)
+        self.combo_teblig_brans.bind("<<ComboboxSelected>>", lambda e: self.teblig_onizleme_guncelle())
+
+        self.gruplari_guncelle()
+        self.grup_degisti_motoru()
+
+    # FİLTRE MOTORLARI (GELİŞMİŞ ZEKASIYLA)
+    def gruplari_guncelle(self):
+        mevcut_gruplar = set([p.get('grup', 'Diğer Personel') for p in getattr(self, 'personel_listesi', [])])
+        grup_listesi = ["Tümü"]
+        if "İdare" in mevcut_gruplar: grup_listesi.append("İdare")
+        if "Öğretmenler" in mevcut_gruplar: grup_listesi.append("Öğretmenler")
         
+        digerleri = sorted([g for g in mevcut_gruplar if g not in ["İdare", "Öğretmenler"]])
+        grup_listesi.extend(digerleri)
+        
+        if hasattr(self, 'combo_teblig_grup'):
+            eski_secim = self.combo_teblig_grup.get()
+            self.combo_teblig_grup['values'] = grup_listesi
+            if eski_secim in grup_listesi: self.combo_teblig_grup.set(eski_secim)
+            else: self.combo_teblig_grup.current(0)
+
+    def grup_degisti_motoru(self, event=None):
+        grup = self.combo_teblig_grup.get()
+        if grup == "Öğretmenler":
+            self.f_brans.pack(fill=tk.X, pady=5)
+            branslar = set([p.get('brans', '-') for p in getattr(self, 'personel_listesi', []) if p.get('grup') == 'Öğretmenler' and p.get('brans', '-') != '-'])
+            self.combo_teblig_brans['values'] = ["Tümü"] + sorted(list(branslar))
+            self.combo_teblig_brans.current(0)
+        else:
+            self.f_brans.pack_forget()
+        self.teblig_onizleme_guncelle()
+
     def sag_tik_goster(self, event):
         item = self.tree_tum_liste.identify_row(event.y)
         if item:
@@ -1653,92 +1737,326 @@ class YoklamaUygulamasi(AltPencerelerMixin):
             print(f"PDF Hatası: {e}")  
      # --- YAZI TEBLİĞİ PERSONEL YÜKLEME MOTORU ---
     # --- YAZI TEBLİĞİ PERSONEL YÜKLEME MOTORU (GÜNCELLENMİŞ) ---
+    
+   # --- YAZI TEBLİĞİ PERSONEL YÜKLEME & FİLTRE MOTORU ---
+    # --- YAZI TEBLİĞİ PERSONEL YÜKLEME & FİLTRE MOTORU (DİNAMİK BAŞLIK RADARLI) ---
+    # --- YAZI TEBLİĞİ: VERİTABANI BAĞLANTILI EXCEL YÜKLEME ---
+    # --- YAZI TEBLİĞİ: VERİTABANI BAĞLANTILI EXCEL YÜKLEME ---
     def personel_yukle_motoru(self):
         dosya_yolu = filedialog.askopenfilename(title="Personel Excel Listesini Seçin", filetypes=[("Excel", "*.xlsx *.xls")])
         if not dosya_yolu: return
-        
+        self.ayarlar["son_personel_excel"] = dosya_yolu
+        self.ayarlari_kaydet()
+        # Göreve bakarak grubunu tahmin eden yapay zeka
+        def grubu_tahmin_et(g):
+            g_upper = str(g).upper()
+            if "ÖĞRETMEN" in g_upper: return "Öğretmenler"
+            if g_upper in ["OKUL MÜDÜRÜ", "MÜDÜR YARDIMCISI", "MÜDÜR BAŞYARDIMCISI", "VHKİ", "MEMUR"]: return "İdare"
+            return "Diğer Personel"
+
         try:
             import pandas as pd
-            df = pd.read_excel(dosya_yolu)
-            
-            # ZIRH 1: Sütun isimlerindeki gizli boşlukları temizle ve büyük harf yap (örn: 'ADI SOYADI ')
+            df_temp = pd.read_excel(dosya_yolu, header=None)
+            header_idx = 0
+            for i, row in df_temp.iterrows():
+                satir_metni = " ".join([str(x).upper() for x in row.values if pd.notna(x)])
+                if "AD" in satir_metni and "SOYAD" in satir_metni:
+                    header_idx = i; break
+                    
+            df = pd.read_excel(dosya_yolu, header=header_idx)
             df.columns = df.columns.str.strip().str.upper()
             
-            # Sütun isimlerini kontrol et
-            if 'ADI SOYADI' not in df.columns:
-                self.bildirim_goster("Excel dosyasında 'ADI SOYADI' başlığı bulunamadı!", "hata")
-                return
+            ad_sutunu = 'AD SOYAD' if 'AD SOYAD' in df.columns else 'ADI SOYADI' if 'ADI SOYADI' in df.columns else None
+            if not ad_sutunu:
+                self.bildirim_goster("Excel'de 'Ad Soyad' başlığı bulunamadı!", "hata"); return
                 
-            self.personel_listesi = []
-            branslar = set()
-            
+            yeni_personeller = []
             for index, row in df.iterrows():
-                ad = str(row['ADI SOYADI']).strip()
+                ad = str(row[ad_sutunu]).strip()
+                gorev = "-"
+                if 'GÖREVI' in df.columns: gorev = str(row['GÖREVI']).strip()
+                elif 'GÖREVİ' in df.columns: gorev = str(row['GÖREVİ']).strip()
                 
-                # ZIRH 2: Branş bilgisini al, '-' olanlara dokunma, boş olanları '-' yap
                 brans = "-"
-                if 'BRANŞI' in df.columns:
-                    okunan_brans = str(row['BRANŞI']).strip()
-                    if okunan_brans and okunan_brans.lower() != 'nan':
-                        brans = okunan_brans
+                if 'BRANŞI' in df.columns: brans = str(row['BRANŞI']).strip()
+                elif 'BRANSI' in df.columns: brans = str(row['BRANSI']).strip()
                 
-                if ad and ad.lower() != 'nan':
-                    # Herkesi varsayılan olarak seçili ([X]) yapıyoruz
-                    self.personel_listesi.append({'durum': '[X]', 'brans': brans, 'ad': ad})
-                    branslar.add(brans)
+                if not brans or brans.lower() == 'nan': brans = "-"
+                if not gorev or gorev.lower() == 'nan': gorev = "-"
+                
+                if ad and ad.lower() != 'nan' and ad != 'NAN':
+                    grup = grubu_tahmin_et(gorev)
+                    yeni_personeller.append((ad, brans, gorev, grup))
             
-            # Branş filtresini güncelle
-            if hasattr(self, 'combo_teblig_brans'):
-                self.combo_teblig_brans['values'] = ["Tüm Branşlar"] + sorted(list(branslar))
-                self.combo_teblig_brans.current(0)
+            self.db.cursor.execute("DELETE FROM personel")
+            self.db.cursor.executemany("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", yeni_personeller)
+            self.db.conn.commit()
             
-            self.personel_tablosunu_doldur()
-            self.bildirim_goster(f"{len(self.personel_listesi)} personel başarıyla yüklendi.", "bilgi")
-            
+            self.personel_listesi = [{'ad': p[0], 'brans': p[1], 'gorev': p[2], 'grup': p[3], 'haric': False} for p in yeni_personeller]
+            self.filtreleri_guncelle()
+            self.teblig_onizleme_guncelle()
+            self.gruplari_guncelle()
+            self.bildirim_goster(f"{len(self.personel_listesi)} personel yüklendi ve gruplandırıldı.", "bilgi")
         except Exception as e:
-            self.bildirim_goster(f"Personel Excel'i okunurken hata oluştu:\n{e}", "hata")
+            self.bildirim_goster(f"Kayıt Hatası:\n{e}", "hata")
+
+    def teblig_onizleme_guncelle(self):
+        if not hasattr(self, 'tree_teblig_onizleme'): return
+        self.tree_teblig_onizleme.delete(*self.tree_teblig_onizleme.get_children())
+        
+        grup = self.combo_teblig_grup.get() if hasattr(self, 'combo_teblig_grup') else "Tümü"
+        
+        # Boş satır istenmişse ekrana sadece boşluklar basıp PDF'i buna hazırlarız
+        if grup == "Boş Satır":
+            for _ in range(15): # 15 Adet Boş Satır
+                self.tree_teblig_onizleme.insert("", tk.END, values=("", "", ""))
+            if hasattr(self, 'lbl_teblig_sayi'): self.lbl_teblig_sayi.config(text="15 Boş Satır")
+            return
+            
+        brans = self.combo_teblig_brans.get() if hasattr(self, 'combo_teblig_brans') else "Tümü"
+        
+        gosterilecekler = []
+        for p in getattr(self, 'personel_listesi', []):
+            if p.get('haric', False): continue
+            
+            # Filtreleme Mantığı
+            if grup != "Tümü" and p.get('grup') != grup: continue
+            if grup == "Öğretmenler" and brans != "Tümü" and p.get('brans', '-') != brans: continue
+                
+            gosterilecekler.append(p)
+            
+        def grup_sirasi(g):
+            if g == "İdare": return 1
+            elif g == "Öğretmenler": return 2
+            else: return 3
+            
+        gosterilecekler.sort(key=lambda x: (grup_sirasi(x.get('grup', 'Diğer Personel')), x.get('ad', '')))
+        
+        for p in gosterilecekler:
+            # İŞTE KİLİT NOKTA BURASI: 3 Ayrı Sütun (Görev, Branş, Ad Soyad) tam yerine oturuyor!
+            self.tree_teblig_onizleme.insert("", tk.END, values=(p.get('gorev', '-'), p.get('brans', '-'), p.get('ad', '')))
+            
+        if hasattr(self, 'lbl_teblig_sayi'):
+            self.lbl_teblig_sayi.config(text=f"{len(gosterilecekler)} Kişi")
+
+    # --- DİNAMİK FİLTRE VE ÖNİZLEME BUTON MOTORLARI ---
+    def filtreleri_guncelle(self):
+        branslar = set([p.get('brans', '-') for p in getattr(self, 'personel_listesi', []) if p.get('brans', '-') != '-'])
+        gorevler = set([p.get('gorev', '-') for p in getattr(self, 'personel_listesi', []) if p.get('gorev', '-') != '-'])
+        
+        if hasattr(self, 'combo_teblig_brans'):
+            self.combo_teblig_brans['values'] = ["Tüm Branşlar"] + sorted(list(branslar))
+            try: self.combo_teblig_brans.current(0)
+            except: pass
+            
+        if hasattr(self, 'combo_teblig_gorev'):
+            self.combo_teblig_gorev['values'] = ["Tüm Görevler"] + sorted(list(gorevler))
+            try: self.combo_teblig_gorev.current(0)
+            except: pass
+
+    def detay_onizleme_cikar(self):
+        secim = self.tree_teblig_onizleme.selection()
+        if not secim: return
+        
+        # Yeni sistemde Ad Soyad 3. sütunda (Yani index 2'de) yer alıyor
+        cikarilacak_isimler = [self.tree_teblig_onizleme.item(iid, 'values')[2] for iid in secim]
+        for p in getattr(self, 'personel_listesi', []):
+            if p.get('ad') in cikarilacak_isimler:
+                p['haric'] = True # Önizlemeden geçici olarak gizle
+                
+        self.teblig_onizleme_guncelle()
+
+    def detay_onizleme_temizle(self):
+        # Sağdaki listeden çıkarılan (İzinli/Raporlu) herkesi geri getirir
+        for p in getattr(self, 'personel_listesi', []):
+            p['haric'] = False
+        self.teblig_onizleme_guncelle()
+    
+    # --- PERSONEL YÖNETİM PENCERESİ (EKSİKSİZ) ---
+    def personel_yonetim_penceresi_ac(self):
+        win = tk.Toplevel(self.root)
+        win.title("Personel Yönetimi")
+        win.geometry("450x550")
+        win.configure(bg="#0F172A" if self.is_dark_mode else "#F1F5F9")
+        win.grab_set()
+        
+        nb = ttk.Notebook(win)
+        nb.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        # ================= EKLE SEKMESİ =================
+        sekme_ekle = tk.Frame(nb, padx=20, pady=20)
+        nb.add(sekme_ekle, text="➕ Personel Ekle")
+        
+        # Dinamik Listeler (Sistem veritabanındaki her benzersiz kaydı bulur)
+        m_gorevler = sorted(list(set([p.get('gorev', '-') for p in self.personel_listesi if p.get('gorev', '-') != '-'])))
+        m_branslar = sorted(list(set([p.get('brans', '-') for p in self.personel_listesi if p.get('brans', '-') != '-'])))
+        m_gruplar = sorted(list(set([p.get('grup', 'Diğer Personel') for p in self.personel_listesi])))
+        if "Öğretmenler" in m_gruplar: m_gruplar.remove("Öğretmenler")
+        if "İdare" in m_gruplar: m_gruplar.remove("İdare")
+        m_gruplar = ["İdare", "Öğretmenler"] + m_gruplar # Resmi hiyerarşiyi koru
+        
+        tk.Label(sekme_ekle, text="Ad Soyad:", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        ent_ad = tk.Entry(sekme_ekle, font=(UI_FONT, 11), relief="solid", bd=1); ent_ad.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        
+        # DİKKAT: State ayarları "normal". Listeden seçebilir VEYA yeni bir şey yazabilirsin!
+        tk.Label(sekme_ekle, text="Görevi (Seç VEYA Yeni Yaz):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        combo_gorev = ttk.Combobox(sekme_ekle, values=m_gorevler, font=(UI_FONT, 11)); combo_gorev.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        
+        tk.Label(sekme_ekle, text="Branşı (Seç VEYA Yeni Yaz):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        combo_brans = ttk.Combobox(sekme_ekle, values=m_branslar, font=(UI_FONT, 11)); combo_brans.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        
+        tk.Label(sekme_ekle, text="Grubu (Seç VEYA Yeni Yaz):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        combo_grup = ttk.Combobox(sekme_ekle, values=m_gruplar, font=(UI_FONT, 11)); combo_grup.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        combo_grup.current(1)
+        
+        def kaydet():
+            ad = ent_ad.get().strip().upper()
+            gorev = combo_gorev.get().strip().upper() or "-"
+            brans = combo_brans.get().strip().upper() or "-"
+            # Yeni bir grup yazılırsa ilk harflerini büyüterek şık bir şekilde (Title Case) kaydet
+            grup_raw = combo_grup.get().strip()
+            grup = grup_raw.title() if grup_raw else "Diğer Personel"
+            
+            if not ad:
+                self.bildirim_goster("Ad Soyad boş bırakılamaz!", "hata"); return
+                
+            self.db.cursor.execute("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", (ad, brans, gorev, grup))
+            self.db.conn.commit()
+            
+            self.personel_listesi.append({'ad': ad, 'brans': brans, 'gorev': gorev, 'grup': grup, 'haric': False})
+            self.gruplari_guncelle()
+            self.grup_degisti_motoru()
+            self.bildirim_goster(f"{ad} eklendi.", "bilgi")
+            
+            # EXCEL SENKRONİZASYON SORUSU
+            if messagebox.askyesno("Excel'e İşlensin Mi?", f"{ad} sisteme eklendi.\nBu kayıt orijinal Excel dosyasına da yazılsın mı?", parent=win):
+                self.excel_personel_guncelle("ekle", ad, brans, gorev)
+                
+            ent_ad.delete(0, tk.END); combo_gorev.set(""); combo_brans.set(""); combo_grup.current(1)
+            liste_guncelle()
+
+        btn_kaydet = tk.Button(sekme_ekle, text="💾 Kaydet ve Öğren", command=kaydet, pady=8)
+        btn_kaydet.pack(fill=tk.X, pady=15)
+        self.style_button(btn_kaydet, "#10B981", "#FFFFFF", "#059669")
+
+        # ================= ÇIKAR SEKMESİ =================
+        sekme_cikar = tk.Frame(nb, padx=15, pady=15)
+        nb.add(sekme_cikar, text="➖ Personel Çıkar")
+        
+        arama_frame = tk.Frame(sekme_cikar)
+        arama_frame.pack(fill=tk.X, pady=(0, 10))
+        tk.Label(arama_frame, text="İsim Ara:", font=(UI_FONT, 10, "bold")).pack(side=tk.LEFT)
+        ent_ara = tk.Entry(arama_frame, font=(UI_FONT, 10), relief="solid", bd=1)
+        ent_ara.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,0), ipady=3)
+        
+        list_frame = tk.Frame(sekme_cikar)
+        list_frame.pack(fill=tk.BOTH, expand=True)
+        scrollbar = tk.Scrollbar(list_frame)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        liste_kutu = tk.Listbox(list_frame, font=(UI_FONT, 11), yscrollcommand=scrollbar.set, selectbackground="#EF4444")
+        liste_kutu.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.config(command=liste_kutu.yview)
+        
+        def liste_guncelle(filtre_metni=""):
+            liste_kutu.delete(0, tk.END)
+            for p in sorted(self.personel_listesi, key=lambda x: x['ad']):
+                if filtre_metni.upper() in p['ad'].upper(): liste_kutu.insert(tk.END, p['ad'])
+                    
+        ent_ara.bind("<KeyRelease>", lambda e: liste_guncelle(ent_ara.get()))
+        
+        def sil():
+            secim = liste_kutu.curselection()
+            if not secim: return
+            secili_ad = liste_kutu.get(secim[0])
+            
+            if messagebox.askyesno("Kalıcı Silme", f"{secili_ad} veritabanından kalıcı silinecek. Onaylıyor musunuz?", parent=win):
+                self.db.cursor.execute("DELETE FROM personel WHERE ad_soyad = ?", (secili_ad,))
+                self.db.conn.commit()
+                self.personel_listesi = [p for p in self.personel_listesi if p['ad'] != secili_ad]
+                self.gruplari_guncelle()
+                self.grup_degisti_motoru()
+                liste_guncelle(ent_ara.get())
+                self.bildirim_goster(f"{secili_ad} silindi.", "bilgi")
+                
+                # EXCEL SENKRONİZASYON SORUSU
+                if messagebox.askyesno("Excel'den Silinsin Mi?", f"{secili_ad} programdan silindi.\nBu kayıt orijinal Excel dosyasından da kaldırılsın mı?", parent=win):
+                    self.excel_personel_guncelle("sil", secili_ad)
+                
+        btn_sil = tk.Button(sekme_cikar, text="🗑️ Seçili Personeli Tamamen Sil", command=sil, pady=8)
+        btn_sil.pack(fill=tk.X, pady=15)
+        self.style_button(btn_sil, "#EF4444", "#FFFFFF", "#DC2626")
+        
+        liste_guncelle()
+
+    # --- TEBLİĞ ÇIKTISI OLUŞTURMA MOTORU (GÖREV VE BRANŞ AYRILDI) ---
+    def teblig_ciktisi_al(self):
+        sayi = self.ent_teblig_sayi.get().strip()
+        konu = self.ent_teblig_konu.get().strip()
+        tarih = self.ent_teblig_tarih.get().strip()
+
+        secili_personeller = []
+        for item in self.tree_teblig_onizleme.get_children():
+            degerler = self.tree_teblig_onizleme.item(item, 'values')
+            secili_personeller.append({'gorev': degerler[0], 'brans': degerler[1], 'ad': degerler[2]})
+
+        if not secili_personeller: return
+
+        yol = filedialog.asksaveasfilename(initialfile=f"Teblig_Listesi_{datetime.now().strftime('%d_%m_%Y')}.pdf", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")])
+        if not yol: return
+        win = self.goster_yukleme_penceresi("PDF Hazırlanıyor...")
+        
+        def islem():
+            try:
+                PDFYoneticisi(self.ayarlar).teblig_tebellug_ciz(sayi, konu, tarih, secili_personeller, yol)
+                self.root.after(0, lambda: self.rapor_tamam(win, yol, None, "Tebliğ listesi başarıyla oluşturuldu."))
+            except Exception as e:
+                self.root.after(0, lambda: self.hata_goster(win, f"PDF Hatası:\n{e}"))
+        import threading
+        threading.Thread(target=islem, daemon=True).start()
 
     def personel_tablosunu_doldur(self):
         self.tree_personel.delete(*self.tree_personel.get_children())
         if not hasattr(self, 'personel_listesi'): return
         
         secili_brans = self.combo_teblig_brans.get()
+        secili_gorev = self.combo_teblig_gorev.get()
         
         for p in self.personel_listesi:
-            if secili_brans != "Tüm Branşlar" and p['brans'] != secili_brans:
-                continue
+            # Filtreleme Mantığı: Branş veya Görev uymuyorsa o kişiyi atla (gösterme)
+            if secili_brans != "Tüm Branşlar" and p['brans'] != secili_brans: continue
+            if secili_gorev != "Tüm Görevler" and p['gorev'] != secili_gorev: continue
             
-            # Duruma göre renk ataması (Seçiliyse yeşilimsi, değilse kırmızımsı)
             tag = "secili" if p['durum'] == "[X]" else "haric"
-            self.tree_personel.insert("", tk.END, values=(p['durum'], p['brans'], p['ad']), tags=(tag,))
+            self.tree_personel.insert("", tk.END, values=(p['durum'], p['gorev'], p['brans'], p['ad']), tags=(tag,))
             
+        # Renklendirmeler
         self.tree_personel.tag_configure('secili', background='#F0FDF4' if not self.is_dark_mode else '#064E3B', foreground='#166534' if not self.is_dark_mode else '#A7F3D0')
         self.tree_personel.tag_configure('haric', background='#FEF2F2' if not self.is_dark_mode else '#7F1D1D', foreground='#991B1B' if not self.is_dark_mode else '#FECACA')
+        
+        # Sol taraf her filtrelendiğinde sağ tarafı (Önizlemeyi) da güncelle!
+        self.teblig_onizleme_guncelle()
 
     def personel_secim_toggle(self, event):
         item_id = self.tree_personel.identify_row(event.y)
         col_id = self.tree_personel.identify_column(event.x)
         
-        # Sadece "Durum" (1. sütun) tıklandığında tetiklensin
+        # Sadece "Durum" (1. sütun) tıklandığında işlemi tetikle
         if item_id and col_id == '#1':
             item = self.tree_personel.item(item_id)
             vals = list(item['values'])
             
             mevcut_durum = vals[0]
-            personel_adi = vals[2]
+            personel_adi = vals[3] # Ad artık 4. sütunda
             
-            # X ise boş yap, boş ise X yap
             yeni_durum = "[ ]" if mevcut_durum == "[X]" else "[X]"
             
-            # RAM'deki listeyi güncelle
             for p in self.personel_listesi:
                 if p['ad'] == personel_adi:
                     p['durum'] = yeni_durum
                     break
                     
-            # Arayüzü tazele
             self.personel_tablosunu_doldur()
-    
+
     # --- YAZI TEBLİĞİ PDF OKUMA MOTORU ---
     def pdf_yukle_motoru(self):
         dosya_yolu = filedialog.askopenfilename(title="MEB Resmi Yazısını (PDF) Seçin", filetypes=[("PDF Dosyaları", "*.pdf")])
@@ -1830,8 +2148,10 @@ class YoklamaUygulamasi(AltPencerelerMixin):
                 
         import threading
         threading.Thread(target=islem, daemon=True).start()
-        
+
+
 # BU KISIM ARTIK pdf_olustur fonksiyonunun DIŞINDA VE EN SOLDAN BAŞLAMALI:
+
 if __name__ == "__main__":
     root = tk.Tk()
     YoklamaUygulamasi(root)
