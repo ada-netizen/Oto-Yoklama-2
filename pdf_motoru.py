@@ -196,3 +196,172 @@ class PDFYoneticisi:
                   
         c.save()
         return True, ""
+    
+    # --- TOPLU İMZA SİRKÜSÜ (A4 LİSTE) ÇİZİM MOTORU ---
+    def teblig_tebellug_ciz(self, sayi, konu, yazi_tarihi, personel_listesi, kayit_yeri):
+        from reportlab.lib.pagesizes import A4
+        c = canvas.Canvas(kayit_yeri, pagesize=A4)
+        genislik, yukseklik = A4
+        
+        def sayfa_basligi_ciz():
+            c.setFont(self.font_bold, 12)
+            c.drawCentredString(genislik / 2, yukseklik - 40, self.metin_duzelt("TEBLİĞ / TEBELLÜĞ BELGESİ"))
+            
+            c.setFont(self.font_bold, 10)
+            c.drawString(40, yukseklik - 70, "Sayı:")
+            c.drawString(40, yukseklik - 85, "Konu:")
+            c.drawString(40, yukseklik - 100, "Tarih:")
+            
+            c.setFont(self.font, 10)
+            c.drawString(80, yukseklik - 70, self.metin_duzelt(sayi))
+            c.drawString(80, yukseklik - 85, self.metin_duzelt(konu))
+            c.drawString(80, yukseklik - 100, self.metin_duzelt(yazi_tarihi))
+            return yukseklik - 130
+
+        def tablo_basligi_ciz(y):
+            c.setFont(self.font_bold, 10)
+            c.setFillColorRGB(0.9, 0.9, 0.9) 
+            c.rect(40, y - 5, genislik - 80, 20, fill=1)
+            c.setFillColorRGB(0, 0, 0)
+            
+            # Sütun Başlıkları (Yeni düzene göre Görev ve Branş ayrıldı)
+            c.drawString(45, y, "S.N")
+            c.drawString(75, y, self.metin_duzelt("Görevi"))
+            c.drawString(160, y, self.metin_duzelt("Branşı"))
+            c.drawString(250, y, "Ad Soyad")
+            c.drawString(375, y, "Tarih")
+            c.drawString(450, y, self.metin_duzelt("İmza"))
+            
+            c.line(40, y - 5, genislik - 40, y - 5)
+            c.line(40, y + 15, genislik - 40, y + 15)
+            
+            # Dikey çizgilerin x koordinatları
+            for x in [40, 70, 155, 245, 370, 440, genislik - 40]:
+                c.line(x, y - 5, x, y + 15)
+            return y - 20
+
+        y_pos = sayfa_basligi_ciz()
+        y_pos = tablo_basligi_ciz(y_pos)
+        
+        c.setFont(self.font, 10)
+        satir_yuksekligi = 25
+        
+        for i, personel in enumerate(personel_listesi, 1):
+            if y_pos < 50: 
+                c.showPage()
+                y_pos = sayfa_basligi_ciz()
+                y_pos = tablo_basligi_ciz(y_pos)
+                c.setFont(self.font, 10)
+                
+            c.line(40, y_pos - 5, genislik - 40, y_pos - 5)
+            
+            # Sütunlara verileri nizami bir şekilde bas
+            c.drawString(45, y_pos + 5, str(i))
+            c.drawString(75, y_pos + 5, self.metin_duzelt(personel.get('gorev', '-')[:14]))
+            c.drawString(160, y_pos + 5, self.metin_duzelt(personel.get('brans', '-')[:14]))
+            c.drawString(250, y_pos + 5, self.metin_duzelt(personel.get('ad', '')[:23]))
+            
+            for x in [40, 70, 155, 245, 370, 440, genislik - 40]:
+                c.line(x, y_pos + 20, x, y_pos - 5)
+                
+            y_pos -= satir_yuksekligi
+            
+        c.save()
+        return True, ""
+    
+    def bireysel_teblig_ciz(self, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, yuklenen_pdf, kayit_yeri):
+        from reportlab.lib.pagesizes import A4
+        from datetime import datetime
+        import io
+        
+        try:
+            import PyPDF2
+        except ImportError:
+            raise ImportError("Lütfen terminale 'pip install PyPDF2' yazıp kütüphaneyi yükleyin.")
+            
+        genislik, yukseklik = A4
+        
+        # A5 Makbuzunu diske değil, bilgisayarın "Geçici Hafızasına (RAM)" çiziyoruz
+        temp_pdf = io.BytesIO()
+        c = canvas.Canvas(temp_pdf, pagesize=A4)
+        
+        # ================= 2 ADET A5 (ÜST VE ALT) ÇİZİMİ =================
+        def a5_belge_ciz(y_offset):
+            baslangic_y = y_offset + 380
+            
+            c.setFont(self.font_bold, 14)
+            c.drawCentredString(genislik / 2, baslangic_y, self.metin_duzelt("TEBLİĞ - TEBELLÜĞ BELGESİ"))
+            
+            c.setFont(self.font_bold, 11)
+            c.drawString(40, baslangic_y - 40, self.metin_duzelt("YAZININ TARİH VE SAYISI"))
+            c.drawString(200, baslangic_y - 40, ":")
+            c.setFont(self.font, 11)
+            c.drawString(210, baslangic_y - 40, self.metin_duzelt(f"{yazi_tarihi} - {sayi}"))
+            
+            c.setFont(self.font_bold, 11)
+            c.drawString(40, baslangic_y - 65, self.metin_duzelt("YAZININ ÖZÜ (KONUSU)"))
+            c.drawString(200, baslangic_y - 65, ":")
+            
+            p_konu2 = Paragraph(self.metin_duzelt(konu), ParagraphStyle(name='N', fontName=self.font, fontSize=11, leading=14))
+            p_konu2.wrapOn(c, genislik - 240, 100)
+            p_konu2.drawOn(c, 210, baslangic_y - 65 - (p_konu2.height - 11))
+            
+            y_next = baslangic_y - 65 - (p_konu2.height - 11) - 25
+            
+            c.setFont(self.font_bold, 11)
+            c.drawString(40, y_next, self.metin_duzelt("TEBLİĞ EDİLEN YER"))
+            c.drawString(200, y_next, ":")
+            c.setFont(self.font, 11)
+            c.drawString(210, y_next, self.metin_duzelt(t_yeri))
+            
+            y_next -= 25
+            bugun = datetime.now().strftime("%d/%m/%Y")
+            c.setFont(self.font_bold, 11)
+            c.drawString(40, y_next, self.metin_duzelt("TEBLİĞ TARİHİ VE SAATİ"))
+            c.drawString(200, y_next, ":")
+            c.setFont(self.font, 11)
+            c.drawString(210, y_next, self.metin_duzelt(f"{bugun}   Saat: ......:......"))
+            
+            y_next -= 50
+            c.setFont(self.font_bold, 11)
+            c.drawCentredString(140, y_next, self.metin_duzelt("TEBLİĞ EDEN"))
+            c.drawCentredString(425, y_next, self.metin_duzelt("TEBELLÜĞ EDEN"))
+            
+            y_next -= 45
+            c.setFont(self.font, 10)
+            c.drawCentredString(140, y_next, self.metin_duzelt(t_eden['ad']))
+            c.drawCentredString(425, y_next, self.metin_duzelt(t_edilen['ad']))
+            
+            y_next -= 15
+            c.drawCentredString(140, y_next, self.metin_duzelt(t_eden['gorev']))
+            c.drawCentredString(425, y_next, self.metin_duzelt(t_edilen['gorev']))
+            
+            if y_offset > 0:
+                c.setDash(6, 4)
+                c.line(0, yukseklik/2, genislik, yukseklik/2)
+                c.setDash(1, 0)
+                
+        a5_belge_ciz(yukseklik / 2) # Sayfanın Üstü
+        a5_belge_ciz(0)             # Sayfanın Altı
+        c.save()
+        temp_pdf.seek(0)
+        
+        # ================= PDF'LERİ BİRLEŞTİRME MUCİZESİ =================
+        merger = PyPDF2.PdfMerger()
+        
+        # 1. Klasöre gidip senin seçtiğin DYS Orijinal Resmi Yazısını (PDF) alır
+        if yuklenen_pdf and os.path.exists(yuklenen_pdf):
+            merger.append(yuklenen_pdf)
+            
+        # 2. Üzerine bizim RAM'de hazırladığımız Makaslı A5 Makbuzunu yapıştırır
+        merger.append(temp_pdf)
+        
+        # 3. Sonuç olarak ikisini tek bir PDF dosyası olarak kaydeder!
+        with open(kayit_yeri, "wb") as f_out:
+            merger.write(f_out)
+            
+        merger.close()
+        return True, ""
+        
+        c.save()
+        return True, ""
