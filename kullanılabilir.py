@@ -733,16 +733,12 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         self.teblig_arayuzunu_olustur()
 
     # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ ---
-    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ (GELİŞMİŞ TASARIM) ---
-    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ (YENİ SADE TASARIM) ---
-    # --- 2. SEKME: YAZI TEBLİĞİ İŞLEMLERİ (AKILLI FİLTRELİ) ---
-    # --- 2. SEKME: YAZI TEBLİĞİ (İKİYE BÖLÜNMÜŞ ARAYÜZ) ---
+      # ÜST PANEL: BUTONLAR
     def teblig_arayuzunu_olustur(self):
         teblig_ana = tk.Frame(self.sekme_teblig, padx=25, pady=25)
         teblig_ana.pack(fill=tk.BOTH, expand=True)
         self.kayit_ekle(teblig_ana, "bg_main")
-
-        # ÜST PANEL: BUTONLAR
+       
         ust_panel = tk.Frame(teblig_ana, highlightthickness=1, padx=20, pady=15)
         ust_panel.pack(fill=tk.X, pady=(0, 15))
         self.kayit_ekle(ust_panel, "bg_card")
@@ -750,13 +746,20 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         tk.Label(ust_panel, text="TEBLİĞ OLUŞTURMA MERKEZİ", font=(UI_FONT, 14, "bold"), fg="#4F46E5").pack(side=tk.LEFT)
         self.kayit_ekle(ust_panel.winfo_children()[0], "bg_card")
 
-        btn_pdf_yukle = tk.Button(ust_panel, text="📄 MEB Yazısı (PDF) Yükle", command=self.pdf_yukle_motoru, padx=15, pady=6)
-        btn_pdf_yukle.pack(side=tk.RIGHT, padx=5)
-        self.style_button(btn_pdf_yukle, "#EF4444", "#FFFFFF", "#DC2626", font_size=10)
+        # 1. Personel Yönetimi Butonu (En sağa eklendi)
+        btn_personel_yonet = tk.Button(ust_panel, text="⚙️ Personel Ekle / Çıkar", command=self.personel_yonetim_penceresi_ac, padx=15, pady=6)
+        btn_personel_yonet.pack(side=tk.RIGHT, padx=5)
+        self.style_button(btn_personel_yonet, "#475569", "#FFFFFF", "#334155", font_size=10)
 
+        # 2. Excel Yükleme Butonu
         btn_personel_yukle = tk.Button(ust_panel, text="👥 Personel Listesi (Excel) Yükle", command=self.personel_yukle_motoru, padx=15, pady=6)
         btn_personel_yukle.pack(side=tk.RIGHT, padx=5)
         self.style_button(btn_personel_yukle, "#10B981", "#FFFFFF", "#059669", font_size=10)
+
+        # 3. PDF Yükleme Butonu
+        btn_pdf_yukle = tk.Button(ust_panel, text="📄 MEB Yazısı (PDF) Yükle", command=self.pdf_yukle_motoru, padx=15, pady=6)
+        btn_pdf_yukle.pack(side=tk.RIGHT, padx=5)
+        self.style_button(btn_pdf_yukle, "#EF4444", "#FFFFFF", "#DC2626", font_size=10)
 
         # ORTA BÖLÜM: YAZI BİLGİLERİ (Her iki panelin ortak kullanacağı kısım)
         yazi_panel = tk.Frame(teblig_ana, highlightthickness=1, padx=15, pady=10)
@@ -2230,22 +2233,137 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         import threading
         threading.Thread(target=islem, daemon=True).start()
 
+    # --- İDARECİLERİ SÜZEN LİSTE MOTORU ---
     def bireysel_teblig_isimleri_guncelle(self):
         if not hasattr(self, 'combo_teblig_eden'): return
         
-        isimler = ["Seçiniz"] + sorted([p.get('ad', '') for p in getattr(self, 'personel_listesi', []) if p.get('ad')])
+        tum_isimler = ["Seçiniz"] + sorted([p.get('ad', '') for p in getattr(self, 'personel_listesi', []) if p.get('ad')])
+        
+        idare_isimleri = ["Seçiniz"]
+        for p in getattr(self, 'personel_listesi', []):
+            gorev = str(p.get('gorev', '')).upper()
+            grup = str(p.get('grup', '')).upper()
+            
+            # KİŞİ İDARE Mİ? (Grubu idare olanlar VEYA görevinde idari kelimeler geçenler)
+            idari_kelimeler = ['MÜDÜR', 'YARDIMCI', 'İDARE', 'VHKİ', 'MEMUR', 'ŞEF', 'MEMURE']
+            is_idare = (grup == 'İDARE') or any(k in gorev for k in idari_kelimeler)
+            
+            if is_idare:
+                idare_isimleri.append(p.get('ad', ''))
+                
+        idare_isimleri = ["Seçiniz"] + sorted(list(set(idare_isimleri[1:])))
+        if len(idare_isimleri) == 1: idare_isimleri = tum_isimler # Güvenlik: İdare hiç yoksa listeyi boş bırakma
         
         mevcut_eden = self.combo_teblig_eden.get()
         mevcut_edilen = self.combo_tebellug_eden.get()
         
-        self.combo_teblig_eden['values'] = isimler
-        self.combo_tebellug_eden['values'] = isimler
+        self.combo_teblig_eden['values'] = idare_isimleri # Tebliğ eden SADECE idare grubu
+        self.combo_tebellug_eden['values'] = tum_isimler  # Tebellüğ eden herkes
         
-        if mevcut_eden in isimler: self.combo_teblig_eden.set(mevcut_eden)
+        if mevcut_eden in idare_isimleri: self.combo_teblig_eden.set(mevcut_eden)
         else: self.combo_teblig_eden.current(0)
         
-        if mevcut_edilen in isimler: self.combo_tebellug_eden.set(mevcut_edilen)
+        if mevcut_edilen in tum_isimler: self.combo_tebellug_eden.set(mevcut_edilen)
         else: self.combo_tebellug_eden.current(0)
+
+    # --- PERSONEL YÖNETİM PENCERESİ ---
+    def personel_yonetim_penceresi_ac(self):
+        win = tk.Toplevel(self.root)
+        win.title("Personel Yönetimi")
+        win.geometry("450x550")
+        win.configure(bg="#0F172A" if self.is_dark_mode else "#F1F5F9")
+        win.grab_set()
+        
+        nb = ttk.Notebook(win)
+        nb.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        # ====== EKLE SEKMESİ ======
+        sekme_ekle = tk.Frame(nb, padx=20, pady=20)
+        nb.add(sekme_ekle, text="➕ Ekle")
+        
+        tk.Label(sekme_ekle, text="Ad Soyad:", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        ent_ad = tk.Entry(sekme_ekle, font=(UI_FONT, 11), relief="solid", bd=1); ent_ad.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        
+        tk.Label(sekme_ekle, text="Görevi (Müdür, VHKİ, Memur, Öğretmen vb.):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        ent_gorev = tk.Entry(sekme_ekle, font=(UI_FONT, 11), relief="solid", bd=1); ent_gorev.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        
+        tk.Label(sekme_ekle, text="Branşı (Tarih, Matematik vb.):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        ent_brans = tk.Entry(sekme_ekle, font=(UI_FONT, 11), relief="solid", bd=1); ent_brans.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        
+        tk.Label(sekme_ekle, text="Grubu (İdari Yetki İçin 'İdare' Seçin):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
+        combo_grup = ttk.Combobox(sekme_ekle, values=["İdare", "Öğretmenler", "Diğer Personel"], state="readonly", font=(UI_FONT, 11))
+        combo_grup.pack(fill=tk.X, ipady=4, pady=(0, 10))
+        combo_grup.current(1)
+        
+        def kaydet():
+            ad = ent_ad.get().strip().upper()
+            gorev = ent_gorev.get().strip().upper() or "-"
+            brans = ent_brans.get().strip().upper() or "-"
+            grup = combo_grup.get()
+            
+            if not ad:
+                self.bildirim_goster("Ad Soyad boş bırakılamaz!", "hata"); return
+                
+            try:
+                # Veritabanına grup sütununu garantiye alarak ekle
+                self.db.cursor.execute("PRAGMA table_info(personel)")
+                if 'grup' not in [col[1] for col in self.db.cursor.fetchall()]:
+                    self.db.cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT DEFAULT 'Diğer Personel'")
+                
+                self.db.cursor.execute("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", (ad, brans, gorev, grup))
+                self.db.conn.commit()
+            except: pass 
+                
+            self.personel_listesi.append({'ad': ad, 'brans': brans, 'gorev': gorev, 'grup': grup, 'durum': '[X]'})
+            self.personel_tablosunu_doldur()
+            self.bireysel_teblig_isimleri_guncelle() # İdareye eklendiyse anında kutuda belirir
+            self.bildirim_goster(f"{ad} eklendi.", "bilgi")
+            ent_ad.delete(0, tk.END); ent_gorev.delete(0, tk.END); ent_brans.delete(0, tk.END)
+            liste_guncelle()
+
+        btn_kaydet = tk.Button(sekme_ekle, text="💾 Kaydet", command=kaydet, pady=8)
+        btn_kaydet.pack(fill=tk.X, pady=15)
+        self.style_button(btn_kaydet, "#10B981", "#FFFFFF", "#059669")
+
+        # ====== ÇIKAR SEKMESİ ======
+        sekme_cikar = tk.Frame(nb, padx=15, pady=15)
+        nb.add(sekme_cikar, text="➖ Çıkar")
+        
+        arama_frame = tk.Frame(sekme_cikar); arama_frame.pack(fill=tk.X, pady=(0, 10))
+        tk.Label(arama_frame, text="İsim Ara:", font=(UI_FONT, 10, "bold")).pack(side=tk.LEFT)
+        ent_ara = tk.Entry(arama_frame, font=(UI_FONT, 10), relief="solid", bd=1); ent_ara.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,0), ipady=3)
+        
+        list_frame = tk.Frame(sekme_cikar); list_frame.pack(fill=tk.BOTH, expand=True)
+        scrollbar = tk.Scrollbar(list_frame); scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        liste_kutu = tk.Listbox(list_frame, font=(UI_FONT, 11), yscrollcommand=scrollbar.set, selectbackground="#EF4444")
+        liste_kutu.pack(side=tk.LEFT, fill=tk.BOTH, expand=True); scrollbar.config(command=liste_kutu.yview)
+        
+        def liste_guncelle(filtre_metni=""):
+            liste_kutu.delete(0, tk.END)
+            for p in sorted(self.personel_listesi, key=lambda x: x.get('ad', '')):
+                if filtre_metni.upper() in p.get('ad', '').upper(): liste_kutu.insert(tk.END, p.get('ad', ''))
+                    
+        ent_ara.bind("<KeyRelease>", lambda e: liste_guncelle(ent_ara.get()))
+        
+        def sil():
+            secim = liste_kutu.curselection()
+            if not secim: return
+            secili_ad = liste_kutu.get(secim[0])
+            
+            if messagebox.askyesno("Silme Onayı", f"{secili_ad} silinecek. Onaylıyor musunuz?", parent=win):
+                self.db.cursor.execute("DELETE FROM personel WHERE ad_soyad = ?", (secili_ad,))
+                self.db.conn.commit()
+                self.personel_listesi = [p for p in getattr(self, 'personel_listesi', []) if p.get('ad') != secili_ad]
+                self.personel_tablosunu_doldur()
+                self.bireysel_teblig_isimleri_guncelle()
+                liste_guncelle(ent_ara.get())
+                self.bildirim_goster(f"{secili_ad} silindi.", "bilgi")
+                
+        btn_sil = tk.Button(sekme_cikar, text="🗑️ Seçili Personeli Sil", command=sil, pady=8)
+        btn_sil.pack(fill=tk.X, pady=15)
+        self.style_button(btn_sil, "#EF4444", "#FFFFFF", "#DC2626")
+        
+        liste_guncelle()
 
     def bireysel_teblig_ciktisi_al(self):
         sayi = self.ent_teblig_sayi.get().strip()
