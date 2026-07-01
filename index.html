@@ -2,125 +2,996 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oto-Yoklama Sistemi V2</title>
+    <title>Öğrenci Devamsızlık Sistemi - Premium Yönetim Paneli</title>
     <style>
-        /* Modern Karanlık Tema (Eski temanızdan ilham alındı) */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #0F172A; /* Koyu Lacivert Arka Plan */
-            color: #F8FAFC;
-            padding: 40px;
+        /* ================= BİREBİR TKINTER TEMA (sabitler.py) ================= */
+        :root {
+            --bg-main: #0F172A;
+            --bg-card: #1E293B;
+            --fg-main: #F8FAFC;
+            --fg-sub: #94A3B8;
+            --border: #334155;
+            --tree-sel: #38BB94;
+            --font-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        .baslik-alani {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        button {
-            background-color: #38BB94;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 15px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        button:hover {
-            background-color: #059669;
-        }
+
+        body { font-family: var(--font-ui); background-color: var(--bg-main); color: var(--fg-main); margin: 0; padding: 5px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; }
         
-        /* Modern Tablo Tasarımı */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #1E293B;
-            border-radius: 8px;
-            overflow: hidden; /* Köşeleri yuvarlatmak için */
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        th, td {
-            padding: 15px;
-            text-align: left;
-            border-bottom: 1px solid #334155;
-        }
-        th {
-            background-color: #0F172A;
-            color: #94A3B8;
-            font-weight: 600;
-        }
-        tr:hover {
-            background-color: #334155; /* Üzerine gelince parlama efekti */
-        }
-        #durum-cubugu {
-            margin-top: 15px;
-            color: #94A3B8;
-            font-size: 14px;
-        }
+        /* --- TKINTER NOTEBOOK (SEKMELER) SİMÜLASYONU --- */
+        .notebook-header { display: flex; background-color: var(--bg-main); border-bottom: 1px solid var(--border); margin-bottom: 5px; }
+        .tab-btn { background-color: var(--bg-main); color: var(--fg-sub); border: 1px solid transparent; border-bottom: none; padding: 8px 15px; cursor: pointer; font-family: var(--font-ui); font-size: 13px; margin-right: 2px; border-radius: 4px 4px 0 0; }
+        .tab-btn.aktif { background-color: var(--bg-card); color: var(--fg-main); border-color: var(--border); border-bottom: 1px solid var(--bg-card); margin-bottom: -1px; }
+        
+        .tab-content { display: none; background-color: var(--bg-main); flex: 1; padding: 20px; flex-direction: column; overflow: hidden; }
+        .tab-content.aktif { display: flex; }
+
+        /* --- ÜST PANEL (TOP BAR) --- */
+        .top-bar { background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .top-bar-title { font-size: 15px; font-weight: bold; color: var(--tree-sel); margin: 0; }
+        .top-bar-buttons { display: flex; gap: 5px; }
+        
+        /* Buton Stilleri (Senin style_button fonksiyonunla aynı) */
+        .btn { border: none; padding: 6px 15px; font-size: 10px; font-weight: bold; cursor: pointer; font-family: var(--font-ui); color: #FFFFFF; }
+        .btn-yardim { background-color: #F59E0B; } .btn-yardim:hover { background-color: #D97706; }
+        .btn-ayarlar { background-color: #475569; } .btn-ayarlar:hover { background-color: #64748B; }
+        .btn-gece { background-color: #E2E8F0; color: #1E293B; } .btn-gece:hover { background-color: #CBD5E1; }
+        .btn-rapor { background-color: #4F46E5; } .btn-rapor:hover { background-color: #6366F1; }
+        .btn-dev { background-color: #2563EB; } .btn-dev:hover { background-color: #3B82F6; }
+        .btn-ogr { background-color: #059669; } .btn-ogr:hover { background-color: #10B981; }
+        .btn-temizle { background-color: #E2E8F0; color: #1E293B; padding: 3px 12px; font-size: 10px; }
+
+        /* --- PANEDWINDOW SİMÜLASYONU (İkiye Bölünmüş Ekran) --- */
+        .paned-window { display: flex; flex: 1; gap: 10px; overflow: hidden; }
+        
+        /* SOL PANEL */
+        .sol-panel { width: 45%; display: flex; flex-direction: column; background-color: var(--bg-main); }
+        .filtre-card { background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px 10px; margin-bottom: 10px; display: flex; justify-content: center; }
+        
+        /* Arama Kutusu Hizalaması (Grid Simülasyonu) */
+        .arama-grid { display: flex; align-items: center; gap: 5px; }
+        .arama-label { font-size: 10px; font-weight: bold; color: var(--fg-main); }
+        .arama-entry { background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); padding: 4px 5px; font-size: 10px; width: 180px; }
+        .arama-combo { background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); padding: 3px; font-size: 10px; width: 90px; }
+
+        /* TREEVIEW (Tablo) SİMÜLASYONU */
+        .tree-card { background-color: var(--bg-card); border: 1px solid var(--border); flex: 1; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 10px; text-align: left; }
+        th { background-color: var(--bg-main); color: var(--fg-main); font-weight: bold; padding: 6px; position: sticky; top: 0; border-bottom: 1px solid var(--border); }
+        td { padding: 6px; border-bottom: 1px solid var(--bg-main); color: var(--fg-sub); }
+        tr:hover td { background-color: #334155; cursor: default; }
+        .tr-secili td { background-color: var(--tree-sel) !important; color: #FFFFFF !important; }
+        .text-kirmizi { color: #EF4444; font-weight: bold; }
+
+        /* SAĞ PANEL (Şimdilik boş, 2. adımda dolduracağız) */
+        .sag-panel { flex: 1; background-color: var(--bg-card); border: 1px solid var(--border); }
+
+        /* --- YAMA 1: SAĞ PANEL (TAKVİM VE DETAY) TASARIMLARI --- */
+        .sag-panel-icerik { display: none; flex-direction: column; height: 100%; padding: 15px; box-sizing: border-box; }
+        .sag-panel-icerik.aktif { display: flex; }
+        
+        .ogrenci-baslik { font-size: 16px; font-weight: bold; color: var(--tree-sel); margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 5px; }
+        
+        /* Takvim Görünümü */
+        .takvim-alani { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 15px; }
+        .takvim-ay { border: 1px solid var(--border); background-color: var(--bg-main); padding: 5px; border-radius: 4px; width: calc(33.33% - 5px); box-sizing: border-box; }
+        .ay-baslik { font-size: 11px; font-weight: bold; text-align: center; color: var(--fg-sub); margin-bottom: 5px; }
+        .gunler-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+        .gun-hucre { background-color: var(--bg-card); border: 1px solid var(--border); font-size: 9px; text-align: center; padding: 2px 0; border-radius: 2px; color: var(--fg-main); }
+        
+        /* Renk Kodlamaları (Tkinter'daki gibi) */
+        .gun-D { background-color: #EF4444; color: white; border-color: #B91C1C; font-weight: bold; } /* Özürsüz */
+        .gun-I { background-color: #3B82F6; color: white; border-color: #1D4ED8; font-weight: bold; } /* Özürlü */
+        .gun-G { background-color: #F59E0B; color: white; border-color: #B45309; font-weight: bold; } /* Geç */
+
+        /* Alt Detay Tablosu */
+        .detay-tablo-alani { flex: 1; overflow-y: auto; border: 1px solid var(--border); margin-bottom: 10px; background-color: var(--bg-main); }
+        .detay-butonlar { display: flex; gap: 5px; justify-content: space-between; }
+        .detay-butonlar button { flex: 1; padding: 8px; font-size: 11px; }
     </style>
 </head>
 <body>
 
-    <div class="baslik-alani">
-        <h2>🎓 Öğrenci Listesi</h2>
-        <button onclick="tabloyuDoldur()">🔄 Verileri Yenile</button>
+    <div class="notebook-header">
+        <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')">📄 İzin Dilekçesi</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')">🖋️ Yazı Tebliği</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')">⚙️ Ayarlar ve Yedekleme</button>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Öğrenci No</th>
-                <th>Ad Soyad</th>
-                <th>Şube</th>
-            </tr>
-        </thead>
-        <tbody id="tablo-govdesi">
-            <tr>
-                <td colspan="3" style="text-align: center; color: #64748B;">Verileri görmek için "Verileri Yenile" butonuna basın.</td>
-            </tr>
-        </tbody>
-    </table>
+    <div id="sekme_izin" class="tab-content aktif">
+        
+        <div class="top-bar">
+            <h2 class="top-bar-title">YOKLAMA YÖNETİM PANELİ</h2>
+            <div class="top-bar-buttons">
+                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
+                <input type="file" id="f-dev" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('devamsizlik-excel-yukle', event)">
+                
+                <button class="btn btn-ogr" onclick="document.getElementById('f-ogr').click()">Öğrenci Yükle</button>
+                <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()">Devamsızlık Yükle</button>
+                
+                <button class="btn btn-rapor" onclick="raporlariGoster()">📄 Raporlar</button>
+                <button class="btn btn-gece" id="btn-tema" onclick="temaDegistir()">☀️ Gündüz Modu</button>
+                <button class="btn btn-ayarlar" onclick="document.querySelectorAll('.tab-btn')[2].click()">⚙️ Ayarlar</button>
+                <button class="btn btn-yardim" onclick="yardimGoster()">❓ Yardım</button>
+            </div>
+        </div>
 
-    <div id="durum-cubugu">Sistem Hazır.</div>
+        <div class="paned-window">
+            
+            <div class="sol-panel">
+                <div class="filtre-card">
+                    <div class="arama-grid">
+                        <span class="arama-label">Ara:</span>
+                        <input type="text" id="ent_arama" class="arama-entry" placeholder="Numara veya Ad Soyad" onkeyup="tabloyuDoldur()">
+                        
+                        <span class="arama-label" style="margin-left: 10px;">Şube:</span>
+                        <select id="combo_arama_sube" class="arama-combo" onchange="tabloyuDoldur()">
+                            <option value="Tümü">Tümü</option>
+                        </select>
+                        
+                        <button class="btn btn-temizle" style="margin-left: 5px;" onclick="filtreTemizle()">Temizle</button>
+                    </div>
+                </div>
+
+                <div class="tree-card">
+                    <table id="tree_tum_liste">
+                        <thead>
+                            <tr>
+                                <th style="width: 16%;">Sınıf</th>
+                                <th style="width: 12%;">No</th>
+                                <th style="width: 40%;">Ad Soyad</th>
+                                <th style="width: 16%;">Özürsüz</th>
+                                <th style="width: 16%;">Özürlü</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tree_govde">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="sag-panel" id="sag_panel" style="display: flex; flex-direction: column; padding: 15px;">
+                
+                <div id="sag_bos_uyari" style="display: flex; flex: 1; align-items: center; justify-content: center; color: var(--fg-sub); text-align: center; font-size: 13px;">
+                    👈 İşlem yapmak için sol taraftaki listeden bir öğrenci seçin.<br>(Yıllık Tablo İçin Çift Tıklayın)
+                </div>
+
+                <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 10px;">
+                        <h3 id="lbl_secili_ogrenci" style="margin: 0; color: var(--fg-main);">Öğrenci Adı (No)</h3>
+                        <div id="lbl_ozet" style="font-weight: bold; font-size: 12px; color: var(--fg-sub);">Özürsüz: 0 Gün | Özürlü: 0 Gün</div>
+                    </div>
+                    
+                    <div class="paned-icerik">
+                        
+                        <div class="takvim-card">
+                            <div class="takvim-nav">
+                                <button class="btn btn-temizle" onclick="ayDegistir(-1)">&lt; Önceki Ay</button>
+                                <span id="lbl_ay_yil" style="font-weight: bold; font-size: 13px; color: var(--fg-main);">Ocak 2026</span>
+                                <button class="btn btn-temizle" onclick="ayDegistir(1)">Sonraki Ay &gt;</button>
+                            </div>
+                            
+                            <div class="gunler-grid">
+                                <div class="gun-baslik">Pzt</div><div class="gun-baslik">Sal</div>
+                                <div class="gun-baslik">Çar</div><div class="gun-baslik">Per</div><div class="gun-baslik">Cum</div>
+                            </div>
+                            <div class="gunler-grid" id="takvim_grid">
+                                </div>
+                            
+                            <div style="border: 1px solid var(--border); padding: 10px; border-radius: 4px; margin-top: auto;">
+                                <div style="text-align: center; font-size: 10px; font-weight: bold; color: var(--fg-sub); margin-bottom: 8px;">Hızlı Seçim</div>
+                                <div style="display: flex; justify-content: center; gap: 5px; margin-bottom: 8px;">
+                                    <button class="btn btn-ayarlar" style="font-size: 9px; padding: 4px 8px;" onclick="topluSecim('bu_ay')">Bu Ay</button>
+                                    <button class="btn btn-ayarlar" style="font-size: 9px; padding: 4px 8px;" onclick="topluSecim('son_iki_ay')">Son İki Ay</button>
+                                    <button class="btn btn-ogr" style="font-size: 9px; padding: 4px 8px;" onclick="topluSecim('tumu')">Tümünü Seç</button>
+                                </div>
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 9px;">
+                                    Baş: <input type="date" id="t_bas" style="font-size: 9px; padding: 2px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                                    Bit: <input type="date" id="t_bit" style="font-size: 9px; padding: 2px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                                    <button class="btn btn-rapor" style="background-color: #4338CA; font-size: 9px; padding: 4px 8px;" onclick="topluSecim('aralik')">Getir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="onizleme-card">
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px;">
+                                <span style="color: var(--fg-main); font-size: 12px;">PDF Önizleme</span>
+                                <span id="lbl_onizleme_toplam" style="color: #DC2626; font-size: 12px;">Toplam: 0 Gün</span>
+                            </div>
+                            
+                            <div class="tree-card" style="margin-bottom: 10px;">
+                                <table id="tree_detay" style="width: 100%;">
+                                    <thead><tr><th>Tarih</th><th>Tür</th><th>Süre</th></tr></thead>
+                                    <tbody id="tree_detay_govde"></tbody>
+                                </table>
+                            </div>
+                            
+                            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                                <button class="btn btn-kirmizi" style="flex: 1;" onclick="onizlemeCikar()">⬅ Çıkar</button>
+                                <button class="btn btn-ayarlar" style="flex: 1;" onclick="onizlemeTemizle()">Tümünü Temizle</button>
+                            </div>
+                            
+                            <button class="btn btn-rapor" style="background-color: #EA580C; padding: 12px; font-size: 12px;" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="sekme_teblig" class="tab-content">
+        
+        <div class="top-bar">
+            <h2 class="top-bar-title">YAZI TEBLİĞİ VE PERSONEL YÖNETİMİ</h2>
+            <div class="top-bar-buttons">
+                <input type="file" id="f-meb" style="display: none;" accept=".pdf" onchange="mebPdfYukle(event)">
+                <button class="btn btn-kirmizi" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
+                <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Personel Listesini Yenile</button>
+            </div>
+        </div>
+
+        <div class="filtre-card" style="display: flex; gap: 15px; margin-bottom: 10px;">
+            <div style="flex: 1;"><span class="arama-label">Evrak Sayısı:</span><input type="text" id="t-sayi" class="arama-entry" style="width: 100%; margin-top:3px;"></div>
+            <div style="flex: 2;"><span class="arama-label">Konu:</span><input type="text" id="t-konu" class="arama-entry" style="width: 100%; margin-top:3px;"></div>
+            <div style="flex: 1;"><span class="arama-label">Tarih:</span><input type="text" id="t-tarih" class="arama-entry" style="width: 100%; margin-top:3px;"></div>
+        </div>
+
+        <div class="paned-window">
+            <div class="sol-panel" style="width: 65%;">
+                <div class="tree-card">
+                    <table id="tree_personel">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%; text-align: center;">Seç</th>
+                                <th style="width: 30%;">Görev / Branş</th>
+                                <th style="width: 60%;">Ad Soyad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personel-govde">
+                            <tr><td colspan="3" style="text-align: center;">Personel listesi bekleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-rapor" style="margin-top: 8px; padding: 12px;" onclick="topluTebligPdfAl()">📑 Seçili Personeller İçin Toplu İmza Sirküsü Çıkar</button>
+            </div>
+
+            <div class="sag-panel" style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                <h3 style="color: var(--tree-sel); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 5px;">✉️ Bireysel Tebliğ</h3>
+                
+                <div>
+                    <span class="arama-label">Tebliğ Eden (İdareci):</span><br>
+                    <select id="b-eden" class="arama-entry" style="width: 100%; padding: 6px; margin-top: 5px;"></select>
+                </div>
+                
+                <div>
+                    <span class="arama-label">Tebellüğ Eden (Personel):</span><br>
+                    <select id="b-edilen" class="arama-entry" style="width: 100%; padding: 6px; margin-top: 5px;"></select>
+                </div>
+                
+                <div>
+                    <span class="arama-label">Tebliğ Yeri:</span><br>
+                    <input type="text" id="b-yer" class="arama-entry" value="Okul Müdürlüğü" style="width: 100%; padding: 6px; margin-top: 5px;">
+                </div>
+                
+                <button class="btn btn-yardim" style="margin-top: auto; padding: 12px;" onclick="bireyselTebligPdfAl()">✉️ Bireysel Çıktı Al</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sekme_ayarlar" class="tab-content">
+        <div class="top-bar">
+            <h2 class="top-bar-title">SİSTEM AYARLARI VE VERİTABANI YÖNETİMİ</h2>
+        </div>
+        
+        <div style="display: flex; gap: 20px;">
+            <div class="filtre-card" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px;">
+                <h3 style="color: var(--tree-sel); margin-top: 0;">⚙️ Klasör Ayarları</h3>
+                <div style="width: 100%; margin-bottom: 10px;">
+                    <span class="arama-label">PDF Kayıt Klasörü:</span><br>
+                    <input type="text" id="ayar-pdf" class="arama-entry" style="width: 100%; padding: 8px; margin-top: 5px; font-size:12px;">
+                </div>
+                <div style="width: 100%; margin-bottom: 10px;">
+                    <span class="arama-label">Yedekleme Klasörü:</span><br>
+                    <input type="text" id="ayar-yedek" class="arama-entry" style="width: 100%; padding: 8px; margin-top: 5px; font-size:12px;">
+                </div>
+                <button class="btn btn-dev" style="padding: 12px; margin-top: 10px; width: 100%; font-size:12px;" onclick="ayarlariKaydet()">💾 Ayarları Kaydet</button>
+            </div>
+            
+            <div class="filtre-card" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px;">
+                <h3 style="color: var(--tree-sel); margin-top: 0;">📦 Veritabanı ve Güvenlik</h3>
+                <p style="font-size: 11px; color: var(--fg-sub);">Tüm verilerinizi (Öğrenciler, Devamsızlıklar, Personeller) çökme riskine karşı güvenle yedekleyebilirsiniz.</p>
+                <button class="btn btn-ogr" style="padding: 12px; width: 100%; font-size: 13px;" onclick="sistemYedekle()">📦 Hemen Yedek Al</button>
+                
+                <hr style="border-color: var(--border); width: 100%; margin: 25px 0;">
+                
+                <h3 style="color: #EF4444; margin-top: 0;">⚠️ Tehlikeli İşlemler</h3>
+                <p style="font-size: 11px; color: var(--fg-sub);">Dönem sonlarında (Eğitim yılı bittiğinde) sistemi temizlemek için kullanılır. Bu işlem geri alınamaz!</p>
+                <button class="btn btn-kirmizi" style="padding: 12px; width: 100%; font-size: 13px;" onclick="veritabaniniSifirla()">🗑️ Tüm Sistemi Sıfırla (Fabrika Ayarları)</button>
+            </div>
+        </div>
+    </div>
 
     <script>
-        function tabloyuDoldur() {
-            const durumCubugu = document.getElementById('durum-cubugu');
-            const tabloGovdesi = document.getElementById('tablo-govdesi');
-            
-            durumCubugu.innerText = "⏳ Veriler sunucudan çekiliyor...";
+        const API = 'http://127.0.0.1:8000';
+        let ogrenciListesi = [];
 
-            // Python API'ye İstek At
-            fetch('http://127.0.0.1:8000/ogrenciler')
-                .then(cevap => cevap.json())
+        // Tkinter Notebook mantığı
+        function sekmeAc(evt, sekmeId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('aktif'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('aktif'));
+            document.getElementById(sekmeId).classList.add('aktif');
+            evt.currentTarget.classList.add('aktif');
+        }
+
+        // Tkinter filtre_temizle fonksiyonu klonu
+        function filtreTemizle() {
+            document.getElementById('ent_arama').value = "";
+            document.getElementById('combo_arama_sube').value = "Tümü";
+            tabloyuDoldur();
+        }
+
+        // Verileri API'den çekme
+        function verileriYukle() {
+            fetch(`${API}/ogrenciler`).then(res => res.json()).then(veri => {
+                ogrenciListesi = veri.ogrenciler;
+                
+                // Şube Combobox'ını Doldur
+                const combo = document.getElementById('combo_arama_sube');
+                const eskiSecim = combo.value;
+                combo.innerHTML = '<option value="Tümü">Tümü</option>';
+                veri.subeler.forEach(sube => {
+                    combo.innerHTML += `<option value="${sube}">${sube}</option>`;
+                });
+                combo.value = eskiSecim || "Tümü";
+                
+                tabloyuDoldur();
+            });
+        }
+
+        // Tkinter ogrenci_tablosunu_doldur fonksiyonu klonu
+        function tabloyuDoldur() {
+            const arama = document.getElementById('ent_arama').value.toUpperCase();
+            const subeFiltre = document.getElementById('combo_arama_sube').value;
+            const govde = document.getElementById('tree_govde');
+            govde.innerHTML = "";
+
+            ogrenciListesi.forEach(ogr => {
+                // ZIRH 1: Arama ve Sınıf Filtresi
+                if (subeFiltre !== "Tümü" && ogr.sube !== subeFiltre) return;
+                if (arama && !ogr.ad_soyad.toUpperCase().includes(arama) && !ogr.no.includes(arama)) return;
+
+                // 10 günü aşanları kırmızı yap (Tkinter 'kirmizi' tag'i)
+                const ozszStr = ogr.ozursuz >= 10 ? `<span class="text-kirmizi">${ogr.ozursuz} Gün</span>` : `${ogr.ozursuz} Gün`;
+
+                // Treeview insert klonu
+                const tr = document.createElement('tr');
+                tr.onclick = function() {
+                    // Treeview seçim efekti klonu
+                    document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
+                    tr.classList.add('tr-secili');
+                    ogrenciSec(ogr.no, ogr.ad_soyad, ogr.sube);
+                    // ogrenci_tek_tiklandi fonksiyonunu tetikle
+                    console.log("Seçilen:", ogr.no); // 2. aşamada sağ paneli tetikleyeceğiz
+                };
+
+                tr.innerHTML = `
+                    <td>${ogr.sube}</td>
+                    <td>${ogr.no}</td>
+                    <td>${ogr.ad_soyad}</td>
+                    <td>${ozszStr}</td>
+                    <td>${ogr.ozurlu} Gün</td>
+                `;
+                govde.appendChild(tr);
+            });
+        }
+
+        // Excel Yükleme Thread Klonu
+        function dosyaYukle(endpoint, event) {
+            const dosya = event.target.files[0];
+            if (!dosya) return;
+            
+            const formData = new FormData(); 
+            formData.append("dosya", dosya);
+            
+            console.log("Sunucuya gönderiliyor: " + endpoint);
+            
+            fetch(`${API}/${endpoint}`, { 
+                method: 'POST', 
+                body: formData 
+            })
+            .then(res => {
+                if (!res.ok) throw new Error("Sunucu yanıt vermedi: " + res.status);
+                return res.json();
+            })
+            .then(veri => { 
+                console.log("Sunucudan gelen cevap:", veri);
+                if(veri.basarili) {
+                    alert(veri.mesaj);
+                    ogrencileriYukle();
+                } else {
+                    alert("Hata: " + veri.mesaj);
+                }
+                event.target.value = ''; 
+            })
+            .catch(hata => {
+                console.error("KRİTİK HATA:", hata);
+                alert("Bağlantı hatası! Lütfen Python sunucusunun çalışıp çalışmadığını kontrol edin.");
+            });
+        }
+
+        // Program açıldığında (Splash Screen bitişi gibi) listeyi yükle
+        window.onload = verileriYukle;
+
+        // --- YAMA 3: ÖĞRENCİ SEÇİM VE TAKVİM MOTORU ---
+        
+        let seciliOgrenciNo = null;
+
+        // Sol panelde (Yama 1'de onclick="ogrenciSec(..)" yapmıştık) tetiklenecek fonksiyon
+       
+
+        
+        // --- SOL PANELDE TIKLAMA YAKALAMAK İÇİN KÜÇÜK BİR DÜZELTME ---
+        // Daha önce yazdığımız tabloyuDoldur() fonksiyonu içindeki 'tr.onclick' kısmını şununla güncellemen gerek:
+        // tr.onclick = function() {
+        //     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
+        //     tr.classList.add('tr-secili');
+        //     ogrenciSec(ogr.no, ogr.ad_soyad, ogr.sube); // BU SATIR EKLENMELİ!
+        // };
+        
+        function devamsizlikSil(id) {
+            if(!confirm("Bu devamsızlık kaydını silmek istediğinize emin misiniz?")) return;
+            fetch(`${API}/devamsizlik-sil/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(veri => {
+                alert(veri.mesaj);
+                verileriYukle(); // Sol listeyi tazele
+                // Detay ekranını tazele
+                const ad = document.getElementById('lbl_secili_ogrenci').innerText.split(' - ')[1].split(' (')[0];
+                const sube = document.getElementById('lbl_secili_ogrenci').innerText.split('(')[1].replace(')','');
+                ogrenciSec(seciliOgrenciNo, ad, sube);
+            });
+        }
+
+                function veliFormuPdfAl() {
+            if(!seciliOgrenciNo) { alert("Öğrenci seçiniz."); return; }
+            
+            const ad = document.getElementById('lbl_secili_ogrenci').innerText.split(' - ')[1].split(' (')[0];
+            const sube = document.getElementById('lbl_secili_ogrenci').innerText.split('(')[1].replace(')','');
+            
+            // Sağ tablodaki mevcut devamsızlıkları topla
+            const kayitlar = [];
+            document.querySelectorAll('#tree_detay_govde tr').forEach(tr => {
+                const tdler = tr.querySelectorAll('td');
+                if(tdler.length >= 3 && tdler[0].innerText !== "Kayıt bulunamadı.") {
+                    kayitlar.push({
+                        tarih: tdler[0].innerText,
+                        tur: tdler[1].innerText,
+                        gun: tdler[2].innerText
+                    });
+                }
+            });
+
+            const veri = { no: seciliOgrenciNo, ad: ad, sube: sube, kayitlar: kayitlar };
+
+            fetch(`${API}/pdf-veli-formu`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(veri)
+            })
+            .then(res => res.json())
+            .then(sonuc => alert(sonuc.mesaj));
+        }
+
+        // ================= 2. SEKME MOTORLARI (TEBLİĞ) =================
+        let tumPersoneller = [];
+
+        function personelleriYukle() {
+            fetch(`${API}/personeller`)
+                .then(res => res.json())
                 .then(veri => {
-                    // Tablonun içini tamamen temizle
-                    tabloGovdesi.innerHTML = ""; 
+                    tumPersoneller = veri.personeller;
+                    const govde = document.getElementById('personel-govde');
+                    const cbEden = document.getElementById('b-eden'); 
+                    const cbEdilen = document.getElementById('b-edilen');
                     
-                    // Python'dan gelen listedeki her bir öğrenci için döngü çalıştır
-                    veri.ogrenciler.forEach(ogrenci => {
-                        // Yeni bir HTML satırı (tr) oluştur ve içine verileri (td) yerleştir
-                        const satir = `
+                    govde.innerHTML = ""; 
+                    cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>'; 
+                    cbEdilen.innerHTML = '<option value="">-- Personel Seçin --</option>';
+                    
+                    if(tumPersoneller.length === 0) {
+                        govde.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Veritabanında personel bulunamadı.</td></tr>";
+                        return;
+                    }
+
+                    tumPersoneller.forEach((p, index) => {
+                        // Sol Listeyi Doldur (Checkbox ile)
+                        const unvan = p.gorev !== "-" ? p.gorev : p.brans;
+                        govde.innerHTML += `
                             <tr>
-                                <td><b>${ogrenci.no}</b></td>
-                                <td>${ogrenci.ad_soyad}</td>
-                                <td><span style="background-color: #38BB94; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${ogrenci.sube}</span></td>
+                                <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${index}" value="${p.ad}" checked></td>
+                                <td>${unvan}</td>
+                                <td><label for="chk_${index}" style="cursor:pointer;">${p.ad}</label></td>
                             </tr>
                         `;
-                        tabloGovdesi.innerHTML += satir;
+                        // Sağdaki Combobox'ları Doldur
+                        cbEdilen.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
+                        if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) {
+                            cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
+                        }
                     });
-
-                    durumCubugu.innerHTML = `✅ İşlem başarılı. Toplam <b>${veri.ogrenci_sayisi}</b> kayıt listelendi.`;
-                })
-                .catch(hata => {
-                    durumCubugu.innerHTML = "❌ Hata: Python sunucusuna ulaşılamadı. (api.py açık mı?)";
-                    console.error(hata);
                 });
         }
-    </script>
 
+        function mebPdfYukle(event) {
+            const dosya = event.target.files[0];
+            if (!dosya) return;
+            
+            // Kullanıcıya bilgi verelim
+            document.getElementById('t-sayi').value = "PDF Okunuyor...";
+            
+            const formData = new FormData(); formData.append("dosya", dosya);
+            fetch(`${API}/meb-pdf-oku`, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(veri => { 
+                if(veri.basarili) { 
+                    document.getElementById('t-sayi').value = veri.sayi; 
+                    document.getElementById('t-konu').value = veri.konu; 
+                    document.getElementById('t-tarih').value = veri.tarih; 
+                } else {
+                    alert("PDF Okuma Hatası:\n" + veri.mesaj);
+                    document.getElementById('t-sayi').value = "";
+                }
+                event.target.value = ''; 
+            });
+        }
+
+        function bireyselTebligPdfAl() {
+            const eden_ad = document.getElementById('b-eden').value;
+            const edilen_ad = document.getElementById('b-edilen').value;
+            
+            if(!eden_ad || !edilen_ad) { alert("Lütfen tebliğ eden ve edilen kişileri seçin!"); return; }
+            
+            const eden = tumPersoneller.find(p => p.ad === eden_ad);
+            const edilen = tumPersoneller.find(p => p.ad === edilen_ad);
+            
+            const veri = { 
+                sayi: document.getElementById('t-sayi').value, 
+                konu: document.getElementById('t-konu').value, 
+                tarih: document.getElementById('t-tarih').value, 
+                yer: document.getElementById('b-yer').value, 
+                eden: {ad: eden.ad, gorev: eden.gorev !== "-" ? eden.gorev : eden.brans}, 
+                edilen: {ad: edilen.ad, gorev: edilen.gorev !== "-" ? edilen.gorev : edilen.brans} 
+            };
+            
+            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
+            .then(r => r.json()).then(v => alert(v.mesaj));
+        }
+
+        function topluTebligPdfAl() {
+            // Sadece Checkbox'ı işaretli olan personelleri filtrele
+            const seciliAdlar = Array.from(document.querySelectorAll('.chk-personel:checked')).map(cb => cb.value);
+            if(seciliAdlar.length === 0) { alert("Lütfen listeden en az bir personel seçin!"); return; }
+            
+            const seciliPersoneller = tumPersoneller.filter(p => seciliAdlar.includes(p.ad));
+            
+            const veri = { 
+                sayi: document.getElementById('t-sayi').value, 
+                konu: document.getElementById('t-konu').value, 
+                tarih: document.getElementById('t-tarih').value, 
+                personeller: seciliPersoneller 
+            };
+            
+            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
+            .then(r => r.json()).then(v => alert(v.mesaj));
+        }
+
+        // Sekme Değiştirildiğinde Personelleri Otomatik Yüklemesi İçin (Mevcut sekmeAc fonksiyonunu güncelliyoruz)
+        const eskiSekmeAc = sekmeAc; // Eski fonksiyonu yedekle
+        sekmeAc = function(evt, sekmeId) {
+            eskiSekmeAc(evt, sekmeId); // Sekmeyi aç
+            if(sekmeId === 'sekme_teblig') personelleriYukle(); // Tebliğ sekmesine tıklandıysa personeli yükle
+        };
+
+        // ================= 3. SEKME MOTORLARI (AYARLAR VE YEDEKLEME) =================
+        let sistemAyarlari = {};
+        
+        function ayarlariYukle() {
+            fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
+                sistemAyarlari = v.ayarlar;
+                document.getElementById('ayar-pdf').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;
+                document.getElementById('ayar-yedek').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
+            });
+        }
+
+        function ayarlariKaydet() {
+            sistemAyarlari.pdf_kayit_klasoru = document.getElementById('ayar-pdf').value;
+            sistemAyarlari.yedek_kayit_klasoru = document.getElementById('ayar-yedek').value;
+            
+            fetch(`${API}/ayarlar-kaydet`, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(sistemAyarlari) 
+            }).then(r => r.json()).then(v => alert(v.mesaj));
+        }
+
+        function sistemYedekle() {
+            fetch(`${API}/yedek-al`, { method: 'POST' }).then(r => r.json()).then(v => alert(v.mesaj));
+        }
+
+        function veritabaniniSifirla() {
+            if(confirm("DİKKAT! Tüm öğrenciler, devamsızlıklar ve personeller SİLİNECEK.\nVeritabanı sıfırlanacak. Emin misiniz?")) {
+                if(confirm("Bu işlem KESİNLİKLE GERİ ALINAMAZ! Onaylıyor musunuz?")) {
+                    fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { 
+                        alert(v.mesaj); 
+                        location.reload(); // Programı yeniden başlat (sayfayı yenile)
+                    });
+                }
+            }
+        }
+
+        // Sekme açıldığında Ayarları Otomatik Yükleme (Mevcut sekmeAc motorunu son kez güncelliyoruz)
+        // Eğer önceki adımlarda "eskiSekmeAc" tanımladıysan onu silip, şu son versiyonu kullanabilirsin:
+        const nihaiSekmeAc = sekmeAc; 
+        sekmeAc = function(evt, sekmeId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('aktif'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('aktif'));
+            document.getElementById(sekmeId).classList.add('aktif');
+            if(evt) evt.currentTarget.classList.add('aktif');
+            
+            // Sekmelere tıklandıkça ilgili verileri yükle
+            if(sekmeId === 'sekme_izin') verileriYukle();
+            if(sekmeId === 'sekme_teblig') personelleriYukle();
+            if(sekmeId === 'sekme_ayarlar') ayarlariYukle();
+        };
+
+        // ================= 4. EKSTRA ARAÇLAR (RAPOR, TEMA, YARDIM) =================
+
+        // 1. Gündüz/Gece Modu Motoru (Tkinter'da yapılamayan o sihirli geçiş)
+        let karanlikMod = true;
+        function temaDegistir() {
+            const root = document.documentElement; // En üst CSS kökünü seç
+            const btnTema = document.getElementById('btn-tema');
+            
+            if (karanlikMod) {
+                // Gündüz Modu Renkleri
+                root.style.setProperty('--bg-main', '#F1F5F9');  // Açık Gri Arka Plan
+                root.style.setProperty('--bg-card', '#FFFFFF');  // Beyaz Kartlar
+                root.style.setProperty('--fg-main', '#0F172A');  // Siyah/Koyu Lacivert Yazı
+                root.style.setProperty('--fg-sub', '#475569');   // Gri Alt Metinler
+                root.style.setProperty('--border', '#CBD5E1');   // Açık Gri Çizgiler
+                btnTema.innerText = '🌙 Gece Modu';
+                karanlikMod = false;
+            } else {
+                // Gece Modu Renkleri (Orijinal Sabitler.py Teması)
+                root.style.setProperty('--bg-main', '#0F172A');
+                root.style.setProperty('--bg-card', '#1E293B');
+                root.style.setProperty('--fg-main', '#F8FAFC');
+                root.style.setProperty('--fg-sub', '#94A3B8');
+                root.style.setProperty('--border', '#334155');
+                btnTema.innerText = '☀️ Gündüz Modu';
+                karanlikMod = true;
+            }
+        }
+
+        // 2. Raporlar Motoru (Anlık Sistem Analizi)
+        function raporlariGoster() {
+            if(ogrenciListesi.length === 0) {
+                alert("Sistemde analiz edilecek öğrenci bulunmamaktadır.");
+                return;
+            }
+            
+            // Javascript ile anında istatistik hesaplama (Backend'i yormadan)
+            const toplamOgrenci = ogrenciListesi.length;
+            const devamsizlikSiniriniAsanlar = ogrenciListesi.filter(o => o.ozursuz >= 10).length;
+            const guvenliBolge = toplamOgrenci - devamsizlikSiniriniAsanlar;
+            
+            // Gelecekte PDF raporlarına bağlanacak olan önizleme paneli
+            alert(`📊 SİSTEM GENEL DURUM RAPORU\n\n` +
+                  `Toplam Kayıtlı Öğrenci: ${toplamOgrenci}\n` +
+                  `Devamsızlık Sınırını Aşanlar (10+ Gün): ${devamsizlikSiniriniAsanlar} Öğrenci\n` +
+                  `Güvenli Bölgede Olanlar: ${guvenliBolge} Öğrenci\n\n` +
+                  `* İlerleyen güncellemelerde bu veriler Excel olarak da dışa aktarılabilecektir.`);
+        }
+
+        // 3. Yardım ve Hakkında Modülü
+        function yardimGoster() {
+            alert(`❓ OTO-YOKLAMA YARDIM MENÜSÜ\n\n` +
+                  `• Öğrenci/Devamsızlık Yükle: E-Okul'dan aldığınız listeleri sisteme aktarır.\n` +
+                  `• Öğrenci Detay: Sol listeden öğrenciye tıkladığınızda geçmişini görüntüler.\n` +
+                  `• Manuel Kayıt: Sağ alt panelden geriye dönük (D, İ, G) girişi yapabilirsiniz.\n` +
+                  `• Tebliğ Sekmesi: MEB'den gelen yazıları otomatik okuyup sirkü çıkarır.\n\n` +
+                  `Sistem Başarıyla Yeni Web Mimarisine (FastAPI + JS) Taşınmıştır. ✅`);
+        }
+
+        /* --- YENİ BİREBİR TKINTER TAKVİM STİLLERİ --- */
+        .paned-icerik { display: flex; flex: 1; gap: 15px; overflow: hidden; height: 100%; }
+        .takvim-card { flex: 1.1; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 10px; border-radius: 4px; }
+        .onizleme-card { flex: 0.9; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 10px; border-radius: 4px; }
+        
+        .takvim-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .gunler-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; flex: 1; align-content: start; }
+        .gun-baslik { text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px; }
+        
+        .gun-hucre { background-color: #334155; border: 1px solid var(--border); border-radius: 2px; padding: 4px; height: 35px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none; }
+        .gun-hucre:hover { filter: brightness(1.2); }
+        .gun-hucre.bos { visibility: hidden; }
+        
+        .gun-no { font-size: 10px; font-weight: bold; color: var(--fg-main); }
+        .gun-bilgi { font-size: 10px; font-weight: bold; text-align: center; }
+        
+        /* Renkler (Tkinter Birebir) */
+        .bg-D { background-color: #FEE2E2 !important; } .fg-D { color: #991B1B !important; } /* Özürsüz */
+        .bg-I { background-color: #DBEAFE !important; } .fg-I { color: #1E40AF !important; } /* Özürlü */
+        .bg-G { background-color: #FEF3C7 !important; } .fg-G { color: #92400E !important; } /* Geç */
+        
+        .dark-mode .bg-D { background-color: #7F1D1D !important; } .dark-mode .fg-D { color: #FEF2F2 !important; }
+        .dark-mode .bg-I { background-color: #1E3A8A !important; } .dark-mode .fg-I { color: #DBEAFE !important; }
+        .dark-mode .bg-G { background-color: #78350F !important; } .dark-mode .fg-G { color: #FEF3C7 !important; }
+        
+        /* Seçili Gün Parlaması */
+        .gun-secili { border: 2px solid #10B981 !important; box-shadow: 0 0 5px #10B981; }
+
+        // ================= TAKVİM VE ÖNİZLEME MOTORLARI (BİREBİR TKINTER KLONU) =================
+        let seciliOgrenci = null;
+        let seciliDevamsizliklar = []; // API'den gelen kalıcı kayıtlar
+        let geciciDevamsizliklar = []; // Tıklayarak (Manuel) eklenen kayıtlar
+        let calYear = new Date().getFullYear();
+        let calMonth = new Date().getMonth(); // 0 = Ocak, 11 = Aralık
+        let aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+
+        function ogrenciSec(no, ad) {
+            seciliOgrenci = { no: no, ad: ad };
+            document.getElementById('sag_bos_uyari').style.display = 'none';
+            document.getElementById('sag_dolu_icerik').style.display = 'flex';
+            document.getElementById('lbl_secili_ogrenci').innerText = `${ad} (${no})`;
+
+            // Sol listeden özürsüz/özürlü gün sayısını çekip başlığa yaz
+            const satir = Array.from(document.querySelectorAll('#tree_govde tr')).find(tr => tr.innerText.includes(no));
+            if(satir) {
+                const tdler = satir.querySelectorAll('td');
+                const ozsz = parseFloat(tdler[3].innerText);
+                document.getElementById('lbl_ozet').innerText = `Özürsüz: ${tdler[3].innerText} | Özürlü: ${tdler[4].innerText}`;
+                document.getElementById('lbl_ozet').style.color = ozsz >= 10 ? '#DC2626' : 'var(--fg-sub)';
+            }
+
+            // Backend'den kayıtları çek
+            fetch(`${API}/ogrenci-detay/${no}`).then(res => res.json()).then(veri => {
+                // Her kayda 'secili: false' özelliğini (Zırhını) ekleyip RAM'e al
+                seciliDevamsizliklar = veri.devamsizliklar.map(d => ({...d, secili: false}));
+                geciciDevamsizliklar = [];
+                takvimiCiz();
+                onizlemeGuncelle();
+            });
+        }
+
+        function ayDegistir(artis) {
+            calMonth += artis;
+            if (calMonth > 11) { calMonth = 0; calYear++; }
+            else if (calMonth < 0) { calMonth = 11; calYear--; }
+            takvimiCiz();
+        }
+
+        // Tkinter'daki calendar.monthcalendar klonu (Sadece Hafta İçi)
+        function takvimiCiz() {
+            document.getElementById('lbl_ay_yil').innerText = `${aylar[calMonth]} ${calYear}`;
+            const grid = document.getElementById('takvim_grid');
+            grid.innerHTML = "";
+
+            const ilkGun = new Date(calYear, calMonth, 1);
+            const sonGun = new Date(calYear, calMonth + 1, 0).getDate();
+            
+            // Ayın 1'ine kadar olan boşlukları doldur
+            let bosGunSayisi = ilkGun.getDay() === 0 ? 6 : ilkGun.getDay() - 1; // Pzt(0) -> Paz(6)
+            for(let i = 0; i < bosGunSayisi; i++) {
+                if (i < 5) grid.innerHTML += `<div class="gun-hucre bos"></div>`; // Sadece Pzt-Cum boşlukları
+            }
+
+            // Tüm devamsızlıkları tek bir sepette topla
+            const tumKayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar];
+
+            for(let i = 1; i <= sonGun; i++) {
+                let d = new Date(calYear, calMonth, i);
+                let haftaninGunu = d.getDay(); // 0=Paz, 1=Pzt ... 6=Cts
+                
+                // Cumartesi(6) ve Pazar(0) günlerini takvime ÇİZME (Tkinter birebir klonu)
+                if (haftaninGunu === 0 || haftaninGunu === 6) continue;
+                
+                let tarihStr = `${i.toString().padStart(2, '0')}/${(calMonth+1).toString().padStart(2, '0')}/${calYear}`;
+                
+                // Bu tarihte kayıt var mı?
+                let kayit = tumKayitlar.find(k => k.tarih === tarihStr);
+                
+                let seciliClass = (kayit && kayit.secili) ? 'gun-secili' : '';
+                let bgClass = '', fgClass = '', icerik = '';
+                
+                if (kayit) {
+                    let tur = kayit.tur.toUpperCase();
+                    if(tur === 'D' || tur === 'ÖY' || tur === 'SY') { bgClass = 'bg-D'; fgClass = 'fg-D'; }
+                    else if(tur === 'İ' || tur === 'I') { bgClass = 'bg-I'; fgClass = 'fg-I'; }
+                    else if(tur === 'G') { bgClass = 'bg-G'; fgClass = 'fg-G'; }
+                    icerik = `<div class="gun-bilgi ${fgClass}">${kayit.gun} ${tur}</div>`;
+                }
+
+                // JS Event Listener Zırhı (Geçici ise sağ tıkla sil, kalıcı ise tıkla önizlemeye at)
+                let onclick = `onclick="hucreTikla('${tarihStr}')"`;
+                let oncontext = `oncontextmenu="hucreSagTikla(event, '${tarihStr}')"`;
+
+                grid.innerHTML += `
+                    <div class="gun-hucre ${bgClass} ${seciliClass}" ${onclick} ${oncontext}>
+                        <div class="gun-no ${fgClass}">${i}</div>
+                        ${icerik}
+                    </div>
+                `;
+            }
+        }
+
+        // Tkinter'daki "gecici_devamsizlik_dongu" klonu
+        function hucreTikla(tarihStr) {
+            if (karanlikMod) document.body.classList.add('dark-mode');
+            
+            // Önce kalıcı kayıtlarda var mı diye bak
+            let kalici = seciliDevamsizliklar.find(d => d.tarih === tarihStr);
+            if (kalici) {
+                kalici.secili = !kalici.secili; // Önizlemeye Ekle/Çıkar
+                takvimiCiz();
+                onizlemeGuncelle();
+                return;
+            }
+
+            // Yoksa geçici (Tıklayarak oluşturulan) kayıtlara bak
+            let gecici = geciciDevamsizliklar.find(d => d.tarih === tarihStr);
+            if (!gecici) {
+                geciciDevamsizliklar.push({id: 'temp_'+Date.now(), tarih: tarihStr, tur: 'D', gun: '1', secili: true});
+            } else {
+                if(gecici.tur === 'D') { gecici.tur = 'SY'; gecici.gun = '0.5'; }
+                else if(gecici.tur === 'SY') { gecici.tur = 'ÖY'; gecici.gun = '0.5'; }
+                else if(gecici.tur === 'ÖY') { geciciDevamsizliklar = geciciDevamsizliklar.filter(d => d.tarih !== tarihStr); }
+            }
+            takvimiCiz();
+            onizlemeGuncelle();
+        }
+
+        function hucreSagTikla(e, tarihStr) {
+            e.preventDefault(); // Tarayıcı menüsünü engelle
+            geciciDevamsizliklar = geciciDevamsizliklar.filter(d => d.tarih !== tarihStr);
+            takvimiCiz();
+            onizlemeGuncelle();
+        }
+
+        // --- ÖNİZLEME MOTORU VE BUTONLARI ---
+        function onizlemeGuncelle() {
+            const govde = document.getElementById('tree_detay_govde');
+            govde.innerHTML = "";
+            let toplamGun = 0.0;
+
+            const tumKayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar];
+            // Sadece seçili olanları filtrele ve tarihe göre tersten sırala (En yeni en üstte)
+            const gosterilecek = tumKayitlar.filter(d => d.secili).sort((a,b) => {
+                let pa = a.tarih.split('/').reverse().join('');
+                let pb = b.tarih.split('/').reverse().join('');
+                return pb.localeCompare(pa);
+            });
+
+            gosterilecek.forEach(d => {
+                toplamGun += parseFloat(d.gun) || 0;
+                let ckbId = 'chk_' + d.id;
+                // Satırın tamamına tıklanabilir Checkbox (Çıkarılmak için)
+                govde.innerHTML += `
+                    <tr>
+                        <td><input type="checkbox" class="onizleme-chk" value="${d.id}" checked> ${d.tarih}</td>
+                        <td><b>${d.tur}</b></td>
+                        <td>${d.gun}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('lbl_onizleme_toplam').innerText = `Toplam: ${toplamGun} Gün`;
+        }
+
+        // Tkinter "detay_onizleme_cikar" klonu
+        function onizlemeCikar() {
+            const isaretliler = Array.from(document.querySelectorAll('.onizleme-chk:not(:checked)')).map(c => c.value);
+            
+            seciliDevamsizliklar.forEach(d => { if(isaretliler.includes(d.id.toString())) d.secili = false; });
+            geciciDevamsizliklar = geciciDevamsizliklar.filter(d => !isaretliler.includes(d.id.toString()));
+            
+            takvimiCiz();
+            onizlemeGuncelle();
+        }
+
+        // Tkinter "detay_onizleme_temizle" klonu
+        function onizlemeTemizle() {
+            seciliDevamsizliklar.forEach(d => d.secili = false);
+            geciciDevamsizliklar = [];
+            takvimiCiz();
+            onizlemeGuncelle();
+        }
+
+        // Tkinter Hızlı Seçim (Bu ay, Tümünü Seç vs.) klonu
+        function topluSecim(mod) {
+            if(!seciliOgrenci) return;
+            
+            seciliDevamsizliklar.forEach(d => d.secili = false);
+            
+            if(mod === 'tumu') {
+                seciliDevamsizliklar.forEach(d => d.secili = true);
+            } 
+            else if(mod === 'bu_ay') {
+                let strAy = (calMonth+1).toString().padStart(2, '0');
+                let strYil = calYear.toString();
+                seciliDevamsizliklar.forEach(d => {
+                    if(d.tarih.includes(`/${strAy}/${strYil}`)) d.secili = true;
+                });
+            }
+            else if(mod === 'son_iki_ay') {
+                let strAy1 = (calMonth+1).toString().padStart(2, '0');
+                let strYil1 = calYear.toString();
+                let prevMonth = calMonth === 0 ? 11 : calMonth - 1;
+                let prevYear = calMonth === 0 ? calYear - 1 : calYear;
+                let strAy2 = (prevMonth+1).toString().padStart(2, '0');
+                let strYil2 = prevYear.toString();
+                
+                seciliDevamsizliklar.forEach(d => {
+                    if(d.tarih.includes(`/${strAy1}/${strYil1}`) || d.tarih.includes(`/${strAy2}/${strYil2}`)) d.secili = true;
+                });
+            }
+            
+            takvimiCiz();
+            onizlemeGuncelle();
+        }
+
+        // PDF Çıkarma Zırhı
+        function pdfCiktisiAl() {
+            if(!seciliOgrenci) return;
+            
+            const kayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili);
+            if(kayitlar.length === 0) { alert("Önizleme listesinde yazdırılacak kayıt yok!"); return; }
+            
+            // Geçici (Manuel) eklenenleri önce API üzerinden veritabanına kaydetmemiz gerek
+            const geciciler = kayitlar.filter(d => d.id.startsWith('temp_'));
+            
+            if(geciciler.length > 0) {
+                // Asenkron işlem uyarısı
+                alert("Manuel girdiğiniz kayıtlar veritabanına işleniyor, ardından PDF oluşturulacaktır.");
+                
+                // Backend'deki "devamsizlik-manuel-ekle" API'sine sırayla at
+                Promise.all(geciciler.map(g => {
+                    return fetch(`${API}/devamsizlik-manuel-ekle`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ no: seciliOgrenci.no, tarih: g.tarih, tur: g.tur, gun: g.gun })
+                    });
+                })).then(() => {
+                    // Veritabanına kaydoldu, şimdi PDF isteğini at
+                    gercekPdfIstegiAt(kayitlar);
+                    verileriYukle(); // Listeyi tazele ki 10 gün sınırını vs. güncellesin
+                });
+            } else {
+                gercekPdfIstegiAt(kayitlar);
+            }
+        }
+
+        function gercekPdfIstegiAt(kayitlar) {
+            const ad = document.getElementById('lbl_secili_ogrenci').innerText.split(' - ')[1]?.split(' (')[0] || seciliOgrenci.ad;
+            const sube = document.querySelector('.tr-secili td')?.innerText || "Bilinmiyor";
+
+            const veri = { no: seciliOgrenci.no, ad: ad, sube: sube, kayitlar: kayitlar };
+
+            fetch(`${API}/pdf-veli-formu`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(veri)
+            })
+            .then(res => res.json())
+            .then(sonuc => {
+                alert(sonuc.mesaj);
+                // İşlem bitince takvimi temizle
+                geciciDevamsizliklar = [];
+                seciliDevamsizliklar.forEach(d => d.secili = false);
+                takvimiCiz();
+                onizlemeGuncelle();
+            });
+        }
+    </script>
 </body>
 </html>
