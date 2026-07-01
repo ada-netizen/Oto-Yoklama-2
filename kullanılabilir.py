@@ -56,12 +56,6 @@ MEB_LOGO_KLASORU = YOLLAR["MEB_LOGO"]
 OKUL_LOGO_KLASORU = YOLLAR["OKUL_LOGO"]
 GUVENLI_KLASOR = YOLLAR["ANA"]
 
-try: PROGRAM_KLASORU = os.path.dirname(os.path.abspath(__file__))
-except: PROGRAM_KLASORU = os.getcwd()
-
-# UI Font Ayarı
-UI_FONT = "Segoe UI"
-
 # --- LOGLAMA VE HATA YAKALAMA SİSTEMİ ---
 LOG_DOSYASI = YOLLAR.get("LOG", os.path.join(GUVENLI_KLASOR, "sistem_hatalari.log"))
 
@@ -898,6 +892,149 @@ class YoklamaUygulamasi(AltPencerelerMixin):
 
         self.bireysel_teblig_isimleri_guncelle()
         self.dinamik_filtreleri_guncelle()
+
+    # --- YAZI TEBLİĞİ PDF OKUMA MOTORU ---
+    def pdf_yukle_motoru(self):
+        dosya_yolu = filedialog.askopenfilename(title="MEB Resmi Yazısını (PDF) Seçin", filetypes=[("PDF Dosyaları", "*.pdf")])
+        if not dosya_yolu: return
+
+        try:
+            import PyPDF2
+            import re
+
+            with open(dosya_yolu, "rb") as file:
+                reader = PyPDF2.PdfReader(file)
+                # DYS yazılarında ana bilgiler her zaman ilk sayfadadır
+                ilk_sayfa = reader.pages[0].extract_text()
+
+            # 1. TARİH DEDEKTİFİ (Örn: 29.06.2026 formatını arar)
+            tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
+            tarih = tarih_match.group(0) if tarih_match else ""
+
+            # 2. SAYI DEDEKTİFİ (Örn: E-84692172-918.99-163211388 formatını arar)
+            sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
+            if not sayi_match:
+                # DYS dışı eski formatlar için alternatif arama
+                sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
+            sayi = sayi_match.group(1) if sayi_match else ""
+
+            # 3. KONU DEDEKTİFİ (DYS'nin karmaşık yapısına uygun)
+            konu = ""
+            # "Konu :" veya alt satırına geçmiş metinleri "İlgi", "T.C." veya "DAĞITIM" kelimelerine kadar tarar
+            konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
+            
+            if konu_match:
+                # Bulunan metindeki yeni satırları ve gereksiz boşlukları temizle
+                konu_ham = konu_match.group(1).strip()
+                konu = " ".join(konu_ham.split())
+                # Eğer "Sayı" ile ilgili bir veri karışmışsa (Örn: ": E-123... Çalışanların...") onu filtrele
+                if sayi and sayi in konu:
+                    konu = konu.replace(sayi, "").replace(":", "").strip()
+
+            # 4. BİLGİLERİ KUTULARA YERLEŞTİRME
+            self.ent_teblig_sayi.delete(0, tk.END)
+            self.ent_teblig_sayi.insert(0, sayi)
+            
+            self.ent_teblig_konu.delete(0, tk.END)
+            # Konu çok uzunsa ilk kısmını alıp gerisini düzeltmesi için öğretmene bırakırız
+            self.ent_teblig_konu.insert(0, konu if len(konu) < 80 else konu[:80] + "...") 
+            
+            self.ent_teblig_tarih.delete(0, tk.END)
+            self.ent_teblig_tarih.insert(0, tarih)
+            
+            self.bildirim_goster("PDF başarıyla analiz edildi.", "bilgi")
+
+        except ImportError:
+            self.bildirim_goster("PyPDF2 kütüphanesi eksik! Terminale 'pip install PyPDF2' yazıp Enter'a basın.", "hata")
+        except Exception as e:
+            self.bildirim_goster(f"PDF analiz edilirken hata oluştu:\n{e}", "hata")
+
+    # --- YENİ NESİL EXCEL TARZI FİLTRE MOTORLARI ---
+    def dinamik_filtreleri_guncelle(self):
+        """Veritabanına yeni bir görev veya branş eklendiğinde filtreleri anında öğrenir ve günceller."""
+        if not hasattr(self, 'personel_listesi'): return
+        
+        # Benzersiz görev ve branşları listele
+        gorevler = sorted(list(set([p.get('gorev', '-') for p in self.personel_listesi if p.get('gorev', '-') != '-'])))
+        branslar = sorted(list(set([p.get('brans', '-') for p in self.personel_listesi if p.get('brans', '-') != '-'])))
+        
+        # Mevcut tikleri hafızada tut, yeni gelenleri varsayılan olarak "Tikli" (True) yap
+        if not hasattr(self, 'filtre_gorev_var'): self.filtre_gorev_var = {}
+        if not hasattr(self, 'filtre_brans_var'): self.filtre_brans_var = {}
+        
+        self.filtre_gorev_var = {g: self.filtre_gorev_var.get(g, tk.BooleanVar(value=True)) for g in gorevler}
+        self.filtre_brans_var = {b: self.filtre_brans_var.get(b, tk.BooleanVar(value=True)) for b in branslar}
+        
+        # Görev Menüsünü İnşa Et
+        self.menu_gorev.delete(0, tk.END)
+        self.menu_gorev.add_command(label="🔄 Tümünü Seç / Temizle", command=lambda: self.toplu_secim_yap(self.filtre_gorev_var))
+        self.menu_gorev.add_separator()
+        for g in gorevler:
+            self.menu_gorev.add_checkbutton(label=g, variable=self.filtre_gorev_var[g], command=self.personel_tablosunu_doldur)
+            
+        # Branş Menüsünü İnşa Et
+        self.menu_brans.delete(0, tk.END)
+        self.menu_brans.add_command(label="🔄 Tümünü Seç / Temizle", command=lambda: self.toplu_secim_yap(self.filtre_brans_var))
+        self.menu_brans.add_separator()
+        for b in branslar:
+            self.menu_brans.add_checkbutton(label=b, variable=self.filtre_brans_var[b], command=self.personel_tablosunu_doldur)
+            
+        self.personel_tablosunu_doldur()
+
+    def toplu_secim_yap(self, filtre_sozlugu):
+        """Excel'deki 'Tümünü Seç' kutusu gibi çalışır."""
+        durumlar = [var.get() for var in filtre_sozlugu.values()]
+        yeni_durum = not all(durumlar) # Hepsi tikliyse temizle, değilse hepsini tikle
+        for var in filtre_sozlugu.values():
+            var.set(yeni_durum)
+        self.personel_tablosunu_doldur()
+
+    def personel_tablosunu_doldur(self):
+        """Arama çubuğu ve Checkbox filtrelerini çaprazlayarak tabloyu doldurur."""
+        if not hasattr(self, 'tree_personel') or not hasattr(self, 'personel_listesi'): return
+        self.tree_personel.delete(*self.tree_personel.get_children())
+        
+        arama_metni = self.ent_arama.get().strip().upper() if hasattr(self, 'ent_arama') else ""
+        
+        for p in self.personel_listesi:
+            gorev = p.get('gorev', '-')
+            brans = p.get('brans', '-')
+            ad = p.get('ad', '')
+            
+            # 1. ZIRH: Arama Çubuğu (İsim, Görev veya Branşta harf bile geçse bulur)
+            if arama_metni and (arama_metni not in ad.upper() and arama_metni not in gorev.upper() and arama_metni not in brans.upper()):
+                continue
+                
+            # 2. ZIRH: Excel Tarzı Çoklu Filtreler (Tiki kaldırılmışları atlar)
+            if hasattr(self, 'filtre_gorev_var') and gorev in self.filtre_gorev_var:
+                if not self.filtre_gorev_var[gorev].get(): continue
+            if hasattr(self, 'filtre_brans_var') and brans in self.filtre_brans_var:
+                if not self.filtre_brans_var[brans].get(): continue
+                
+            tag = "secili" if p.get('durum', '[X]') == "[X]" else "haric"
+            
+            # Yeni ve Nizami 4 Sütun (Durum, Görev, Branş, Ad)
+            self.tree_personel.insert("", tk.END, values=(p.get('durum', '[X]'), gorev, brans, ad), tags=(tag,))
+            
+        self.tree_personel.tag_configure('secili', background='#F0FDF4' if not self.is_dark_mode else '#064E3B', foreground='#166534' if not self.is_dark_mode else '#A7F3D0')
+        self.tree_personel.tag_configure('haric', background='#FEF2F2' if not self.is_dark_mode else '#7F1D1D', foreground='#991B1B' if not self.is_dark_mode else '#FECACA')
+
+    def personel_secim_toggle(self, event):
+        item_id = self.tree_personel.identify_row(event.y)
+        col_id = self.tree_personel.identify_column(event.x)
+        
+        if item_id and col_id == '#1': # Sadece Seçim (Durum) sütununa tıklanırsa çalış
+            item = self.tree_personel.item(item_id)
+            vals = list(item['values'])
+            personel_adi = vals[3] # Ad artık 4. sütunda (İndeksi 3)
+            
+            yeni_durum = "[ ]" if vals[0] == "[X]" else "[X]"
+            
+            for p in self.personel_listesi:
+                if p.get('ad') == personel_adi:
+                    p['durum'] = yeni_durum
+                    break
+            self.personel_tablosunu_doldur()
 
     # FİLTRE MOTORLARI (GELİŞMİŞ ZEKASIYLA)
     def gruplari_guncelle(self):
@@ -1907,299 +2044,6 @@ class YoklamaUygulamasi(AltPencerelerMixin):
         self.teblig_onizleme_guncelle()
     
     # --- PERSONEL YÖNETİM PENCERESİ (EKSİKSİZ) ---
-    def personel_yonetim_penceresi_ac(self):
-        win = tk.Toplevel(self.root)
-        win.title("Personel Yönetimi")
-        win.geometry("450x550")
-        win.configure(bg="#0F172A" if self.is_dark_mode else "#F1F5F9")
-        win.grab_set()
-        
-        nb = ttk.Notebook(win)
-        nb.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
-        # ================= EKLE SEKMESİ =================
-        sekme_ekle = tk.Frame(nb, padx=20, pady=20)
-        nb.add(sekme_ekle, text="➕ Personel Ekle")
-        
-        # Dinamik Listeler (Sistem veritabanındaki her benzersiz kaydı bulur)
-        m_gorevler = sorted(list(set([p.get('gorev', '-') for p in self.personel_listesi if p.get('gorev', '-') != '-'])))
-        m_branslar = sorted(list(set([p.get('brans', '-') for p in self.personel_listesi if p.get('brans', '-') != '-'])))
-        m_gruplar = sorted(list(set([p.get('grup', 'Diğer Personel') for p in self.personel_listesi])))
-        if "Öğretmenler" in m_gruplar: m_gruplar.remove("Öğretmenler")
-        if "İdare" in m_gruplar: m_gruplar.remove("İdare")
-        m_gruplar = ["İdare", "Öğretmenler"] + m_gruplar # Resmi hiyerarşiyi koru
-        
-        tk.Label(sekme_ekle, text="Ad Soyad:", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
-        ent_ad = tk.Entry(sekme_ekle, font=(UI_FONT, 11), relief="solid", bd=1); ent_ad.pack(fill=tk.X, ipady=4, pady=(0, 10))
-        
-        # DİKKAT: State ayarları "normal". Listeden seçebilir VEYA yeni bir şey yazabilirsin!
-        tk.Label(sekme_ekle, text="Görevi (Seç VEYA Yeni Yaz):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
-        combo_gorev = ttk.Combobox(sekme_ekle, values=m_gorevler, font=(UI_FONT, 11)); combo_gorev.pack(fill=tk.X, ipady=4, pady=(0, 10))
-        
-        tk.Label(sekme_ekle, text="Branşı (Seç VEYA Yeni Yaz):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
-        combo_brans = ttk.Combobox(sekme_ekle, values=m_branslar, font=(UI_FONT, 11)); combo_brans.pack(fill=tk.X, ipady=4, pady=(0, 10))
-        
-        tk.Label(sekme_ekle, text="Grubu (Seç VEYA Yeni Yaz):", font=(UI_FONT, 10, "bold")).pack(anchor=tk.W)
-        combo_grup = ttk.Combobox(sekme_ekle, values=m_gruplar, font=(UI_FONT, 11)); combo_grup.pack(fill=tk.X, ipady=4, pady=(0, 10))
-        combo_grup.current(1)
-        
-        def kaydet():
-            ad = ent_ad.get().strip().upper()
-            gorev = combo_gorev.get().strip().upper() or "-"
-            brans = combo_brans.get().strip().upper() or "-"
-            # Yeni bir grup yazılırsa ilk harflerini büyüterek şık bir şekilde (Title Case) kaydet
-            grup_raw = combo_grup.get().strip()
-            grup = grup_raw.title() if grup_raw else "Diğer Personel"
-            
-            if not ad:
-                self.bildirim_goster("Ad Soyad boş bırakılamaz!", "hata"); return
-                
-            self.db.cursor.execute("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", (ad, brans, gorev, grup))
-            self.db.conn.commit()
-            
-            self.personel_listesi.append({'ad': ad, 'brans': brans, 'gorev': gorev, 'grup': grup, 'haric': False})
-            self.gruplari_guncelle()
-            self.grup_degisti_motoru()
-            self.bildirim_goster(f"{ad} eklendi.", "bilgi")
-            
-            # EXCEL SENKRONİZASYON SORUSU
-            if messagebox.askyesno("Excel'e İşlensin Mi?", f"{ad} sisteme eklendi.\nBu kayıt orijinal Excel dosyasına da yazılsın mı?", parent=win):
-                self.excel_personel_guncelle("ekle", ad, brans, gorev)
-                
-            ent_ad.delete(0, tk.END); combo_gorev.set(""); combo_brans.set(""); combo_grup.current(1)
-            liste_guncelle()
-            self.dinamik_filtreleri_guncelle()
-
-        btn_kaydet = tk.Button(sekme_ekle, text="💾 Kaydet ve Öğren", command=kaydet, pady=8)
-        btn_kaydet.pack(fill=tk.X, pady=15)
-        self.style_button(btn_kaydet, "#10B981", "#FFFFFF", "#059669")
-
-        # ================= ÇIKAR SEKMESİ =================
-        sekme_cikar = tk.Frame(nb, padx=15, pady=15)
-        nb.add(sekme_cikar, text="➖ Personel Çıkar")
-        
-        arama_frame = tk.Frame(sekme_cikar)
-        arama_frame.pack(fill=tk.X, pady=(0, 10))
-        tk.Label(arama_frame, text="İsim Ara:", font=(UI_FONT, 10, "bold")).pack(side=tk.LEFT)
-        ent_ara = tk.Entry(arama_frame, font=(UI_FONT, 10), relief="solid", bd=1)
-        ent_ara.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(5,0), ipady=3)
-        
-        list_frame = tk.Frame(sekme_cikar)
-        list_frame.pack(fill=tk.BOTH, expand=True)
-        scrollbar = tk.Scrollbar(list_frame)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        liste_kutu = tk.Listbox(list_frame, font=(UI_FONT, 11), yscrollcommand=scrollbar.set, selectbackground="#EF4444")
-        liste_kutu.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.config(command=liste_kutu.yview)
-        
-        def liste_guncelle(filtre_metni=""):
-            liste_kutu.delete(0, tk.END)
-            for p in sorted(self.personel_listesi, key=lambda x: x['ad']):
-                if filtre_metni.upper() in p['ad'].upper(): liste_kutu.insert(tk.END, p['ad'])
-                    
-        ent_ara.bind("<KeyRelease>", lambda e: liste_guncelle(ent_ara.get()))
-        
-        def sil():
-            secim = liste_kutu.curselection()
-            if not secim: return
-            secili_ad = liste_kutu.get(secim[0])
-            
-            if messagebox.askyesno("Kalıcı Silme", f"{secili_ad} veritabanından kalıcı silinecek. Onaylıyor musunuz?", parent=win):
-                self.db.cursor.execute("DELETE FROM personel WHERE ad_soyad = ?", (secili_ad,))
-                self.db.conn.commit()
-                self.personel_listesi = [p for p in self.personel_listesi if p['ad'] != secili_ad]
-                self.gruplari_guncelle()
-                self.grup_degisti_motoru()
-                liste_guncelle(ent_ara.get())
-                self.bildirim_goster(f"{secili_ad} silindi.", "bilgi")
-                
-                # EXCEL SENKRONİZASYON SORUSU
-                if messagebox.askyesno("Excel'den Silinsin Mi?", f"{secili_ad} programdan silindi.\nBu kayıt orijinal Excel dosyasından da kaldırılsın mı?", parent=win):
-                    self.excel_personel_guncelle("sil", secili_ad)
-                
-        btn_sil = tk.Button(sekme_cikar, text="🗑️ Seçili Personeli Tamamen Sil", command=sil, pady=8)
-        btn_sil.pack(fill=tk.X, pady=15)
-        self.style_button(btn_sil, "#EF4444", "#FFFFFF", "#DC2626")
-        
-        liste_guncelle()
-        self.dinamik_filtreleri_guncelle()
-
-    # --- TEBLİĞ ÇIKTISI OLUŞTURMA MOTORU (GÖREV VE BRANŞ AYRILDI) ---
-    def teblig_ciktisi_al(self):
-        sayi = self.ent_teblig_sayi.get().strip()
-        konu = self.ent_teblig_konu.get().strip()
-        tarih = self.ent_teblig_tarih.get().strip()
-
-        secili_personeller = []
-        for item in self.tree_teblig_onizleme.get_children():
-            degerler = self.tree_teblig_onizleme.item(item, 'values')
-            secili_personeller.append({'gorev': degerler[0], 'brans': degerler[1], 'ad': degerler[2]})
-
-        if not secili_personeller: return
-
-        yol = filedialog.asksaveasfilename(initialfile=f"Teblig_Listesi_{datetime.now().strftime('%d_%m_%Y')}.pdf", defaultextension=".pdf", filetypes=[("PDF", "*.pdf")])
-        if not yol: return
-        win = self.goster_yukleme_penceresi("PDF Hazırlanıyor...")
-        
-        win = self.goster_yukleme_penceresi("Toplu İmza Listesi Hazırlanıyor...")
-        
-        def islem():
-            try:
-                motor = PDFYoneticisi(self.ayarlar)
-                motor.teblig_tebellug_ciz(sayi, konu, tarih, secili_personeller, yol)
-                
-                self.root.after(0, lambda: self.rapor_tamam(win, yol, None, "Toplu imza listesi başarıyla oluşturuldu."))
-            except Exception as e:
-                # ZIRH: e değişkeni silinmeden önce string'e çevrilip lambda içine hapsoluyor
-                err = str(e)
-                self.root.after(0, lambda mesaj=err: self.hata_goster(win, f"PDF Hatası:\n{mesaj}"))
-                
-        import threading
-        threading.Thread(target=islem, daemon=True).start()
-
-    # --- YENİ NESİL EXCEL TARZI FİLTRE MOTORLARI ---
-    def dinamik_filtreleri_guncelle(self):
-        """Veritabanına yeni bir görev veya branş eklendiğinde filtreleri anında öğrenir ve günceller."""
-        if not hasattr(self, 'personel_listesi'): return
-        
-        # Benzersiz görev ve branşları listele
-        gorevler = sorted(list(set([p.get('gorev', '-') for p in self.personel_listesi if p.get('gorev', '-') != '-'])))
-        branslar = sorted(list(set([p.get('brans', '-') for p in self.personel_listesi if p.get('brans', '-') != '-'])))
-        
-        # Mevcut tikleri hafızada tut, yeni gelenleri varsayılan olarak "Tikli" (True) yap
-        if not hasattr(self, 'filtre_gorev_var'): self.filtre_gorev_var = {}
-        if not hasattr(self, 'filtre_brans_var'): self.filtre_brans_var = {}
-        
-        self.filtre_gorev_var = {g: self.filtre_gorev_var.get(g, tk.BooleanVar(value=True)) for g in gorevler}
-        self.filtre_brans_var = {b: self.filtre_brans_var.get(b, tk.BooleanVar(value=True)) for b in branslar}
-        
-        # Görev Menüsünü İnşa Et
-        self.menu_gorev.delete(0, tk.END)
-        self.menu_gorev.add_command(label="🔄 Tümünü Seç / Temizle", command=lambda: self.toplu_secim_yap(self.filtre_gorev_var))
-        self.menu_gorev.add_separator()
-        for g in gorevler:
-            self.menu_gorev.add_checkbutton(label=g, variable=self.filtre_gorev_var[g], command=self.personel_tablosunu_doldur)
-            
-        # Branş Menüsünü İnşa Et
-        self.menu_brans.delete(0, tk.END)
-        self.menu_brans.add_command(label="🔄 Tümünü Seç / Temizle", command=lambda: self.toplu_secim_yap(self.filtre_brans_var))
-        self.menu_brans.add_separator()
-        for b in branslar:
-            self.menu_brans.add_checkbutton(label=b, variable=self.filtre_brans_var[b], command=self.personel_tablosunu_doldur)
-            
-        self.personel_tablosunu_doldur()
-
-    def toplu_secim_yap(self, filtre_sozlugu):
-        """Excel'deki 'Tümünü Seç' kutusu gibi çalışır."""
-        durumlar = [var.get() for var in filtre_sozlugu.values()]
-        yeni_durum = not all(durumlar) # Hepsi tikliyse temizle, değilse hepsini tikle
-        for var in filtre_sozlugu.values():
-            var.set(yeni_durum)
-        self.personel_tablosunu_doldur()
-
-    def personel_tablosunu_doldur(self):
-        """Arama çubuğu ve Checkbox filtrelerini çaprazlayarak tabloyu doldurur."""
-        if not hasattr(self, 'tree_personel') or not hasattr(self, 'personel_listesi'): return
-        self.tree_personel.delete(*self.tree_personel.get_children())
-        
-        arama_metni = self.ent_arama.get().strip().upper() if hasattr(self, 'ent_arama') else ""
-        
-        for p in self.personel_listesi:
-            gorev = p.get('gorev', '-')
-            brans = p.get('brans', '-')
-            ad = p.get('ad', '')
-            
-            # 1. ZIRH: Arama Çubuğu (İsim, Görev veya Branşta harf bile geçse bulur)
-            if arama_metni and (arama_metni not in ad.upper() and arama_metni not in gorev.upper() and arama_metni not in brans.upper()):
-                continue
-                
-            # 2. ZIRH: Excel Tarzı Çoklu Filtreler (Tiki kaldırılmışları atlar)
-            if hasattr(self, 'filtre_gorev_var') and gorev in self.filtre_gorev_var:
-                if not self.filtre_gorev_var[gorev].get(): continue
-            if hasattr(self, 'filtre_brans_var') and brans in self.filtre_brans_var:
-                if not self.filtre_brans_var[brans].get(): continue
-                
-            tag = "secili" if p.get('durum', '[X]') == "[X]" else "haric"
-            
-            # Yeni ve Nizami 4 Sütun (Durum, Görev, Branş, Ad)
-            self.tree_personel.insert("", tk.END, values=(p.get('durum', '[X]'), gorev, brans, ad), tags=(tag,))
-            
-        self.tree_personel.tag_configure('secili', background='#F0FDF4' if not self.is_dark_mode else '#064E3B', foreground='#166534' if not self.is_dark_mode else '#A7F3D0')
-        self.tree_personel.tag_configure('haric', background='#FEF2F2' if not self.is_dark_mode else '#7F1D1D', foreground='#991B1B' if not self.is_dark_mode else '#FECACA')
-
-    def personel_secim_toggle(self, event):
-        item_id = self.tree_personel.identify_row(event.y)
-        col_id = self.tree_personel.identify_column(event.x)
-        
-        if item_id and col_id == '#1': # Sadece Seçim (Durum) sütununa tıklanırsa çalış
-            item = self.tree_personel.item(item_id)
-            vals = list(item['values'])
-            personel_adi = vals[3] # Ad artık 4. sütunda (İndeksi 3)
-            
-            yeni_durum = "[ ]" if vals[0] == "[X]" else "[X]"
-            
-            for p in self.personel_listesi:
-                if p.get('ad') == personel_adi:
-                    p['durum'] = yeni_durum
-                    break
-            self.personel_tablosunu_doldur()
-
-    # --- YAZI TEBLİĞİ PDF OKUMA MOTORU ---
-    def pdf_yukle_motoru(self):
-        dosya_yolu = filedialog.askopenfilename(title="MEB Resmi Yazısını (PDF) Seçin", filetypes=[("PDF Dosyaları", "*.pdf")])
-        if not dosya_yolu: return
-
-        try:
-            import PyPDF2
-            import re
-
-            with open(dosya_yolu, "rb") as file:
-                reader = PyPDF2.PdfReader(file)
-                # DYS yazılarında ana bilgiler her zaman ilk sayfadadır
-                ilk_sayfa = reader.pages[0].extract_text()
-
-            # 1. TARİH DEDEKTİFİ (Örn: 29.06.2026 formatını arar)
-            tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
-            tarih = tarih_match.group(0) if tarih_match else ""
-
-            # 2. SAYI DEDEKTİFİ (Örn: E-84692172-918.99-163211388 formatını arar)
-            sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
-            if not sayi_match:
-                # DYS dışı eski formatlar için alternatif arama
-                sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
-            sayi = sayi_match.group(1) if sayi_match else ""
-
-            # 3. KONU DEDEKTİFİ (DYS'nin karmaşık yapısına uygun)
-            konu = ""
-            # "Konu :" veya alt satırına geçmiş metinleri "İlgi", "T.C." veya "DAĞITIM" kelimelerine kadar tarar
-            konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
-            
-            if konu_match:
-                # Bulunan metindeki yeni satırları ve gereksiz boşlukları temizle
-                konu_ham = konu_match.group(1).strip()
-                konu = " ".join(konu_ham.split())
-                # Eğer "Sayı" ile ilgili bir veri karışmışsa (Örn: ": E-123... Çalışanların...") onu filtrele
-                if sayi and sayi in konu:
-                    konu = konu.replace(sayi, "").replace(":", "").strip()
-
-            # 4. BİLGİLERİ KUTULARA YERLEŞTİRME
-            self.ent_teblig_sayi.delete(0, tk.END)
-            self.ent_teblig_sayi.insert(0, sayi)
-            
-            self.ent_teblig_konu.delete(0, tk.END)
-            # Konu çok uzunsa ilk kısmını alıp gerisini düzeltmesi için öğretmene bırakırız
-            self.ent_teblig_konu.insert(0, konu if len(konu) < 80 else konu[:80] + "...") 
-            
-            self.ent_teblig_tarih.delete(0, tk.END)
-            self.ent_teblig_tarih.insert(0, tarih)
-            
-            self.bildirim_goster("PDF başarıyla analiz edildi.", "bilgi")
-
-        except ImportError:
-            self.bildirim_goster("PyPDF2 kütüphanesi eksik! Terminale 'pip install PyPDF2' yazıp Enter'a basın.", "hata")
-        except Exception as e:
-            self.bildirim_goster(f"PDF analiz edilirken hata oluştu:\n{e}", "hata")
-
     # --- YAZI TEBLİĞİ ÇIKTI ALMA MOTORU ---
     # --- TOPLU İMZA SİRKÜSÜ ÇIKTI MOTORU (GÜVENLİ) ---
     def teblig_ciktisi_al(self):

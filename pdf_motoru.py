@@ -145,57 +145,6 @@ class PDFYoneticisi:
 
         c.save()
         return True, ""
-
-        c.save()
-        return True, ""
-
-    # pdf_motoru.py içinde tablo_basligi_ciz fonksiyonunu bul ve değiştir:
-        def tablo_basligi_ciz(y):
-            c.setFont(self.font_bold, 10)
-            c.setFillColorRGB(0.9, 0.9, 0.9) 
-            c.rect(40, y - 5, genislik - 80, 20, fill=1)
-            c.setFillColorRGB(0, 0, 0)
-            
-            # YENİ HİZALAMALAR (Görev ve Branş Ayrı Ayrı)
-            c.drawString(45, y, "S.N")
-            c.drawString(80, y, self.metin_duzelt("Görevi"))
-            c.drawString(165, y, self.metin_duzelt("Branşı"))
-            c.drawString(255, y, "Ad Soyad")
-            c.drawString(375, y, "Tarih")
-            c.drawString(450, y, self.metin_duzelt("İmza"))
-            
-            c.line(40, y - 5, genislik - 40, y - 5)
-            c.line(40, y + 15, genislik - 40, y + 15)
-            # Dikey çizgiler güncellendi
-            for x in [40, 75, 160, 250, 370, 440, genislik - 40]:
-                c.line(x, y - 5, x, y + 15)
-            return y - 20
-
-        y_pos = tablo_basligi_ciz(y_pos)
-        
-        # ... Altındaki Döngüyü de şu şekilde güncelle:
-        c.setFont(self.font, 10)
-        satir_yuksekligi = 25
-        
-        for i, personel in enumerate(personel_listesi, 1):
-            if y_pos < 50: 
-                c.showPage(); y_pos = sayfa_basligi_ciz(); y_pos = tablo_basligi_ciz(y_pos)
-                c.setFont(self.font, 10)
-                
-            c.line(40, y_pos - 5, genislik - 40, y_pos - 5)
-            
-            c.drawString(45, y_pos + 5, str(i))
-            c.drawString(80, y_pos + 5, self.metin_duzelt(personel['gorev'][:14]))
-            c.drawString(165, y_pos + 5, self.metin_duzelt(personel['brans'][:14]))
-            c.drawString(255, y_pos + 5, self.metin_duzelt(personel['ad'][:25]))
-            
-            for x in [40, 75, 160, 250, 370, 440, genislik - 40]:
-                c.line(x, y_pos + 20, x, y_pos - 5)
-                
-            y_pos -= satir_yuksekligi
-                  
-        c.save()
-        return True, ""
     
     # --- TOPLU İMZA SİRKÜSÜ (A4 LİSTE) ÇİZİM MOTORU ---
     def teblig_tebellug_ciz(self, sayi, konu, yazi_tarihi, personel_listesi, kayit_yeri):

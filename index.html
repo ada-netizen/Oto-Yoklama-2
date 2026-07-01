@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oto-Yoklama Sistemi V2</title>
+    <style>
+        /* Modern Karanlık Tema (Eski temanızdan ilham alındı) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0F172A; /* Koyu Lacivert Arka Plan */
+            color: #F8FAFC;
+            padding: 40px;
+        }
+        .baslik-alani {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        button {
+            background-color: #38BB94;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        button:hover {
+            background-color: #059669;
+        }
+        
+        /* Modern Tablo Tasarımı */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #1E293B;
+            border-radius: 8px;
+            overflow: hidden; /* Köşeleri yuvarlatmak için */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        th, td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #334155;
+        }
+        th {
+            background-color: #0F172A;
+            color: #94A3B8;
+            font-weight: 600;
+        }
+        tr:hover {
+            background-color: #334155; /* Üzerine gelince parlama efekti */
+        }
+        #durum-cubugu {
+            margin-top: 15px;
+            color: #94A3B8;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="baslik-alani">
+        <h2>🎓 Öğrenci Listesi</h2>
+        <button onclick="tabloyuDoldur()">🔄 Verileri Yenile</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Öğrenci No</th>
+                <th>Ad Soyad</th>
+                <th>Şube</th>
+            </tr>
+        </thead>
+        <tbody id="tablo-govdesi">
+            <tr>
+                <td colspan="3" style="text-align: center; color: #64748B;">Verileri görmek için "Verileri Yenile" butonuna basın.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div id="durum-cubugu">Sistem Hazır.</div>
+
+    <script>
+        function tabloyuDoldur() {
+            const durumCubugu = document.getElementById('durum-cubugu');
+            const tabloGovdesi = document.getElementById('tablo-govdesi');
+            
+            durumCubugu.innerText = "⏳ Veriler sunucudan çekiliyor...";
+
+            // Python API'ye İstek At
+            fetch('http://127.0.0.1:8000/ogrenciler')
+                .then(cevap => cevap.json())
+                .then(veri => {
+                    // Tablonun içini tamamen temizle
+                    tabloGovdesi.innerHTML = ""; 
+                    
+                    // Python'dan gelen listedeki her bir öğrenci için döngü çalıştır
+                    veri.ogrenciler.forEach(ogrenci => {
+                        // Yeni bir HTML satırı (tr) oluştur ve içine verileri (td) yerleştir
+                        const satir = `
+                            <tr>
+                                <td><b>${ogrenci.no}</b></td>
+                                <td>${ogrenci.ad_soyad}</td>
+                                <td><span style="background-color: #38BB94; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${ogrenci.sube}</span></td>
+                            </tr>
+                        `;
+                        tabloGovdesi.innerHTML += satir;
+                    });
+
+                    durumCubugu.innerHTML = `✅ İşlem başarılı. Toplam <b>${veri.ogrenci_sayisi}</b> kayıt listelendi.`;
+                })
+                .catch(hata => {
+                    durumCubugu.innerHTML = "❌ Hata: Python sunucusuna ulaşılamadı. (api.py açık mı?)";
+                    console.error(hata);
+                });
+        }
+    </script>
+
+</body>
+</html>
