@@ -156,6 +156,12 @@
         /* 6. Resizer (Ayırıcı Çubuk) */
         .resizer { width: 4px !important; margin: 0 3px !important; }
 
+        /* --- BİLDİRİM (TOAST) SİSTEMİ: Tkinter'daki bildirim_goster ile birebir --- */
+        .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+        .toast { padding: 12px 25px; border-radius: 4px; color: #FFFFFF; font-family: var(--font-ui); font-size: 12px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.35); border: 1px solid; opacity: 0; transform: translateY(-15px); transition: opacity 0.25s ease, transform 0.25s ease; max-width: 480px; text-align: center; white-space: pre-line; }
+        .toast.bilgi { background-color: #10B981; border-color: #065F46; }
+        .toast.hata { background-color: #EF4444; border-color: #7F1D1D; }
+        .toast.goster { opacity: 0.97; transform: translateY(0); }
 
     </style>
 </head>
@@ -163,6 +169,7 @@
     </style>
 </head>
 <body>
+    <div id="toast_container" class="toast-container"></div>
 
     <div id="sag_tik_menu" class="context-menu">
         <div class="context-menu-item" onclick="kopyalaNo()">📋 Numarayı Kopyala</div>
@@ -209,13 +216,47 @@
             
             <div style="padding: 20px; overflow-y: auto; max-height: 70vh;">
                 <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Kurumsal Kimlik </legend>
+                    <table style="width: 100%; font-size: 11px;">
+                        <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">Okul Adı:</td>
+                            <td style="padding: 5px 0;"><input type="text" id="ayar_okul_adi" style="width:100%; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></td></tr>
+                        <tr><td style="color: var(--fg-main); padding: 5px 0;">MEB Logosu:</td>
+                            <td style="display: flex; gap: 8px; align-items:center; padding: 5px 0;">
+                                <span id="ayar_meb_logo_ad" style="font-size:10px; color: var(--fg-sub); flex:1;">Yüklenmedi</span>
+                                <input type="file" id="f-meb-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('meb', event)">
+                                <button class="btn btn-temizle" style="border:none; cursor:pointer;" onclick="document.getElementById('f-meb-logo').click()">Logo Seç</button>
+                            </td></tr>
+                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Okul Logosu:</td>
+                            <td style="display: flex; gap: 8px; align-items:center; padding: 5px 0;">
+                                <span id="ayar_okul_logo_ad" style="font-size:10px; color: var(--fg-sub); flex:1;">Yüklenmedi</span>
+                                <input type="file" id="f-okul-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('okul', event)">
+                                <button class="btn btn-temizle" style="border:none; cursor:pointer;" onclick="document.getElementById('f-okul-logo').click()">Logo Seç</button>
+                            </td></tr>
+                    </table>
+                </fieldset>
+
+                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
                     <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Dosya ve Çıktı Yönetimi </legend>
                     <table style="width: 100%; font-size: 11px;">
                         <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">PDF Kayıt Yeri:</td>
                             <td style="display: flex; gap: 5px; padding: 5px 0;"><input type="text" id="ayar_pdf_yol" style="flex:1; padding: 4px; background: var(--bg-main); color: #3B82F6; border: 1px solid var(--border); font-weight: bold;"></td></tr>
                         <tr><td style="color: var(--fg-main); padding: 5px 0;">Yedek Kayıt Yeri:</td>
                             <td style="display: flex; gap: 5px; padding: 5px 0;"><input type="text" id="ayar_yedek_yol" style="flex:1; padding: 4px; background: var(--bg-main); color: #10B981; border: 1px solid var(--border); font-weight: bold;"></td></tr>
+                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Eski Yedekleri Sil:</td>
+                            <td style="padding: 5px 0;">
+                                <select id="ayar_yedek_silme" style="width:100%; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                                    <option>1 Hafta Sonra</option><option>1 Ay Sonra</option><option>3 Ay Sonra</option><option>6 Ay Sonra</option><option>1 Yıl Sonra</option><option>Asla Silme</option>
+                                </select>
+                            </td></tr>
                     </table>
+                </fieldset>
+
+                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Yedekten Geri Yükleme </legend>
+                    <div style="display:flex; gap:8px;">
+                        <select id="ayar_yedek_secim" style="flex:1; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"><option value="">Yedek dosyası bulunamadı</option></select>
+                        <button class="btn btn-dev" style="padding: 6px 12px;" onclick="yedekGeriYukle()">🔄 Geri Yükle</button>
+                    </div>
                 </fieldset>
 
                 <button class="btn btn-ogr" style="width: 100%; padding: 10px; font-size: 12px; margin-bottom: 10px;" onclick="ayarlariKaydet()">Değişiklikleri Kaydet</button>
@@ -231,17 +272,92 @@
                 <h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Raporlar</h2>
                 <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('raporlar_modal')">Kapat</button>
             </div>
-            <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+
                 <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-                    <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Sınırını Aşanlar</span>
-                    <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="alert('PDF Çıktısı Backend Motoruna Bağlanacak')">PDF Al</button>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <select id="rapor_sube_kutu" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;"><option>Seç</option></select>
-                        <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Şubesi Devamsızlık Listesi</span>
+                    <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Sınırını Aşanlar (10+ Gün)</span>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="raporAl('ozursuz','excel')">Excel</button>
+                        <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="raporAl('ozursuz','pdf')">PDF</button>
                     </div>
-                    <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="alert('Excel Çıktısı Backend Motoruna Bağlanacak')">Excel Al</button>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürlü Sınırını Aşanlar (20+ Gün)</span>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="raporAl('ozurlu','excel')">Excel</button>
+                        <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="raporAl('ozurlu','pdf')">PDF</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Devamsızlığı</span>
+                        <select id="rapor_gun_kutu" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;">
+                            <option value="">Seç</option>
+                            <option value="5">5 Gün</option><option value="6">6 Gün</option><option value="7">7 Gün</option><option value="8">8 Gün</option><option value="9">9 Gün</option>
+                        </select>
+                        <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">ve Üstü Olanlar</span>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="raporAl('gun_siniri','excel', document.getElementById('rapor_gun_kutu').value)">Excel</button>
+                        <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="raporAl('gun_siniri','pdf', document.getElementById('rapor_gun_kutu').value)">PDF</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <select id="rapor_sube_kutu" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;"><option value="">Seç</option></select>
+                        <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Şubesi Özürsüz Devamsızlık Listesi</span>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="raporAl('sube_bazli','excel', document.getElementById('rapor_sube_kutu').value)">Excel</button>
+                        <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="raporAl('sube_bazli','pdf', document.getElementById('rapor_sube_kutu').value)">PDF</button>
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="text" id="rapor_tarih_kutu" placeholder="GG/AA/YYYY" style="width: 90px; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;">
+                        <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Tarihinde Özürsüz Devamsızlık Yapanlar</span>
+                    </div>
+                    <div style="display:flex; gap:5px;">
+                        <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="raporAl('tarih_bazli','excel', document.getElementById('rapor_tarih_kutu').value)">Excel</button>
+                        <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="raporAl('tarih_bazli','pdf', document.getElementById('rapor_tarih_kutu').value)">PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= PERSONEL YÖNETİMİ (EKLE / ÇIKAR) ================= -->
+    <div id="personel_yonetim_modal" class="modal-overlay">
+        <div class="modal-content" style="width: 480px; padding: 0; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+                <h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Personel Yönetimi</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('personel_yonetim_modal')">Kapat</button>
+            </div>
+            <div class="notebook-header" style="margin: 10px 15px 0;">
+                <button class="tab-btn aktif" id="ptab-ekle-btn" onclick="personelTabAc('ekle')">➕ Ekle</button>
+                <button class="tab-btn" id="ptab-cikar-btn" onclick="personelTabAc('cikar')">➖ Çıkar</button>
+            </div>
+            <div id="ptab-ekle" style="padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <div><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Ad Soyad:</span>
+                    <input type="text" id="p-ekle-ad" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></div>
+                <div><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Görevi (Müdür, VHKİ, Memur, Öğretmen vb.):</span>
+                    <input type="text" id="p-ekle-gorev" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></div>
+                <div><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Branşı:</span>
+                    <input type="text" id="p-ekle-brans" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></div>
+                <div><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Grubu (İdari yetki için 'İdare' seçin):</span>
+                    <select id="p-ekle-grup" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                        <option value="İdare">İdare</option><option value="Öğretmenler" selected>Öğretmenler</option><option value="Diğer Personel">Diğer Personel</option>
+                    </select></div>
+                <button class="btn btn-ogr" style="padding:10px; margin-top:8px;" onclick="personelEkle()">💾 Kaydet</button>
+            </div>
+            <div id="ptab-cikar" style="padding: 20px; display: none; flex-direction: column; gap: 10px;">
+                <input type="text" id="p-cikar-ara" placeholder="İsim Ara..." style="width:100%; padding:6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);" onkeyup="personelCikarListesiDoldur()">
+                <div class="tree-card" style="height: 260px; border: 1px solid var(--border);">
+                    <div id="p-cikar-liste"></div>
                 </div>
             </div>
         </div>
@@ -395,8 +511,11 @@
             <h2 class="top-bar-title">YAZI TEBLİĞİ VE PERSONEL YÖNETİMİ</h2>
             <div class="top-bar-buttons">
                 <input type="file" id="f-meb" style="display: none;" accept=".pdf" onchange="mebPdfYukle(event)">
+                <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
                 <button class="btn btn-kirmizi" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
-                <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Personel Listesini Yenile</button>
+                <button class="btn btn-ogr" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
+                <button class="btn btn-ayarlar" onclick="personelYonetimAc()">👤 Personel Yönetimi</button>
+                <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Listeyi Yenile</button>
             </div>
         </div>
 
@@ -468,6 +587,23 @@
 
     <script>
         const API = 'http://127.0.0.1:8000';
+
+        // --- BİLDİRİM (TOAST) SİSTEMİ ---
+        function bildirimGoster(mesaj, tur) {
+            if(!mesaj) return;
+            if(!tur) tur = 'bilgi';
+            const kutu = document.getElementById('toast_container');
+            if(!kutu) { console.log(mesaj); return; }
+            const toast = document.createElement('div');
+            toast.className = `toast ${tur}`;
+            toast.innerText = mesaj;
+            kutu.appendChild(toast);
+            requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('goster')));
+            setTimeout(() => {
+                toast.classList.remove('goster');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
         
         let ogrenciListesi = [];
         let tumPersoneller = [];
@@ -697,12 +833,12 @@
             const menu = document.getElementById('sag_tik_menu');
             if(menu) { menu.style.display = 'flex'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px'; }
         }
-        function kopyalaNo() { navigator.clipboard.writeText(sagTikOgrNo); alert("Numara kopyalandı!"); }
-        function kopyalaAd() { navigator.clipboard.writeText(sagTikOgrAd); alert("Ad Soyad kopyalandı!"); }
+        function kopyalaNo() { navigator.clipboard.writeText(sagTikOgrNo); bildirimGoster("Numara kopyalandı!", "bilgi"); }
+        function kopyalaAd() { navigator.clipboard.writeText(sagTikOgrAd); bildirimGoster("Ad Soyad kopyalandı!", "bilgi"); }
         function ogrenciyiTamamenSil() {
             if(!confirm(`${sagTikOgrAd} kalıcı olarak silinecek. Onaylıyor musunuz?`)) return;
             fetch(`${API}/ogrenci-sil/${sagTikOgrNo}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
-                alert(v.mesaj); verileriYukle();
+                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); verileriYukle();
                 document.getElementById('sag_bos_uyari').style.display = 'flex'; document.getElementById('sag_dolu_icerik').style.display = 'none';
             });
         }
@@ -738,9 +874,9 @@
             const dosya = event.target.files[0]; if (!dosya) return;
             const formData = new FormData(); formData.append("dosya", dosya);
             fetch(`${API}/${endpoint}`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
-                if(v.basarili) { alert(v.mesaj); verileriYukle(); } else { alert("Hata: " + v.mesaj); }
+                if(v.basarili) { bildirimGoster(v.mesaj, "bilgi"); verileriYukle(); } else { bildirimGoster("Hata: " + v.mesaj, "hata"); }
                 event.target.value = ''; 
-            }).catch(err => { alert("Bağlantı hatası! Sunucuyu kontrol edin."); });
+            }).catch(err => { bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); });
         }
         function filtreTemizle() { document.getElementById('ent_arama').value = ""; document.getElementById('combo_arama_sube').value = "Tümü"; tabloyuDoldur(); }
 
@@ -926,11 +1062,11 @@
         function pdfCiktisiAl() {
             if(!seciliOgrenci) return;
             const kayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili);
-            if(kayitlar.length === 0) { alert("Önizleme listesinde yazdırılacak kayıt yok!"); return; }
+            if(kayitlar.length === 0) { bildirimGoster("Önizleme listesinde yazdırılacak kayıt yok!", "hata"); return; }
             
             const geciciler = kayitlar.filter(d => d.id.startsWith('temp_'));
             if(geciciler.length > 0) {
-                alert("Manuel girdiğiniz kayıtlar veritabanına işleniyor, ardından PDF oluşturulacaktır.");
+                bildirimGoster("Manuel girdiğiniz kayıtlar veritabanına işleniyor, ardından PDF oluşturulacaktır.", "bilgi");
                 Promise.all(geciciler.map(g => {
                     return fetch(`${API}/devamsizlik-manuel-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no: seciliOgrenci.no, tarih: g.tarih, tur: g.tur, gun: g.gun }) });
                 })).then(() => { gercekPdfIstegiAt(kayitlar); verileriYukle(); });
@@ -944,13 +1080,13 @@
 
             fetch(`${API}/pdf-veli-formu`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
             .then(res => res.json()).then(sonuc => {
-                alert(sonuc.mesaj); geciciDevamsizliklar = []; seciliDevamsizliklar.forEach(d => d.secili = false); takvimiCiz(); onizlemeGuncelle();
+                bildirimGoster(sonuc.mesaj, sonuc.basarili ? "bilgi" : "hata"); geciciDevamsizliklar = []; seciliDevamsizliklar.forEach(d => d.secili = false); takvimiCiz(); onizlemeGuncelle();
             });
         }
         
         // --- 5. YAZI TEBLİĞİ VE AYARLAR ---
         function personelleriYukle() {
-            fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
+            return fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
                 tumPersoneller = veri.personeller;
                 const govde = document.getElementById('personel-govde');
                 const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
@@ -968,13 +1104,15 @@
             });
         }
 
+        let sonMebPdfYolu = null; // Yüklenip metni okunan orijinal MEB yazısının geçici sunucu yolu (bireysel tebliğde PDF'e eklenir)
+
         function mebPdfYukle(event) {
             const dosya = event.target.files[0]; if (!dosya) return;
             document.getElementById('t-sayi').value = "Okunuyor...";
             const formData = new FormData(); formData.append("dosya", dosya);
             fetch(`${API}/meb-pdf-oku`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
-                if(v.basarili) { document.getElementById('t-sayi').value = v.sayi; document.getElementById('t-konu').value = v.konu; document.getElementById('t-tarih').value = v.tarih; } 
-                else { alert(v.mesaj); document.getElementById('t-sayi').value = ""; }
+                if(v.basarili) { document.getElementById('t-sayi').value = v.sayi; document.getElementById('t-konu').value = v.konu; document.getElementById('t-tarih').value = v.tarih; sonMebPdfYolu = v.gecici_pdf_yolu || null; } 
+                else { bildirimGoster(v.mesaj, "hata"); document.getElementById('t-sayi').value = ""; sonMebPdfYolu = null; }
                 event.target.value = ''; 
             });
         }
@@ -982,16 +1120,107 @@
         function bireyselTebligPdfAl() {
             const eden = tumPersoneller.find(p => p.ad === document.getElementById('b-eden').value);
             const edilen = tumPersoneller.find(p => p.ad === document.getElementById('b-edilen').value);
-            if(!eden || !edilen) return alert("Kişileri seçin!");
-            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, yer: document.getElementById('b-yer').value, eden: {ad: eden.ad, gorev: eden.gorev !== "-" ? eden.gorev : eden.brans}, edilen: {ad: edilen.ad, gorev: edilen.gorev !== "-" ? edilen.gorev : edilen.brans} };
-            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => alert(v.mesaj));
+            if(!eden || !edilen) return bildirimGoster("Kişileri seçin!", "hata");
+            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, yer: document.getElementById('b-yer').value, eden: {ad: eden.ad, gorev: eden.gorev !== "-" ? eden.gorev : eden.brans}, edilen: {ad: edilen.ad, gorev: edilen.gorev !== "-" ? edilen.gorev : edilen.brans}, gecici_pdf_yolu: sonMebPdfYolu };
+            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
 
         function topluTebligPdfAl() {
             const seciliAdlar = Array.from(document.querySelectorAll('.chk-personel:checked')).map(cb => cb.value);
-            if(seciliAdlar.length === 0) return alert("Personel seçin!");
+            if(seciliAdlar.length === 0) return bildirimGoster("Personel seçin!", "hata");
             const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, personeller: tumPersoneller.filter(p => seciliAdlar.includes(p.ad)) };
-            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => alert(v.mesaj));
+            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+        }
+
+        // --- PERSONEL YÖNETİMİ ---
+        function personelExcelYukle(event) {
+            const dosya = event.target.files[0]; if (!dosya) return;
+            const formData = new FormData(); formData.append("dosya", dosya);
+            fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
+                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) personelleriYukle();
+                event.target.value = '';
+            }).catch(() => bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata"));
+        }
+
+        function personelYonetimAc() { modalAc('personel_yonetim_modal'); personelTabAc('ekle'); }
+
+        function personelTabAc(tab) {
+            document.getElementById('ptab-ekle').style.display = tab === 'ekle' ? 'flex' : 'none';
+            document.getElementById('ptab-cikar').style.display = tab === 'cikar' ? 'flex' : 'none';
+            document.getElementById('ptab-ekle-btn').classList.toggle('aktif', tab === 'ekle');
+            document.getElementById('ptab-cikar-btn').classList.toggle('aktif', tab === 'cikar');
+            if(tab === 'cikar') personelCikarListesiDoldur();
+        }
+
+        function personelEkle() {
+            const ad = document.getElementById('p-ekle-ad').value.trim();
+            if(!ad) return bildirimGoster("Ad Soyad boş bırakılamaz!", "hata");
+            const veri = { ad: ad, gorev: document.getElementById('p-ekle-gorev').value.trim(), brans: document.getElementById('p-ekle-brans').value.trim(), grup: document.getElementById('p-ekle-grup').value };
+            fetch(`${API}/personel-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
+                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
+                if(v.basarili) { document.getElementById('p-ekle-ad').value = ''; document.getElementById('p-ekle-gorev').value = ''; document.getElementById('p-ekle-brans').value = ''; personelleriYukle(); }
+            });
+        }
+
+        function personelCikarListesiDoldur() {
+            const filtre = document.getElementById('p-cikar-ara').value.toUpperCase();
+            const kutu = document.getElementById('p-cikar-liste'); kutu.innerHTML = '';
+            [...tumPersoneller].sort((a,b) => a.ad.localeCompare(b.ad)).forEach(p => {
+                if(filtre && !p.ad.toUpperCase().includes(filtre)) return;
+                const satir = document.createElement('div');
+                satir.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border); font-size:11px; color: var(--fg-main);';
+                satir.innerHTML = `<span>${p.ad}</span><button class="btn btn-kirmizi" style="padding:3px 10px; font-size:9px;">Sil</button>`;
+                satir.querySelector('button').onclick = () => personelSil(p.ad);
+                kutu.appendChild(satir);
+            });
+            if(kutu.innerHTML === '') kutu.innerHTML = '<div style="padding:15px; text-align:center; color:var(--fg-sub); font-size:11px;">Personel bulunamadı.</div>';
+        }
+
+        function personelSil(ad) {
+            if(!confirm(`${ad} silinecek. Onaylıyor musunuz?`)) return;
+            fetch(`${API}/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
+                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
+                personelleriYukle().then(() => personelCikarListesiDoldur());
+            });
+        }
+
+        // --- RAPORLAR ---
+        function raporAl(tur, format, ozelDeger) {
+            if((tur === 'gun_siniri' || tur === 'sube_bazli' || tur === 'tarih_bazli') && !ozelDeger) {
+                return bildirimGoster("Lütfen rapor almadan önce bir seçim yapınız!", "hata");
+            }
+            fetch(`${API}/rapor-al`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tur, format, ozel_deger: ozelDeger }) })
+                .then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+        }
+
+        // --- AYARLAR, LOGO VE YEDEKLEME ---
+        function logoYukle(tur, event) {
+            const dosya = event.target.files[0]; if (!dosya) return;
+            const formData = new FormData(); formData.append("tur", tur); formData.append("dosya", dosya);
+            fetch(`${API}/logo-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
+                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
+                if(v.basarili) {
+                    const etiket = tur === 'meb' ? 'ayar_meb_logo_ad' : 'ayar_okul_logo_ad';
+                    document.getElementById(etiket).innerText = dosya.name;
+                }
+                event.target.value = '';
+            });
+        }
+
+        function yedekleriListele() {
+            fetch(`${API}/yedekler-listele`).then(r => r.json()).then(v => {
+                const kutu = document.getElementById('ayar_yedek_secim'); if(!kutu) return;
+                if(!v.yedekler || v.yedekler.length === 0) { kutu.innerHTML = '<option value="">Yedek dosyası bulunamadı</option>'; return; }
+                kutu.innerHTML = v.yedekler.map(y => `<option value="${y.dosya_adi}">${y.tarih} (${y.boyut_kb} KB)</option>`).join('');
+            });
+        }
+
+        function yedekGeriYukle() {
+            const secim = document.getElementById('ayar_yedek_secim').value;
+            if(!secim) return bildirimGoster("Lütfen bir yedek dosyası seçin.", "hata");
+            if(!confirm("Mevcut veriler silinecek ve seçilen yedekteki veriler yüklenecek.\n\nBu işlemi onaylıyor musunuz?")) return;
+            fetch(`${API}/yedek-geri-yukle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dosya: secim }) })
+                .then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) location.reload(); });
         }
 
         function ayarlariYukle() {
@@ -1001,6 +1230,11 @@
                 if(document.getElementById('ayar_yedek_yol')) document.getElementById('ayar_yedek_yol').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
                 if(document.getElementById('ayar-pdf')) document.getElementById('ayar-pdf').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;
                 if(document.getElementById('ayar-yedek')) document.getElementById('ayar-yedek').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
+                if(document.getElementById('ayar_okul_adi')) document.getElementById('ayar_okul_adi').value = v.ayarlar.okul_adi || '';
+                if(document.getElementById('ayar_yedek_silme')) document.getElementById('ayar_yedek_silme').value = v.ayarlar.yedek_silme_suresi || '1 Ay Sonra';
+                if(document.getElementById('ayar_meb_logo_ad')) document.getElementById('ayar_meb_logo_ad').innerText = v.ayarlar.meb_logosu ? v.ayarlar.meb_logosu.split(/[\\/]/).pop() : 'Yüklenmedi';
+                if(document.getElementById('ayar_okul_logo_ad')) document.getElementById('ayar_okul_logo_ad').innerText = v.ayarlar.okul_logosu ? v.ayarlar.okul_logosu.split(/[\\/]/).pop() : 'Yüklenmedi';
+                yedekleriListele();
             });
         }
 
@@ -1010,15 +1244,17 @@
             
             sistemAyarlari.pdf_kayit_klasoru = pdfYol;
             sistemAyarlari.yedek_kayit_klasoru = yedekYol;
-            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) }).then(r => r.json()).then(v => { alert(v.mesaj); modalKapat('ayarlar_modal'); });
+            if(document.getElementById('ayar_okul_adi')) sistemAyarlari.okul_adi = document.getElementById('ayar_okul_adi').value;
+            if(document.getElementById('ayar_yedek_silme')) sistemAyarlari.yedek_silme_suresi = document.getElementById('ayar_yedek_silme').value;
+            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); modalKapat('ayarlar_modal'); });
         }
 
-        function sistemYedekle() { fetch(`${API}/yedek-al`, { method: 'POST' }).then(r => r.json()).then(v => { alert(v.mesaj); modalKapat('ayarlar_modal'); }); }
+        function sistemYedekle() { fetch(`${API}/yedek-al`, { method: 'POST' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); yedekleriListele(); }); }
         
         function veritabaniniSifirla() {
             if(confirm("Tüm öğrenciler, devamsızlıklar ve personeller SİLİNECEK.\nEmin misiniz?")) {
                 if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
-                    fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { alert(v.mesaj); location.reload(); });
+                    fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
                 }
             }
         }

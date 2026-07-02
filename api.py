@@ -162,8 +162,17 @@ def pdf_veli_formu_olustur(veri: dict):
 
     kayit_yeri = os.path.join(sube_klasoru, f"{veri['no']}_{veri['ad'].replace(' ', '_')}.pdf")
     try:
+        # Ön yüzden gelen kayıtlarda ham 'tarih'/'gun' alanları var; PDF motoru
+        # düzgün biçimlendirilmiş 'tarih_duzgun'/'gun_str' bekliyor. Burada dönüştürüyoruz.
+        kayitlar_islenmis = []
+        for k in veri['kayitlar']:
+            k2 = dict(k)
+            k2['tarih_duzgun'] = k.get('tarih_duzgun') or VeriAraclari.tarih_formatla(k.get('tarih', ''))
+            k2['gun_str'] = k.get('gun_str') or VeriAraclari.temiz_sure(k.get('gun', ''))
+            kayitlar_islenmis.append(k2)
+
         motor = PDFYoneticisi(ayar)
-        motor.veli_formu_ciz(veri['no'], veri['ad'], veri['sube'], veri['kayitlar'], kayit_yeri)
+        motor.veli_formu_ciz(veri['no'], veri['ad'], veri['sube'], kayitlar_islenmis, kayit_yeri)
         return {"basarili": True, "mesaj": f"PDF Başarıyla Oluşturuldu!\nKonum: {kayit_yeri}", "yol": kayit_yeri}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
