@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Öğrenci Devamsızlık Sistemi - Premium Yönetim Paneli</title>
+    <style>
+        /* ================= BİREBİR TKINTER TEMA (sabitler.py) ================= */
+        :root {
+            --bg-main: #0F172A;
+            --bg-card: #1E293B;
+            --fg-main: #F8FAFC;
+            --fg-sub: #94A3B8;
+            --border: #334155;
+            --tree-sel: #38BB94;
+            --font-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body { font-family: var(--font-ui); background-color: var(--bg-main); color: var(--fg-main); margin: 0; padding: 5px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* --- TKINTER NOTEBOOK (SEKMELER) SİMÜLASYONU --- */
+        .notebook-header { display: flex; background-color: var(--bg-main); border-bottom: 1px solid var(--border); margin-bottom: 5px; }
+        .tab-btn { background-color: var(--bg-main); color: var(--fg-sub); border: 1px solid transparent; border-bottom: none; padding: 8px 15px; cursor: pointer; font-family: var(--font-ui); font-size: 13px; margin-right: 2px; border-radius: 4px 4px 0 0; }
+        .tab-btn.aktif { background-color: var(--bg-card); color: var(--fg-main); border-color: var(--border); border-bottom: 1px solid var(--bg-card); margin-bottom: -1px; }
+        
+        .tab-content { display: none; background-color: var(--bg-main); flex: 1; padding: 20px; flex-direction: column; overflow: hidden; }
+        .tab-content.aktif { display: flex; }
+
+        /* --- ÜST PANEL VE BUTONLAR --- */
+        .top-bar { background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .top-bar-title { font-size: 15px; font-weight: bold; color: var(--tree-sel); margin: 0; }
+        .top-bar-buttons { display: flex; gap: 5px; }
+        
+        .btn { border: none; padding: 6px 15px; font-size: 10px; font-weight: bold; cursor: pointer; font-family: var(--font-ui); color: #FFFFFF; border-radius: 3px; }
+        .btn-yardim { background-color: #F59E0B; } .btn-yardim:hover { background-color: #D97706; }
+        .btn-ayarlar { background-color: #475569; } .btn-ayarlar:hover { background-color: #64748B; }
+        .btn-gece { background-color: #E2E8F0; color: #1E293B; } .btn-gece:hover { background-color: #CBD5E1; }
+        .btn-rapor { background-color: #4F46E5; } .btn-rapor:hover { background-color: #6366F1; }
+        .btn-dev { background-color: #2563EB; } .btn-dev:hover { background-color: #3B82F6; }
+        .btn-ogr { background-color: #059669; } .btn-ogr:hover { background-color: #10B981; }
+        .btn-kirmizi { background-color: #EF4444; } .btn-kirmizi:hover { background-color: #DC2626; }
+        .btn-temizle { background-color: #E2E8F0; color: #1E293B; padding: 3px 12px; font-size: 10px; }
+
+        /* --- TABLO STİLLERİ (TREEVIEW) --- */
+        .tree-card { background-color: var(--bg-card); border: 1px solid var(--border); flex: 1; overflow-y: auto; }
+        .tr-secili { background-color: var(--tree-sel) !important; color: #FFFFFF !important; }
+        .tr-secili td { color: #FFFFFF !important; }
+
+        /* --- BİREBİR TKINTER TAKVİM STİLLERİ (Yükseklik 55px yapıldı) --- */
+        .gun-hucre { background-color: #334155; border: 1px solid var(--border); border-radius: 2px; padding: 4px; height: 55px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none; }
+        .gun-hucre:hover { filter: brightness(1.2); }
+        .gun-hucre.bos { visibility: hidden; }
+
+        /* --- SÜRÜKLEME (RESIZER), SAĞ TIK VE MODAL STİLLERİ --- */
+        .resizer { width: 5px; background-color: var(--border); cursor: col-resize; flex-shrink: 0; transition: 0.2s; z-index: 10; }
+        .resizer:hover { background-color: var(--tree-sel); }
+
+        /* --- TABLO SÜTUN GENİŞLETME (COL-RESIZER) --- */
+        .col-resizer { position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; z-index: 5; }
+        .col-resizer:hover { background-color: var(--tree-sel); }
+        
+        .context-menu { display: none; position: absolute; background-color: var(--bg-card); border: 1px solid var(--border); box-shadow: 2px 2px 5px rgba(0,0,0,0.5); z-index: 1000; flex-direction: column; min-width: 150px; border-radius: 4px; padding: 5px 0;}
+        .context-menu-item { padding: 8px 15px; cursor: pointer; color: var(--fg-main); font-size: 11px; font-weight: bold; }
+        .context-menu-item:hover { background-color: var(--border); }
+        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+        .modal-content { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+        
+        /* --- YENİ: GÖZ YORMAYAN BÜYÜK FONT VE FERAH SATIR AYARLARI --- */
+        table, th, td { font-size: 13px !important; }
+        .btn { font-size: 12px !important; padding: 8px 15px !important; }
+        input, select { font-size: 12px !important; padding: 6px !important; }
+        .arama-label, .arama-entry, .arama-combo { font-size: 12px !important; }
+        
+        #tree_tum_liste th, #tree_tum_liste td { padding: 12px 8px !important; height: 35px; } 
+        #tree_detay_govde td { padding: 12px 8px !important; height: 35px; }
+        
+        #tree_govde tr:hover { background-color: var(--border); }
+        .tr-secili { font-weight: bold; font-size: 13.5px !important; }
+
+        /* --- YENİ: GENEL BÜYÜK FONT VE SIKI (1.0) SATIR AYARLARI --- */
+        
+        /* 1. Tüm programdaki yazıları genel olarak büyüt */
+        body, input, select, button, span, div, p, th, td { font-size: 13px !important; }
+        h2 { font-size: 18px !important; }
+        h3 { font-size: 15px !important; }
+        
+        /* 2. Butonları ve Sekmeleri daha iri ve tıklanabilir yap */
+        .btn { font-size: 13px !important; padding: 8px 15px !important; }
+        .tab-btn { font-size: 14px !important; padding: 10px 18px !important; }
+        
+        /* 3. LİSTE SATIR ARALIĞI (Word 1.0 formatı gibi dar ve sıkı) */
+        #tree_tum_liste th, #tree_tum_liste td { padding: 4px 6px !important; height: 24px !important; } 
+        #tree_detay_govde td { padding: 4px 6px !important; height: 24px !important; }
+        
+        /* 4. Sol liste seçim efektleri */
+        #tree_govde tr:hover { background-color: var(--border); }
+        .tr-secili { font-weight: bold; font-size: 13.5px !important; }
+
+        /* --- YENİ: BOŞLUK DARALTMA VE LİSTE PUNTOSU AYARLARI --- */
+        .tab-content { padding: 5px 20px 20px 20px !important; } /* Sekmeler ile butonlar arasındaki dev boşluğu kapattık */
+        .top-bar { margin-bottom: 5px !important; padding: 10px 20px !important; } /* Butonlar ile alt paneller arasındaki boşluğu daralttık */
+        .paned-window { margin-top: 0px !important; } /* Araya giren ekstra boşluğu sıfırladık */
+        
+        /* Sadece sol listenin puntosunu 1 punto düşürdük (Diğer yazılar büyük kaldı) */
+        #tree_tum_liste th, #tree_tum_liste td { font-size: 12px !important; padding: 4px 6px !important; height: 24px !important; }
+        .tr-secili { font-size: 12px !important; font-weight: bold; }
+
+        /* --- YENİ: TKINTER BİREBİR BÜYÜK FONT, OTOMATİK SÜTUN VE DAR AYIRICILAR --- */
+        
+        /* 1. Tüm Genel Yazıları Ferahlat */
+        body, input, select, button, span, div, p, th, td { font-size: 14px !important; }
+        
+        /* 2. Öğrenci Listesi 2 Punto Büyütme ve Seçili Satır Bold İptali */
+        #tree_tum_liste { table-layout: auto !important; width: 100%; }
+        #tree_tum_liste th, #tree_tum_liste td { font-size: 14px !important; padding: 6px 8px !important; height: 26px !important; white-space: nowrap; }
+        .tr-secili { font-size: 14px !important; font-weight: normal !important; } 
+        #sol_panel_ana .tree-card { overflow-x: auto !important; } /* Tablonun filtreleri aşmasını engeller */
+
+        /* 3. Sağ Panel, Takvim ve Üst Bilgilerin Büyütülmesi (Tkinter Klonu) */
+        #takvim_grid div { font-size: 14px !important; }
+        .gun-hucre div { font-size: 13px !important; }
+        #lbl_secili_ogrenci { font-size: 18px !important; }
+        #lbl_ozet { font-size: 14px !important; }
+        #takvim_alani_ana .btn, #takvim_alani_ana input { font-size: 12px !important; }
+        #takvim_alani_ana div[style*="font-size: 10px;"] { font-size: 13px !important; }
+        
+        /* 4. Resizer (Genişlik Ayarlama Çubuğu) Alanını Çok Daraltma */
+        .resizer { width: 4px !important; margin: 0 3px !important; }
+
+        /* --- YENİ: TKINTER PUNTOLARI VE ORANTILI FONT AYARLARI --- */
+        
+        /* 1. Üst Kısım: Ara, Şube ve Temizle (+2 Punto) */
+        .arama-grid span, .arama-grid input, .arama-grid select, .arama-grid button { font-size: 14px !important; }
+        
+        /* 2. Öğrenci Listesi (-1 Punto) */
+        #tree_tum_liste { table-layout: fixed !important; width: 100%; }
+        #tree_tum_liste th, #tree_tum_liste td { font-size: 13px !important; padding: 0 6px !important; height: 32px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #sol_panel_ana .tree-card { overflow-x: auto !important; }
+
+        /* 3. Sağ Panel: Öğrenci Adı ve Özet (+2 Punto) */
+        #lbl_secili_ogrenci { font-size: 20px !important; }
+        #lbl_ozet { font-size: 16px !important; }
+        
+        /* 4. Takvim Alanı ve Üst Başlık (+2 ve +3 Punto) */
+        #lbl_ay_yil { font-size: 17px !important; } /* Ay ve Yıl bilgisi +3 punto */
+        #takvim_grid > div { font-size: 16px !important; } /* Pzt, Sal yazıları */
+        .gun-hucre { height: 60px !important; } /* Takvim biraz daha büyüdü */
+        .gun-hucre > div:first-child { font-size: 15px !important; } /* Takvimdeki sayılar */
+        .gun-hucre > div:last-child { font-size: 14px !important; } /* Devamsızlık türü yazısı */
+        
+        /* 5. Alt Kısım Hızlı Seçim Butonları */
+        #takvim_alani_ana .btn, #takvim_alani_ana input { font-size: 13px !important; }
+        #takvim_alani_ana div[style*="font-size: 10px;"] { font-size: 14px !important; }
+        
+        /* 6. Resizer (Ayırıcı Çubuk) */
+        .resizer { width: 4px !important; margin: 0 3px !important; }
+
+
+    </style>
+</head>
+   
+    </style>
+</head>
+<body>
+
+    <div id="sag_tik_menu" class="context-menu">
+        <div class="context-menu-item" onclick="kopyalaNo()">📋 Numarayı Kopyala</div>
+        <div class="context-menu-item" onclick="kopyalaAd()">📋 Adı Kopyala</div>
+        <hr style="border-color: var(--border); margin: 2px 0;">
+        <div class="context-menu-item" style="color: #EF4444;" onclick="ogrenciyiTamamenSil()">🗑️ Öğrenciyi Sil</div>
+    </div>
+
+    <div id="yardim_modal" class="modal-overlay">
+        <div class="modal-content" style="width: 700px; padding: 0; overflow: hidden; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; background-color: #1E3A8A; padding: 15px 20px;">
+                <h2 style="margin:0; color: white; font-size: 16px;">📖 Nasıl Kullanılır?</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('yardim_modal')">Kapat</button>
+            </div>
+            <div style="padding: 20px; overflow-y: auto; max-height: 60vh;">
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
+                    <h3 style="color: var(--tree-sel); margin-top: 0;">1. Öğrenci Yükleme</h3>
+                    <p style="color: var(--fg-main); font-size: 12px; line-height: 1.6;">
+                        Sisteme yeni öğrencileri dahil etmek veya mevcut listeyi güncellemek için:<br><br>
+                        1. E-Okul sisteminden güncel 'Sınıf Listesi'ni Excel (xls, xlsx) formatında indirin.<br>
+                        2. Üst menüde yer alan 'Öğrenci Yükle' butonuna tıklayarak indirdiğiniz dosyayı seçin.<br>
+                        3. Sistem; mevcut öğrencileri korur, sadece yeni gelenleri ekler veya değişiklikleri günceller.
+                    </p>
+                </div>
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
+                    <h3 style="color: var(--tree-sel); margin-top: 0;">2. Devamsızlık Yükleme</h3>
+                    <p style="color: var(--fg-main); font-size: 12px; line-height: 1.6;">
+                        Öğrencilerin güncel devamsızlık verilerini işlemek için:<br><br>
+                        1. E-Okul'dan okulun genel veya sınıflar bazında 'Devamsızlık Listesi'ni Excel olarak indirin.<br>
+                        2. 'Devamsızlık Yükle' butonuna basarak bu Excel'i sisteme okutun.<br>
+                        3. Mükemmel Eşleşme: Sistem aynı devamsızlığı asla iki kez girmez! Her gün güvenle aynı listeyi yükleyebilirsiniz.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="ayarlar_modal" class="modal-overlay">
+        <div class="modal-content" style="width: 650px; padding: 0; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+                <h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Ayarlar ve Sistem Yönetimi</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('ayarlar_modal')">Kapat</button>
+            </div>
+            
+            <div style="padding: 20px; overflow-y: auto; max-height: 70vh;">
+                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Dosya ve Çıktı Yönetimi </legend>
+                    <table style="width: 100%; font-size: 11px;">
+                        <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">PDF Kayıt Yeri:</td>
+                            <td style="display: flex; gap: 5px; padding: 5px 0;"><input type="text" id="ayar_pdf_yol" style="flex:1; padding: 4px; background: var(--bg-main); color: #3B82F6; border: 1px solid var(--border); font-weight: bold;"></td></tr>
+                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Yedek Kayıt Yeri:</td>
+                            <td style="display: flex; gap: 5px; padding: 5px 0;"><input type="text" id="ayar_yedek_yol" style="flex:1; padding: 4px; background: var(--bg-main); color: #10B981; border: 1px solid var(--border); font-weight: bold;"></td></tr>
+                    </table>
+                </fieldset>
+
+                <button class="btn btn-ogr" style="width: 100%; padding: 10px; font-size: 12px; margin-bottom: 10px;" onclick="ayarlariKaydet()">Değişiklikleri Kaydet</button>
+                <button class="btn" style="width: 100%; background-color: #8B5CF6; padding: 10px; margin-bottom: 10px;" onclick="sistemYedekle()">💾 Şimdi Yedek Al</button>
+                <button class="btn btn-kirmizi" style="width: 100%; padding: 10px; background-color: #FEE2E2; color: #B91C1C;" onclick="veritabaniniSifirla()">🗑️ Tüm Veritabanını Sıfırla</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="raporlar_modal" class="modal-overlay">
+        <div class="modal-content" style="width: 700px; padding: 0; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+                <h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Raporlar</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('raporlar_modal')">Kapat</button>
+            </div>
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Sınırını Aşanlar</span>
+                    <button class="btn btn-kirmizi" style="padding: 6px 15px;" onclick="alert('PDF Çıktısı Backend Motoruna Bağlanacak')">PDF Al</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <select id="rapor_sube_kutu" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;"><option>Seç</option></select>
+                        <span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Şubesi Devamsızlık Listesi</span>
+                    </div>
+                    <button class="btn btn-ogr" style="padding: 6px 15px;" onclick="alert('Excel Çıktısı Backend Motoruna Bağlanacak')">Excel Al</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="yillik_modal" class="modal-overlay">
+        <div class="modal-content" style="display: inline-block; width: fit-content; max-width: 98vw; height: fit-content; max-height: 95vh; padding: 0; display: flex; flex-direction: column;">
+            <div style="display: flex; justify-content: space-between; align-items: center; background-color: #1E3A8A; padding: 10px 15px;">
+                <h2 id="modal_baslik" style="margin:0; color: white; font-size: 14px; font-weight: bold;">Yıllık Devamsızlık Karnesi</h2>
+                <button class="btn btn-kirmizi" style="padding: 4px 10px;" onclick="modalKapat('yillik_modal')">Kapat</button>
+            </div>
+            <div style="padding: 15px; overflow: auto; background-color: var(--bg-card);">
+                <table style="border-collapse: collapse; text-align: center; font-size: 11px; margin: auto;">
+                    <thead id="yillik_thead"></thead>
+                    <tbody id="yillik_tbody"></tbody>
+                </table>
+                <div id="yillik_ozet_alani" style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notebook-header">
+        <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')">📄 İzin Dilekçesi</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')">🖋️ Yazı Tebliği</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')">⚙️ Ayarlar ve Yedekleme</button>
+    </div>
+
+    <div id="sekme_izin" class="tab-content aktif">
+        <div class="top-bar">
+            <h2 class="top-bar-title">YOKLAMA YÖNETİM PANELİ</h2>
+            <div class="top-bar-buttons">
+                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
+                <input type="file" id="f-dev" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('devamsizlik-excel-yukle', event)">
+                
+                <button class="btn btn-ogr" onclick="document.getElementById('f-ogr').click()">Öğrenci Yükle</button>
+                <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()">Devamsızlık Yükle</button>
+                <button class="btn btn-rapor" onclick="modalAc('raporlar_modal')">📄 Raporlar</button>
+                <button class="btn btn-gece" id="btn-tema" onclick="temaDegistir()">☀️ Gündüz Modu</button>
+                <button class="btn btn-ayarlar" onclick="modalAc('ayarlar_modal')">⚙️ Ayarlar</button>
+                <button class="btn btn-yardim" onclick="modalAc('yardim_modal')">❓ Yardım</button>
+            </div>
+        </div>
+
+        <div class="paned-window" style="display: flex; flex: 1; gap: 15px; overflow: hidden; margin-top: 10px;">
+            
+            <div id="sol_panel_ana" style="flex: 0 0 360px; display: flex; flex-direction: column; background-color: var(--bg-main);">
+                <div class="filtre-card" style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px 10px; margin-bottom: 10px; display: flex; justify-content: center;">
+                    <div class="arama-grid" style="display: flex; align-items: center; gap: 5px;">
+                        <span class="arama-label" style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Ara:</span>
+                        <input type="text" id="ent_arama" style="background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); padding: 4px 5px; font-size: 10px; width: 180px;" placeholder="Numara veya Ad Soyad" onkeyup="tabloyuDoldur()">
+                        
+                        <span class="arama-label" style="margin-left: 10px; font-size: 10px; font-weight: bold; color: var(--fg-main);">Şube:</span>
+                        <select id="combo_arama_sube" style="background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); padding: 3px; font-size: 10px; width: 90px;" onchange="tabloyuDoldur()">
+                            <option value="Tümü">Tümü</option>
+                        </select>
+                        <button class="btn btn-temizle" style="margin-left: 5px; border: none; cursor: pointer;" onclick="filtreTemizle()">Temizle</button>
+                    </div>
+                </div>
+
+                <div class="tree-card" style="flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-main);">
+                    <table id="tree_tum_liste" style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 10px; text-align: left;">
+                        <thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
+                            <tr>
+                                <th style="width: 10%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_temizSube" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('temizSube')">Sınıf ↕</span><div class="col-resizer"></div></th>
+                                <th style="width: 13%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_no" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('no')">No ↕</span><div class="col-resizer"></div></th>
+                                <th style="width: 45%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_ad_soyad" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('ad_soyad')">Ad Soyad ↕</span><div class="col-resizer"></div></th>
+                                <th style="width: 16%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_ozsz" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('ozsz')">Özürsüz ↕</span><div class="col-resizer"></div></th>
+                                <th style="width: 16%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_ozrl" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('ozrl')">Özürlü ↕</span><div class="col-resizer"></div></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tree_govde"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="resizer" id="resizer1" style="margin: 0 10px;"></div>
+
+            <div id="sag_panel_ana" style="flex: 60; display: flex; flex-direction: column; background-color: var(--bg-main); overflow: hidden;">
+                <div id="sag_bos_uyari" style="display: flex; flex: 1; align-items: center; justify-content: center; color: var(--fg-sub); text-align: center; font-size: 13px;">
+                    👈 İşlem yapmak için sol taraftaki listeden bir öğrenci seçin.<br>(Yıllık Tablo İçin Çift Tıklayın)
+                </div>
+
+                <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%; padding: 25px 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 0 5px;">
+                        <span id="lbl_secili_ogrenci" style="font-size: 16px; font-weight: bold; color: var(--fg-main);">Öğrenci Adı (No)</span>
+                        <span id="lbl_ozet" style="font-size: 12px; font-weight: bold; color: var(--fg-sub);">Özürsüz: 0 Gün  |  Özürlü: 0 Gün</span>
+                    </div>
+                    
+                    <div style="display: flex; flex-direction: row; flex: 1; min-height: 0;">
+                        <div id="takvim_alani_ana" style="flex: 52; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <button class="btn btn-temizle" style="background: var(--bg-main); color: var(--fg-sub); border: none; cursor: pointer; padding: 4px 8px;" onclick="ayDegistir(-1)">&lt; Önceki Ay</button>
+                                <span id="lbl_ay_yil" style="font-weight: bold; font-size: 13px; color: var(--fg-main);">Ocak 2026</span>
+                                <button class="btn btn-temizle" style="background: var(--bg-main); color: var(--fg-sub); border: none; cursor: pointer; padding: 4px 8px;" onclick="ayDegistir(1)">Sonraki Ay &gt;</button>
+                            </div>
+                            
+                            <div id="takvim_grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; flex: 1; align-content: start;"></div>
+                            
+                            <div style="border: 1px solid var(--border); padding: 15px; margin-top: 15px;">
+                                <div style="text-align: center; font-size: 10px; font-weight: bold; color: var(--fg-sub); margin-bottom: 10px;">Hızlı Seçim (Sadece Özürsüzler)</div>
+                                <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                                    <button class="btn" style="background: #475569; color: white; font-size: 9px; padding: 4px 10px;" onclick="topluSecim('bu_ay')">Bu Ay</button>
+                                    <button class="btn" style="background: #475569; color: white; font-size: 9px; padding: 4px 10px;" onclick="topluSecim('son_iki_ay')">Son İki Ay</button>
+                                    <button class="btn" style="background: #059669; color: white; font-size: 9px; padding: 4px 10px;" onclick="topluSecim('tumu')">Tümünü Seç</button>
+                                </div>
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 9px;">
+                                    <span style="font-weight: bold; color: var(--fg-sub);">Baş:</span>
+                                    <input type="text" id="t_bas" placeholder="GG/AA/YYYY" style="width: 70px; font-size: 9px; padding: 2px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                                    <span style="font-weight: bold; color: var(--fg-sub);">- Bit:</span>
+                                    <input type="text" id="t_bit" placeholder="GG/AA/YYYY" style="width: 70px; font-size: 9px; padding: 2px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                                    <button class="btn" style="background-color: #4338CA; color: white; font-size: 9px; padding: 4px 8px;" onclick="topluSecim('aralik')">Getir</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="resizer" id="resizer2" style="margin: 0 10px;"></div>
+
+                        <div id="onizleme_alani_ana" style="flex: 48; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <span style="color: var(--fg-main); font-size: 12px; font-weight: bold;">PDF Önizleme</span>
+                                <span id="lbl_onizleme_toplam" style="color: #DC2626; font-size: 11px; font-weight: bold;">Toplam: 0 Gün</span>
+                            </div>
+                            
+                            <div class="tree-card" style="flex: 1; border: 1px solid var(--border); overflow-y: auto; margin-bottom: 10px; background-color: var(--bg-main);">
+                                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 10px;">
+                                    <thead style="position: sticky; top: 0; background-color: var(--bg-main);">
+                                        <tr>
+                                            <th style="padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border);">Tarih</th>
+                                            <th style="padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border);">Tür</th>
+                                            <th style="padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border);">Süre</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tree_detay_govde"></tbody>
+                                </table>
+                            </div>
+                            
+                            <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                                <button class="btn" style="flex: 1; background: #EF4444; color: white; padding: 5px;" onclick="onizlemeCikar()">⬅ Çıkar</button>
+                                <button class="btn" style="flex: 1; background: #475569; color: white; padding: 5px;" onclick="onizlemeTemizle()">Tümünü Temizle</button>
+                            </div>
+                            <button class="btn" style="background-color: #EA580C; color: white; padding: 15px; font-size: 12px; font-weight: bold;" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sekme_teblig" class="tab-content">
+        <div class="top-bar">
+            <h2 class="top-bar-title">YAZI TEBLİĞİ VE PERSONEL YÖNETİMİ</h2>
+            <div class="top-bar-buttons">
+                <input type="file" id="f-meb" style="display: none;" accept=".pdf" onchange="mebPdfYukle(event)">
+                <button class="btn btn-kirmizi" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
+                <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Personel Listesini Yenile</button>
+            </div>
+        </div>
+
+        <div class="filtre-card" style="display: flex; gap: 15px; margin-bottom: 10px; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
+            <div style="flex: 1;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Evrak Sayısı:</span><input type="text" id="t-sayi" style="width: 100%; margin-top:3px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main); padding: 4px;"></div>
+            <div style="flex: 2;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Konu:</span><input type="text" id="t-konu" style="width: 100%; margin-top:3px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main); padding: 4px;"></div>
+            <div style="flex: 1;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Tarih:</span><input type="text" id="t-tarih" style="width: 100%; margin-top:3px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main); padding: 4px;"></div>
+        </div>
+
+        <div class="paned-window" style="display:flex; flex:1; gap:15px; overflow: hidden;">
+            <div class="sol-panel" style="flex: 65%; display:flex; flex-direction:column; background-color: var(--bg-main);">
+                <div class="tree-card" style="flex:1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-main);">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
+                        <thead style="position: sticky; top: 0; background-color: var(--bg-main);">
+                            <tr>
+                                <th style="width: 10%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border);">Seç</th>
+                                <th style="width: 30%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Görev / Branş</th>
+                                <th style="width: 60%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Ad Soyad</th>
+                            </tr>
+                        </thead>
+                        <tbody id="personel-govde">
+                            <tr><td colspan="3" style="text-align: center; color:var(--fg-sub); padding:10px;">Personel listesi bekleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <button class="btn btn-rapor" style="margin-top: 8px; padding: 12px; font-size:11px;" onclick="topluTebligPdfAl()">📑 Seçili Personeller İçin Toplu İmza Sirküsü Çıkar</button>
+            </div>
+
+            <div class="sag-panel" style="flex: 35%; padding: 20px; display: flex; flex-direction: column; gap: 15px; background-color: var(--bg-card); border: 1px solid var(--border);">
+                <h3 style="color: var(--tree-sel); margin-top: 0; border-bottom: 1px solid var(--border); padding-bottom: 5px;">✉️ Bireysel Tebliğ</h3>
+                <div>
+                    <span style="font-size: 11px; font-weight: bold; color: var(--fg-main);">Tebliğ Eden (İdareci):</span><br>
+                    <select id="b-eden" style="width: 100%; padding: 6px; margin-top: 5px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></select>
+                </div>
+                <div>
+                    <span style="font-size: 11px; font-weight: bold; color: var(--fg-main);">Tebellüğ Eden (Personel):</span><br>
+                    <select id="b-edilen" style="width: 100%; padding: 6px; margin-top: 5px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></select>
+                </div>
+                <div>
+                    <span style="font-size: 11px; font-weight: bold; color: var(--fg-main);">Tebliğ Yeri:</span><br>
+                    <input type="text" id="b-yer" value="Okul Müdürlüğü" style="width: 100%; padding: 6px; margin-top: 5px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                </div>
+                <button class="btn btn-yardim" style="margin-top: auto; padding: 12px; font-size:11px;" onclick="bireyselTebligPdfAl()">✉️ Bireysel Çıktı Al</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="sekme_ayarlar" class="tab-content">
+        <div class="top-bar"><h2 class="top-bar-title">SİSTEM AYARLARI VE VERİTABANI YÖNETİMİ</h2></div>
+        <div style="display: flex; gap: 20px;">
+            <div class="filtre-card" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px; background-color: var(--bg-card); border: 1px solid var(--border);">
+                <h3 style="color: var(--tree-sel); margin-top: 0;">⚙️ Klasör Ayarları</h3>
+                <div style="width: 100%; margin-bottom: 10px;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">PDF Kayıt Klasörü:</span><br><input type="text" id="ayar-pdf" style="width: 100%; padding: 8px; margin-top: 5px; font-size:12px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main);"></div>
+                <div style="width: 100%; margin-bottom: 10px;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Yedekleme Klasörü:</span><br><input type="text" id="ayar-yedek" style="width: 100%; padding: 8px; margin-top: 5px; font-size:12px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main);"></div>
+                <button class="btn btn-dev" style="padding: 12px; margin-top: 10px; width: 100%; font-size:12px;" onclick="ayarlariKaydet()">💾 Ayarları Kaydet</button>
+            </div>
+            <div class="filtre-card" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px; background-color: var(--bg-card); border: 1px solid var(--border);">
+                <h3 style="color: var(--tree-sel); margin-top: 0;">📦 Veritabanı ve Güvenlik</h3>
+                <p style="font-size: 11px; color: var(--fg-sub);">Tüm verilerinizi (Öğrenciler, Devamsızlıklar, Personeller) çökme riskine karşı güvenle yedekleyebilirsiniz.</p>
+                <button class="btn btn-ogr" style="padding: 12px; width: 100%; font-size: 13px;" onclick="sistemYedekle()">📦 Hemen Yedek Al</button>
+                <hr style="border-color: var(--border); width: 100%; margin: 25px 0;">
+                <h3 style="color: #EF4444; margin-top: 0;">⚠️ Tehlikeli İşlemler</h3>
+                <p style="font-size: 11px; color: var(--fg-sub);">Dönem sonlarında (Eğitim yılı bittiğinde) sistemi temizlemek için kullanılır. Bu işlem geri alınamaz!</p>
+                <button class="btn btn-kirmizi" style="padding: 12px; width: 100%; font-size: 13px;" onclick="veritabaniniSifirla()">🗑️ Tüm Sistemi Sıfırla (Fabrika Ayarları)</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const API = 'http://127.0.0.1:8000';
+        
+        let ogrenciListesi = [];
+        let tumPersoneller = [];
+        let sistemAyarlari = {};
+        
+        let seciliOgrenci = null;
+        let seciliDevamsizliklar = []; 
+        let geciciDevamsizliklar = []; 
+        let calYear = new Date().getFullYear();
+        let calMonth = new Date().getMonth(); 
+        let aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+        let karanlikMod = true;
+        let siralamaSutun = 'ad_soyad'; let siralamaYon = 1; 
+
+        // --- 1. ARAYÜZ VE MODAL YÖNETİMİ ---
+        function modalAc(id) { 
+            document.getElementById(id).style.display = 'flex'; 
+            if(id === 'raporlar_modal') {
+                const subeler = [...new Set(ogrenciListesi.map(o => sinifFormatla(o.sube)))];
+                subeler.sort((a, b) => (parseInt(a)||99) - (parseInt(b)||99));
+                const raporKutu = document.getElementById('rapor_sube_kutu');
+                if(raporKutu) {
+                    raporKutu.innerHTML = '<option>Seç</option>';
+                    subeler.forEach(s => raporKutu.innerHTML += `<option>${s}</option>`);
+                }
+            }
+        }
+        
+        function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
+
+        function temaDegistir() {
+            const root = document.documentElement; const btnTema = document.getElementById('btn-tema');
+            if (karanlikMod) {
+                root.style.setProperty('--bg-main', '#F1F5F9'); root.style.setProperty('--bg-card', '#FFFFFF'); root.style.setProperty('--fg-main', '#0F172A'); root.style.setProperty('--fg-sub', '#475569'); root.style.setProperty('--border', '#CBD5E1');
+                if(btnTema) btnTema.innerText = '🌙 Gece Modu'; karanlikMod = false;
+            } else {
+                root.style.setProperty('--bg-main', '#0F172A'); root.style.setProperty('--bg-card', '#1E293B'); root.style.setProperty('--fg-main', '#F8FAFC'); root.style.setProperty('--fg-sub', '#94A3B8'); root.style.setProperty('--border', '#334155');
+                if(btnTema) btnTema.innerText = '☀️ Gündüz Modu'; karanlikMod = true;
+            }
+            if (document.getElementById('yillik_modal').style.display === 'flex' && seciliOgrenci) { yillikListeAc(seciliOgrenci.no, seciliOgrenci.ad); }
+            takvimiCiz();
+        }
+
+        function sekmeAc(evt, sekmeId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('aktif'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('aktif'));
+            const hedef = document.getElementById(sekmeId);
+            if(hedef) hedef.classList.add('aktif');
+            if(evt && evt.currentTarget) evt.currentTarget.classList.add('aktif');
+            
+            if(sekmeId === 'sekme_izin') verileriYukle();
+            if(sekmeId === 'sekme_teblig') personelleriYukle();
+        }
+
+        function resizerAktifEt(resizerId, solId, sagId) {
+            const resizer = document.getElementById(resizerId); const sol = document.getElementById(solId); const sag = document.getElementById(sagId);
+            if(!resizer || !sol || !sag) return;
+            let isResizing = false;
+            resizer.addEventListener('mousedown', function(e) { isResizing = true; document.body.style.cursor = 'col-resize'; e.preventDefault(); });
+            document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                const containerRect = sol.parentElement.getBoundingClientRect();
+                let newSolWidth = e.clientX - containerRect.left - (resizer.offsetWidth / 2);
+                if (newSolWidth < 150) newSolWidth = 150; if (newSolWidth > containerRect.width - 200) newSolWidth = containerRect.width - 200;
+                sol.style.flex = `0 0 ${newSolWidth}px`; sag.style.flex = `1 1 0%`; 
+            });
+            document.addEventListener('mouseup', function(e) { if (isResizing) { isResizing = false; document.body.style.cursor = 'default'; } });
+        }
+
+        // ================= TABLO SÜTUN GENİŞLETME (ZEKİ MOTOR) =================
+        function tabloSutunBoyutlandirma() {
+            const resizers = document.querySelectorAll('.col-resizer');
+            let thEl, startX, startWidth;
+            resizers.forEach(resizer => {
+                resizer.addEventListener('mousedown', function(e) {
+                    thEl = e.target.parentElement; startX = e.pageX; startWidth = thEl.offsetWidth;
+                    document.addEventListener('mousemove', mouseMove); document.addEventListener('mouseup', mouseUp); e.stopPropagation();
+                });
+            });
+            function mouseMove(e) { thEl.style.width = (startWidth + (e.pageX - startX)) + 'px'; }
+            function mouseUp() { document.removeEventListener('mousemove', mouseMove); document.removeEventListener('mouseup', mouseUp); }
+        }
+
+        document.addEventListener('click', function(e) {
+            const sagTikMenu = document.getElementById('sag_tik_menu');
+            if(sagTikMenu && e.target !== sagTikMenu && !sagTikMenu.contains(e.target)) sagTikMenu.style.display = 'none';
+        });
+
+        // --- 2. YILLIK TABLO (EFEKT VE ÇİZİM) ---
+        let yillikHucreler = []; 
+        function yillikHoverEnter(r, c, tur) {
+            const pathBg = karanlikMod ? "#334155" : "#E2E8F0"; const targetFg = karanlikMod ? "#F8FAFC" : "#0F172A"; const borderHl = "#38BB94";
+            yillikHucreler.forEach(cell => {
+                let el = document.getElementById(`yillik_hucre_${cell.r}_${cell.c}`);
+                if (!el) return;
+                if (tur) {
+                    if (cell.isAbs) {
+                        if (cell.tur === tur) { el.style.filter = "brightness(1.3)"; el.style.opacity = "1"; }
+                        else { el.style.filter = "brightness(0.3)"; el.style.opacity = "0.4"; }
+                    } else if (cell.isValid) el.style.backgroundColor = "var(--bg-card)";
+                } else {
+                    let isPath = (cell.r === r && cell.c <= c) || (cell.c === c && cell.r <= r);
+                    if (isPath) {
+                        if (cell.r === r && cell.c === c) { el.style.filter = "brightness(1.3)"; el.style.opacity = "1"; } 
+                        else { 
+                           if (cell.isValid && !cell.isAbs) { el.style.backgroundColor = pathBg; el.style.color = targetFg; } 
+                           else if (cell.isAbs) { el.style.filter = "brightness(1.1)"; el.style.opacity = "1"; }
+                        }
+                    } else { 
+                        if (cell.isAbs) { el.style.filter = "brightness(0.3)"; el.style.opacity = "0.4"; }
+                        else if (cell.isValid) el.style.backgroundColor = "var(--bg-card)";
+                    }
+                }
+            });
+            if (r) { let rh = document.getElementById(`yillik_row_${r}`); if(rh) rh.style.border = `2px solid ${borderHl}`; }
+            if (c) { let ch = document.getElementById(`yillik_col_${c}`); if(ch) ch.style.border = `2px solid ${borderHl}`; }
+        }
+
+        function yillikHoverLeave() {
+            yillikHucreler.forEach(cell => {
+                let el = document.getElementById(`yillik_hucre_${cell.r}_${cell.c}`);
+                if (!el) return;
+                el.style.filter = "none"; el.style.opacity = "1";
+                if (cell.isValid && !cell.isAbs) { el.style.backgroundColor = cell.orjBg; el.style.color = cell.orjFg; }
+            });
+            for(let i=1; i<=10; i++) { let rh = document.getElementById(`yillik_row_${i}`); if(rh) rh.style.border = "1px solid var(--border)"; }
+            for(let i=1; i<=31; i++) { let ch = document.getElementById(`yillik_col_${i}`); if(ch) ch.style.border = "1px solid var(--border)"; }
+        }
+
+        function yillikListeAc(no, ad) {
+            document.getElementById('modal_baslik').innerText = `Yıllık Devamsızlık Karnesi - ${ad} (${no})`;
+            yillikHucreler = []; 
+            
+            fetch(`${API}/ogrenci-detay/${no}`).then(r => r.json()).then(veri => {
+                const thead = document.getElementById('yillik_thead'); const tbody = document.getElementById('yillik_tbody'); const ozetAlani = document.getElementById('yillik_ozet_alani');
+                thead.innerHTML = ""; tbody.innerHTML = ""; ozetAlani.innerHTML = "";
+                
+                let theadHtml = `<tr><th style="background-color: #1E3A8A; color: white; padding: 6px; border: 1px solid var(--border);">Aylar</th>`;
+                for(let i=1; i<=31; i++) { theadHtml += `<th id="yillik_col_${i}" style="background-color: #1E3A8A; color: white; padding: 4px; border: 1px solid var(--border); width: 25px;">${i}</th>`; }
+                theadHtml += `</tr>`; thead.innerHTML = theadHtml;
+
+                const aylarList = ["Eylül", "Ekim", "Kasım", "Aralık", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran"]; const ayNolar = [9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+                const rH = { "D": "#DC2626", "ÖY": "#EF4444", "SY": "#F87171", "G": "#EA580C", "İ": "#EAB308", "I": "#EAB308", "S": "#F59E0B", "R": "#D97706", "M": "#92400E", "N": "#3B82F6", "F": "#6366F1", "SV": "#8B5CF6" };
+
+                let devMap = {}; let detayOzursuz = {}; let detayOzurlu = {}; let detayDiger = {}; let hsOzursuz = {}; let hsOzurlu = {}; let hsDiger = {}; let ozszNet = 0.0; let ozrlNet = 0.0; let digerNet = 0.0; let gSayisi = 0;
+                const tumKayitlar = [...veri.devamsizliklar];
+                geciciDevamsizliklar.forEach(gd => { if (String(gd.no) === String(no)) tumKayitlar.push(gd); });
+
+                tumKayitlar.forEach(dev => {
+                    let tur = dev.tur.toUpperCase(); let gunMiktari = parseFloat(dev.gun) || 0.0; let tamGun = gunMiktari >= 1 ? parseInt(gunMiktari) : 1;
+                    let parts = dev.tarih.split('/'); if(parts.length !== 3) return;
+                    let basTarih = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+                    let hiMiktari = 0.0, hsMiktari = 0.0;
+                    
+                    for(let i=0; i<tamGun; i++) {
+                        let gTarih = new Date(basTarih); gTarih.setDate(gTarih.getDate() + i);
+                        if (gTarih.getDay() !== 0 && gTarih.getDay() !== 6) devMap[`${gTarih.getMonth()+1}-${gTarih.getDate()}`] = tur;
+                    }
+                    if (gunMiktari <= 1) { if (basTarih.getDay() === 0 || basTarih.getDay() === 6) hsMiktari = gunMiktari; else hiMiktari = gunMiktari; } 
+                    else {
+                        for(let i=0; i<tamGun; i++) {
+                            let gTarih = new Date(basTarih); gTarih.setDate(gTarih.getDate() + i);
+                            if (gTarih.getDay() === 0 || gTarih.getDay() === 6) hsMiktari += 1; else hiMiktari += 1;
+                        }
+                    }
+
+                    if (["D", "ÖY", "SY"].includes(tur)) { detayOzursuz[tur] = (detayOzursuz[tur] || 0) + gunMiktari; hsOzursuz[tur] = (hsOzursuz[tur] || 0) + hsMiktari; ozszNet += hiMiktari; } 
+                    else if (tur === "G") { gSayisi += 1; } 
+                    else if (["N", "F", "SV"].includes(tur)) { detayDiger[tur] = (detayDiger[tur] || 0) + gunMiktari; hsDiger[tur] = (hsDiger[tur] || 0) + hsMiktari; digerNet += hiMiktari; } 
+                    else { detayOzurlu[tur] = (detayOzurlu[tur] || 0) + gunMiktari; hsOzurlu[tur] = (hsOzurlu[tur] || 0) + hsMiktari; ozrlNet += hiMiktari; }
+                });
+
+                if (gSayisi > 0) { let g = Math.floor(gSayisi / 5) * 0.5; detayOzursuz[`G (${gSayisi})`] = g; ozszNet += g; }
+
+                for(let rowIdx=1; rowIdx<=10; rowIdx++) {
+                    let ayAd = aylarList[rowIdx-1]; let ayNo = ayNolar[rowIdx-1];
+                    let tr = document.createElement('tr');
+                    tr.innerHTML = `<td id="yillik_row_${rowIdx}" style="background-color: var(--border); color: var(--fg-main); font-weight: bold; padding: 4px; border: 1px solid var(--border);">${ayAd}</td>`;
+                    
+                    for(let gun=1; gun<=31; gun++) {
+                        let is_valid = true, is_weekend = false; let y_val = ayNo < 8 ? calYear : calYear - 1; let dt = new Date(y_val, ayNo-1, gun);
+                        if (dt.getMonth() + 1 !== ayNo) is_valid = false; else if (dt.getDay() === 0 || dt.getDay() === 6) is_weekend = true;
+
+                        let cellBg = karanlikMod ? "#1E293B" : "#F1F5F9"; let cellFg = "var(--fg-main)"; let cellText = ""; let isAbs = false;
+                        if (!is_valid || is_weekend) { cellBg = karanlikMod ? "#0B1120" : "#D1D5DB"; } 
+                        else {
+                            let devKey = `${ayNo}-${gun}`;
+                            if (devMap[devKey]) { cellText = devMap[devKey]; isAbs = true; cellBg = rH[cellText] || "#64748B"; cellFg = "#FFFFFF"; }
+                        }
+
+                        yillikHucreler.push({ r: rowIdx, c: gun, isAbs: isAbs, isValid: (is_valid && !is_weekend), tur: cellText, orjBg: cellBg, orjFg: cellFg });
+                        let onEvts = `onmouseenter="yillikHoverEnter(${rowIdx}, ${gun})" onmouseleave="yillikHoverLeave()"`;
+                        tr.innerHTML += `<td id="yillik_hucre_${rowIdx}_${gun}" ${onEvts} style="background-color: ${cellBg}; color: ${cellFg}; border: 1px solid var(--border); font-weight: bold; font-size: 10px; cursor: default; transition: 0.1s;">${cellText}</td>`;
+                    }
+                    tbody.appendChild(tr);
+                }
+                
+                function ozetKutusuCiz(baslik, detay, hsDict, net, fgColor) {
+                    let html = `<div style="width: 250px; background-color: var(--bg-main); border: 1px solid var(--border); display: flex; flex-direction: column;">
+                        <div style="background-color: #1E3A8A; color: white; padding: 6px; text-align: center; font-weight: bold; font-size: 11px;">${baslik}</div>
+                        <div style="flex: 1; padding: 10px; display: flex; flex-direction: column; gap: 4px; font-size: 10px;">`;
+                    if (Object.keys(detay).length === 0) { html += `<div style="text-align: center; color: var(--fg-sub); margin-top: 10px;">Kayıt Yok</div>`; } 
+                    else {
+                        for(let tur in detay) {
+                            let hsGun = hsDict[tur] || 0; let hsYazi = hsGun > 0 ? ` <span style="font-size:9px;">(${hsGun} Hafta Sonu)</span>` : ''; let safTur = tur.split(" ")[0]; let rnk = rH[safTur] || 'var(--fg-sub)';
+                            html += `<div style="cursor: pointer;" onmouseenter="yillikHoverEnter(null, null, '${safTur}')" onmouseleave="yillikHoverLeave()">
+                                <span style="color: ${rnk}; font-weight: bold;">${tur} :</span> <span style="color: var(--fg-main); font-weight:bold;">${detay[tur]} Gün</span><span style="color: var(--fg-sub);">${hsYazi}</span>
+                            </div>`;
+                        }
+                    }
+                    html += `</div><div style="text-align: center; padding: 6px; font-weight: bold; font-size: 13px; color: ${fgColor}; border-top: 1px solid var(--border); background-color: var(--bg-card);">Toplam: ${net} Gün</div></div>`;
+                    return html;
+                }
+
+                ozetAlani.innerHTML += ozetKutusuCiz("Özürlü Devamsızlık", detayOzurlu, hsOzurlu, ozrlNet, "var(--fg-main)");
+                ozetAlani.innerHTML += ozetKutusuCiz("Özürsüz Devamsızlık", detayOzursuz, hsOzursuz, ozszNet, ozszNet >= 10 ? "#DC2626" : "var(--fg-main)");
+                ozetAlani.innerHTML += ozetKutusuCiz("Diğer Devamsızlık", detayDiger, hsDiger, digerNet, "var(--fg-main)");
+
+                modalAc('yillik_modal');
+            });
+        }
+
+        // --- 3. SAĞ TIK MENU VE KOPYALAMA ---
+        let sagTikOgrNo = ""; let sagTikOgrAd = "";
+        function sagTikMenuAc(e, no, ad) {
+            e.preventDefault(); sagTikOgrNo = no; sagTikOgrAd = ad;
+            const menu = document.getElementById('sag_tik_menu');
+            if(menu) { menu.style.display = 'flex'; menu.style.left = e.pageX + 'px'; menu.style.top = e.pageY + 'px'; }
+        }
+        function kopyalaNo() { navigator.clipboard.writeText(sagTikOgrNo); alert("Numara kopyalandı!"); }
+        function kopyalaAd() { navigator.clipboard.writeText(sagTikOgrAd); alert("Ad Soyad kopyalandı!"); }
+        function ogrenciyiTamamenSil() {
+            if(!confirm(`${sagTikOgrAd} kalıcı olarak silinecek. Onaylıyor musunuz?`)) return;
+            fetch(`${API}/ogrenci-sil/${sagTikOgrNo}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
+                alert(v.mesaj); verileriYukle();
+                document.getElementById('sag_bos_uyari').style.display = 'flex'; document.getElementById('sag_dolu_icerik').style.display = 'none';
+            });
+        }
+
+        // --- 4. ANA TABLO, ZEKİ FORMATLAYICI VE TAKVİM ---
+        function sinifFormatla(orj) {
+            if(!orj) return "-";
+            // 1. Önce parantez içindeki her şeyi /(.*?)/ toptan siler (örn: "(Alanı Yok)").
+            // 2. Sonra sınıf/şube yazılarını siler.
+            // 3. En son aradaki boşlukları ve noktaları temizler.
+            return orj.replace(/\(.*?\)/g, '')
+                      .replace(/sınıfı/ig, '')
+                      .replace(/sınıf/ig, '')
+                      .replace(/sinifi/ig, '')
+                      .replace(/sinif/ig, '')
+                      .replace(/şubesi/ig, '')
+                      .replace(/subesi/ig, '')
+                      .replace(/şube/ig, '')
+                      .replace(/sube/ig, '')
+                      .replace(/[\.\s]/g, '')
+                      .toUpperCase();
+        }
+        
+        function sirala(sutun) {
+            if (siralamaSutun === sutun) siralamaYon *= -1; else { siralamaSutun = sutun; siralamaYon = 1; }
+            tabloyuDoldur();
+        }
+        function basliklariGuncelle() {
+            const basliklar = { 'temizSube': 'Sınıf', 'no': 'No', 'ad_soyad': 'Ad Soyad', 'ozsz': 'Özürsüz', 'ozrl': 'Özürlü' };
+            for(let key in basliklar) { let el = document.getElementById('span_' + key); if(el) el.innerText = basliklar[key] + (siralamaSutun === key ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕'); }
+        }
+        function dosyaYukle(endpoint, event) {
+            const dosya = event.target.files[0]; if (!dosya) return;
+            const formData = new FormData(); formData.append("dosya", dosya);
+            fetch(`${API}/${endpoint}`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
+                if(v.basarili) { alert(v.mesaj); verileriYukle(); } else { alert("Hata: " + v.mesaj); }
+                event.target.value = ''; 
+            }).catch(err => { alert("Bağlantı hatası! Sunucuyu kontrol edin."); });
+        }
+        function filtreTemizle() { document.getElementById('ent_arama').value = ""; document.getElementById('combo_arama_sube').value = "Tümü"; tabloyuDoldur(); }
+
+        function tabloyuDoldur() {
+            const arama = document.getElementById('ent_arama') ? document.getElementById('ent_arama').value.toUpperCase() : "";
+            const subeFiltre = document.getElementById('combo_arama_sube') ? document.getElementById('combo_arama_sube').value : "Tümü";
+            const govde = document.getElementById('tree_govde'); if(!govde) return;
+            govde.innerHTML = ""; basliklariGuncelle();
+
+            let islenecekler = ogrenciListesi.map(ogr => {
+                let temizSube = sinifFormatla(ogr.sube);
+                return { ...ogr, temizSube: temizSube, ozsz: Math.round((ogr.ozursuz || 0)*10)/10, ozrl: Math.round((ogr.ozurlu || 0)*10)/10 };
+            }).filter(ogr => {
+                if (subeFiltre !== "Tümü" && ogr.temizSube !== subeFiltre) return false;
+                if (arama && arama !== "NUMARA VEYA AD SOYAD" && !ogr.ad_soyad.toUpperCase().includes(arama) && !ogr.no.includes(arama)) return false;
+                return true;
+            });
+
+            islenecekler.sort((a, b) => {
+                let valA = a[siralamaSutun]; let valB = b[siralamaSutun];
+                if(siralamaSutun === 'temizSube') {
+                    let numA = parseInt(a.temizSube) || 99; let numB = parseInt(b.temizSube) || 99;
+                    if(numA !== numB) return (numA - numB) * siralamaYon;
+                }
+                if(['no', 'ozsz', 'ozrl'].includes(siralamaSutun)) { valA = parseFloat(valA || 0); valB = parseFloat(valB || 0); }
+                if (valA < valB) return -1 * siralamaYon; if (valA > valB) return 1 * siralamaYon;
+                return 0;
+            });
+
+            islenecekler.forEach(ogr => {
+                const ozszStr = ogr.ozsz >= 10 ? `<span style="font-weight:bold; color:#EF4444;">${ogr.ozsz} Gün</span>` : `${ogr.ozsz} Gün`;
+                const tr = document.createElement('tr'); tr.style.cursor = "pointer"; tr.style.borderBottom = "1px solid var(--border)";
+                tr.onclick = function() {
+                    document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
+                    tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.ozsz, ogr.ozrl);
+                };
+                tr.ondblclick = function() { yillikListeAc(ogr.no, ogr.ad_soyad); };
+                tr.oncontextmenu = function(e) {
+                    document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
+                    tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.ozsz, ogr.ozrl); sagTikMenuAc(e, ogr.no, ogr.ad_soyad);
+                };
+                // Taşan yazıları ... olarak göstermek için CSS eklendi
+                // Taşan yazıları ... olarak göstermek için CSS eklendi ve BOLD etiketleri silindi
+                tr.innerHTML = `<td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.temizSube}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.no}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ad_soyad}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ozszStr}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ozrl} Gün</td>`;
+                govde.appendChild(tr);
+            });
+        }
+
+        function ogrenciSec(no, ad, ozsz, ozrl) {
+            seciliOgrenci = { no: no, ad: ad };
+            document.getElementById('sag_bos_uyari').style.display = 'none'; document.getElementById('sag_dolu_icerik').style.display = 'flex';
+            document.getElementById('lbl_secili_ogrenci').innerText = `${ad} (${no})`;
+            document.getElementById('lbl_ozet').innerText = `Özürsüz: ${ozsz} | Özürlü: ${ozrl}`;
+            document.getElementById('lbl_ozet').style.color = ozsz >= 10 ? '#DC2626' : 'var(--fg-sub)';
+            fetch(`${API}/ogrenci-detay/${no}`).then(res => res.json()).then(veri => {
+                seciliDevamsizliklar = veri.devamsizliklar.map(d => ({...d, secili: false})); geciciDevamsizliklar = []; takvimiCiz(); onizlemeGuncelle();
+            });
+        }
+
+        function ayDegistir(artis) { calMonth += artis; if (calMonth > 11) { calMonth = 0; calYear++; } else if (calMonth < 0) { calMonth = 11; calYear--; } takvimiCiz(); }
+
+        function takvimiCiz() {
+            document.getElementById('lbl_ay_yil').innerText = `${aylar[calMonth]} ${calYear}`;
+            const grid = document.getElementById('takvim_grid');
+            grid.innerHTML = `<div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Pzt</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Sal</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Çar</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Per</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Cum</div>`;
+            const ilkGun = new Date(calYear, calMonth, 1); const sonGun = new Date(calYear, calMonth + 1, 0).getDate();
+            let bosGunSayisi = ilkGun.getDay() === 0 ? 6 : ilkGun.getDay() - 1; 
+            for(let i = 0; i < bosGunSayisi; i++) { if (i < 5) grid.innerHTML += `<div style="visibility: hidden;"></div>`; }
+
+            const tumKayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar];
+            for(let i = 1; i <= sonGun; i++) {
+                let haftaninGunu = new Date(calYear, calMonth, i).getDay(); if (haftaninGunu === 0 || haftaninGunu === 6) continue; 
+                let tarihStr = `${i.toString().padStart(2, '0')}/${(calMonth+1).toString().padStart(2, '0')}/${calYear}`;
+                let kayit = tumKayitlar.find(k => k.tarih === tarihStr);
+                
+                let borderStyle = 'border: 1px solid var(--border);'; let bgStyle = karanlikMod ? '#334155' : '#F8FAFC'; let fgStyle = 'var(--fg-main)'; let icerik = '';
+                if (kayit) {
+                    let tur = kayit.tur.toUpperCase();
+                    if(['D', 'ÖY', 'SY'].includes(tur)) {
+                        bgStyle = karanlikMod ? '#7F1D1D' : '#FEE2E2'; fgStyle = karanlikMod ? '#FEF2F2' : '#991B1B';
+                        icerik = `<div style="font-size: 10px; font-weight: bold; text-align: center; color: ${fgStyle};">${kayit.gun} ${tur}</div>`;
+                        if(kayit.secili) borderStyle = 'border: 2px solid #10B981; box-shadow: inset 0 0 5px #10B981;';
+                    } else { kayit = null; } 
+                }
+                grid.innerHTML += `<div style="background-color: ${bgStyle}; ${borderStyle} border-radius: 2px; padding: 4px; height: 55px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none;" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div style="font-size: 10px; font-weight: bold; color: ${fgStyle};">${i}</div>${icerik}</div>`;
+            }
+        }
+
+        function hucreTikla(tarihStr) {
+            let kalici = seciliDevamsizliklar.find(d => d.tarih === tarihStr && ['D', 'ÖY', 'SY'].includes(d.tur.toUpperCase()));
+            if (kalici) { kalici.secili = !kalici.secili; takvimiCiz(); onizlemeGuncelle(); return; }
+
+            let gecici = geciciDevamsizliklar.find(d => d.tarih === tarihStr);
+            if (!gecici) { geciciDevamsizliklar.push({id: 'temp_'+Date.now(), tarih: tarihStr, tur: 'D', gun: '1', secili: true}); } 
+            else {
+                if(gecici.tur === 'D') { gecici.tur = 'SY'; gecici.gun = '0.5'; }
+                else if(gecici.tur === 'SY') { gecici.tur = 'ÖY'; gecici.gun = '0.5'; }
+                else if(gecici.tur === 'ÖY') { geciciDevamsizliklar = geciciDevamsizliklar.filter(d => d.tarih !== tarihStr); }
+            }
+            takvimiCiz(); onizlemeGuncelle();
+        }
+
+        function hucreSagTikla(e, tarihStr) { e.preventDefault(); geciciDevamsizliklar = geciciDevamsizliklar.filter(d => d.tarih !== tarihStr); takvimiCiz(); onizlemeGuncelle(); }
+
+        let seciliOnizlemeSatirlari = [];
+        function onizlemeSatirSec(id) {
+            let tr = document.getElementById('onizleme_tr_' + id);
+            if (seciliOnizlemeSatirlari.includes(id)) { seciliOnizlemeSatirlari = seciliOnizlemeSatirlari.filter(x => x !== id); tr.style.backgroundColor = "transparent"; } 
+            else { seciliOnizlemeSatirlari.push(id); tr.style.backgroundColor = "var(--border)"; }
+        }
+
+        function onizlemeGuncelle() {
+            const govde = document.getElementById('tree_detay_govde'); govde.innerHTML = "";
+            let toplamGun = 0.0; seciliOnizlemeSatirlari = []; 
+
+            const gosterilecek = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili).sort((a,b) => {
+                let pa = a.tarih.split('/').reverse().join(''); let pb = b.tarih.split('/').reverse().join(''); return pb.localeCompare(pa);
+            });
+
+            gosterilecek.forEach(d => {
+                toplamGun += parseFloat(d.gun) || 0;
+                govde.innerHTML += `<tr id="onizleme_tr_${d.id}" onclick="onizlemeSatirSec('${d.id}')" style="cursor: pointer; border-bottom: 1px solid var(--border);">
+                    <td style="padding: 6px; color: var(--fg-main);">${d.tarih}</td><td style="padding: 6px; color: var(--fg-main);"><b>${d.tur}</b></td><td style="padding: 6px; color: var(--fg-main);">${d.gun}</td>
+                </tr>`;
+            });
+            document.getElementById('lbl_onizleme_toplam').innerText = `Toplam: ${toplamGun} Gün`;
+        }
+
+        function onizlemeCikar() {
+            if(seciliOnizlemeSatirlari.length === 0) return;
+            seciliDevamsizliklar.forEach(d => { if(seciliOnizlemeSatirlari.includes(d.id.toString())) d.secili = false; });
+            geciciDevamsizliklar = geciciDevamsizliklar.filter(d => !seciliOnizlemeSatirlari.includes(d.id.toString()));
+            seciliOnizlemeSatirlari = []; takvimiCiz(); onizlemeGuncelle();
+        }
+
+        function onizlemeTemizle() { seciliDevamsizliklar.forEach(d => d.secili = false); geciciDevamsizliklar = []; takvimiCiz(); onizlemeGuncelle(); }
+
+        function topluSecim(mod) {
+            if(!seciliOgrenci) return;
+            seciliDevamsizliklar.forEach(d => d.secili = false);
+            const parseTarih = (str) => { let p = str.split('/'); return p.length === 3 ? new Date(p[2], p[1]-1, p[0]) : null; };
+
+            seciliDevamsizliklar.forEach(d => {
+                if(!['D', 'ÖY', 'SY'].includes(d.tur.toUpperCase())) return;
+                if(mod === 'tumu') d.secili = true;
+                else if(mod === 'bu_ay') {
+                    let strAy = (calMonth+1).toString().padStart(2, '0'); let strYil = calYear.toString();
+                    if(d.tarih.includes(`/${strAy}/${strYil}`)) d.secili = true;
+                }
+                else if(mod === 'son_iki_ay') {
+                    let strAy1 = (calMonth+1).toString().padStart(2, '0'); let strYil1 = calYear.toString();
+                    let prevMonth = calMonth === 0 ? 11 : calMonth - 1; let prevYear = calMonth === 0 ? calYear - 1 : calYear;
+                    let strAy2 = (prevMonth+1).toString().padStart(2, '0'); let strYil2 = prevYear.toString();
+                    if(d.tarih.includes(`/${strAy1}/${strYil1}`) || d.tarih.includes(`/${strAy2}/${strYil2}`)) d.secili = true;
+                }
+                else if(mod === 'aralik') {
+                    let basStr = document.getElementById('t_bas').value; let bitStr = document.getElementById('t_bit').value;
+                    if(!basStr || !bitStr) return; 
+                    let bDate = parseTarih(basStr); let eDate = parseTarih(bitStr);
+                    if(!bDate || !eDate) return; 
+                    let kDate = parseTarih(d.tarih); if(kDate && kDate >= bDate && kDate <= eDate) d.secili = true;
+                }
+            });
+            takvimiCiz(); onizlemeGuncelle();
+        }
+
+        function verileriYukle() {
+            fetch(`${API}/ogrenciler`).then(res => res.json()).then(veri => {
+                ogrenciListesi = veri.ogrenciler;
+                let temizSubeler = [...new Set(ogrenciListesi.map(o => sinifFormatla(o.sube)))];
+                temizSubeler.sort((a, b) => (parseInt(a)||99) - (parseInt(b)||99));
+                const combo = document.getElementById('combo_arama_sube');
+                if(combo) {
+                    const eskiSecim = combo.value;
+                    combo.innerHTML = '<option value="Tümü">Tümü</option>';
+                    temizSubeler.forEach(sube => { combo.innerHTML += `<option value="${sube}">${sube}</option>`; });
+                    combo.value = eskiSecim || "Tümü";
+                }
+                tabloyuDoldur();
+            });
+        }
+        
+        function pdfCiktisiAl() {
+            if(!seciliOgrenci) return;
+            const kayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili);
+            if(kayitlar.length === 0) { alert("Önizleme listesinde yazdırılacak kayıt yok!"); return; }
+            
+            const geciciler = kayitlar.filter(d => d.id.startsWith('temp_'));
+            if(geciciler.length > 0) {
+                alert("Manuel girdiğiniz kayıtlar veritabanına işleniyor, ardından PDF oluşturulacaktır.");
+                Promise.all(geciciler.map(g => {
+                    return fetch(`${API}/devamsizlik-manuel-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no: seciliOgrenci.no, tarih: g.tarih, tur: g.tur, gun: g.gun }) });
+                })).then(() => { gercekPdfIstegiAt(kayitlar); verileriYukle(); });
+            } else { gercekPdfIstegiAt(kayitlar); }
+        }
+
+        function gercekPdfIstegiAt(kayitlar) {
+            const ad = document.getElementById('lbl_secili_ogrenci').innerText.split(' - ')[1]?.split(' (')[0] || seciliOgrenci.ad;
+            const sube = document.querySelector('.tr-secili td')?.innerText || "Bilinmiyor";
+            const veri = { no: seciliOgrenci.no, ad: ad, sube: sube, kayitlar: kayitlar };
+
+            fetch(`${API}/pdf-veli-formu`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
+            .then(res => res.json()).then(sonuc => {
+                alert(sonuc.mesaj); geciciDevamsizliklar = []; seciliDevamsizliklar.forEach(d => d.secili = false); takvimiCiz(); onizlemeGuncelle();
+            });
+        }
+        
+        // --- 5. YAZI TEBLİĞİ VE AYARLAR ---
+        function personelleriYukle() {
+            fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
+                tumPersoneller = veri.personeller;
+                const govde = document.getElementById('personel-govde');
+                const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
+                if(!govde || !cbEden) return;
+
+                govde.innerHTML = ""; cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>'; cbEdilen.innerHTML = '<option value="">-- Personel Seçin --</option>';
+                if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px;'>Personel bulunamadı.</td></tr>"; return; }
+
+                tumPersoneller.forEach((p, i) => {
+                    const unvan = p.gorev !== "-" ? p.gorev : p.brans;
+                    govde.innerHTML += `<tr><td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" checked></td><td>${unvan}</td><td><label for="chk_${i}">${p.ad}</label></td></tr>`;
+                    cbEdilen.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
+                    if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
+                });
+            });
+        }
+
+        function mebPdfYukle(event) {
+            const dosya = event.target.files[0]; if (!dosya) return;
+            document.getElementById('t-sayi').value = "Okunuyor...";
+            const formData = new FormData(); formData.append("dosya", dosya);
+            fetch(`${API}/meb-pdf-oku`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
+                if(v.basarili) { document.getElementById('t-sayi').value = v.sayi; document.getElementById('t-konu').value = v.konu; document.getElementById('t-tarih').value = v.tarih; } 
+                else { alert(v.mesaj); document.getElementById('t-sayi').value = ""; }
+                event.target.value = ''; 
+            });
+        }
+
+        function bireyselTebligPdfAl() {
+            const eden = tumPersoneller.find(p => p.ad === document.getElementById('b-eden').value);
+            const edilen = tumPersoneller.find(p => p.ad === document.getElementById('b-edilen').value);
+            if(!eden || !edilen) return alert("Kişileri seçin!");
+            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, yer: document.getElementById('b-yer').value, eden: {ad: eden.ad, gorev: eden.gorev !== "-" ? eden.gorev : eden.brans}, edilen: {ad: edilen.ad, gorev: edilen.gorev !== "-" ? edilen.gorev : edilen.brans} };
+            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => alert(v.mesaj));
+        }
+
+        function topluTebligPdfAl() {
+            const seciliAdlar = Array.from(document.querySelectorAll('.chk-personel:checked')).map(cb => cb.value);
+            if(seciliAdlar.length === 0) return alert("Personel seçin!");
+            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, personeller: tumPersoneller.filter(p => seciliAdlar.includes(p.ad)) };
+            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => alert(v.mesaj));
+        }
+
+        function ayarlariYukle() {
+            fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
+                sistemAyarlari = v.ayarlar;
+                if(document.getElementById('ayar_pdf_yol')) document.getElementById('ayar_pdf_yol').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;
+                if(document.getElementById('ayar_yedek_yol')) document.getElementById('ayar_yedek_yol').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
+                if(document.getElementById('ayar-pdf')) document.getElementById('ayar-pdf').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;
+                if(document.getElementById('ayar-yedek')) document.getElementById('ayar-yedek').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
+            });
+        }
+
+        function ayarlariKaydet() {
+            let pdfYol = document.getElementById('ayar_pdf_yol') ? document.getElementById('ayar_pdf_yol').value : (document.getElementById('ayar-pdf') ? document.getElementById('ayar-pdf').value : "");
+            let yedekYol = document.getElementById('ayar_yedek_yol') ? document.getElementById('ayar_yedek_yol').value : (document.getElementById('ayar-yedek') ? document.getElementById('ayar-yedek').value : "");
+            
+            sistemAyarlari.pdf_kayit_klasoru = pdfYol;
+            sistemAyarlari.yedek_kayit_klasoru = yedekYol;
+            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) }).then(r => r.json()).then(v => { alert(v.mesaj); modalKapat('ayarlar_modal'); });
+        }
+
+        function sistemYedekle() { fetch(`${API}/yedek-al`, { method: 'POST' }).then(r => r.json()).then(v => { alert(v.mesaj); modalKapat('ayarlar_modal'); }); }
+        
+        function veritabaniniSifirla() {
+            if(confirm("Tüm öğrenciler, devamsızlıklar ve personeller SİLİNECEK.\nEmin misiniz?")) {
+                if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
+                    fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { alert(v.mesaj); location.reload(); });
+                }
+            }
+        }
+
+
+        
+
+        window.onload = function() {
+            verileriYukle();
+            ayarlariYukle(); 
+            resizerAktifEt('resizer1', 'sol_panel_ana', 'sag_panel_ana');
+            resizerAktifEt('resizer2', 'takvim_alani_ana', 'onizleme_alani_ana');
+            tabloSutunBoyutlandirma();
+        };
+
+  
+        
+    </script>
+</body>
+</html>
