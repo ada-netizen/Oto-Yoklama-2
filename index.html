@@ -163,6 +163,25 @@
         .toast.hata { background-color: #EF4444; border-color: #7F1D1D; }
         .toast.goster { opacity: 0.97; transform: translateY(0); }
 
+        /* --- YÜKLENİYOR GÖSTERGESİ (Excel işlenirken) --- */
+        .yukleniyor-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.75); z-index: 9998; justify-content: center; align-items: center; flex-direction: column; gap: 15px; }
+        .yukleniyor-spinner { width: 42px; height: 42px; border: 4px solid #334155; border-top: 4px solid #38BB94; border-radius: 50%; animation: donSpin 0.8s linear infinite; }
+        .yukleniyor-metin { color: #F8FAFC; font-family: var(--font-ui); font-size: 13px; font-weight: bold; }
+        @keyframes donSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- AÇILIŞ (SPLASH) EKRANI --- */
+        .splash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0F172A; z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; transition: opacity 0.4s ease; }
+        .splash-overlay.gizli { opacity: 0; pointer-events: none; }
+        .splash-baslik { font-family: var(--font-ui); font-size: 32px; font-weight: bold; color: #38BB94; letter-spacing: 1px; }
+        .splash-altyazi { font-family: var(--font-ui); font-size: 12px; color: #94A3B8; margin-top: 18px; }
+
+        /* --- PERSONEL SEKMESİ FİLTRE PANELLERİ --- */
+        .personel-filtre-panel { display:none; position:absolute; top:110%; left:0; background: var(--bg-card); border:1px solid var(--border); border-radius:4px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 150; min-width:190px; max-height:220px; overflow-y:auto; padding:4px 0; }
+        .personel-filtre-panel.acik { display:block; }
+        .personel-filtre-item { display:flex; align-items:center; gap:6px; padding:5px 10px; font-size:11px; color: var(--fg-main); cursor:pointer; }
+        .personel-filtre-item:hover { background: var(--bg-main); }
+        .personel-filtre-toplu { font-weight:bold; border-bottom:1px solid var(--border); color: var(--tree-sel); }
+
     </style>
 </head>
    
@@ -170,6 +189,16 @@
 </head>
 <body>
     <div id="toast_container" class="toast-container"></div>
+
+    <div id="splash_overlay" class="splash-overlay">
+        <div class="splash-baslik">⛭ OTO-YOKLAMA</div>
+        <div class="splash-altyazi">Sistem Altyapısı Hazırlanıyor...</div>
+    </div>
+
+    <div id="yukleniyor_overlay" class="yukleniyor-overlay">
+        <div class="yukleniyor-spinner"></div>
+        <div class="yukleniyor-metin" id="yukleniyor_metin">Yükleniyor...</div>
+    </div>
 
     <div id="sag_tik_menu" class="context-menu">
         <div class="context-menu-item" onclick="kopyalaNo()">📋 Numarayı Kopyala</div>
@@ -249,6 +278,24 @@
                                 </select>
                             </td></tr>
                     </table>
+                </fieldset>
+
+                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Otomatik Zamanlı Yedekleme </legend>
+                    <table style="width: 100%; font-size: 11px;">
+                        <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">Yedekleme Saati:</td>
+                            <td style="padding: 5px 0;"><input type="time" id="ayar_yedek_saati" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></td></tr>
+                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Sıklık:</td>
+                            <td style="display:flex; gap:8px; align-items:center; padding: 5px 0;">
+                                <select id="ayar_yedek_sikligi" style="flex:1; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
+                                    <option>Her Gün</option><option>Haftada 1</option><option>Ayda 1</option><option>Özel Gün</option>
+                                </select>
+                                <div id="ayar_yedek_gun_sayisi_satir" style="display:none; align-items:center; gap:5px;">
+                                    <input type="number" id="ayar_yedek_gun_sayisi" min="1" value="3" style="width:50px; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"> <span style="color: var(--fg-sub);">günde bir</span>
+                                </div>
+                            </td></tr>
+                    </table>
+                    <div style="font-size:10px; color: var(--fg-sub); margin-top:8px;">Program açıkken, belirlenen saat geldiğinde veritabanı otomatik olarak yedeklenir.</div>
                 </fieldset>
 
                 <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
@@ -394,10 +441,10 @@
                 
                 <button class="btn btn-ogr" onclick="document.getElementById('f-ogr').click()">Öğrenci Yükle</button>
                 <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()">Devamsızlık Yükle</button>
-                <button class="btn btn-rapor" onclick="modalAc('raporlar_modal')">📄 Raporlar</button>
-                <button class="btn btn-gece" id="btn-tema" onclick="temaDegistir()">☀️ Gündüz Modu</button>
-                <button class="btn btn-ayarlar" onclick="modalAc('ayarlar_modal')">⚙️ Ayarlar</button>
-                <button class="btn btn-yardim" onclick="modalAc('yardim_modal')">❓ Yardım</button>
+                <button class="btn btn-rapor" title="Devamsızlık sınırlarına göre öğrenci raporları oluşturun" onclick="modalAc('raporlar_modal')">📄 Raporlar</button>
+                <button class="btn btn-gece" id="btn-tema" title="Aydınlık/Karanlık tema arasında geçiş yapın" onclick="temaDegistir()">☀️ Gündüz Modu</button>
+                <button class="btn btn-ayarlar" title="Okul bilgileri, dosya konumları ve yedekleme ayarları" onclick="modalAc('ayarlar_modal')">⚙️ Ayarlar</button>
+                <button class="btn btn-yardim" title="Kullanım kılavuzunu görüntüleyin" onclick="modalAc('yardim_modal')">❓ Yardım</button>
             </div>
         </div>
 
@@ -498,7 +545,7 @@
                                 <button class="btn" style="flex: 1; background: #EF4444; color: white; padding: 5px;" onclick="onizlemeCikar()">⬅ Çıkar</button>
                                 <button class="btn" style="flex: 1; background: #475569; color: white; padding: 5px;" onclick="onizlemeTemizle()">Tümünü Temizle</button>
                             </div>
-                            <button class="btn" style="background-color: #EA580C; color: white; padding: 15px; font-size: 12px; font-weight: bold;" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
+                            <button class="btn" style="background-color: #EA580C; color: white; padding: 15px; font-size: 12px; font-weight: bold;" title="Seçili devamsızlık kayıtları için veli bilgilendirme formu (A5 PDF) oluşturur" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
                         </div>
                     </div>
                 </div>
@@ -512,9 +559,9 @@
             <div class="top-bar-buttons">
                 <input type="file" id="f-meb" style="display: none;" accept=".pdf" onchange="mebPdfYukle(event)">
                 <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
-                <button class="btn btn-kirmizi" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
-                <button class="btn btn-ogr" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
-                <button class="btn btn-ayarlar" onclick="personelYonetimAc()">👤 Personel Yönetimi</button>
+                <button class="btn btn-kirmizi" title="MEB'den gelen resmi yazının PDF'ini yükleyin, sayı/konu/tarih otomatik okunsun" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
+                <button class="btn btn-ogr" title="E-Okul/MEB'den indirilen personel listesini (Excel) toplu olarak içeri aktarın" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
+                <button class="btn btn-ayarlar" title="Tek tek personel ekleyin veya çıkarın" onclick="personelYonetimAc()">👤 Personel Yönetimi</button>
                 <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Listeyi Yenile</button>
             </div>
         </div>
@@ -527,6 +574,20 @@
 
         <div class="paned-window" style="display:flex; flex:1; gap:15px; overflow: hidden;">
             <div class="sol-panel" style="flex: 65%; display:flex; flex-direction:column; background-color: var(--bg-main);">
+                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="personel_ara" placeholder="Ara (isim, görev, branş)..." style="flex: 1; min-width: 150px; padding: 5px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 11px;" onkeyup="personelTablosunuDoldur()">
+                    <select id="personel_grup_filtre" style="padding: 5px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 11px;" onchange="personelTablosunuDoldur()">
+                        <option value="Tümü">Tüm Gruplar</option>
+                    </select>
+                    <div style="position: relative;">
+                        <button class="btn btn-temizle" style="border: none; cursor: pointer; font-size: 11px;" onclick="personelFiltrePanelAcKapa('gorev')">Görev ▾</button>
+                        <div id="personel_gorev_panel" class="personel-filtre-panel"></div>
+                    </div>
+                    <div style="position: relative;">
+                        <button class="btn btn-temizle" style="border: none; cursor: pointer; font-size: 11px;" onclick="personelFiltrePanelAcKapa('brans')">Branş ▾</button>
+                        <div id="personel_brans_panel" class="personel-filtre-panel"></div>
+                    </div>
+                </div>
                 <div class="tree-card" style="flex:1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-main);">
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                         <thead style="position: sticky; top: 0; background-color: var(--bg-main);">
@@ -541,7 +602,7 @@
                         </tbody>
                     </table>
                 </div>
-                <button class="btn btn-rapor" style="margin-top: 8px; padding: 12px; font-size:11px;" onclick="topluTebligPdfAl()">📑 Seçili Personeller İçin Toplu İmza Sirküsü Çıkar</button>
+                <button class="btn btn-rapor" style="margin-top: 8px; padding: 12px; font-size:11px;" title="İşaretlenen tüm personel için tek bir imza sirküsü listesi PDF olarak oluşturur" onclick="topluTebligPdfAl()">📑 Seçili Personeller İçin Toplu İmza Sirküsü Çıkar</button>
             </div>
 
             <div class="sag-panel" style="flex: 35%; padding: 20px; display: flex; flex-direction: column; gap: 15px; background-color: var(--bg-card); border: 1px solid var(--border);">
@@ -558,7 +619,7 @@
                     <span style="font-size: 11px; font-weight: bold; color: var(--fg-main);">Tebliğ Yeri:</span><br>
                     <input type="text" id="b-yer" value="Okul Müdürlüğü" style="width: 100%; padding: 6px; margin-top: 5px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
                 </div>
-                <button class="btn btn-yardim" style="margin-top: auto; padding: 12px; font-size:11px;" onclick="bireyselTebligPdfAl()">✉️ Bireysel Çıktı Al</button>
+                <button class="btn btn-yardim" style="margin-top: auto; padding: 12px; font-size:11px;" title="Seçilen tebliğ eden/edilen kişiler için tek kişilik tebliğ-tebellüğ belgesi oluşturur" onclick="bireyselTebligPdfAl()">✉️ Bireysel Çıktı Al</button>
             </div>
         </div>
     </div>
@@ -604,9 +665,23 @@
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
         }
+
+        // --- YÜKLENİYOR GÖSTERGESİ ---
+        function yuklemeGoster(metin) {
+            const overlay = document.getElementById('yukleniyor_overlay');
+            const metinEl = document.getElementById('yukleniyor_metin');
+            if(metinEl) metinEl.innerText = metin || 'Yükleniyor...';
+            if(overlay) overlay.style.display = 'flex';
+        }
+        function yuklemeGizle() {
+            const overlay = document.getElementById('yukleniyor_overlay');
+            if(overlay) overlay.style.display = 'none';
+        }
         
         let ogrenciListesi = [];
         let tumPersoneller = [];
+        let personelGorevFiltre = {};
+        let personelBransFiltre = {};
         let sistemAyarlari = {};
         
         let seciliOgrenci = null;
@@ -873,10 +948,11 @@
         function dosyaYukle(endpoint, event) {
             const dosya = event.target.files[0]; if (!dosya) return;
             const formData = new FormData(); formData.append("dosya", dosya);
+            yuklemeGoster("Excel dosyası işleniyor...");
             fetch(`${API}/${endpoint}`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
                 if(v.basarili) { bildirimGoster(v.mesaj, "bilgi"); verileriYukle(); } else { bildirimGoster("Hata: " + v.mesaj, "hata"); }
                 event.target.value = ''; 
-            }).catch(err => { bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); });
+            }).catch(err => { bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); }).finally(() => yuklemeGizle());
         }
         function filtreTemizle() { document.getElementById('ent_arama').value = ""; document.getElementById('combo_arama_sube').value = "Tümü"; tabloyuDoldur(); }
 
@@ -1088,21 +1164,93 @@
         function personelleriYukle() {
             return fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
                 tumPersoneller = veri.personeller;
-                const govde = document.getElementById('personel-govde');
                 const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
-                if(!govde || !cbEden) return;
-
-                govde.innerHTML = ""; cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>'; cbEdilen.innerHTML = '<option value="">-- Personel Seçin --</option>';
-                if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px;'>Personel bulunamadı.</td></tr>"; return; }
-
-                tumPersoneller.forEach((p, i) => {
-                    const unvan = p.gorev !== "-" ? p.gorev : p.brans;
-                    govde.innerHTML += `<tr><td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" checked></td><td>${unvan}</td><td><label for="chk_${i}">${p.ad}</label></td></tr>`;
-                    cbEdilen.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
-                    if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
-                });
+                if(cbEden && cbEdilen) {
+                    cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>';
+                    cbEdilen.innerHTML = '<option value="">-- Personel Seçin --</option>';
+                    tumPersoneller.forEach(p => {
+                        cbEdilen.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
+                        if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
+                    });
+                }
+                personelFiltrePanelDoldur();
+                personelTablosunuDoldur();
             });
         }
+
+        function personelTablosunuDoldur() {
+            const govde = document.getElementById('personel-govde');
+            if(!govde) return;
+            const arama = (document.getElementById('personel_ara') ? document.getElementById('personel_ara').value : "").toUpperCase();
+            const grupFiltre = document.getElementById('personel_grup_filtre') ? document.getElementById('personel_grup_filtre').value : "Tümü";
+
+            const gosterilecekler = tumPersoneller.filter(p => {
+                if(arama && !p.ad.toUpperCase().includes(arama) && !p.gorev.toUpperCase().includes(arama) && !p.brans.toUpperCase().includes(arama)) return false;
+                if(grupFiltre !== "Tümü" && p.grup !== grupFiltre) return false;
+                if(p.gorev in personelGorevFiltre && !personelGorevFiltre[p.gorev]) return false;
+                if(p.brans in personelBransFiltre && !personelBransFiltre[p.brans]) return false;
+                return true;
+            });
+
+            govde.innerHTML = "";
+            if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px; color:var(--fg-sub);'>Personel bulunamadı.</td></tr>"; return; }
+            if(gosterilecekler.length === 0) { govde.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px; color:var(--fg-sub);'>Kriterlere uygun personel bulunamadı.</td></tr>"; return; }
+
+            gosterilecekler.forEach((p, i) => {
+                const unvan = p.gorev !== "-" ? p.gorev : p.brans;
+                govde.innerHTML += `<tr><td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" checked></td><td>${unvan}</td><td><label for="chk_${i}">${p.ad}</label></td></tr>`;
+            });
+        }
+
+        function personelFiltrePanelDoldur() {
+            const gorevler = [...new Set(tumPersoneller.map(p => p.gorev).filter(g => g && g !== '-'))].sort();
+            const branslar = [...new Set(tumPersoneller.map(p => p.brans).filter(b => b && b !== '-'))].sort();
+            const gruplar = [...new Set(tumPersoneller.map(p => p.grup).filter(Boolean))].sort();
+
+            gorevler.forEach(g => { if(!(g in personelGorevFiltre)) personelGorevFiltre[g] = true; });
+            branslar.forEach(b => { if(!(b in personelBransFiltre)) personelBransFiltre[b] = true; });
+
+            const gorevPanel = document.getElementById('personel_gorev_panel');
+            if(gorevPanel) {
+                gorevPanel.innerHTML = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('gorev')">🔄 Tümünü Seç/Temizle</div>` +
+                    gorevler.map(g => `<label class="personel-filtre-item"><input type="checkbox" ${personelGorevFiltre[g] ? 'checked' : ''} onchange="personelGorevFiltre[${JSON.stringify(g)}] = this.checked; personelTablosunuDoldur()"> ${g}</label>`).join('');
+            }
+
+            const bransPanel = document.getElementById('personel_brans_panel');
+            if(bransPanel) {
+                bransPanel.innerHTML = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('brans')">🔄 Tümünü Seç/Temizle</div>` +
+                    branslar.map(b => `<label class="personel-filtre-item"><input type="checkbox" ${personelBransFiltre[b] ? 'checked' : ''} onchange="personelBransFiltre[${JSON.stringify(b)}] = this.checked; personelTablosunuDoldur()"> ${b}</label>`).join('');
+            }
+
+            const grupSelect = document.getElementById('personel_grup_filtre');
+            if(grupSelect) {
+                const eskiSecim = grupSelect.value;
+                grupSelect.innerHTML = '<option value="Tümü">Tüm Gruplar</option>' + gruplar.map(g => `<option value="${g}">${g}</option>`).join('');
+                if([...grupSelect.options].some(o => o.value === eskiSecim)) grupSelect.value = eskiSecim;
+            }
+        }
+
+        function personelFiltreTopluSecim(tur) {
+            const sozluk = tur === 'gorev' ? personelGorevFiltre : personelBransFiltre;
+            const hepsiTikli = Object.values(sozluk).every(v => v);
+            Object.keys(sozluk).forEach(k => sozluk[k] = !hepsiTikli);
+            personelFiltrePanelDoldur();
+            personelTablosunuDoldur();
+        }
+
+        function personelFiltrePanelAcKapa(tur) {
+            const digerTur = tur === 'gorev' ? 'brans' : 'gorev';
+            const digerPanel = document.getElementById(`personel_${digerTur}_panel`);
+            if(digerPanel) digerPanel.classList.remove('acik');
+            const panel = document.getElementById(`personel_${tur}_panel`);
+            if(panel) panel.classList.toggle('acik');
+        }
+
+        document.addEventListener('click', function(e) {
+            if(!e.target.closest('.personel-filtre-panel') && !e.target.closest('[onclick*="personelFiltrePanelAcKapa"]')) {
+                document.querySelectorAll('.personel-filtre-panel.acik').forEach(p => p.classList.remove('acik'));
+            }
+        });
 
         let sonMebPdfYolu = null; // Yüklenip metni okunan orijinal MEB yazısının geçici sunucu yolu (bireysel tebliğde PDF'e eklenir)
 
@@ -1136,10 +1284,11 @@
         function personelExcelYukle(event) {
             const dosya = event.target.files[0]; if (!dosya) return;
             const formData = new FormData(); formData.append("dosya", dosya);
+            yuklemeGoster("Personel listesi işleniyor...");
             fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
                 bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) personelleriYukle();
                 event.target.value = '';
-            }).catch(() => bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata"));
+            }).catch(() => bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata")).finally(() => yuklemeGizle());
         }
 
         function personelYonetimAc() { modalAc('personel_yonetim_modal'); personelTabAc('ekle'); }
@@ -1232,9 +1381,21 @@
                 if(document.getElementById('ayar-yedek')) document.getElementById('ayar-yedek').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
                 if(document.getElementById('ayar_okul_adi')) document.getElementById('ayar_okul_adi').value = v.ayarlar.okul_adi || '';
                 if(document.getElementById('ayar_yedek_silme')) document.getElementById('ayar_yedek_silme').value = v.ayarlar.yedek_silme_suresi || '1 Ay Sonra';
+                if(document.getElementById('ayar_yedek_saati')) document.getElementById('ayar_yedek_saati').value = v.ayarlar.yedek_saati || '17:00';
+                if(document.getElementById('ayar_yedek_sikligi')) document.getElementById('ayar_yedek_sikligi').value = v.ayarlar.yedek_sikligi || 'Her Gün';
+                if(document.getElementById('ayar_yedek_gun_sayisi')) document.getElementById('ayar_yedek_gun_sayisi').value = v.ayarlar.yedek_gun_sayisi || 3;
+                if(document.getElementById('ayar_yedek_gun_sayisi_satir')) document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = (v.ayarlar.yedek_sikligi === 'Özel Gün') ? 'flex' : 'none';
                 if(document.getElementById('ayar_meb_logo_ad')) document.getElementById('ayar_meb_logo_ad').innerText = v.ayarlar.meb_logosu ? v.ayarlar.meb_logosu.split(/[\\/]/).pop() : 'Yüklenmedi';
                 if(document.getElementById('ayar_okul_logo_ad')) document.getElementById('ayar_okul_logo_ad').innerText = v.ayarlar.okul_logosu ? v.ayarlar.okul_logosu.split(/[\\/]/).pop() : 'Yüklenmedi';
                 yedekleriListele();
+
+                // İlk kullanım karşılama mesajı ve MEB logosu uyarısı
+                if (v.ayarlar.ilk_kullanim !== false) {
+                    bildirimGoster("Sisteme Hoş Geldiniz! Önce Ayarlar menüsünden PDF kayıt yerini seçiniz.", "bilgi");
+                    fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ilk_kullanim: false }) });
+                } else if (!v.ayarlar.meb_logosu) {
+                    setTimeout(() => bildirimGoster("MEB Logosu bulunamadı! Ayarlar'dan yükleyin.", "hata"), 3000);
+                }
             });
         }
 
@@ -1246,6 +1407,9 @@
             sistemAyarlari.yedek_kayit_klasoru = yedekYol;
             if(document.getElementById('ayar_okul_adi')) sistemAyarlari.okul_adi = document.getElementById('ayar_okul_adi').value;
             if(document.getElementById('ayar_yedek_silme')) sistemAyarlari.yedek_silme_suresi = document.getElementById('ayar_yedek_silme').value;
+            if(document.getElementById('ayar_yedek_saati')) sistemAyarlari.yedek_saati = document.getElementById('ayar_yedek_saati').value;
+            if(document.getElementById('ayar_yedek_sikligi')) sistemAyarlari.yedek_sikligi = document.getElementById('ayar_yedek_sikligi').value;
+            if(document.getElementById('ayar_yedek_gun_sayisi')) sistemAyarlari.yedek_gun_sayisi = document.getElementById('ayar_yedek_gun_sayisi').value;
             fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); modalKapat('ayarlar_modal'); });
         }
 
@@ -1262,12 +1426,36 @@
 
         
 
+        // --- AÇILIŞ (SPLASH) EKRANI ---
+        function splashKapat() {
+            const splash = document.getElementById('splash_overlay');
+            if(splash) { splash.classList.add('gizli'); setTimeout(() => splash.style.display = 'none', 450); }
+        }
+
+        // --- OTOMATİK GÜNCELLEME KONTROLÜ (GitHub) ---
+        const MEVCUT_VERSIYON = "v1.1";
+        function guncellemeKontrolEt() {
+            fetch("https://raw.githubusercontent.com/ada-netizen/Yoklama-Otomasyonu/refs/heads/main/versiyon.txt", { cache: "no-store" })
+                .then(r => r.ok ? r.text() : Promise.reject())
+                .then(metin => {
+                    const enYeni = metin.trim();
+                    if (enYeni > MEVCUT_VERSIYON) {
+                        if (confirm(`Programın yeni bir sürümü bulundu!\n\nSizin Sürümünüz: ${MEVCUT_VERSIYON}\nYeni Sürüm: ${enYeni}\n\nYeni sürümü indirmek ister misiniz?`)) {
+                            window.open("https://github.com/ada-netizen/yoklama_otomasyonu/releases/latest", "_blank");
+                        }
+                    }
+                })
+                .catch(() => { /* İnternet yoksa veya erişilemezse sessizce devam eder */ });
+        }
+
         window.onload = function() {
             verileriYukle();
             ayarlariYukle(); 
             resizerAktifEt('resizer1', 'sol_panel_ana', 'sag_panel_ana');
             resizerAktifEt('resizer2', 'takvim_alani_ana', 'onizleme_alani_ana');
             tabloSutunBoyutlandirma();
+            setTimeout(splashKapat, 1500);
+            setTimeout(guncellemeKontrolEt, 2000);
         };
 
   

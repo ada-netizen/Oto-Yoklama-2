@@ -14,6 +14,8 @@ import re
 from datetime import datetime, timedelta
 import uuid
 import pandas as pd
+import threading
+import time
 
 app = FastAPI(title="Oto-Yoklama API V2")
 
@@ -43,6 +45,53 @@ def pdf_klasoru_hazirla():
     if not os.path.exists(ana_klasor):
         os.makedirs(ana_klasor)
     return ana_klasor, ayar
+
+
+# =====================================================================
+# OTOMATİK ZAMANLI YEDEKLEME (arka planda sürekli çalışan iş parçacığı)
+# Tkinter sürümündeki zamanlanmis_yedek_kontrolu ile birebir aynı mantık.
+# =====================================================================
+def _zamanlanmis_yedek_dongusu():
+    while True:
+        try:
+            ayar = ayarlari_al()
+            su_an = datetime.now()
+            saat_str = su_an.strftime("%H:%M")
+            bugun_str = su_an.strftime("%Y-%m-%d")
+
+            ayar_saat = ayar.get("yedek_saati", "17:00")
+            if len(ayar_saat) == 4 and ":" in ayar_saat:
+                ayar_saat = "0" + ayar_saat  # "9:00" -> "09:00"
+
+            if saat_str == ayar_saat:
+                son_yedek = ayar.get("son_yedekleme_gunu", "")
+                if son_yedek != bugun_str:
+                    siklik = ayar.get("yedek_sikligi", "Her Gün")
+                    yedekle = False
+                    if not son_yedek:
+                        yedekle = True
+                    else:
+                        try:
+                            son_tarih = datetime.strptime(son_yedek, "%Y-%m-%d")
+                            fark_gun = (su_an - son_tarih).days
+                            if siklik == "Her Gün" and fark_gun >= 1: yedekle = True
+                            elif siklik == "Özel Gün" and fark_gun >= int(ayar.get("yedek_gun_sayisi", 3)): yedekle = True
+                            elif siklik == "Haftada 1" and fark_gun >= 7: yedekle = True
+                            elif siklik == "Ayda 1" and fark_gun >= 30: yedekle = True
+                        except Exception:
+                            pass
+
+                    if yedekle:
+                        basarili, _ = SistemMotoru.yedek_al(yollar["DB"], ayar, yollar["YEDEK"])
+                        if basarili:
+                            ayar["son_yedekleme_gunu"] = bugun_str
+                            SistemMotoru.ayarlari_kaydet(yollar["AYARLAR"], ayar)
+        except Exception:
+            pass
+        time.sleep(60)  # Saati her 60 saniyede bir kontrol eder
+
+
+threading.Thread(target=_zamanlanmis_yedek_dongusu, daemon=True).start()
 
 
 # =====================================================================
