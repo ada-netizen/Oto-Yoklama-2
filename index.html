@@ -27,7 +27,7 @@
 
         /* --- ÜST PANEL VE BUTONLAR --- */
         .top-bar { background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .top-bar-title { font-size: 15px; font-weight: bold; color: var(--tree-sel); margin: 0; }
+        .top-bar-title { font-size: 20px; font-weight: bold; color: var(--tree-sel); margin: 0; }
         .top-bar-buttons { display: flex; gap: 5px; }
         
         .btn { border: none; padding: 6px 15px; font-size: 10px; font-weight: bold; cursor: pointer; font-family: var(--font-ui); color: #FFFFFF; border-radius: 3px; }
@@ -45,11 +45,7 @@
         .tr-secili { background-color: var(--tree-sel) !important; color: #FFFFFF !important; }
         .tr-secili td { color: #FFFFFF !important; }
 
-        /* --- BİREBİR TKINTER TAKVİM STİLLERİ (Yükseklik 55px yapıldı) --- */
-        .gun-hucre:hover { filter: brightness(1.2); }
-        .gun-hucre.bos { visibility: hidden; }
-
-        /* --- SÜRÜKLEME (RESIZER), SAĞ TIK VE MODAL STİLLERİ --- */
+          /* --- SÜRÜKLEME (RESIZER), SAĞ TIK VE MODAL STİLLERİ --- */
         .resizer { width: 5px; background-color: var(--border); cursor: col-resize; flex-shrink: 0; transition: 0.2s; z-index: 10; }
         .resizer:hover { background-color: var(--tree-sel); }
 
@@ -74,7 +70,7 @@
        /* --- YENİ: GENEL BÜYÜK FONT VE SIKI (1.0) SATIR AYARLARI --- */
         
         /* 1. Tüm programdaki yazıları genel olarak büyüt */
-        h2 { font-size: 24x !important; }
+        h2 { font-size: 18x !important; }
         h3 { font-size: 15px !important; }
         
         /* 2. Butonları ve Sekmeleri daha iri ve tıklanabilir yap */
@@ -97,11 +93,10 @@
         
         /* 3. Sağ Panel, Takvim ve Üst Bilgilerin Büyütülmesi (Tkinter Klonu) */
         #takvim_grid div { font-size: 14px !important; }
-        .gun-hucre div { font-size: 134x !important; }
         #lbl_ozet { font-size: 14px !important; }
                
         /* 1. Üst Kısım: Ara, Şube ve Temizle (+2 Punto) */
-        .arama-grid span, .arama-grid input, .arama-grid select, .arama-grid button { font-size: 14px !important; }
+        .arama-grid span, .arama-grid input, .arama-grid select, .arama-grid button { font-size: 12px !important; }
         
         /* 2. Öğrenci Listesi (-1 Punto) */
         #tree_tum_liste { table-layout: fixed !important; width: 100%; }
@@ -111,11 +106,8 @@
         #lbl_ozet { font-size: 16px !important; }
         
         /* 4. Takvim Alanı ve Üst Başlık (+2 ve +3 Punto) */
-        #lbl_ay_yil { font-size: 17px !important; } /* Ay ve Yıl bilgisi +3 punto */
+        #lbl_ay_yil { font-size: 20px !important; } /* Ay ve Yıl bilgisi +3 punto */
         #takvim_grid > div { font-size: 16px !important; } /* Pzt, Sal yazıları */
-        .gun-hucre { height: auto !important; aspect-ratio: 4 / 3; justify-content: space-evenly !important; } 
-        .gun-hucre > div:first-child { font-size: 15px !important; } /* Takvimdeki sayılar */
-        .gun-hucre > div:last-child { font-size: 14px !important; } /* Devamsızlık türü yazısı */
         
         /* 5. Alt Kısım Hızlı Seçim Butonları */
         #takvim_alani_ana .btn, #takvim_alani_ana input { font-size: 13px !important; }
@@ -150,26 +142,56 @@
         .personel-filtre-item:hover { background: var(--bg-main); }
         .personel-filtre-toplu { font-weight:bold; border-bottom:1px solid var(--border); color: var(--tree-sel); }
 
-        #lbl_secili_ogrenci { font-size: 22px !important; }
-
-        /* --- YENİ: KUSURSUZ 4/3 ORANINDA ESNİYEN TAKVİM HÜCRELERİ --- */
+        /* --- YENİ: KUSURSUZ TAKVİM HİZALAMASI VE EFEKTLERİ --- */
         .gun-hucre { 
-            height: auto !important; /* JS'den gelen sabitliği ezer */
-            aspect-ratio: 4 / 3 !important; /* Genişliğin 3/4'ü kadar yükseklik kilitlenir */
+            height: auto !important; 
+            aspect-ratio: 4 / 3 !important; 
             border-radius: 4px; 
-            padding: 4px; 
+            padding: 6px !important; 
             display: flex; 
             flex-direction: column; 
-            justify-content: space-evenly !important; 
-            align-items: center;
+            justify-content: space-between !important; /* Rakam üstte, yazı altta kalır */
+            align-items: flex-start !important; /* Rakamı tam SOL ÜSTE kilitler */
             cursor: pointer; 
             user-select: none; 
-            transition: transform 0.1s;
+            transition: transform 0.1s, box-shadow 0.1s; /* Filtreyi kaldırdık ki kırmızı renk anında yansısın */
         }
         .gun-hucre.bos { visibility: hidden; pointer-events: none; }
-        .gun-hucre:hover { filter: brightness(1.2); transform: scale(1.02); } /* Farenin üstüne gelince hafif büyüme efekti */
-        .gun-hucre > div:first-child { font-size: 16px !important; font-weight: bold; } /* Gün sayıları */
-        .gun-hucre > div:last-child { font-size: 13px !important; } /* Devamsızlık yazısı */
+        
+        /* Fare üstüne gelince rengi bozmadan sadece öne çıkarır ve büyütür */
+        .gun-hucre:hover { transform: scale(1.04); box-shadow: 0 4px 12px rgba(0,0,0,0.5); z-index: 10; position: relative; }
+        
+        .gun-hucre > div:first-child { font-size: 15px !important; font-weight: bold; align-self: flex-start; } 
+        .gun-hucre > div:last-child { align-self: center; width: 100%; text-align: center; }
+
+        #lbl_secili_ogrenci { font-size: 20px !important; font-weight: bold !important; color: var(--fg-main) !important; }
+
+        /* --- YENİ: DAHA KİBAR ANİMASYONLU ANAHTAR --- */
+        :root { --dev-bg: #7F1D1D; --dev-fg: #FEF2F2; } /* Başlangıç kırmızı (Gece) renkleri */
+        
+        .tema-switch {
+            cursor: pointer; width: 54px; height: 28px; 
+            background-color: #1E293B; border-radius: 14px; border: 1px solid var(--border);
+            position: relative; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 5px; transition: background-color 0.4s ease; box-sizing: border-box; user-select: none; margin: auto 0;
+        }
+        .tema-switch .switch-top {
+            position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; 
+            background-color: #F8FAFC; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.26, 1.55); z-index: 2;
+        }
+        .tema-switch.light { background-color: #38BB94; }
+        .tema-switch.light .switch-top { transform: translateX(26px); }
+        .tema-switch .ay, .tema-switch .gunes { font-size: 11px; z-index: 1; transition: 0.3s; }
+        .tema-switch .ay { opacity: 1; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
+        .tema-switch .gunes { opacity: 0.4; }
+        .tema-switch.light .ay { opacity: 0.4; text-shadow: none; }
+        .tema-switch.light .gunes { opacity: 1; text-shadow: 0 0 6px rgba(255,255,0,0.8); }
+
+        /* --- YENİ: 12px TABLO FONT BOYUTLARI --- */
+        #tree_tum_liste th, #tree_tum_liste td, #tree_tum_liste span { font-size: 12px !important; }
+        #tree_detay_govde td, #onizleme_alani_ana table th { font-size: 12px !important; }
+        .tr-secili { font-size: 12px !important; }
 
     </style>
 </head>
@@ -412,8 +434,13 @@
                 <button class="btn btn-ogr" onclick="document.getElementById('f-ogr').click()">Öğrenci Yükle</button>
                 <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()">Devamsızlık Yükle</button>
                 <button class="btn btn-rapor" title="Devamsızlık sınırlarına göre öğrenci raporları oluşturun" onclick="modalAc('raporlar_modal')">📄 Raporlar</button>
-                <button class="btn btn-gece" id="btn-tema" title="Aydınlık/Karanlık tema arasında geçiş yapın" onclick="temaDegistir()">☀️ Gündüz Modu</button>
-                <button class="btn btn-ayarlar" title="Okul bilgileri, dosya konumları ve yedekleme ayarları" onclick="modalAc('ayarlar_modal')">⚙️ Ayarlar</button>
+                <div id="btn-tema" class="tema-switch dark" title="Aydınlık/Karanlık tema arasında geçiş yapın" onclick="temaDegistir()">
+                    <div class="switch-kutu">
+                        <span class="ikon gunes">☀️</span>
+                        <span class="ikon ay">🌙</span>
+                        <div class="switch-top"></div>
+                    </div>
+                </div>                <button class="btn btn-ayarlar" title="Okul bilgileri, dosya konumları ve yedekleme ayarları" onclick="modalAc('ayarlar_modal')">⚙️ Ayarlar</button>
                 <button class="btn btn-yardim" title="Kullanım kılavuzunu görüntüleyin" onclick="modalAc('yardim_modal')">❓ Yardım</button>
             </div>
         </div>
@@ -457,12 +484,7 @@
                     👈 İşlem yapmak için sol taraftaki listeden bir öğrenci seçin.<br>(Yıllık Tablo İçin Çift Tıklayın)
                 </div>
 
-                <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%; padding: 4px 0 0 0;">
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 0 5px;">
-                        <span id="lbl_secili_ogrenci" style="font-size: 16px; font-weight: bold; color: var(--fg-main);">Öğrenci Adı (No)</span>
-                        <span id="lbl_ozet" style="font-size: 12px; font-weight: bold; color: var(--fg-sub);">Özürsüz: 0 Gün  |  Özürlü: 0 Gün</span>
-                    </div>
-                    
+                <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%; padding: 4px 0 0 0;">              
                     <div style="display: flex; flex-direction: row; flex: 1; min-height: 0;">
                         <div id="takvim_alani_ana" style="flex: 50; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -504,7 +526,7 @@
 
                         <div id="onizleme_alani_ana" style="flex: 40; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <span style="color: var(--fg-main); font-size: 12px; font-weight: bold;">PDF Önizleme</span>
+                                <span style="color: var(--fg-main); font-size: 20x; font-weight: bold;">PDF Önizleme</span>
                                 <span id="lbl_onizleme_toplam" style="color: #DC2626; font-size: 11px; font-weight: bold;">Toplam: 0 Gün</span>
                             </div>
                             
@@ -521,6 +543,17 @@
                                 </table>
                             </div>
                             
+                           <div style="background-color: var(--bg-main); border: 1px solid var(--border); padding: 10px; margin-bottom: 10px; border-radius: 4px; display: flex; justify-content: space-around;">
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <span style="font-size: 11px; color: var(--fg-sub); font-weight:bold;">Kalan Özürsüz</span>
+                                    <span id="lbl_kalan_ozursuz" style="font-size: 17px; font-weight: 900; color: #EF4444;">0 Gün</span>
+                                </div>
+                                <div style="display: flex; flex-direction: column; align-items: center;">
+                                    <span style="font-size: 11px; color: var(--fg-sub); font-weight:bold;">Yeni Özürlü</span>
+                                    <span id="lbl_yeni_ozurlu" style="font-size: 17px; font-weight: 900; color: #10B981;">0 Gün</span>
+                                </div>
+                            </div>
+                           
                             <div style="display: flex; gap: 5px; margin-bottom: 10px;">
                                 <button class="btn" style="flex: 1; background: #EF4444; color: white; padding: 5px;" onclick="onizlemeCikar()">⬅ Çıkar</button>
                                 <button class="btn" style="flex: 1; background: #475569; color: white; padding: 5px;" onclick="onizlemeTemizle()">Tümünü Temizle</button>
@@ -554,35 +587,39 @@
 
         <div class="paned-window" style="display:flex; flex:1; gap:15px; overflow: hidden;">
             <div class="sol-panel" style="flex: 65%; display:flex; flex-direction:column; background-color: var(--bg-main);">
-                <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center; flex-wrap: wrap;">
-                    <input type="text" id="personel_ara" placeholder="Ara (isim, görev, branş)..." style="flex: 1; min-width: 150px; padding: 5px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 11px;" onkeyup="personelTablosunuDoldur()">
-                    <select id="personel_grup_filtre" style="padding: 5px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 11px;" onchange="personelTablosunuDoldur()">
-                        <option value="Tümü">Tüm Gruplar</option>
-                    </select>
-                    <div style="position: relative;">
-                        <button class="btn btn-temizle" style="border: none; cursor: pointer; font-size: 11px;" onclick="personelFiltrePanelAcKapa('gorev')">Görev ▾</button>
-                        <div id="personel_gorev_panel" class="personel-filtre-panel"></div>
-                    </div>
-                    <div style="position: relative;">
-                        <button class="btn btn-temizle" style="border: none; cursor: pointer; font-size: 11px;" onclick="personelFiltrePanelAcKapa('brans')">Branş ▾</button>
-                        <div id="personel_brans_panel" class="personel-filtre-panel"></div>
-                    </div>
+                
+                <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
+                    <button class="btn" style="background-color: #475569; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('tumu')">✅ Tümünü Seç</button>
+                    <button class="btn" style="background-color: #475569; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('hicbiri')">❌ Hiçbiri</button>
+                    <button class="btn" style="background-color: #3B82F6; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('idare')">👔 Sadece İdareciler</button>
+                    <button class="btn" style="background-color: #10B981; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('ogretmen')">👩‍🏫 Sadece Öğretmenler</button>
+                    <span id="lbl_secili_personel_sayisi" style="margin-left: auto; font-size: 12px; font-weight: bold; color: #10B981;">Seçili: 0 Kişi</span>
                 </div>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 5px; align-items: center;">
+                    <input type="text" id="personel_ara" placeholder="Personel ara (isim, görev, branş veya grup)..." style="flex: 1; padding: 6px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 11px;" onkeyup="personelTablosunuDoldur()">
+                </div>
+
                 <div class="tree-card" style="flex:1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-main);">
                     <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
                         <thead style="position: sticky; top: 0; background-color: var(--bg-main);">
                             <tr>
-                                <th style="width: 10%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border);">Seç</th>
-                                <th style="width: 30%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Görev / Branş</th>
-                                <th style="width: 60%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Ad Soyad</th>
+                                <th style="width: 5%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align: center;">
+                                    <input type="checkbox" id="chk_master_personel" title="Ekranda görünenleri seç/bırak" onchange="personelMasterSecim(this.checked)">
+                                </th>
+                                <th style="width: 20%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Personel Grubu</th>
+                                <th style="width: 20%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Görev</th>
+                                <th style="width: 20%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Branş</th>
+                                <th style="width: 35%; padding: 6px; color: var(--fg-main); border-bottom: 1px solid var(--border); text-align:left;">Ad Soyad</th>
                             </tr>
                         </thead>
                         <tbody id="personel-govde">
-                            <tr><td colspan="3" style="text-align: center; color:var(--fg-sub); padding:10px;">Personel listesi bekleniyor...</td></tr>
+                            <tr><td colspan="5" style="text-align: center; color:var(--fg-sub); padding:10px;">Personel listesi bekleniyor...</td></tr>
                         </tbody>
                     </table>
                 </div>
-                <button class="btn btn-rapor" style="margin-top: 8px; padding: 12px; font-size:11px;" title="İşaretlenen tüm personel için tek bir imza sirküsü listesi PDF olarak oluşturur" onclick="topluTebligPdfAl()">📑 Seçili Personeller İçin Toplu İmza Sirküsü Çıkar</button>
+                
+                <button class="btn btn-rapor" style="margin-top: 8px; padding: 12px; font-size:12px; font-weight: bold;" title="İşaretlenen tüm personel için tek bir imza sirküsü listesi PDF olarak oluşturur" onclick="topluTebligPdfAl()">📑 Seçili Personeller İçin İmza Sirküsü Çıkar</button>
             </div>
 
             <div class="sag-panel" style="flex: 35%; padding: 20px; display: flex; flex-direction: column; gap: 15px; background-color: var(--bg-card); border: 1px solid var(--border);">
@@ -624,7 +661,6 @@
             </div>
         </div>
     </div>
-
 
     <script>
         const API = 'http://127.0.0.1:8000';
@@ -690,14 +726,33 @@
         function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
         function temaDegistir() {
-            const root = document.documentElement; const btnTema = document.getElementById('btn-tema');
+            const root = document.documentElement; 
+            const btnTema = document.getElementById('btn-tema');
+            
             if (karanlikMod) {
-                root.style.setProperty('--bg-main', '#F1F5F9'); root.style.setProperty('--bg-card', '#FFFFFF'); root.style.setProperty('--fg-main', '#0F172A'); root.style.setProperty('--fg-sub', '#475569'); root.style.setProperty('--border', '#CBD5E1');
-                if(btnTema) btnTema.innerText = '🌙 Gece Modu'; karanlikMod = false;
+                // Gündüz Moduna Geçiş (Kırmızıları CSS değişkenlerine bağladık)
+                root.style.setProperty('--bg-main', '#F1F5F9'); 
+                root.style.setProperty('--bg-card', '#FFFFFF'); 
+                root.style.setProperty('--fg-main', '#0F172A'); 
+                root.style.setProperty('--fg-sub', '#475569'); 
+                root.style.setProperty('--border', '#CBD5E1');
+                root.style.setProperty('--dev-bg', '#FEE2E2'); // Gündüz modu devamsızlık arka planı
+                root.style.setProperty('--dev-fg', '#991B1B'); // Gündüz modu devamsızlık yazısı
+                karanlikMod = false;
+                if(btnTema) { btnTema.classList.remove('dark'); btnTema.classList.add('light'); }
             } else {
-                root.style.setProperty('--bg-main', '#0F172A'); root.style.setProperty('--bg-card', '#1E293B'); root.style.setProperty('--fg-main', '#F8FAFC'); root.style.setProperty('--fg-sub', '#94A3B8'); root.style.setProperty('--border', '#334155');
-                if(btnTema) btnTema.innerText = '☀️ Gündüz Modu'; karanlikMod = true;
+                // Gece Moduna Geçiş
+                root.style.setProperty('--bg-main', '#0F172A'); 
+                root.style.setProperty('--bg-card', '#1E293B'); 
+                root.style.setProperty('--fg-main', '#F8FAFC'); 
+                root.style.setProperty('--fg-sub', '#94A3B8'); 
+                root.style.setProperty('--border', '#334155');
+                root.style.setProperty('--dev-bg', '#7F1D1D'); // Gece modu devamsızlık arka planı
+                root.style.setProperty('--dev-fg', '#FEF2F2'); // Gece modu devamsızlık yazısı
+                karanlikMod = true;
+                if(btnTema) { btnTema.classList.remove('light'); btnTema.classList.add('dark'); }
             }
+            
             if (document.getElementById('yillik_modal').style.display === 'flex' && seciliOgrenci) { yillikListeAc(seciliOgrenci.no, seciliOgrenci.ad); }
             takvimiCiz();
         }
@@ -1010,11 +1065,21 @@
         }
 
         function ogrenciSec(no, ad, ozsz, ozrl) {
-            seciliOgrenci = { no: no, ad: ad };
-            document.getElementById('sag_bos_uyari').style.display = 'none'; document.getElementById('sag_dolu_icerik').style.display = 'flex';
-            document.getElementById('lbl_secili_ogrenci').innerText = `${ad} (${no})`;
-            document.getElementById('lbl_ozet').innerText = `Özürsüz: ${ozsz} | Özürlü: ${ozrl}`;
-            document.getElementById('lbl_ozet').style.color = ozsz >= 10 ? '#DC2626' : 'var(--fg-sub)';
+            seciliOgrenci = { no: no, ad: ad, ozsz: parseFloat(ozsz || 0), ozrl: parseFloat(ozrl || 0) };
+            document.getElementById('sag_bos_uyari').style.display = 'none'; 
+            document.getElementById('sag_dolu_icerik').style.display = 'flex';
+            
+            // Eğer sildiğin HTML elementleri sayfada yoksa programın çökmesini engelliyoruz (Güvenlik Zırhı)
+            let lblAd = document.getElementById('lbl_secili_ogrenci');
+            if(lblAd) lblAd.innerText = `${ad} (${no})`;
+            
+            let lblOzet = document.getElementById('lbl_ozet');
+            if(lblOzet) {
+                lblOzet.innerText = `Özürsüz: ${ozsz} | Özürlü: ${ozrl}`;
+                lblOzet.style.color = ozsz >= 10 ? '#DC2626' : 'var(--fg-sub)';
+            }
+
+            // Çökme yaşanmadığı için devamsızlıkları veritabanından sorunsuz çekecek
             fetch(`${API}/ogrenci-detay/${no}`).then(res => res.json()).then(veri => {
                 seciliDevamsizliklar = veri.devamsizliklar.map(d => ({...d, secili: false})); geciciDevamsizliklar = []; takvimiCiz(); onizlemeGuncelle();
             });
@@ -1026,26 +1091,38 @@
             document.getElementById('lbl_ay_yil').innerText = `${aylar[calMonth]} ${calYear}`;
             const grid = document.getElementById('takvim_grid');
             grid.innerHTML = `<div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Pzt</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Sal</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Çar</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Per</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Cum</div>`;
-            const ilkGun = new Date(calYear, calMonth, 1); const sonGun = new Date(calYear, calMonth + 1, 0).getDate();
-            let bosGunSayisi = ilkGun.getDay() === 0 ? 6 : ilkGun.getDay() - 1; 
-            for(let i = 0; i < bosGunSayisi; i++) { if (i < 5) grid.innerHTML += `<div class="gun-hucre bos"></div>`; }
+            const ilkGun = new Date(calYear, calMonth, 1); 
+            const sonGun = new Date(calYear, calMonth + 1, 0).getDate();
+            
+            let ilkGunIndeksi = ilkGun.getDay();
+            let bosGunSayisi = 0;
+            if (ilkGunIndeksi !== 0 && ilkGunIndeksi !== 6) { bosGunSayisi = ilkGunIndeksi - 1; }
+            for(let i = 0; i < bosGunSayisi; i++) { grid.innerHTML += `<div class="gun-hucre bos"></div>`; }
 
             const tumKayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar];
             for(let i = 1; i <= sonGun; i++) {
-                let haftaninGunu = new Date(calYear, calMonth, i).getDay(); if (haftaninGunu === 0 || haftaninGunu === 6) continue; 
+                let haftaninGunu = new Date(calYear, calMonth, i).getDay(); 
+                if (haftaninGunu === 0 || haftaninGunu === 6) continue; 
                 let tarihStr = `${i.toString().padStart(2, '0')}/${(calMonth+1).toString().padStart(2, '0')}/${calYear}`;
-                let kayit = tumKayitlar.find(k => k.tarih === tarihStr);
                 
-                let borderStyle = 'border: 1px solid var(--border);'; let bgStyle = karanlikMod ? '#334155' : '#F8FAFC'; let fgStyle = 'var(--fg-main)'; let icerik = '';
+                let hedefKayitlar = tumKayitlar.filter(k => k.tarih === tarihStr && ['D', 'ÖY', 'SY'].includes(k.tur.toUpperCase()));
+                let kayit = hedefKayitlar.length > 0 ? (hedefKayitlar.find(k => k.secili) || hedefKayitlar[hedefKayitlar.length - 1]) : null;
+                
+                let borderStyle = 'border: 1px solid var(--border);'; 
+                // YENİ: Boş günlere bembeyaz olmak yerine hafif sekmelerdeki gri tonu verdik
+                let bgStyle = 'background-color: var(--bg-main);'; 
+                let fgStyle = ''; 
+                let icerik = '<div></div>'; 
+                
                 if (kayit) {
                     let tur = kayit.tur.toUpperCase();
-                    if(['D', 'ÖY', 'SY'].includes(tur)) {
-                        bgStyle = karanlikMod ? '#7F1D1D' : '#FEE2E2'; fgStyle = karanlikMod ? '#FEF2F2' : '#991B1B';
-                        icerik = `<div style="font-size: 10px; font-weight: bold; text-align: center; color: ${fgStyle};">${kayit.gun} ${tur}</div>`;
-                        if(kayit.secili) borderStyle = 'border: 2px solid #10B981; box-shadow: inset 0 0 5px #10B981;';
-                    } else { kayit = null; } 
+                    // YENİ: Kırmızı rengi artık JS değil CSS (temaDegistir'deki değişkenler) yönetiyor!
+                    bgStyle = 'background-color: var(--dev-bg);'; 
+                    fgStyle = 'var(--dev-fg)';
+                    icerik = `<div style="font-size: 12px; font-weight: bold; text-align: center; color: ${fgStyle};">${kayit.gun} ${tur}</div>`;
+                    if(kayit.secili) borderStyle = 'border: 2px solid #10B981; box-shadow: inset 0 0 5px #10B981;';
                 }
-                grid.innerHTML += `<div class="gun-hucre" style="background-color: ${bgStyle}; ${borderStyle}" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div>${i}</div>${icerik}</div>`;
+                grid.innerHTML += `<div class="gun-hucre" style="${bgStyle} ${borderStyle}" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div style="color: ${fgStyle || 'var(--fg-main)'};">${i}</div>${icerik}</div>`;
             }
         }
 
@@ -1075,18 +1152,42 @@
         function onizlemeGuncelle() {
             const govde = document.getElementById('tree_detay_govde'); govde.innerHTML = "";
             let toplamGun = 0.0; seciliOnizlemeSatirlari = []; 
+            
+            // Hesaplama Değişkenleri
+            let donusenGecmisGun = 0.0; 
+            let yeniEklenenGun = 0.0;
 
             const gosterilecek = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili).sort((a,b) => {
                 let pa = a.tarih.split('/').reverse().join(''); let pb = b.tarih.split('/').reverse().join(''); return pb.localeCompare(pa);
             });
 
             gosterilecek.forEach(d => {
-                toplamGun += parseFloat(d.gun) || 0;
+                let miktar = parseFloat(d.gun) || 0;
+                toplamGun += miktar;
+                
+                // Eğer bu devamsızlık zaten varsa (E-Okul'dan geldiyse ve temp_ ile başlamıyorsa) Özürsüz'den düşecek
+                if(!d.id || !d.id.toString().startsWith('temp_')) { donusenGecmisGun += miktar; } 
+                // Eğer yepyeni bir kutuya tıklayarak oluşturulduysa (temp_ ise) sadece Özürlü'ye eklenecek
+                else { yeniEklenenGun += miktar; }
+                
                 govde.innerHTML += `<tr id="onizleme_tr_${d.id}" onclick="onizlemeSatirSec('${d.id}')" style="cursor: pointer; border-bottom: 1px solid var(--border);">
                     <td style="padding: 6px; color: var(--fg-main);">${d.tarih}</td><td style="padding: 6px; color: var(--fg-main);"><b>${d.tur}</b></td><td style="padding: 6px; color: var(--fg-main);">${d.gun}</td>
                 </tr>`;
             });
             document.getElementById('lbl_onizleme_toplam').innerText = `Toplam: ${toplamGun} Gün`;
+
+            // Yeni Kutuların Matematik İşlemi ve Ekrana Basılması
+            if (seciliOgrenci) {
+                let kalanOzursuz = seciliOgrenci.ozsz - donusenGecmisGun;
+                if(kalanOzursuz < 0) kalanOzursuz = 0; // Eksiye inmesini engeller
+                
+                let guncelOzurlu = seciliOgrenci.ozrl + donusenGecmisGun + yeniEklenenGun;
+                
+                const lblKalan = document.getElementById('lbl_kalan_ozursuz');
+                const lblYeni = document.getElementById('lbl_yeni_ozurlu');
+                if(lblKalan) lblKalan.innerText = (Math.round(kalanOzursuz * 10) / 10) + ' Gün';
+                if(lblYeni) lblYeni.innerText = (Math.round(guncelOzurlu * 10) / 10) + ' Gün';
+            }
         }
 
         function onizlemeCikar() {
@@ -1240,7 +1341,8 @@
         }
 
         function gercekPdfIstegiAt(kayitlar) {
-            const ad = document.getElementById('lbl_secili_ogrenci').innerText.split(' - ')[1]?.split(' (')[0] || seciliOgrenci.ad;
+            let ad = seciliOgrenci.ad;
+            
             const sube = document.querySelector('.tr-secili td')?.innerText || "Bilinmiyor";
             const veri = { no: seciliOgrenci.no, ad: ad, sube: sube, kayitlar: kayitlar };
 
@@ -1251,9 +1353,11 @@
         }
         
         // --- 5. YAZI TEBLİĞİ VE AYARLAR ---
+               
         function personelleriYukle() {
             return fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
-                tumPersoneller = veri.personeller;
+                tumPersoneller = veri.personeller.map(p => ({ ...p, secili: true }));
+                
                 const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
                 if(cbEden && cbEdilen) {
                     cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>';
@@ -1263,62 +1367,118 @@
                         if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
                     });
                 }
-                personelFiltrePanelDoldur();
-                personelTablosunuDoldur();
+                personelTablosunuDoldur(); // Eski filtre fonksiyonu buradan kaldırıldı
             });
+        }
+
+        function personelDurumDegistir(cbElement) {
+            let p = tumPersoneller.find(x => x.ad === cbElement.value);
+            if(p) p.secili = cbElement.checked;
+            personelSayaciGuncelle();
+            
+            const gosterilenler = document.querySelectorAll('.chk-personel');
+            const seciliGosterilenler = document.querySelectorAll('.chk-personel:checked');
+            const masterKutu = document.getElementById('chk_master_personel');
+            if(masterKutu) masterKutu.checked = (gosterilenler.length > 0 && gosterilenler.length === seciliGosterilenler.length);
+        }
+
+        function personelMasterSecim(durum) {
+            document.querySelectorAll('.chk-personel').forEach(cb => {
+                cb.checked = durum;
+                let p = tumPersoneller.find(x => x.ad === cb.value);
+                if(p) p.secili = durum;
+            });
+            personelSayaciGuncelle();
+        }
+
+        function personelHizliSecim(hedef) {
+            document.getElementById('personel_ara').value = ''; // Aramayı temizle
+            
+            tumPersoneller.forEach(p => {
+                if(hedef === 'tumu') p.secili = true;
+                else if(hedef === 'hicbiri') p.secili = false;
+                else if(hedef === 'idare') p.secili = (p.grup === 'İdare' || p.gorev.includes('MÜDÜR'));
+                else if(hedef === 'ogretmen') p.secili = (p.grup === 'Öğretmenler' || p.gorev.includes('ÖĞRETMEN'));
+            });
+            personelTablosunuDoldur();
+        }
+
+        function personelSayaciGuncelle() {
+            let seciliSayi = tumPersoneller.filter(p => p.secili).length;
+            const lbl = document.getElementById('lbl_secili_personel_sayisi');
+            if(lbl) {
+                lbl.innerText = `Seçili: ${seciliSayi} Kişi`;
+                lbl.style.color = seciliSayi > 0 ? '#10B981' : '#EF4444';
+            }
         }
 
         function personelTablosunuDoldur() {
             const govde = document.getElementById('personel-govde');
             if(!govde) return;
             const arama = (document.getElementById('personel_ara') ? document.getElementById('personel_ara').value : "").toUpperCase();
-            const grupFiltre = document.getElementById('personel_grup_filtre') ? document.getElementById('personel_grup_filtre').value : "Tümü";
 
             const gosterilecekler = tumPersoneller.filter(p => {
-                if(arama && !p.ad.toUpperCase().includes(arama) && !p.gorev.toUpperCase().includes(arama) && !p.brans.toUpperCase().includes(arama)) return false;
-                if(grupFiltre !== "Tümü" && p.grup !== grupFiltre) return false;
-                if(p.gorev in personelGorevFiltre && !personelGorevFiltre[p.gorev]) return false;
-                if(p.brans in personelBransFiltre && !personelBransFiltre[p.brans]) return false;
+                // Sadece metin araması (Ad, Görev, Branş veya Grup içinde otomatik arar)
+                if(arama && !p.ad.toUpperCase().includes(arama) && !p.gorev.toUpperCase().includes(arama) && !p.brans.toUpperCase().includes(arama) && !p.grup.toUpperCase().includes(arama)) return false;
                 return true;
             });
 
             govde.innerHTML = "";
-            if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px; color:var(--fg-sub);'>Personel bulunamadı.</td></tr>"; return; }
-            if(gosterilecekler.length === 0) { govde.innerHTML = "<tr><td colspan='3' style='text-align:center; padding:10px; color:var(--fg-sub);'>Kriterlere uygun personel bulunamadı.</td></tr>"; return; }
+            if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:10px; color:var(--fg-sub);'>Personel bulunamadı.</td></tr>"; return; }
+            if(gosterilecekler.length === 0) { govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:10px; color:var(--fg-sub);'>Kriterlere uygun personel bulunamadı.</td></tr>"; return; }
 
+            let ekrandakiSeciliSayisi = 0;
             gosterilecekler.forEach((p, i) => {
-                const unvan = p.gorev !== "-" ? p.gorev : p.brans;
-                govde.innerHTML += `<tr><td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" checked></td><td>${unvan}</td><td><label for="chk_${i}">${p.ad}</label></td></tr>`;
+                if(p.secili) ekrandakiSeciliSayisi++;
+                
+                // Görev ve Branş yoksa otomatik olarak '-' yazdırıyoruz
+                const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
+                const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
+                
+                govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
+                    <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
+                    <td>${p.grup}</td>
+                    <td>${gorev}</td>
+                    <td>${brans}</td>
+                    <td><label for="chk_${i}">${p.ad}</label></td>
+                </tr>`;
             });
+
+            const masterKutu = document.getElementById('chk_master_personel');
+            if(masterKutu) masterKutu.checked = (gosterilecekler.length > 0 && gosterilecekler.length === ekrandakiSeciliSayisi);
+            
+            personelSayaciGuncelle();
         }
 
         function personelFiltrePanelDoldur() {
-            const gorevler = [...new Set(tumPersoneller.map(p => p.gorev).filter(g => g && g !== '-'))].sort();
-            const branslar = [...new Set(tumPersoneller.map(p => p.brans).filter(b => b && b !== '-'))].sort();
-            const gruplar = [...new Set(tumPersoneller.map(p => p.grup).filter(Boolean))].sort();
+            const gorevPanel = document.getElementById('personel_gorev_panel');
+            const bransPanel = document.getElementById('personel_brans_panel');
+            if(!gorevPanel || !bransPanel) return;
+
+            let gorevler = [...new Set(tumPersoneller.map(p => p.gorev))].filter(g => g !== "-").sort();
+            let branslar = [...new Set(tumPersoneller.map(p => p.brans))].filter(b => b !== "-").sort();
 
             gorevler.forEach(g => { if(!(g in personelGorevFiltre)) personelGorevFiltre[g] = true; });
             branslar.forEach(b => { if(!(b in personelBransFiltre)) personelBransFiltre[b] = true; });
 
-            const gorevPanel = document.getElementById('personel_gorev_panel');
-            if(gorevPanel) {
-                gorevPanel.innerHTML = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('gorev')">🔄 Tümünü Seç/Temizle</div>` +
-                    gorevler.map(g => `<label class="personel-filtre-item"><input type="checkbox" ${personelGorevFiltre[g] ? 'checked' : ''} onchange="personelGorevFiltre[${JSON.stringify(g)}] = this.checked; personelTablosunuDoldur()"> ${g}</label>`).join('');
-            }
+            let gHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('gorev')">🔄 Tümünü Seç/Bırak</div>`;
+            gorevler.forEach(g => { gHtml += `<div class="personel-filtre-item"><input type="checkbox" id="fg_${g}" ${personelGorevFiltre[g]?'checked':''} onchange="personelGorevFiltre['${g}']=this.checked; personelTablosunuDoldur()"><label for="fg_${g}">${g}</label></div>`; });
+            gorevPanel.innerHTML = gHtml;
 
-            const bransPanel = document.getElementById('personel_brans_panel');
-            if(bransPanel) {
-                bransPanel.innerHTML = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('brans')">🔄 Tümünü Seç/Temizle</div>` +
-                    branslar.map(b => `<label class="personel-filtre-item"><input type="checkbox" ${personelBransFiltre[b] ? 'checked' : ''} onchange="personelBransFiltre[${JSON.stringify(b)}] = this.checked; personelTablosunuDoldur()"> ${b}</label>`).join('');
-            }
-
-            const grupSelect = document.getElementById('personel_grup_filtre');
-            if(grupSelect) {
-                const eskiSecim = grupSelect.value;
-                grupSelect.innerHTML = '<option value="Tümü">Tüm Gruplar</option>' + gruplar.map(g => `<option value="${g}">${g}</option>`).join('');
-                if([...grupSelect.options].some(o => o.value === eskiSecim)) grupSelect.value = eskiSecim;
-            }
+            let bHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('brans')">🔄 Tümünü Seç/Bırak</div>`;
+            branslar.forEach(b => { bHtml += `<div class="personel-filtre-item"><input type="checkbox" id="fb_${b}" ${personelBransFiltre[b]?'checked':''} onchange="personelBransFiltre['${b}']=this.checked; personelTablosunuDoldur()"><label for="fb_${b}">${b}</label></div>`; });
+            bransPanel.innerHTML = bHtml;
         }
+
+        function topluTebligPdfAl() {
+            // YENİ: Artık ekrandaki tikleri değil, doğrudan hafızadaki seçili kişileri alıyoruz
+            const seciliPersoneller = tumPersoneller.filter(p => p.secili);
+            if(seciliPersoneller.length === 0) return bildirimGoster("Lütfen en az bir personel seçin!", "hata");
+            
+            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, personeller: seciliPersoneller };
+            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+        }
+        
 
         function personelFiltreTopluSecim(tur) {
             const sozluk = tur === 'gorev' ? personelGorevFiltre : personelBransFiltre;
@@ -1342,33 +1502,7 @@
             }
         });
 
-        let sonMebPdfYolu = null; // Yüklenip metni okunan orijinal MEB yazısının geçici sunucu yolu (bireysel tebliğde PDF'e eklenir)
-
-        function mebPdfYukle(event) {
-            const dosya = event.target.files[0]; if (!dosya) return;
-            document.getElementById('t-sayi').value = "Okunuyor...";
-            const formData = new FormData(); formData.append("dosya", dosya);
-            fetch(`${API}/meb-pdf-oku`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
-                if(v.basarili) { document.getElementById('t-sayi').value = v.sayi; document.getElementById('t-konu').value = v.konu; document.getElementById('t-tarih').value = v.tarih; sonMebPdfYolu = v.gecici_pdf_yolu || null; } 
-                else { bildirimGoster(v.mesaj, "hata"); document.getElementById('t-sayi').value = ""; sonMebPdfYolu = null; }
-                event.target.value = ''; 
-            });
-        }
-
-        function bireyselTebligPdfAl() {
-            const eden = tumPersoneller.find(p => p.ad === document.getElementById('b-eden').value);
-            const edilen = tumPersoneller.find(p => p.ad === document.getElementById('b-edilen').value);
-            if(!eden || !edilen) return bildirimGoster("Kişileri seçin!", "hata");
-            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, yer: document.getElementById('b-yer').value, eden: {ad: eden.ad, gorev: eden.gorev !== "-" ? eden.gorev : eden.brans}, edilen: {ad: edilen.ad, gorev: edilen.gorev !== "-" ? edilen.gorev : edilen.brans}, gecici_pdf_yolu: sonMebPdfYolu };
-            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
-        }
-
-        function topluTebligPdfAl() {
-            const seciliAdlar = Array.from(document.querySelectorAll('.chk-personel:checked')).map(cb => cb.value);
-            if(seciliAdlar.length === 0) return bildirimGoster("Personel seçin!", "hata");
-            const veri = { sayi: document.getElementById('t-sayi').value, konu: document.getElementById('t-konu').value, tarih: document.getElementById('t-tarih').value, personeller: tumPersoneller.filter(p => seciliAdlar.includes(p.ad)) };
-            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
-        }
+         
 
         // --- PERSONEL YÖNETİMİ ---
         function personelExcelYukle(event) {
