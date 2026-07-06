@@ -74,7 +74,7 @@
        /* --- YENİ: GENEL BÜYÜK FONT VE SIKI (1.0) SATIR AYARLARI --- */
         
         /* 1. Tüm programdaki yazıları genel olarak büyüt */
-        h2 { font-size: 18px !important; }
+        h2 { font-size: 24x !important; }
         h3 { font-size: 15px !important; }
         
         /* 2. Butonları ve Sekmeleri daha iri ve tıklanabilir yap */
@@ -113,7 +113,7 @@
         /* 4. Takvim Alanı ve Üst Başlık (+2 ve +3 Punto) */
         #lbl_ay_yil { font-size: 17px !important; } /* Ay ve Yıl bilgisi +3 punto */
         #takvim_grid > div { font-size: 16px !important; } /* Pzt, Sal yazıları */
-        .gun-hucre { height: 90px !important; } /* Takvim biraz daha büyüdü */
+        .gun-hucre { height: auto !important; aspect-ratio: 4 / 3; justify-content: space-evenly !important; } 
         .gun-hucre > div:first-child { font-size: 15px !important; } /* Takvimdeki sayılar */
         .gun-hucre > div:last-child { font-size: 14px !important; } /* Devamsızlık türü yazısı */
         
@@ -151,7 +151,26 @@
         .personel-filtre-toplu { font-weight:bold; border-bottom:1px solid var(--border); color: var(--tree-sel); }
 
         #lbl_secili_ogrenci { font-size: 22px !important; }
-   
+
+        /* --- YENİ: KUSURSUZ 4/3 ORANINDA ESNİYEN TAKVİM HÜCRELERİ --- */
+        .gun-hucre { 
+            height: auto !important; /* JS'den gelen sabitliği ezer */
+            aspect-ratio: 4 / 3 !important; /* Genişliğin 3/4'ü kadar yükseklik kilitlenir */
+            border-radius: 4px; 
+            padding: 4px; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: space-evenly !important; 
+            align-items: center;
+            cursor: pointer; 
+            user-select: none; 
+            transition: transform 0.1s;
+        }
+        .gun-hucre.bos { visibility: hidden; pointer-events: none; }
+        .gun-hucre:hover { filter: brightness(1.2); transform: scale(1.02); } /* Farenin üstüne gelince hafif büyüme efekti */
+        .gun-hucre > div:first-child { font-size: 16px !important; font-weight: bold; } /* Gün sayıları */
+        .gun-hucre > div:last-child { font-size: 13px !important; } /* Devamsızlık yazısı */
+
     </style>
 </head>
 <body>
@@ -377,22 +396,6 @@
         </div>
     </div>
 
-    <div id="yillik_modal" class="modal-overlay">
-        <div class="modal-content" style="display: inline-block; width: fit-content; max-width: 98vw; height: fit-content; max-height: 95vh; padding: 0; display: flex; flex-direction: column;">
-            <div style="display: flex; justify-content: space-between; align-items: center; background-color: #1E3A8A; padding: 10px 15px;">
-                <h2 id="modal_baslik" style="margin:0; color: white; font-size: 14px; font-weight: bold;">Yıllık Devamsızlık Karnesi</h2>
-                <button class="btn btn-kirmizi" style="padding: 4px 10px;" onclick="modalKapat('yillik_modal')">Kapat</button>
-            </div>
-            <div style="padding: 15px; overflow: auto; background-color: var(--bg-card);">
-                <table style="border-collapse: collapse; text-align: center; font-size: 11px; margin: auto;">
-                    <thead id="yillik_thead"></thead>
-                    <tbody id="yillik_tbody"></tbody>
-                </table>
-                <div id="yillik_ozet_alani" style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;"></div>
-            </div>
-        </div>
-    </div>
-
     <div class="notebook-header">
         <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')">📄 İzin Dilekçesi</button>
         <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')">🖋️ Yazı Tebliği</button>
@@ -461,35 +464,45 @@
                     </div>
                     
                     <div style="display: flex; flex-direction: row; flex: 1; min-height: 0;">
-                        <div id="takvim_alani_ana" style="flex: 48; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
+                        <div id="takvim_alani_ana" style="flex: 50; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <button class="btn btn-temizle" style="background: var(--bg-main); color: var(--fg-sub); border: none; cursor: pointer; padding: 4px 8px;" onclick="ayDegistir(-1)">&lt; Önceki Ay</button>
                                 <span id="lbl_ay_yil" style="font-weight: bold; font-size: 13px; color: var(--fg-main);">Ocak 2026</span>
                                 <button class="btn btn-temizle" style="background: var(--bg-main); color: var(--fg-sub); border: none; cursor: pointer; padding: 4px 8px;" onclick="ayDegistir(1)">Sonraki Ay &gt;</button>
                             </div>
                             
-                            <div id="takvim_grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; flex: 1; align-content: start;"></div>
+                            <div id="takvim_grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; flex: 1; align-content: start;"></div>
                             
                             <div style="border: 1px solid var(--border); padding: 15px; margin-top: 15px;">
                                 <div style="text-align: center; font-size: 10px; font-weight: bold; color: var(--fg-sub); margin-bottom: 10px;">Hızlı Seçim (Sadece Özürsüzler)</div>
-                                <div style="display: flex; justify-content: center; gap: 8px; margin-bottom: 12px;">
+                                <div style="display: flex; justify-content: center; gap: 8px;">
                                     <button class="btn" style="background: #475569; color: white; font-size: 9px; padding: 4px 10px;" onclick="topluSecim('bu_ay')">Bu Ay</button>
                                     <button class="btn" style="background: #475569; color: white; font-size: 9px; padding: 4px 10px;" onclick="topluSecim('son_iki_ay')">Son İki Ay</button>
+                                    
+                                    <div style="position: relative; display: inline-block;">
+                                        <button class="btn" id="btn_ozel_sec" style="background: #4338CA; color: white; font-size: 9px; padding: 4px 10px;" onclick="takvimBaloncuguAc(event)">📅 Özel Seç</button>
+                                        
+                                        <div id="float_takvim" style="display: none; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%); background: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 6px; box-shadow: 0 -4px 15px rgba(0,0,0,0.5); z-index: 100; width: 280px;">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                                <button class="btn" style="padding: 2px 10px; font-size:14px; background:var(--bg-main); color:var(--fg-main);" onclick="ozelAyDegistir(-1); event.stopPropagation();">&lt;</button>
+                                                <span id="ozel_ay_yil" style="font-size: 14px; font-weight: bold; color: var(--fg-main);">Ocak 2026</span>
+                                                <button class="btn" style="padding: 2px 10px; font-size:14px; background:var(--bg-main); color:var(--fg-main);" onclick="ozelAyDegistir(1); event.stopPropagation();">&gt;</button>
+                                            </div>
+                                            <div id="ozel_takvim_grid" style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; font-size: 13px; color: var(--fg-main); font-weight:bold;">
+                                            </div>
+                                            <div style="margin-top: 12px; font-size: 11px; color: var(--fg-sub); text-align: center;" id="ozel_secim_bilgi">1. Tıklama: Başlangıç | 2. Tıklama: Bitiş</div>
+                                            <button class="btn" style="width: 100%; background: #10B981; color: white; margin-top: 10px; padding: 8px; font-size: 13px; font-weight:bold;" onclick="ozelTarihUygula(); event.stopPropagation();">✔ Listeye Aktar</button>
+                                        </div>
+                                    </div>
+
                                     <button class="btn" style="background: #059669; color: white; font-size: 9px; padding: 4px 10px;" onclick="topluSecim('tumu')">Tümünü Seç</button>
-                                </div>
-                                <div style="display: flex; justify-content: center; align-items: center; gap: 5px; font-size: 9px;">
-                                    <span style="font-weight: bold; color: var(--fg-sub);">Baş:</span>
-                                    <input type="text" id="t_bas" placeholder="GG/AA/YYYY" style="width: 70px; font-size: 9px; padding: 2px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                                    <span style="font-weight: bold; color: var(--fg-sub);">- Bit:</span>
-                                    <input type="text" id="t_bit" placeholder="GG/AA/YYYY" style="width: 70px; font-size: 9px; padding: 2px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                                    <button class="btn" style="background-color: #4338CA; color: white; font-size: 9px; padding: 4px 8px;" onclick="topluSecim('aralik')">Getir</button>
                                 </div>
                             </div>
                         </div>
 
                         <div class="resizer" id="resizer2" style="margin: 0 10px;"></div>
 
-                        <div id="onizleme_alani_ana" style="flex: 48; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
+                        <div id="onizleme_alani_ana" style="flex: 40; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <span style="color: var(--fg-main); font-size: 12px; font-weight: bold;">PDF Önizleme</span>
                                 <span id="lbl_onizleme_toplam" style="color: #DC2626; font-size: 11px; font-weight: bold;">Toplam: 0 Gün</span>
@@ -512,7 +525,7 @@
                                 <button class="btn" style="flex: 1; background: #EF4444; color: white; padding: 5px;" onclick="onizlemeCikar()">⬅ Çıkar</button>
                                 <button class="btn" style="flex: 1; background: #475569; color: white; padding: 5px;" onclick="onizlemeTemizle()">Tümünü Temizle</button>
                             </div>
-                            <button class="btn" style="background-color: #EA580C; color: white; padding: 12 px; font-size: 12px; font-weight: bold;" title="Seçili devamsızlık kayıtları için veli bilgilendirme formu (A5 PDF) oluşturur" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
+                            <button class="btn" style="background-color: #EA580C; color: white; min-height: 70px; font-size: 20x; font-weight: bold; margin-top: 5px;" title="Seçili devamsızlık kayıtları için veli bilgilendirme formu (A5 PDF) oluşturur" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
                         </div>
                     </div>
                 </div>
@@ -1015,7 +1028,7 @@
             grid.innerHTML = `<div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Pzt</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Sal</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Çar</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Per</div><div style="text-align: center; font-weight: bold; font-size: 11px; color: var(--fg-main); margin-bottom: 5px;">Cum</div>`;
             const ilkGun = new Date(calYear, calMonth, 1); const sonGun = new Date(calYear, calMonth + 1, 0).getDate();
             let bosGunSayisi = ilkGun.getDay() === 0 ? 6 : ilkGun.getDay() - 1; 
-            for(let i = 0; i < bosGunSayisi; i++) { if (i < 5) grid.innerHTML += `<div style="visibility: hidden;"></div>`; }
+            for(let i = 0; i < bosGunSayisi; i++) { if (i < 5) grid.innerHTML += `<div class="gun-hucre bos"></div>`; }
 
             const tumKayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar];
             for(let i = 1; i <= sonGun; i++) {
@@ -1032,7 +1045,7 @@
                         if(kayit.secili) borderStyle = 'border: 2px solid #10B981; box-shadow: inset 0 0 5px #10B981;';
                     } else { kayit = null; } 
                 }
-                grid.innerHTML += `<div style="background-color: ${bgStyle}; ${borderStyle} border-radius: 2px; padding: 4px; height: 75px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none;" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div style="font-size: 10px; font-weight: bold; color: ${fgStyle};">${i}</div>${icerik}</div>`;
+                grid.innerHTML += `<div class="gun-hucre" style="background-color: ${bgStyle}; ${borderStyle}" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div>${i}</div>${icerik}</div>`;
             }
         }
 
@@ -1112,6 +1125,88 @@
                 }
             });
             takvimiCiz(); onizlemeGuncelle();
+        }
+
+        let ozelBas = null; let ozelBit = null;
+        let ozelCalYear = new Date().getFullYear(); let ozelCalMonth = new Date().getMonth();
+
+        function takvimBaloncuguAc(e) {
+            const kutu = document.getElementById('float_takvim');
+            if(kutu.style.display === 'none' || kutu.style.display === '') {
+                kutu.style.display = 'block'; ozelBas = null; ozelBit = null; ozelTakvimCiz();
+            } else { kutu.style.display = 'none'; }
+            if(e) e.stopPropagation();
+        }
+
+        function ozelAyDegistir(artis) {
+            ozelCalMonth += artis;
+            if(ozelCalMonth > 11) { ozelCalMonth = 0; ozelCalYear++; } else if(ozelCalMonth < 0) { ozelCalMonth = 11; ozelCalYear--; }
+            ozelTakvimCiz();
+        }
+
+        function ozelTakvimCiz() {
+            document.getElementById('ozel_ay_yil').innerText = `${aylar[ozelCalMonth]} ${ozelCalYear}`;
+            const grid = document.getElementById('ozel_takvim_grid');
+            grid.innerHTML = `<div style="color:var(--fg-sub)">Pt</div><div style="color:var(--fg-sub)">Sa</div><div style="color:var(--fg-sub)">Ça</div><div style="color:var(--fg-sub)">Pe</div><div style="color:var(--fg-sub)">Cu</div><div style="color:var(--fg-sub)">Ct</div><div style="color:var(--fg-sub)">Pz</div>`;
+
+            let ilkGun = new Date(ozelCalYear, ozelCalMonth, 1).getDay();
+            let bosluk = (ilkGun === 0) ? 6 : ilkGun - 1;
+            let sonGun = new Date(ozelCalYear, ozelCalMonth + 1, 0).getDate();
+
+            for(let i=0; i<bosluk; i++) grid.innerHTML += `<div></div>`;
+
+            for(let i=1; i<=sonGun; i++) {
+                let dateObj = new Date(ozelCalYear, ozelCalMonth, i);
+                let bg = "var(--bg-main)"; let fg = "var(--fg-main)";
+
+                if(ozelBas && ozelBit) {
+                    if(dateObj >= ozelBas && dateObj <= ozelBit) { bg = "#4338CA"; fg = "white"; }
+                } else if (ozelBas && dateObj.getTime() === ozelBas.getTime()) {
+                    bg = "#4338CA"; fg = "white";
+                }
+
+                grid.innerHTML += `<div style="padding: 6px 0; cursor: pointer; background: ${bg}; color: ${fg}; border-radius: 4px; border: 1px solid var(--border);" onclick="ozelGunSec(${i}); event.stopPropagation();">${i}</div>`;
+            }
+            
+            let bilgi = document.getElementById('ozel_secim_bilgi');
+            if(!ozelBas) bilgi.innerHTML = "<b>1. Adım:</b> Başlangıç tarihini seçin.";
+            else if(!ozelBit) bilgi.innerHTML = "<b>2. Adım:</b> Bitiş tarihini seçin.";
+            else bilgi.innerHTML = "<b>Harika!</b> Aralığı aktarabilirsiniz.";
+        }
+
+        function ozelGunSec(gun) {
+            let secilen = new Date(ozelCalYear, ozelCalMonth, gun);
+            if(!ozelBas || (ozelBas && ozelBit)) { ozelBas = secilen; ozelBit = null; } 
+            else if(secilen < ozelBas) { ozelBas = secilen; } 
+            else { ozelBit = secilen; }
+            ozelTakvimCiz();
+        }
+
+        document.addEventListener('click', function(e) {
+            const kutu = document.getElementById('float_takvim');
+            const btn = document.getElementById('btn_ozel_sec');
+            const sagTikMenu = document.getElementById('sag_tik_menu');
+            if(kutu && kutu.style.display === 'block' && !kutu.contains(e.target) && e.target !== btn) { kutu.style.display = 'none'; }
+            if(sagTikMenu && e.target !== sagTikMenu && !sagTikMenu.contains(e.target)) { sagTikMenu.style.display = 'none'; }
+        });
+
+        function ozelTarihUygula() {
+            if(!ozelBas || !ozelBit) { bildirimGoster("Lütfen takvimden iki tarih seçin (Başlangıç ve Bitiş).", "hata"); return; }
+            if(!seciliOgrenci) return;
+            seciliDevamsizliklar.forEach(d => d.secili = false);
+            
+            const parseTarihStr = (str) => { let p = str.split('/'); return p.length === 3 ? new Date(p[2], p[1]-1, p[0]) : null; };
+            
+            let eklenen = 0;
+            seciliDevamsizliklar.forEach(d => {
+                if(!['D', 'ÖY', 'SY'].includes(d.tur.toUpperCase())) return;
+                let kDate = parseTarihStr(d.tarih); 
+                if(kDate && kDate >= ozelBas && kDate <= ozelBit) { d.secili = true; eklenen++; }
+            });
+            
+            takvimiCiz(); onizlemeGuncelle();
+            document.getElementById('float_takvim').style.display = 'none';
+            if(eklenen === 0) bildirimGoster("Seçilen tarih aralığında özürsüz devamsızlık bulunamadı.", "hata");
         }
 
         function verileriYukle() {
