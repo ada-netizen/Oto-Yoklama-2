@@ -46,7 +46,6 @@
         .tr-secili td { color: #FFFFFF !important; }
 
         /* --- BİREBİR TKINTER TAKVİM STİLLERİ (Yükseklik 55px yapıldı) --- */
-        .gun-hucre { background-color: #334155; border: 1px solid var(--border); border-radius: 2px; padding: 4px; height: 55px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none; }
         .gun-hucre:hover { filter: brightness(1.2); }
         .gun-hucre.bos { visibility: hidden; }
 
@@ -64,35 +63,24 @@
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
         .modal-content { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
-        .modal-content { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
         
         /* --- YENİ: GÖZ YORMAYAN BÜYÜK FONT VE FERAH SATIR AYARLARI --- */
         table, th, td { font-size: 13px !important; }
         .btn { font-size: 12px !important; padding: 8px 15px !important; }
         input, select { font-size: 12px !important; padding: 6px !important; }
         .arama-label, .arama-entry, .arama-combo { font-size: 12px !important; }
-        
-        #tree_tum_liste th, #tree_tum_liste td { padding: 12px 8px !important; height: 35px; } 
-        #tree_detay_govde td { padding: 12px 8px !important; height: 35px; }
-        
+             
         #tree_govde tr:hover { background-color: var(--border); }
-        .tr-secili { font-weight: bold; font-size: 13.5px !important; }
-
-        /* --- YENİ: GENEL BÜYÜK FONT VE SIKI (1.0) SATIR AYARLARI --- */
+       /* --- YENİ: GENEL BÜYÜK FONT VE SIKI (1.0) SATIR AYARLARI --- */
         
         /* 1. Tüm programdaki yazıları genel olarak büyüt */
-        body, input, select, button, span, div, p, th, td { font-size: 13px !important; }
         h2 { font-size: 18px !important; }
         h3 { font-size: 15px !important; }
         
         /* 2. Butonları ve Sekmeleri daha iri ve tıklanabilir yap */
         .btn { font-size: 13px !important; padding: 8px 15px !important; }
         .tab-btn { font-size: 14px !important; padding: 10px 18px !important; }
-        
-        /* 3. LİSTE SATIR ARALIĞI (Word 1.0 formatı gibi dar ve sıkı) */
-        #tree_tum_liste th, #tree_tum_liste td { padding: 4px 6px !important; height: 24px !important; } 
-        #tree_detay_govde td { padding: 4px 6px !important; height: 24px !important; }
-        
+            
         /* 4. Sol liste seçim efektleri */
         #tree_govde tr:hover { background-color: var(--border); }
         .tr-secili { font-weight: bold; font-size: 13.5px !important; }
@@ -102,50 +90,30 @@
         .top-bar { margin-bottom: 5px !important; padding: 10px 20px !important; } /* Butonlar ile alt paneller arasındaki boşluğu daralttık */
         .paned-window { margin-top: 0px !important; } /* Araya giren ekstra boşluğu sıfırladık */
         
-        /* Sadece sol listenin puntosunu 1 punto düşürdük (Diğer yazılar büyük kaldı) */
-        #tree_tum_liste th, #tree_tum_liste td { font-size: 12px !important; padding: 4px 6px !important; height: 24px !important; }
-        .tr-secili { font-size: 12px !important; font-weight: bold; }
-
         /* --- YENİ: TKINTER BİREBİR BÜYÜK FONT, OTOMATİK SÜTUN VE DAR AYIRICILAR --- */
         
         /* 1. Tüm Genel Yazıları Ferahlat */
         body, input, select, button, span, div, p, th, td { font-size: 14px !important; }
         
-        /* 2. Öğrenci Listesi 2 Punto Büyütme ve Seçili Satır Bold İptali */
-        #tree_tum_liste { table-layout: auto !important; width: 100%; }
-        #tree_tum_liste th, #tree_tum_liste td { font-size: 14px !important; padding: 6px 8px !important; height: 26px !important; white-space: nowrap; }
-        .tr-secili { font-size: 14px !important; font-weight: normal !important; } 
-        #sol_panel_ana .tree-card { overflow-x: auto !important; } /* Tablonun filtreleri aşmasını engeller */
-
         /* 3. Sağ Panel, Takvim ve Üst Bilgilerin Büyütülmesi (Tkinter Klonu) */
         #takvim_grid div { font-size: 14px !important; }
-        .gun-hucre div { font-size: 13px !important; }
-        #lbl_secili_ogrenci { font-size: 18px !important; }
+        .gun-hucre div { font-size: 134x !important; }
         #lbl_ozet { font-size: 14px !important; }
-        #takvim_alani_ana .btn, #takvim_alani_ana input { font-size: 12px !important; }
-        #takvim_alani_ana div[style*="font-size: 10px;"] { font-size: 13px !important; }
-        
-        /* 4. Resizer (Genişlik Ayarlama Çubuğu) Alanını Çok Daraltma */
-        .resizer { width: 4px !important; margin: 0 3px !important; }
-
-        /* --- YENİ: TKINTER PUNTOLARI VE ORANTILI FONT AYARLARI --- */
-        
+               
         /* 1. Üst Kısım: Ara, Şube ve Temizle (+2 Punto) */
         .arama-grid span, .arama-grid input, .arama-grid select, .arama-grid button { font-size: 14px !important; }
         
         /* 2. Öğrenci Listesi (-1 Punto) */
         #tree_tum_liste { table-layout: fixed !important; width: 100%; }
         #tree_tum_liste th, #tree_tum_liste td { font-size: 13px !important; padding: 0 6px !important; height: 32px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        #sol_panel_ana .tree-card { overflow-x: auto !important; }
-
+        
         /* 3. Sağ Panel: Öğrenci Adı ve Özet (+2 Punto) */
-        #lbl_secili_ogrenci { font-size: 20px !important; }
         #lbl_ozet { font-size: 16px !important; }
         
         /* 4. Takvim Alanı ve Üst Başlık (+2 ve +3 Punto) */
         #lbl_ay_yil { font-size: 17px !important; } /* Ay ve Yıl bilgisi +3 punto */
         #takvim_grid > div { font-size: 16px !important; } /* Pzt, Sal yazıları */
-        .gun-hucre { height: 60px !important; } /* Takvim biraz daha büyüdü */
+        .gun-hucre { height: 90px !important; } /* Takvim biraz daha büyüdü */
         .gun-hucre > div:first-child { font-size: 15px !important; } /* Takvimdeki sayılar */
         .gun-hucre > div:last-child { font-size: 14px !important; } /* Devamsızlık türü yazısı */
         
@@ -182,8 +150,7 @@
         .personel-filtre-item:hover { background: var(--bg-main); }
         .personel-filtre-toplu { font-weight:bold; border-bottom:1px solid var(--border); color: var(--tree-sel); }
 
-    </style>
-</head>
+        #lbl_secili_ogrenci { font-size: 22px !important; }
    
     </style>
 </head>
@@ -464,9 +431,9 @@
                     </div>
                 </div>
 
-                <div class="tree-card" style="flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-main);">
+                <div class="tree-card" style="flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-card);">
                     <table id="tree_tum_liste" style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 10px; text-align: left;">
-                        <thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
+                        <thead style="position: sticky; top: 0; background-color: var(--bg-card); z-index: 1;">
                             <tr>
                                 <th style="width: 10%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_temizSube" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('temizSube')">Sınıf ↕</span><div class="col-resizer"></div></th>
                                 <th style="width: 13%; padding: 0 6px; border-bottom: 1px solid var(--border); position: relative;"><span id="span_no" style="cursor: pointer; color: var(--fg-main); display: block; line-height: 32px;" onclick="sirala('no')">No ↕</span><div class="col-resizer"></div></th>
@@ -487,14 +454,14 @@
                     👈 İşlem yapmak için sol taraftaki listeden bir öğrenci seçin.<br>(Yıllık Tablo İçin Çift Tıklayın)
                 </div>
 
-                <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%; padding: 25px 0;">
+                <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%; padding: 4px 0 0 0;">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 10px; padding: 0 5px;">
                         <span id="lbl_secili_ogrenci" style="font-size: 16px; font-weight: bold; color: var(--fg-main);">Öğrenci Adı (No)</span>
                         <span id="lbl_ozet" style="font-size: 12px; font-weight: bold; color: var(--fg-sub);">Özürsüz: 0 Gün  |  Özürlü: 0 Gün</span>
                     </div>
                     
                     <div style="display: flex; flex-direction: row; flex: 1; min-height: 0;">
-                        <div id="takvim_alani_ana" style="flex: 52; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
+                        <div id="takvim_alani_ana" style="flex: 48; display: flex; flex-direction: column; background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <button class="btn btn-temizle" style="background: var(--bg-main); color: var(--fg-sub); border: none; cursor: pointer; padding: 4px 8px;" onclick="ayDegistir(-1)">&lt; Önceki Ay</button>
                                 <span id="lbl_ay_yil" style="font-weight: bold; font-size: 13px; color: var(--fg-main);">Ocak 2026</span>
@@ -545,7 +512,7 @@
                                 <button class="btn" style="flex: 1; background: #EF4444; color: white; padding: 5px;" onclick="onizlemeCikar()">⬅ Çıkar</button>
                                 <button class="btn" style="flex: 1; background: #475569; color: white; padding: 5px;" onclick="onizlemeTemizle()">Tümünü Temizle</button>
                             </div>
-                            <button class="btn" style="background-color: #EA580C; color: white; padding: 15px; font-size: 12px; font-weight: bold;" title="Seçili devamsızlık kayıtları için veli bilgilendirme formu (A5 PDF) oluşturur" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
+                            <button class="btn" style="background-color: #EA580C; color: white; padding: 12 px; font-size: 12px; font-weight: bold;" title="Seçili devamsızlık kayıtları için veli bilgilendirme formu (A5 PDF) oluşturur" onclick="pdfCiktisiAl()">📄 PDF ÇIKTISI AL</button>
                         </div>
                     </div>
                 </div>
@@ -736,6 +703,17 @@
         function resizerAktifEt(resizerId, solId, sagId) {
             const resizer = document.getElementById(resizerId); const sol = document.getElementById(solId); const sag = document.getElementById(sagId);
             if(!resizer || !sol || !sag) return;
+
+            // Daha önce ayarlanmış bir genişlik varsa geri yükle (ekrana göre güvenli sınır içinde)
+            const kayitliStr = localStorage.getItem(`panel_genislik_${solId}`);
+            if (kayitliStr) {
+                let kayitli = parseInt(kayitliStr, 10);
+                const mevcutGenislik = sol.parentElement.getBoundingClientRect().width || window.innerWidth;
+                if (kayitli < 150) kayitli = 150;
+                if (kayitli > mevcutGenislik - 200) kayitli = Math.max(150, mevcutGenislik - 200);
+                sol.style.flex = `0 0 ${kayitli}px`; sag.style.flex = `1 1 0%`;
+            }
+
             let isResizing = false;
             resizer.addEventListener('mousedown', function(e) { isResizing = true; document.body.style.cursor = 'col-resize'; e.preventDefault(); });
             document.addEventListener('mousemove', function(e) {
@@ -745,13 +723,25 @@
                 if (newSolWidth < 150) newSolWidth = 150; if (newSolWidth > containerRect.width - 200) newSolWidth = containerRect.width - 200;
                 sol.style.flex = `0 0 ${newSolWidth}px`; sag.style.flex = `1 1 0%`; 
             });
-            document.addEventListener('mouseup', function(e) { if (isResizing) { isResizing = false; document.body.style.cursor = 'default'; } });
+            document.addEventListener('mouseup', function(e) {
+                if (isResizing) {
+                    isResizing = false; document.body.style.cursor = 'default';
+                    localStorage.setItem(`panel_genislik_${solId}`, Math.round(sol.getBoundingClientRect().width));
+                }
+            });
         }
 
         // ================= TABLO SÜTUN GENİŞLETME (ZEKİ MOTOR) =================
         function tabloSutunBoyutlandirma() {
             const resizers = document.querySelectorAll('.col-resizer');
             let thEl, startX, startWidth;
+
+            // Daha önce ayarlanmış sütun genişliklerini geri yükle
+            document.querySelectorAll('#tree_tum_liste th span[id^="span_"]').forEach(span => {
+                const kayitli = localStorage.getItem(`sutun_genislik_${span.id}`);
+                if (kayitli) span.closest('th').style.width = kayitli + 'px';
+            });
+
             resizers.forEach(resizer => {
                 resizer.addEventListener('mousedown', function(e) {
                     thEl = e.target.parentElement; startX = e.pageX; startWidth = thEl.offsetWidth;
@@ -759,7 +749,11 @@
                 });
             });
             function mouseMove(e) { thEl.style.width = (startWidth + (e.pageX - startX)) + 'px'; }
-            function mouseUp() { document.removeEventListener('mousemove', mouseMove); document.removeEventListener('mouseup', mouseUp); }
+            function mouseUp() {
+                document.removeEventListener('mousemove', mouseMove); document.removeEventListener('mouseup', mouseUp);
+                const span = thEl.querySelector('span[id^="span_"]');
+                if (span) localStorage.setItem(`sutun_genislik_${span.id}`, thEl.offsetWidth);
+            }
         }
 
         document.addEventListener('click', function(e) {
@@ -985,6 +979,7 @@
             islenecekler.forEach(ogr => {
                 const ozszStr = ogr.ozsz >= 10 ? `<span style="font-weight:bold; color:#EF4444;">${ogr.ozsz} Gün</span>` : `${ogr.ozsz} Gün`;
                 const tr = document.createElement('tr'); tr.style.cursor = "pointer"; tr.style.borderBottom = "1px solid var(--border)";
+                if (ogr.ozsz >= 10) { tr.style.backgroundColor = "#FEE2E2"; tr.style.color = "#991B1B"; }
                 tr.onclick = function() {
                     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
                     tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.ozsz, ogr.ozrl);
@@ -1037,7 +1032,7 @@
                         if(kayit.secili) borderStyle = 'border: 2px solid #10B981; box-shadow: inset 0 0 5px #10B981;';
                     } else { kayit = null; } 
                 }
-                grid.innerHTML += `<div style="background-color: ${bgStyle}; ${borderStyle} border-radius: 2px; padding: 4px; height: 55px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none;" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div style="font-size: 10px; font-weight: bold; color: ${fgStyle};">${i}</div>${icerik}</div>`;
+                grid.innerHTML += `<div style="background-color: ${bgStyle}; ${borderStyle} border-radius: 2px; padding: 4px; height: 75px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; user-select: none;" onclick="hucreTikla('${tarihStr}')" oncontextmenu="hucreSagTikla(event, '${tarihStr}')"><div style="font-size: 10px; font-weight: bold; color: ${fgStyle};">${i}</div>${icerik}</div>`;
             }
         }
 
