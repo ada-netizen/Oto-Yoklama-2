@@ -385,6 +385,38 @@
         </div>
     </div>
 
+    <div id="akilli_eslesme_modal" class="modal-overlay">
+        <div class="modal-content" style="width: 550px; padding: 0; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+                <h2 style="margin:0; color: #8B5CF6; font-size: 16px;">🧠 Akıllı Personel Eşleştirme</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('akilli_eslesme_modal')">Kapat</button>
+            </div>
+            
+            <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+                <div style="font-size: 11px; color: var(--fg-sub); line-height: 1.5;">
+                    MEB yazılarının konusunda buraya girdiğiniz <b>Anahtar Kelime</b> geçerse, seçtiğiniz personel listeye <b>otomatik olarak</b> eklenir. <br>
+                    <i>Not: Aynı kelime için birden fazla personel atamak isterseniz, kuralı her personel için ayrı ayrı eklemeniz yeterlidir.</i>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: flex-end; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+                    <div style="flex: 1;">
+                        <span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Anahtar Kelime (Örn: Hayat Güzeldir):</span>
+                        <input type="text" id="ae_kelime" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                    </div>
+                    <div style="flex: 1;">
+                        <span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Otomatik Seçilecek Personel:</span>
+                        <select id="ae_personel" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></select>
+                    </div>
+                    <button class="btn btn-dev" style="padding: 6px 15px; height: 30px;" onclick="akilliEslesmeEkle()">➕ Ekle</button>
+                </div>
+
+                <div class="tree-card" style="height: 200px; border: 1px solid var(--border); overflow-y: auto;">
+                    <div id="ae_liste"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= PERSONEL YÖNETİMİ (EKLE / ÇIKAR) ================= -->
     <div id="personel_yonetim_modal" class="modal-overlay">
         <div class="modal-content" style="width: 480px; padding: 0; background-color: var(--bg-main);">
@@ -575,6 +607,7 @@
                 <button class="btn btn-kirmizi" title="MEB'den gelen resmi yazının PDF'ini yükleyin, sayı/konu/tarih otomatik okunsun" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
                 <button class="btn btn-ogr" title="E-Okul/MEB'den indirilen personel listesini (Excel) toplu olarak içeri aktarın" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
                 <button class="btn btn-ayarlar" title="Tek tek personel ekleyin veya çıkarın" onclick="personelYonetimAc()">👤 Personel Yönetimi</button>
+                <button class="btn" style="background-color: #8B5CF6; color: white;" title="Yüklenen yazılardaki kelimelere göre otomatik personel seçimi kuralları oluşturun" onclick="akilliEslesmeModalAc()">🧠 Akıllı Eşleşmeler</button>
                 <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Listeyi Yenile</button>
             </div>
         </div>
@@ -1472,6 +1505,8 @@
             personelTablosunuDoldur(); 
         }
 
+
+
         function personelMasterSecim(durum) {
             document.querySelectorAll('.chk-personel').forEach(cb => {
                 cb.checked = durum;
@@ -1570,7 +1605,33 @@
             }
         });
 
-         
+         // --- PDF OKUMA MOTORU (Zeki Uyarı Sistemi Eklendi) ---
+        function mebPdfYukle(event) {
+            const dosya = event.target.files[0]; if (!dosya) return;
+            const formData = new FormData(); formData.append("dosya", dosya);
+            yuklemeGoster("MEB Yazısı Çözümleniyor...");
+            
+            fetch(`${API}/meb-pdf-oku`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
+                yuklemeGizle();
+                if(v.basarili) {
+                    document.getElementById('t-sayi').value = v.sayi || '';
+                    document.getElementById('t-konu').value = v.konu || '';
+                    document.getElementById('t-tarih').value = v.tarih || '';
+                    
+                    // YENİ EKLENEN KISIM: Eğer program hiçbir veri bulamadıysa kullanıcıyı uyarır
+                    if (!v.sayi && !v.konu && !v.tarih) {
+                        bildirimGoster("⚠️ Belge hafızaya alındı ancak içindeki metinler okunamadı (Taranmış/Resim tabanlı PDF olabilir). Lütfen bilgileri elle giriniz.", "hata");
+                    } else {
+                        bildirimGoster("PDF Başarıyla Okundu", "bilgi");
+                        // PDF'in Konusunu okuyup yapay zeka motorunu tetiklediğimiz an!
+                        otomatikPersonelSec(v.konu);
+                    }
+                } else {
+                    bildirimGoster("Hata: " + v.mesaj, "hata");
+                }
+                event.target.value = '';
+            }).catch(() => { yuklemeGizle(); bildirimGoster("Bağlantı hatası!", "hata"); });
+        }
 
         // --- PERSONEL YÖNETİMİ ---
         function personelExcelYukle(event) {
@@ -1585,6 +1646,81 @@
 
         function personelYonetimAc() { modalAc('personel_yonetim_modal'); personelTabAc('ekle'); }
 
+        // --- 🧠 AKILLI EŞLEŞTİRME (OTOMASYON) MOTORU ---
+        
+        function akilliEslesmeModalAc() {
+            if(!sistemAyarlari.oto_eslesmeler) sistemAyarlari.oto_eslesmeler = [];
+            const secici = document.getElementById('ae_personel');
+            secici.innerHTML = '<option value="">-- Personel Seçin --</option>';
+            [...tumPersoneller].sort((a,b)=>a.ad.localeCompare(b.ad)).forEach(p => {
+                secici.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
+            });
+            akilliEslesmeCiz();
+            modalAc('akilli_eslesme_modal');
+        }
+
+        function akilliEslesmeCiz() {
+            const liste = document.getElementById('ae_liste');
+            liste.innerHTML = '';
+            if(!sistemAyarlari.oto_eslesmeler || sistemAyarlari.oto_eslesmeler.length === 0) {
+                liste.innerHTML = '<div style="padding:15px; text-align:center; color:var(--fg-sub); font-size:11px;">Henüz hiç otomatik eşleştirme kuralı eklenmemiş.</div>';
+                return;
+            }
+            sistemAyarlari.oto_eslesmeler.forEach((kural, i) => {
+                liste.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border); font-size:11px; color: var(--fg-main);">
+                    <div><strong style="color: #8B5CF6;">Kelime:</strong> ${kural.kelime} <br> <strong style="color:var(--tree-sel);">Personel:</strong> ${kural.personel}</div>
+                    <button class="btn btn-kirmizi" style="padding:4px 10px; font-size:9px;" onclick="akilliEslesmeSil(${i})">Sil</button>
+                </div>`;
+            });
+        }
+
+        function akilliEslesmeEkle() {
+            const kelime = document.getElementById('ae_kelime').value.trim();
+            const personel = document.getElementById('ae_personel').value;
+            if(!kelime || !personel) return bildirimGoster("Lütfen hem anahtar kelimeyi hem de personeli seçin!", "hata");
+            
+            if(!sistemAyarlari.oto_eslesmeler) sistemAyarlari.oto_eslesmeler = [];
+            sistemAyarlari.oto_eslesmeler.push({ kelime: kelime, personel: personel });
+            
+            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) })
+            .then(r => r.json()).then(v => {
+                bildirimGoster("Kural başarıyla eklendi!", "bilgi");
+                document.getElementById('ae_kelime').value = ''; document.getElementById('ae_personel').value = '';
+                akilliEslesmeCiz();
+            });
+        }
+
+        function akilliEslesmeSil(index) {
+            if(!confirm("Bu otomatik eşleştirme kuralını silmek istediğinize emin misiniz?")) return;
+            sistemAyarlari.oto_eslesmeler.splice(index, 1);
+            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) })
+            .then(r => r.json()).then(v => { bildirimGoster("Kural silindi!", "bilgi"); akilliEslesmeCiz(); });
+        }
+
+        function otomatikPersonelSec(konuMetni) {
+            if(!sistemAyarlari.oto_eslesmeler || sistemAyarlari.oto_eslesmeler.length === 0 || !konuMetni) return;
+            let secilenler = [];
+            let metinKucuk = konuMetni.toLocaleLowerCase('tr-TR');
+            
+            sistemAyarlari.oto_eslesmeler.forEach(kural => {
+                if(metinKucuk.includes(kural.kelime.toLocaleLowerCase('tr-TR'))) {
+                    let p = tumPersoneller.find(x => x.ad === kural.personel);
+                    if(p && !p.secili) {
+                        p.secili = true;
+                        p.manuelEklendi = true; // Filtreler temizlense bile listede kalmasını garantiler
+                        secilenler.push(p.ad);
+                    }
+                }
+            });
+            
+            if(secilenler.length > 0) {
+                personelTablosunuDoldur();
+                bildirimGoster(`🧠 Akıllı Eşleşme Çalıştı!\n${secilenler.length} personel otomatik olarak seçildi:\n${secilenler.join(', ')}`, "bilgi");
+            }
+        }
+
+        // --- PDF OKUMA MOTORUNUN GÜNCELLENMİŞ HALİ ---
+        
         function personelTabAc(tab) {
             document.getElementById('ptab-ekle').style.display = tab === 'ekle' ? 'flex' : 'none';
             document.getElementById('ptab-cikar').style.display = tab === 'cikar' ? 'flex' : 'none';
