@@ -147,76 +147,90 @@ class PDFYoneticisi:
         return True, ""
     
     # --- TOPLU İMZA SİRKÜSÜ (A4 LİSTE) ÇİZİM MOTORU ---
-    def teblig_tebellug_ciz(self, sayi, konu, yazi_tarihi, personel_listesi, kayit_yeri):
+    def teblig_tebellug_ciz(self, sayi, konu, tarih, personeller, kayit_yeri, kurum=""):
         from reportlab.lib.pagesizes import A4
-        c = canvas.Canvas(kayit_yeri, pagesize=A4)
-        genislik, yukseklik = A4
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib import colors
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
         
-        def sayfa_basligi_ciz():
-            c.setFont(self.font_bold, 12)
-            c.drawCentredString(genislik / 2, yukseklik - 40, self.metin_duzelt("TEBLİĞ / TEBELLÜĞ BELGESİ"))
-            
-            c.setFont(self.font_bold, 10)
-            c.drawString(40, yukseklik - 70, "Sayı:")
-            c.drawString(40, yukseklik - 85, "Konu:")
-            c.drawString(40, yukseklik - 100, "Tarih:")
-            
-            c.setFont(self.font, 10)
-            c.drawString(80, yukseklik - 70, self.metin_duzelt(sayi))
-            c.drawString(80, yukseklik - 85, self.metin_duzelt(konu))
-            c.drawString(80, yukseklik - 100, self.metin_duzelt(yazi_tarihi))
-            return yukseklik - 130
+        font_isim = 'Helvetica'
+        font_bold = 'Helvetica-Bold'
+        try:
+            pdfmetrics.registerFont(TTFont('OpenSans', 'OpenSans-Regular.ttf'))
+            pdfmetrics.registerFont(TTFont('OpenSans-Bold', 'OpenSans-Bold.ttf'))
+            font_isim = 'OpenSans'
+            font_bold = 'OpenSans-Bold'
+        except:
+            pass
 
-        def tablo_basligi_ciz(y):
-            c.setFont(self.font_bold, 10)
-            c.setFillColorRGB(0.9, 0.9, 0.9) 
-            c.rect(40, y - 5, genislik - 80, 20, fill=1)
-            c.setFillColorRGB(0, 0, 0)
-            
-            # Sütun Başlıkları (Yeni düzene göre Görev ve Branş ayrıldı)
-            c.drawString(45, y, "S.N")
-            c.drawString(75, y, self.metin_duzelt("Görevi"))
-            c.drawString(160, y, self.metin_duzelt("Branşı"))
-            c.drawString(250, y, "Ad Soyad")
-            c.drawString(375, y, "Tarih")
-            c.drawString(450, y, self.metin_duzelt("İmza"))
-            
-            c.line(40, y - 5, genislik - 40, y - 5)
-            c.line(40, y + 15, genislik - 40, y + 15)
-            
-            # Dikey çizgilerin x koordinatları
-            for x in [40, 70, 155, 245, 370, 440, genislik - 40]:
-                c.line(x, y - 5, x, y + 15)
-            return y - 20
+        doc = SimpleDocTemplate(kayit_yeri, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        elements = []
+        
+        # --- STİLLER (Tümü 12 Punto) ---
+        title_style = ParagraphStyle(name='Title', fontName=font_bold, fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=4)
+        subtitle_style = ParagraphStyle(name='SubTitle', fontName=font_bold, fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=15)
+        
+        # Paragraf başı (firstLineIndent=30) ve İki Yana Yaslı (TA_JUSTIFY)
+        p_style = ParagraphStyle(name='Metin', fontName=font_isim, fontSize=12, leading=14, alignment=TA_JUSTIFY, firstLineIndent=30, spaceAfter=15)
 
-        y_pos = sayfa_basligi_ciz()
-        y_pos = tablo_basligi_ciz(y_pos)
+        # Tablo içi kelime taşırma engelleyici (word-wrap) stilleri
+        cell_style = ParagraphStyle(name='Cell', fontName=font_isim, fontSize=12, leading=12)
+        cell_bold = ParagraphStyle(name='CellB', fontName=font_bold, fontSize=12, leading=12, alignment=TA_CENTER)
+
+        # --- 1. BAŞLIKLAR ---
+        okul_adi = self.ayarlar.get("okul_adi", "..................................................")
+        elements.append(Paragraph(f"{okul_adi.upper()}", title_style))
+        elements.append(Paragraph("İMZA SİRKÜSÜ", subtitle_style))
+
+        # --- 2. PARAGRAF METNİ ---
+        if not kurum: kurum = "................................"
+        if not tarih: tarih = "..../..../20.."
+        if not sayi: sayi = ".........."
+        if not konu: konu = ".............................."
         
-        c.setFont(self.font, 10)
-        satir_yuksekligi = 25
-        
-        for i, personel in enumerate(personel_listesi, 1):
-            if y_pos < 50: 
-                c.showPage()
-                y_pos = sayfa_basligi_ciz()
-                y_pos = tablo_basligi_ciz(y_pos)
-                c.setFont(self.font, 10)
-                
-            c.line(40, y_pos - 5, genislik - 40, y_pos - 5)
+        metin = f"<b>{kurum}</b>'nün <b>{tarih}</b> tarih, <b>{sayi}</b> sayı ve <b>{konu}</b> konulu yazısı."
+        elements.append(Paragraph(metin, p_style))
+
+        # --- 3. SIKIŞIK (SIFIR ARALIKLI) TABLO ---
+        data = [[
+            Paragraph("S.No", cell_bold), 
+            Paragraph("Ad Soyad", cell_bold), 
+            Paragraph("Görev / Branş", cell_bold), 
+            Paragraph("İmza", cell_bold)
+        ]]
+
+        for i, p in enumerate(personeller):
+            gorev_brans = p.get('brans', '-') if p.get('brans', '-') != '-' else p.get('gorev', '-')
+            if p.get('gorev') != '-' and p.get('brans') != '-' and p.get('gorev') != p.get('brans'):
+                gorev_brans = f"{p.get('gorev')} / {p.get('brans')}"
             
-            # Sütunlara verileri nizami bir şekilde bas
-            c.drawString(45, y_pos + 5, str(i))
-            c.drawString(75, y_pos + 5, self.metin_duzelt(personel.get('gorev', '-')[:14]))
-            c.drawString(160, y_pos + 5, self.metin_duzelt(personel.get('brans', '-')[:14]))
-            c.drawString(250, y_pos + 5, self.metin_duzelt(personel.get('ad', '')[:23]))
-            
-            for x in [40, 70, 155, 245, 370, 440, genislik - 40]:
-                c.line(x, y_pos + 20, x, y_pos - 5)
-                
-            y_pos -= satir_yuksekligi
-            
-        c.save()
-        return True, ""
+            # Yazıların hücreden taşmasını Paragraph ile engelliyoruz (otomatik alt satıra iner)
+            data.append([
+                Paragraph(str(i+1), cell_style),
+                Paragraph(p.get('ad', ''), cell_style),
+                Paragraph(gorev_brans, cell_style),
+                Paragraph("", cell_style)
+            ])
+
+        # A4 Sütun Genişlikleri
+        col_widths = [35, 180, 160, 160]
+
+        # repeatRows=1 ile üst başlık her sayfada tekrar eder
+        t = Table(data, colWidths=col_widths, repeatRows=1)
+        t.setStyle(TableStyle([
+            ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            # Satır aralığını daraltmak ve kağıt tasarrufu sağlamak için PADDING'leri siliyoruz
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1), 
+            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ]))
+
+        elements.append(t)
+        doc.build(elements)
     
     # --- GENEL LİSTE RAPORU (Özürsüz/Özürlü/Şube/Tarih Bazlı Raporlar) ---
     def rapor_ciz(self, baslik, kolon4_adi, veri, kayit_yeri):

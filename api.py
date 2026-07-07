@@ -16,6 +16,20 @@ import uuid
 import pandas as pd
 import threading
 import time
+import platform
+import subprocess
+
+def dosyayi_otomatik_ac(dosya_yolu):
+    """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
+    try:
+        if platform.system() == 'Windows':
+            os.startfile(dosya_yolu)
+        elif platform.system() == 'Darwin':
+            subprocess.call(('open', dosya_yolu))
+        else:
+            subprocess.call(('xdg-open', dosya_yolu))
+    except Exception:
+        pass
 
 app = FastAPI(title="Oto-Yoklama API V2")
 
@@ -222,6 +236,8 @@ def pdf_veli_formu_olustur(veri: dict):
 
         motor = PDFYoneticisi(ayar)
         motor.veli_formu_ciz(veri['no'], veri['ad'], veri['sube'], kayitlar_islenmis, kayit_yeri)
+        
+        dosyayi_otomatik_ac(kayit_yeri) # OTOMATİK AÇMA EKLENDİ
         return {"basarili": True, "mesaj": f"PDF Başarıyla Oluşturuldu!\nKonum: {kayit_yeri}", "yol": kayit_yeri}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
@@ -351,6 +367,20 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
             if sayi and sayi in konu:
                 konu = konu.replace(sayi, "").replace(":", "").strip()
 
+        # YENİ EKLENEN: Kurum (Geldiği Yer) Bulma Zekası ve OCR Düzeltici
+        kurum = ""
+        satirlar = [s.strip() for s in ilk_sayfa.split('\n') if s.strip()]
+        for satir in satirlar[:20]:
+            s_lower = satir.replace('I','ı').replace('İ','i').lower()
+            if "müdürlü" in s_lower or "kaymakamlı" in s_lower or "valili" in s_lower or "bakanlı" in s_lower or "başkanlı" in s_lower:
+                # Silik karakterleri onar (Örn: lçe -> İlçe)
+                kurum = satir.replace("lçe", "İlçe").replace("E itim", "Eğitim").replace("Müdürlü ü", "Müdürlüğü").replace("Müdürlüg ü", "Müdürlüğü")
+                kurum = kurum.strip().title() # Baş harfleri büyüt
+                break
+
+        ana_klasor, _ = pdf_klasoru_hazirla()
+      
+        
         # Yüklenen orijinal yazıyı, bireysel tebliğde PDF'e eklenebilmesi için saklıyoruz
         ana_klasor, _ = pdf_klasoru_hazirla()
         gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
@@ -359,7 +389,7 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
         kalici_yol = os.path.join(gecici_klasor, f"son_meb_yazisi_{uuid.uuid4().hex[:8]}.pdf")
         shutil.copy(temp_yol, kalici_yol)
 
-        return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "gecici_pdf_yolu": kalici_yol}
+        return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "kurum": kurum, "gecici_pdf_yolu": kalici_yol}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
     finally:
@@ -375,6 +405,8 @@ def teblig_bireysel_pdf(veri: dict):
         motor = PDFYoneticisi(ayar)
         yuklenen_pdf = veri.get("gecici_pdf_yolu")
         motor.bireysel_teblig_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['eden'], veri['edilen'], veri['yer'], yol, yuklenen_pdf)
+        
+        dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
         return {"basarili": True, "mesaj": f"PDF Oluşturuldu:\n{yol}", "yol": yol}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
@@ -386,7 +418,13 @@ def teblig_toplu_pdf(veri: dict):
     yol = os.path.join(ana_klasor, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")
     try:
         motor = PDFYoneticisi(ayar)
-        motor.teblig_tebellug_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['personeller'], yol)
+        kurum = veri.get('kurum', '')
+        yuklenen_pdf = veri.get('gecici_pdf_yolu', '') # YENİ EKLENDİ
+        
+        # motor fonksiyonuna yuklenen_pdf de gönderiliyor
+        motor.teblig_tebellug_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['personeller'], yol, kurum, yuklenen_pdf)
+        
+        dosyayi_otomatik_ac(yol) 
         return {"basarili": True, "mesaj": f"Toplu Liste Oluşturuldu:\n{yol}", "yol": yol}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
@@ -501,9 +539,11 @@ def rapor_al(veri: dict):
             df = pd.DataFrame(veri_listesi, columns=excel_kolonlar)
             df.to_excel(yol, index=False)
         else:
-            yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
-            motor = PDFYoneticisi(ayar)
-            motor.rapor_ciz(baslik, kolon4_adi, veri_listesi, yol)
+                yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
+                motor = PDFYoneticisi(ayar)
+                motor.rapor_ciz(baslik, kolon4_adi, veri_listesi, yol)
+                
+        dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
         return {"basarili": True, "mesaj": f"Rapor başarıyla oluşturuldu:\n{yol}", "yol": yol, "adet": len(veri_listesi)}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
