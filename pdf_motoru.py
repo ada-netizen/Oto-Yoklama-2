@@ -157,9 +157,9 @@ class PDFYoneticisi:
         from reportlab.lib import colors
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
-        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
+        from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT, TA_RIGHT
 
-        # 1. TÜRKÇE FONT AYARI (Siyah kare / Tofu hatasının kökten çözümü)
+        # 1. TÜRKÇE FONT AYARI
         font_isim = 'Helvetica'
         font_bold = 'Helvetica-Bold'
         if os.path.exists("C:/Windows/Fonts/arial.ttf"):
@@ -172,67 +172,88 @@ class PDFYoneticisi:
         doc = SimpleDocTemplate(temp_pdf, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
         elements = []
         
-        # 2. STİLLER
+        # 2. STİLLER (Tablo puntosu 9'a düşürüldü)
         p_style = ParagraphStyle(name='Metin', fontName=font_isim, fontSize=12, leading=14, alignment=TA_JUSTIFY, firstLineIndent=30, spaceAfter=15)
-        cell_style = ParagraphStyle(name='Cell', fontName=font_isim, fontSize=12, leading=12)
-        cell_bold = ParagraphStyle(name='CellB', fontName=font_bold, fontSize=12, leading=12, alignment=TA_CENTER)
+        cell_style = ParagraphStyle(name='Cell', fontName=font_isim, fontSize=9, leading=11)
+        cell_bold = ParagraphStyle(name='CellB', fontName=font_bold, fontSize=9, leading=11, alignment=TA_CENTER)
 
-        # 3. SAĞ/SOL LOGOLAR VE BAŞLIK
+        # 3. KİLİTLİ VE HİZALI LOGOLAR
         meb_logo = self.ayarlar.get("meb_logosu", "")
         okul_logo = self.ayarlar.get("okul_logosu", "")
         
-        img_meb = RLImage(meb_logo, width=50, height=50) if meb_logo and os.path.exists(meb_logo) else ""
-        img_okul = RLImage(okul_logo, width=50, height=50) if okul_logo and os.path.exists(okul_logo) else ""
+        img_meb = RLImage(meb_logo, width=45, height=45) if meb_logo and os.path.exists(meb_logo) else ""
+        img_okul = RLImage(okul_logo, width=45, height=45) if okul_logo and os.path.exists(okul_logo) else ""
         
         okul_adi = self.ayarlar.get("okul_adi", "..................................................")
         baslik_metni = f"<font fontName='{font_bold}' size='12'>{okul_adi.upper()}<br/><br/>İMZA SİRKÜSÜ</font>"
-        baslik_para = Paragraph(baslik_metni, ParagraphStyle(name='Hdr', alignment=TA_CENTER, leading=14))
+        baslik_para = Paragraph(baslik_metni, ParagraphStyle(name='Hdr', alignment=TA_CENTER, leading=10))
         
-        hdr_table = Table([[img_meb, baslik_para, img_okul]], colWidths=[60, 360, 60])
-        hdr_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
+        # A4 tam genişliği (535) kullanılarak logolar kenarlara sıfırlandı
+        hdr_table = Table([[img_meb, baslik_para, img_okul]], colWidths=[50, 435, 50])
+        hdr_table.setStyle(TableStyle([
+            ('ALIGN', (0,0), (0,0), 'LEFT'),
+            ('ALIGN', (1,0), (1,0), 'CENTER'),
+            ('ALIGN', (2,0), (2,0), 'RIGHT'),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LEFTPADDING', (0,0), (0,0), 0),
+            ('RIGHTPADDING', (2,0), (2,0), 0)
+        ]))
         elements.append(hdr_table)
         elements.append(Spacer(1, 15))
 
-        # 4. PARAGRAF METNİ (Koyu (bold) yazı tamamen kaldırıldı, normal metin yapıldı)
+        # 4. PARAGRAF METNİ
         if not kurum: kurum = "................................"
         if not tarih: tarih = "..../..../20.."
         if not sayi: sayi = ".........."
         if not konu: konu = ".............................."
         
-        metin = f"{kurum}'nün {tarih} tarih, {sayi} sayı ve {konu} konulu yazısı."
+        metin = f"{kurum}'nün {tarih} tarih, {sayi} sayı ve {konu} konulu yazısını okudum ve anladım."
         elements.append(Paragraph(metin, p_style))
 
-        # 5. SIKIŞIK (SIFIR ARALIKLI) LİSTE TABLOSU
-        data = [[Paragraph("S.N", cell_bold), Paragraph("Ad Soyad", cell_bold), Paragraph("Görev / Branş", cell_bold), Paragraph("İmza", cell_bold)]]
+        # 5. 9 PUNTO LİSTE TABLOSU
+        data = [[
+            Paragraph("Sıra No", cell_bold), 
+            Paragraph("Ad Soyad", cell_bold), 
+            Paragraph("Görev / Branş", cell_bold), 
+            Paragraph("İmza", cell_bold),
+            Paragraph("İmza Tarihi", cell_bold)
+        ]]
 
         for i, p in enumerate(personeller):
             gorev_brans = p.get('brans', '-') if p.get('brans', '-') != '-' else p.get('gorev', '-')
             if p.get('gorev') != '-' and p.get('brans') != '-' and p.get('gorev') != p.get('brans'):
                 gorev_brans = f"{p.get('gorev')} / {p.get('brans')}"
-            data.append([Paragraph(str(i+1), cell_style), Paragraph(p.get('ad', ''), cell_style), Paragraph(gorev_brans, cell_style), Paragraph("", cell_style)])
+            
+            data.append([
+                Paragraph(str(i+1), cell_style), 
+                Paragraph(p.get('ad', ''), cell_style), 
+                Paragraph(gorev_brans, cell_style), 
+                Paragraph("", cell_style),
+                Paragraph("", cell_style)
+            ])
 
-        col_widths = [30, 180, 170, 155]
+        col_widths = [35, 130, 180, 95, 95] 
         t = Table(data, colWidths=col_widths, repeatRows=1)
         t.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'LEFT'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
-            ('TOPPADDING', (0,0), (-1,-1), 1),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 4),
+            ('TOPPADDING', (0,0), (-1,-1), 4),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
         ]))
         elements.append(t)
-        doc.build(elements) # İmza sirküsü geçici olarak oluşturuldu
+        doc.build(elements) 
 
-        # 6. GÜVENLİ PDF BİRLEŞTİRME (RESMİ YAZI + İMZA SİRKÜSÜ)
+        # 6. GÜVENLİ PDF BİRLEŞTİRME
         if yuklenen_pdf and os.path.exists(yuklenen_pdf):
             try:
                 try:
                     merger = PyPDF2.PdfMerger()
                 except AttributeError:
-                    merger = PyPDF2.PdfFileMerger() # PyPDF2 eski sürüm kütüphanesi kullananlar için kurtarıcı zırh
+                    merger = PyPDF2.PdfFileMerger()
                 
-                merger.append(yuklenen_pdf) # Önce orijinal resmi yazı eklenir (1. Sayfa)
-                merger.append(temp_pdf)     # Sonra listemiz eklenir (2. Sayfa ve sonrası)
+                merger.append(yuklenen_pdf) 
+                merger.append(temp_pdf)     
                 merger.write(kayit_yeri)
                 merger.close()
                 if os.path.exists(temp_pdf): os.remove(temp_pdf)

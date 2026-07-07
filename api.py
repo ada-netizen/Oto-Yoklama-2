@@ -367,21 +367,16 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
             if sayi and sayi in konu:
                 konu = konu.replace(sayi, "").replace(":", "").strip()
 
-        # YENİ EKLENEN: Kurum (Geldiği Yer) Bulma Zekası ve OCR Düzeltici
+        # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU ---
         kurum = ""
-        satirlar = [s.strip() for s in ilk_sayfa.split('\n') if s.strip()]
-        for satir in satirlar[:20]:
-            s_lower = satir.replace('I','ı').replace('İ','i').lower()
-            if "müdürlü" in s_lower or "kaymakamlı" in s_lower or "valili" in s_lower or "bakanlı" in s_lower or "başkanlı" in s_lower:
-                # Silik karakterleri onar (Örn: lçe -> İlçe)
-                kurum = satir.replace("lçe", "İlçe").replace("E itim", "Eğitim").replace("Müdürlü ü", "Müdürlüğü").replace("Müdürlüg ü", "Müdürlüğü")
-                kurum = kurum.strip().title() # Baş harfleri büyüt
-                break
+        tc_match = re.search(r'T\.\s*C\.\s*\r?\n((?:.*\r?\n){1,4})', ilk_sayfa)
+        if tc_match:
+            satirlar = [s.strip() for s in tc_match.group(1).split('\n') if s.strip()]
+            if len(satirlar) >= 2:
+                kurum = satirlar[1]   # T.C.'den sonraki 2. dolu satır = kurumun asıl adı
+            elif satirlar:
+                kurum = satirlar[0]
 
-        ana_klasor, _ = pdf_klasoru_hazirla()
-      
-        
-        # Yüklenen orijinal yazıyı, bireysel tebliğde PDF'e eklenebilmesi için saklıyoruz
         ana_klasor, _ = pdf_klasoru_hazirla()
         gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
         if not os.path.exists(gecici_klasor):
@@ -390,12 +385,12 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
         shutil.copy(temp_yol, kalici_yol)
 
         return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "kurum": kurum, "gecici_pdf_yolu": kalici_yol}
+
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
     finally:
         if os.path.exists(temp_yol):
             os.remove(temp_yol)
-
 
 @app.post("/teblig-bireysel-pdf")
 def teblig_bireysel_pdf(veri: dict):
