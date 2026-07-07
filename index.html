@@ -588,16 +588,40 @@
         <div class="paned-window" style="display:flex; flex:1; gap:15px; overflow: hidden;">
             <div class="sol-panel" style="flex: 65%; display:flex; flex-direction:column; background-color: var(--bg-main);">
                 
-                <div style="display: flex; gap: 5px; margin-bottom: 8px; flex-wrap: wrap; align-items: center;">
-                    <button class="btn" style="background-color: #475569; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('tumu')">✅ Tümünü Seç</button>
-                    <button class="btn" style="background-color: #475569; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('hicbiri')">❌ Hiçbiri</button>
-                    <button class="btn" style="background-color: #3B82F6; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('idare')">👔 Sadece İdareciler</button>
-                    <button class="btn" style="background-color: #10B981; padding: 4px 8px; font-size: 10px;" onclick="personelHizliSecim('ogretmen')">👩‍🏫 Sadece Öğretmenler</button>
-                    <span id="lbl_secili_personel_sayisi" style="margin-left: auto; font-size: 12px; font-weight: bold; color: #10B981;">Seçili: 0 Kişi</span>
+                <div style="display: flex; gap: 8px; margin-bottom: 10px; align-items: center;">
+                    <input type="text" id="personel_ara" placeholder="Personel ara (isim, görev, branş veya grup)..." style="flex: 1; padding: 8px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 12px;" onkeyup="personelTablosunuDoldur()">
                 </div>
 
-                <div style="display: flex; gap: 8px; margin-bottom: 5px; align-items: center;">
-                    <input type="text" id="personel_ara" placeholder="Personel ara (isim, görev, branş veya grup)..." style="flex: 1; padding: 6px; background-color: var(--bg-card); border: 1px solid var(--border); color: var(--fg-main); font-size: 11px;" onkeyup="personelTablosunuDoldur()">
+                <div style="background: var(--bg-card); padding: 12px; border: 1px solid var(--border); border-radius: 4px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="font-weight: bold; color: var(--tree-sel); font-size: 11px;">Hızlı Filtreler (İşaretlenenler Listeye Eklenir)</span>
+                        <span id="lbl_secili_personel_sayisi" style="font-size: 12px; font-weight: bold; color: #10B981;">Seçili: 0 Kişi</span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+                        <label style="display:flex; align-items:center; gap:5px; font-size:11px; cursor:pointer; color: var(--fg-main); font-weight:bold;">
+                            <input type="checkbox" id="grp_idare" onchange="filtreleriHesapla()"> İdare
+                        </label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:11px; cursor:pointer; color: var(--fg-main); font-weight:bold;">
+                            <input type="checkbox" id="grp_ogretmenler" onchange="filtreleriHesapla()"> Öğretmenler
+                        </label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:11px; cursor:pointer; color: var(--fg-main); font-weight:bold;">
+                            <input type="checkbox" id="grp_diger" onchange="filtreleriHesapla()"> Diğer Personel
+                        </label>
+                        
+                        <div style="width: 1px; height: 18px; background-color: var(--border); margin: 0 5px;"></div>
+                        
+                        <div style="position:relative;">
+                            <button class="btn btn-temizle" style="border:1px solid var(--border); cursor:pointer; font-size:11px; padding: 4px 10px; font-weight:bold;" onclick="personelFiltrePanelAcKapa('gorev')">Görev Seç ▾</button>
+                            <div id="personel_gorev_panel" class="personel-filtre-panel" style="top: 110%;"></div>
+                        </div>
+                        <div style="position:relative;">
+                            <button class="btn btn-temizle" style="border:1px solid var(--border); cursor:pointer; font-size:11px; padding: 4px 10px; font-weight:bold;" onclick="personelFiltrePanelAcKapa('brans')">Branş Seç ▾</button>
+                            <div id="personel_brans_panel" class="personel-filtre-panel" style="top: 110%;"></div>
+                        </div>
+                        
+                        <button class="btn btn-kirmizi" style="margin-left: auto; padding: 4px 10px; font-size: 10px;" onclick="personelTumunuTemizle()">🗑️ Listeyi Temizle</button>
+                    </div>
                 </div>
 
                 <div class="tree-card" style="flex:1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-main);">
@@ -696,8 +720,6 @@
         
         let ogrenciListesi = [];
         let tumPersoneller = [];
-        let personelGorevFiltre = {};
-        let personelBransFiltre = {};
         let sistemAyarlari = {};
         
         let seciliOgrenci = null;
@@ -1356,7 +1378,8 @@
                
         function personelleriYukle() {
             return fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
-                tumPersoneller = veri.personeller.map(p => ({ ...p, secili: true }));
+                // Herkes seçili DEĞİL ve manuel olarak da eklenmemiş şekilde (tertemiz) başlar.
+                tumPersoneller = veri.personeller.map(p => ({ ...p, secili: false, manuelEklendi: false }));
                 
                 const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
                 if(cbEden && cbEdilen) {
@@ -1367,87 +1390,9 @@
                         if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
                     });
                 }
-                personelTablosunuDoldur(); // Eski filtre fonksiyonu buradan kaldırıldı
+                personelFiltrePanelDoldur(); 
+                personelTablosunuDoldur(); 
             });
-        }
-
-        function personelDurumDegistir(cbElement) {
-            let p = tumPersoneller.find(x => x.ad === cbElement.value);
-            if(p) p.secili = cbElement.checked;
-            personelSayaciGuncelle();
-            
-            const gosterilenler = document.querySelectorAll('.chk-personel');
-            const seciliGosterilenler = document.querySelectorAll('.chk-personel:checked');
-            const masterKutu = document.getElementById('chk_master_personel');
-            if(masterKutu) masterKutu.checked = (gosterilenler.length > 0 && gosterilenler.length === seciliGosterilenler.length);
-        }
-
-        function personelMasterSecim(durum) {
-            document.querySelectorAll('.chk-personel').forEach(cb => {
-                cb.checked = durum;
-                let p = tumPersoneller.find(x => x.ad === cb.value);
-                if(p) p.secili = durum;
-            });
-            personelSayaciGuncelle();
-        }
-
-        function personelHizliSecim(hedef) {
-            document.getElementById('personel_ara').value = ''; // Aramayı temizle
-            
-            tumPersoneller.forEach(p => {
-                if(hedef === 'tumu') p.secili = true;
-                else if(hedef === 'hicbiri') p.secili = false;
-                else if(hedef === 'idare') p.secili = (p.grup === 'İdare' || p.gorev.includes('MÜDÜR'));
-                else if(hedef === 'ogretmen') p.secili = (p.grup === 'Öğretmenler' || p.gorev.includes('ÖĞRETMEN'));
-            });
-            personelTablosunuDoldur();
-        }
-
-        function personelSayaciGuncelle() {
-            let seciliSayi = tumPersoneller.filter(p => p.secili).length;
-            const lbl = document.getElementById('lbl_secili_personel_sayisi');
-            if(lbl) {
-                lbl.innerText = `Seçili: ${seciliSayi} Kişi`;
-                lbl.style.color = seciliSayi > 0 ? '#10B981' : '#EF4444';
-            }
-        }
-
-        function personelTablosunuDoldur() {
-            const govde = document.getElementById('personel-govde');
-            if(!govde) return;
-            const arama = (document.getElementById('personel_ara') ? document.getElementById('personel_ara').value : "").toUpperCase();
-
-            const gosterilecekler = tumPersoneller.filter(p => {
-                // Sadece metin araması (Ad, Görev, Branş veya Grup içinde otomatik arar)
-                if(arama && !p.ad.toUpperCase().includes(arama) && !p.gorev.toUpperCase().includes(arama) && !p.brans.toUpperCase().includes(arama) && !p.grup.toUpperCase().includes(arama)) return false;
-                return true;
-            });
-
-            govde.innerHTML = "";
-            if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:10px; color:var(--fg-sub);'>Personel bulunamadı.</td></tr>"; return; }
-            if(gosterilecekler.length === 0) { govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:10px; color:var(--fg-sub);'>Kriterlere uygun personel bulunamadı.</td></tr>"; return; }
-
-            let ekrandakiSeciliSayisi = 0;
-            gosterilecekler.forEach((p, i) => {
-                if(p.secili) ekrandakiSeciliSayisi++;
-                
-                // Görev ve Branş yoksa otomatik olarak '-' yazdırıyoruz
-                const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
-                const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
-                
-                govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
-                    <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
-                    <td>${p.grup}</td>
-                    <td>${gorev}</td>
-                    <td>${brans}</td>
-                    <td><label for="chk_${i}">${p.ad}</label></td>
-                </tr>`;
-            });
-
-            const masterKutu = document.getElementById('chk_master_personel');
-            if(masterKutu) masterKutu.checked = (gosterilecekler.length > 0 && gosterilecekler.length === ekrandakiSeciliSayisi);
-            
-            personelSayaciGuncelle();
         }
 
         function personelFiltrePanelDoldur() {
@@ -1458,16 +1403,147 @@
             let gorevler = [...new Set(tumPersoneller.map(p => p.gorev))].filter(g => g !== "-").sort();
             let branslar = [...new Set(tumPersoneller.map(p => p.brans))].filter(b => b !== "-").sort();
 
-            gorevler.forEach(g => { if(!(g in personelGorevFiltre)) personelGorevFiltre[g] = true; });
-            branslar.forEach(b => { if(!(b in personelBransFiltre)) personelBransFiltre[b] = true; });
-
-            let gHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('gorev')">🔄 Tümünü Seç/Bırak</div>`;
-            gorevler.forEach(g => { gHtml += `<div class="personel-filtre-item"><input type="checkbox" id="fg_${g}" ${personelGorevFiltre[g]?'checked':''} onchange="personelGorevFiltre['${g}']=this.checked; personelTablosunuDoldur()"><label for="fg_${g}">${g}</label></div>`; });
+            let gHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluUygula('gorev')">🔄 Listedekilerin Hepsini Ekle/Çıkar</div>`;
+            gorevler.forEach((g, i) => {
+                gHtml += `<label class="personel-filtre-item" style="display:flex; gap:5px; width:100%;"><input type="checkbox" onchange="filtreleriHesapla()" data-deger="${g.replace(/"/g, '&quot;')}"> <span>${g}</span></label>`;
+            });
             gorevPanel.innerHTML = gHtml;
 
-            let bHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluSecim('brans')">🔄 Tümünü Seç/Bırak</div>`;
-            branslar.forEach(b => { bHtml += `<div class="personel-filtre-item"><input type="checkbox" id="fb_${b}" ${personelBransFiltre[b]?'checked':''} onchange="personelBransFiltre['${b}']=this.checked; personelTablosunuDoldur()"><label for="fb_${b}">${b}</label></div>`; });
+            let bHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluUygula('brans')">🔄 Listedekilerin Hepsini Ekle/Çıkar</div>`;
+            branslar.forEach((b, i) => {
+                bHtml += `<label class="personel-filtre-item" style="display:flex; gap:5px; width:100%;"><input type="checkbox" onchange="filtreleriHesapla()" data-deger="${b.replace(/"/g, '&quot;')}"> <span>${b}</span></label>`;
+            });
             bransPanel.innerHTML = bHtml;
+        }
+
+        function personelFiltreTopluUygula(tur) {
+            const panel = document.getElementById(`personel_${tur}_panel`);
+            const kutular = panel.querySelectorAll('input[type=checkbox]');
+            const hepsiIsaretli = [...kutular].every(cb => cb.checked);
+            kutular.forEach(cb => cb.checked = !hepsiIsaretli);
+            filtreleriHesapla();
+        }
+
+        function filtreleriHesapla() {
+            const grp_idare = document.getElementById('grp_idare') ? document.getElementById('grp_idare').checked : false;
+            const grp_ogr = document.getElementById('grp_ogretmenler') ? document.getElementById('grp_ogretmenler').checked : false;
+            const grp_diger = document.getElementById('grp_diger') ? document.getElementById('grp_diger').checked : false;
+
+            const seciliGorevler = Array.from(document.querySelectorAll('#personel_gorev_panel input[type=checkbox]:checked')).map(cb => cb.dataset.deger);
+            const seciliBranslar = Array.from(document.querySelectorAll('#personel_brans_panel input[type=checkbox]:checked')).map(cb => cb.dataset.deger);
+
+            tumPersoneller.forEach(p => {
+                let uyarMi = false;
+                if (grp_idare && p.grup === 'İdare') uyarMi = true;
+                if (grp_ogr && p.grup === 'Öğretmenler') uyarMi = true;
+                if (grp_diger && p.grup === 'Diğer Personel') uyarMi = true;
+                if (seciliGorevler.includes(p.gorev)) uyarMi = true;
+                if (seciliBranslar.includes(p.brans)) uyarMi = true;
+
+                if (uyarMi) {
+                    p.secili = true;
+                } else if (!p.manuelEklendi) {
+                    // Kişi artık hiçbir filtreye uymuyorsa ve "arama kutusundan" manuel seçilmediyse listeden çıkarılır.
+                    p.secili = false;
+                }
+            });
+            personelTablosunuDoldur();
+        }
+
+        function personelTumunuTemizle() {
+            if(document.getElementById('grp_idare')) document.getElementById('grp_idare').checked = false;
+            if(document.getElementById('grp_ogretmenler')) document.getElementById('grp_ogretmenler').checked = false;
+            if(document.getElementById('grp_diger')) document.getElementById('grp_diger').checked = false;
+            document.querySelectorAll('.personel-filtre-panel input[type=checkbox]').forEach(cb => cb.checked = false);
+            
+            const araKutu = document.getElementById('personel_ara');
+            if(araKutu) araKutu.value = '';
+            
+            tumPersoneller.forEach(p => { p.secili = false; p.manuelEklendi = false; });
+            personelTablosunuDoldur();
+        }
+
+        function personelDurumDegistir(cbElement) {
+            let p = tumPersoneller.find(x => x.ad === cbElement.value);
+            if(p) {
+                p.secili = cbElement.checked;
+                p.manuelEklendi = cbElement.checked; // Arama ile eklediyse filtreler değişince uçmasın diye hafızaya alınıyor
+            }
+            personelTablosunuDoldur(); 
+        }
+
+        function personelMasterSecim(durum) {
+            document.querySelectorAll('.chk-personel').forEach(cb => {
+                cb.checked = durum;
+                let p = tumPersoneller.find(x => x.ad === cb.value);
+                if(p) { p.secili = durum; p.manuelEklendi = durum; }
+            });
+            personelTablosunuDoldur();
+        }
+
+        function personelTablosunuDoldur() {
+            const govde = document.getElementById('personel-govde');
+            if(!govde) return;
+            const arama = (document.getElementById('personel_ara') ? document.getElementById('personel_ara').value : "").toUpperCase();
+
+            let gosterilecekler;
+            if (arama) {
+                // Arama kutusu doluysa, herkes içinde arama yapar (kişiyi anında ekleyebilmen için)
+                gosterilecekler = tumPersoneller.filter(p =>
+                    p.ad.toUpperCase().includes(arama) || p.gorev.toUpperCase().includes(arama) ||
+                    p.brans.toUpperCase().includes(arama) || p.grup.toUpperCase().includes(arama)
+                );
+            } else {
+                // Arama boşsa sadece seçili/filtreli kişileri gösterir
+                gosterilecekler = tumPersoneller.filter(p => p.secili);
+            }
+
+            govde.innerHTML = "";
+            if(tumPersoneller.length === 0) { govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:10px; color:var(--fg-sub);'>Personel bulunamadı.</td></tr>"; return; }
+            if(gosterilecekler.length === 0) {
+                govde.innerHTML = arama
+                    ? "<tr><td colspan='5' style='text-align:center; padding:10px; color:var(--fg-sub);'>Aramayla eşleşen personel bulunamadı.</td></tr>"
+                    : "<tr><td colspan='5' style='text-align:center; padding:25px; color:var(--fg-sub); font-size:12px;'>Listeniz şu an boş.<br><br>Yukarıdaki hızlı filtreleri işaretleyerek veya arama kutusunu kullanarak<br>personelleri listeye ekleyebilirsiniz.</td></tr>";
+                personelSayaciGuncelle();
+                const masterKutu = document.getElementById('chk_master_personel');
+                if(masterKutu) masterKutu.checked = false;
+                return;
+            }
+
+            let ekrandakiSeciliSayisi = 0;
+            gosterilecekler.forEach((p, i) => {
+                if(p.secili) ekrandakiSeciliSayisi++;
+                
+                const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
+                const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
+                
+                govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
+                    <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
+                    <td>${p.grup}</td>
+                    <td>${gorev}</td>
+                    <td>${brans}</td>
+                    <td><label for="chk_${i}" style="cursor:pointer; display:block;">${p.ad}</label></td>
+                </tr>`;
+            });
+
+            const masterKutu = document.getElementById('chk_master_personel');
+            if(masterKutu) masterKutu.checked = (gosterilecekler.length > 0 && gosterilecekler.length === ekrandakiSeciliSayisi);
+            
+            personelSayaciGuncelle();
+        }
+
+        function personelSayaciGuncelle() {
+            let seciliSayi = tumPersoneller.filter(p => p.secili).length;
+            const lbl = document.getElementById('lbl_secili_personel_sayisi');
+            if(lbl) { lbl.innerText = `Seçili: ${seciliSayi} Kişi`; lbl.style.color = seciliSayi > 0 ? '#10B981' : '#EF4444'; }
+        }
+
+        function personelFiltrePanelAcKapa(tur) {
+            const digerTur = tur === 'gorev' ? 'brans' : 'gorev';
+            const digerPanel = document.getElementById(`personel_${digerTur}_panel`);
+            if(digerPanel) digerPanel.classList.remove('acik');
+            const panel = document.getElementById(`personel_${tur}_panel`);
+            if(panel) panel.classList.toggle('acik');
         }
 
         function topluTebligPdfAl() {
@@ -1479,14 +1555,6 @@
             fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
         
-
-        function personelFiltreTopluSecim(tur) {
-            const sozluk = tur === 'gorev' ? personelGorevFiltre : personelBransFiltre;
-            const hepsiTikli = Object.values(sozluk).every(v => v);
-            Object.keys(sozluk).forEach(k => sozluk[k] = !hepsiTikli);
-            personelFiltrePanelDoldur();
-            personelTablosunuDoldur();
-        }
 
         function personelFiltrePanelAcKapa(tur) {
             const digerTur = tur === 'gorev' ? 'brans' : 'gorev';
