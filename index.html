@@ -1678,7 +1678,24 @@
             secenekler.forEach(s => secici.innerHTML += `<option value="${s.replace(/"/g, '&quot;')}">${s}</option>`);
         }
 
-        
+        function akilliEslesmeModalAc() {
+            if(!sistemAyarlari.oto_eslesmeler) sistemAyarlari.oto_eslesmeler = [];
+            
+            // Eğer personeller henüz yüklenmediyse, önce yükleyip sonra pencereyi açar
+            if(tumPersoneller.length === 0) {
+                personelleriYukle().then(() => {
+                    aeTurDegisti(); 
+                    akilliEslesmeCiz();
+                    modalAc('akilli_eslesme_modal');
+                });
+                return;
+            }
+            
+            aeTurDegisti(); 
+            akilliEslesmeCiz();
+            modalAc('akilli_eslesme_modal');
+        }
+
         function akilliEslesmeEkle() {
             const kelime = document.getElementById('ae_kelime').value.trim();
             const tur = document.getElementById('ae_tur').value;

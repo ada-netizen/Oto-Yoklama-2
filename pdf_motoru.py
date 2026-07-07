@@ -147,91 +147,102 @@ class PDFYoneticisi:
         return True, ""
     
     # --- TOPLU İMZA SİRKÜSÜ (A4 LİSTE) ÇİZİM MOTORU ---
-    def teblig_tebellug_ciz(self, sayi, konu, tarih, personeller, kayit_yeri, kurum=""):
+    def teblig_tebellug_ciz(self, sayi, konu, tarih, personeller, kayit_yeri, kurum="", yuklenen_pdf=""):
+        import os
+        import shutil
+        import PyPDF2
         from reportlab.lib.pagesizes import A4
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+        from reportlab.lib.styles import ParagraphStyle
         from reportlab.lib import colors
         from reportlab.pdfbase import pdfmetrics
         from reportlab.pdfbase.ttfonts import TTFont
         from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
-        
+
+        # 1. TÜRKÇE FONT AYARI (Siyah kare / Tofu hatasının kökten çözümü)
         font_isim = 'Helvetica'
         font_bold = 'Helvetica-Bold'
-        try:
-            pdfmetrics.registerFont(TTFont('OpenSans', 'OpenSans-Regular.ttf'))
-            pdfmetrics.registerFont(TTFont('OpenSans-Bold', 'OpenSans-Bold.ttf'))
-            font_isim = 'OpenSans'
-            font_bold = 'OpenSans-Bold'
-        except:
-            pass
+        if os.path.exists("C:/Windows/Fonts/arial.ttf"):
+            pdfmetrics.registerFont(TTFont('Arial_TR', 'C:/Windows/Fonts/arial.ttf'))
+            pdfmetrics.registerFont(TTFont('Arial_TR_Bold', 'C:/Windows/Fonts/arialbd.ttf'))
+            font_isim = 'Arial_TR'
+            font_bold = 'Arial_TR_Bold'
 
-        doc = SimpleDocTemplate(kayit_yeri, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
+        temp_pdf = kayit_yeri.replace(".pdf", "_temp.pdf")
+        doc = SimpleDocTemplate(temp_pdf, pagesize=A4, rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
         elements = []
         
-        # --- STİLLER (Tümü 12 Punto) ---
-        title_style = ParagraphStyle(name='Title', fontName=font_bold, fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=4)
-        subtitle_style = ParagraphStyle(name='SubTitle', fontName=font_bold, fontSize=12, leading=14, alignment=TA_CENTER, spaceAfter=15)
-        
-        # Paragraf başı (firstLineIndent=30) ve İki Yana Yaslı (TA_JUSTIFY)
+        # 2. STİLLER
         p_style = ParagraphStyle(name='Metin', fontName=font_isim, fontSize=12, leading=14, alignment=TA_JUSTIFY, firstLineIndent=30, spaceAfter=15)
-
-        # Tablo içi kelime taşırma engelleyici (word-wrap) stilleri
         cell_style = ParagraphStyle(name='Cell', fontName=font_isim, fontSize=12, leading=12)
         cell_bold = ParagraphStyle(name='CellB', fontName=font_bold, fontSize=12, leading=12, alignment=TA_CENTER)
 
-        # --- 1. BAŞLIKLAR ---
+        # 3. SAĞ/SOL LOGOLAR VE BAŞLIK
+        meb_logo = self.ayarlar.get("meb_logosu", "")
+        okul_logo = self.ayarlar.get("okul_logosu", "")
+        
+        img_meb = RLImage(meb_logo, width=50, height=50) if meb_logo and os.path.exists(meb_logo) else ""
+        img_okul = RLImage(okul_logo, width=50, height=50) if okul_logo and os.path.exists(okul_logo) else ""
+        
         okul_adi = self.ayarlar.get("okul_adi", "..................................................")
-        elements.append(Paragraph(f"{okul_adi.upper()}", title_style))
-        elements.append(Paragraph("İMZA SİRKÜSÜ", subtitle_style))
+        baslik_metni = f"<font fontName='{font_bold}' size='12'>{okul_adi.upper()}<br/><br/>İMZA SİRKÜSÜ</font>"
+        baslik_para = Paragraph(baslik_metni, ParagraphStyle(name='Hdr', alignment=TA_CENTER, leading=14))
+        
+        hdr_table = Table([[img_meb, baslik_para, img_okul]], colWidths=[60, 360, 60])
+        hdr_table.setStyle(TableStyle([('ALIGN', (0,0), (-1,-1), 'CENTER'), ('VALIGN', (0,0), (-1,-1), 'MIDDLE')]))
+        elements.append(hdr_table)
+        elements.append(Spacer(1, 15))
 
-        # --- 2. PARAGRAF METNİ ---
+        # 4. PARAGRAF METNİ (Koyu (bold) yazı tamamen kaldırıldı, normal metin yapıldı)
         if not kurum: kurum = "................................"
         if not tarih: tarih = "..../..../20.."
         if not sayi: sayi = ".........."
         if not konu: konu = ".............................."
         
-        metin = f"<b>{kurum}</b>'nün <b>{tarih}</b> tarih, <b>{sayi}</b> sayı ve <b>{konu}</b> konulu yazısı."
+        metin = f"{kurum}'nün {tarih} tarih, {sayi} sayı ve {konu} konulu yazısı."
         elements.append(Paragraph(metin, p_style))
 
-        # --- 3. SIKIŞIK (SIFIR ARALIKLI) TABLO ---
-        data = [[
-            Paragraph("S.No", cell_bold), 
-            Paragraph("Ad Soyad", cell_bold), 
-            Paragraph("Görev / Branş", cell_bold), 
-            Paragraph("İmza", cell_bold)
-        ]]
+        # 5. SIKIŞIK (SIFIR ARALIKLI) LİSTE TABLOSU
+        data = [[Paragraph("S.N", cell_bold), Paragraph("Ad Soyad", cell_bold), Paragraph("Görev / Branş", cell_bold), Paragraph("İmza", cell_bold)]]
 
         for i, p in enumerate(personeller):
             gorev_brans = p.get('brans', '-') if p.get('brans', '-') != '-' else p.get('gorev', '-')
             if p.get('gorev') != '-' and p.get('brans') != '-' and p.get('gorev') != p.get('brans'):
                 gorev_brans = f"{p.get('gorev')} / {p.get('brans')}"
-            
-            # Yazıların hücreden taşmasını Paragraph ile engelliyoruz (otomatik alt satıra iner)
-            data.append([
-                Paragraph(str(i+1), cell_style),
-                Paragraph(p.get('ad', ''), cell_style),
-                Paragraph(gorev_brans, cell_style),
-                Paragraph("", cell_style)
-            ])
+            data.append([Paragraph(str(i+1), cell_style), Paragraph(p.get('ad', ''), cell_style), Paragraph(gorev_brans, cell_style), Paragraph("", cell_style)])
 
-        # A4 Sütun Genişlikleri
-        col_widths = [35, 180, 160, 160]
-
-        # repeatRows=1 ile üst başlık her sayfada tekrar eder
+        col_widths = [30, 180, 170, 155]
         t = Table(data, colWidths=col_widths, repeatRows=1)
         t.setStyle(TableStyle([
             ('ALIGN', (0,0), (-1,-1), 'LEFT'),
             ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
-            # Satır aralığını daraltmak ve kağıt tasarrufu sağlamak için PADDING'leri siliyoruz
-            ('BOTTOMPADDING', (0,0), (-1,-1), 1), 
+            ('BOTTOMPADDING', (0,0), (-1,-1), 1),
             ('TOPPADDING', (0,0), (-1,-1), 1),
             ('GRID', (0,0), (-1,-1), 0.5, colors.black),
         ]))
-
         elements.append(t)
-        doc.build(elements)
-    
+        doc.build(elements) # İmza sirküsü geçici olarak oluşturuldu
+
+        # 6. GÜVENLİ PDF BİRLEŞTİRME (RESMİ YAZI + İMZA SİRKÜSÜ)
+        if yuklenen_pdf and os.path.exists(yuklenen_pdf):
+            try:
+                try:
+                    merger = PyPDF2.PdfMerger()
+                except AttributeError:
+                    merger = PyPDF2.PdfFileMerger() # PyPDF2 eski sürüm kütüphanesi kullananlar için kurtarıcı zırh
+                
+                merger.append(yuklenen_pdf) # Önce orijinal resmi yazı eklenir (1. Sayfa)
+                merger.append(temp_pdf)     # Sonra listemiz eklenir (2. Sayfa ve sonrası)
+                merger.write(kayit_yeri)
+                merger.close()
+                if os.path.exists(temp_pdf): os.remove(temp_pdf)
+            except Exception as e:
+                if os.path.exists(temp_pdf): shutil.move(temp_pdf, kayit_yeri)
+                raise Exception(f"Sirkü oluşturuldu ancak MEB yazısı birleştirilemedi: {str(e)}")
+        else:
+            if os.path.exists(temp_pdf): shutil.move(temp_pdf, kayit_yeri)
+
+            
     # --- GENEL LİSTE RAPORU (Özürsüz/Özürlü/Şube/Tarih Bazlı Raporlar) ---
     def rapor_ciz(self, baslik, kolon4_adi, veri, kayit_yeri):
         """veri: [[sube, no, ad_soyad, deger], ...] şeklinde bir liste bekler."""

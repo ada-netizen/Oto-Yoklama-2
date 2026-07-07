@@ -418,16 +418,28 @@ def teblig_toplu_pdf(veri: dict):
     yol = os.path.join(ana_klasor, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")
     try:
         motor = PDFYoneticisi(ayar)
+        # HTML'den gelen yeni veriler arka planda karşılanıyor
         kurum = veri.get('kurum', '')
-        yuklenen_pdf = veri.get('gecici_pdf_yolu', '') # YENİ EKLENDİ
+        yuklenen_pdf = veri.get('gecici_pdf_yolu', '')
         
-        # motor fonksiyonuna yuklenen_pdf de gönderiliyor
         motor.teblig_tebellug_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['personeller'], yol, kurum, yuklenen_pdf)
         
-        dosyayi_otomatik_ac(yol) 
+        # PDF oluşturulduktan sonra ekranda anında otomatik açılması için:
+        try:
+            import platform
+            import subprocess
+            if platform.system() == 'Windows':
+                os.startfile(yol)
+            elif platform.system() == 'Darwin':
+                subprocess.call(('open', yol))
+            else:
+                subprocess.call(('xdg-open', yol))
+        except Exception:
+            pass
+            
         return {"basarili": True, "mesaj": f"Toplu Liste Oluşturuldu:\n{yol}", "yol": yol}
     except Exception as e:
-        return {"basarili": False, "mesaj": str(e)}
+        return {"basarili": False, "mesaj": f"PDF Hatası: {str(e)}"}
 
 
 # =====================================================================
