@@ -25,111 +25,7 @@
         <div class="context-menu-item" style="color: #EF4444;" onclick="ogrenciyiTamamenSil()">🗑️ Öğrenciyi Sil</div>
     </div>
 
-    <div id="yardim_modal" class="modal-overlay">
-        <div class="modal-content" style="width: 700px; padding: 0; overflow: hidden; background-color: var(--bg-main);">
-            <div style="display: flex; justify-content: space-between; align-items: center; background-color: #1E3A8A; padding: 15px 20px;">
-                <h2 style="margin:0; color: white; font-size: 16px;">📖 Nasıl Kullanılır?</h2>
-                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('yardim_modal')">Kapat</button>
-            </div>
-            <div style="padding: 20px; overflow-y: auto; max-height: 60vh;">
-                <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
-                    <h3 style="color: var(--tree-sel); margin-top: 0;">1. Öğrenci Yükleme</h3>
-                    <p style="color: var(--fg-main); font-size: 12px; line-height: 1.6;">
-                        Sisteme yeni öğrencileri dahil etmek veya mevcut listeyi güncellemek için:<br><br>
-                        1. E-Okul sisteminden güncel 'Sınıf Listesi'ni Excel (xls, xlsx) formatında indirin.<br>
-                        2. Üst menüde yer alan 'Öğrenci Yükle' butonuna tıklayarak indirdiğiniz dosyayı seçin.<br>
-                        3. Sistem; mevcut öğrencileri korur, sadece yeni gelenleri ekler veya değişiklikleri günceller.
-                    </p>
-                </div>
-                <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
-                    <h3 style="color: var(--tree-sel); margin-top: 0;">2. Devamsızlık Yükleme</h3>
-                    <p style="color: var(--fg-main); font-size: 12px; line-height: 1.6;">
-                        Öğrencilerin güncel devamsızlık verilerini işlemek için:<br><br>
-                        1. E-Okul'dan okulun genel veya sınıflar bazında 'Devamsızlık Listesi'ni Excel olarak indirin.<br>
-                        2. 'Devamsızlık Yükle' butonuna basarak bu Excel'i sisteme okutun.<br>
-                        3. Mükemmel Eşleşme: Sistem aynı devamsızlığı asla iki kez girmez! Her gün güvenle aynı listeyi yükleyebilirsiniz.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="ayarlar_modal" class="modal-overlay">
-        <div class="modal-content" style="width: 650px; padding: 0; background-color: var(--bg-main);">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
-                <h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Ayarlar ve Sistem Yönetimi</h2>
-                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('ayarlar_modal')">Kapat</button>
-            </div>
-            
-            <div style="padding: 20px; overflow-y: auto; max-height: 70vh;">
-                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
-                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Kurumsal Kimlik </legend>
-                    <table style="width: 100%; font-size: 11px;">
-                        <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">Okul Adı:</td>
-                            <td style="padding: 5px 0;"><input type="text" id="ayar_okul_adi" style="width:100%; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></td></tr>
-                        <tr><td style="color: var(--fg-main); padding: 5px 0;">MEB Logosu:</td>
-                            <td style="display: flex; gap: 8px; align-items:center; padding: 5px 0;">
-                                <span id="ayar_meb_logo_ad" style="font-size:10px; color: var(--fg-sub); flex:1;">Yüklenmedi</span>
-                                <input type="file" id="f-meb-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('meb', event)">
-                                <button class="btn btn-temizle" style="border:none; cursor:pointer;" onclick="document.getElementById('f-meb-logo').click()">Logo Seç</button>
-                            </td></tr>
-                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Okul Logosu:</td>
-                            <td style="display: flex; gap: 8px; align-items:center; padding: 5px 0;">
-                                <span id="ayar_okul_logo_ad" style="font-size:10px; color: var(--fg-sub); flex:1;">Yüklenmedi</span>
-                                <input type="file" id="f-okul-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('okul', event)">
-                                <button class="btn btn-temizle" style="border:none; cursor:pointer;" onclick="document.getElementById('f-okul-logo').click()">Logo Seç</button>
-                            </td></tr>
-                    </table>
-                </fieldset>
-
-                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
-                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Dosya ve Çıktı Yönetimi </legend>
-                    <table style="width: 100%; font-size: 11px;">
-                        <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">PDF Kayıt Yeri:</td>
-                            <td style="display: flex; gap: 5px; padding: 5px 0;"><input type="text" id="ayar_pdf_yol" style="flex:1; padding: 4px; background: var(--bg-main); color: #3B82F6; border: 1px solid var(--border); font-weight: bold;"></td></tr>
-                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Yedek Kayıt Yeri:</td>
-                            <td style="display: flex; gap: 5px; padding: 5px 0;"><input type="text" id="ayar_yedek_yol" style="flex:1; padding: 4px; background: var(--bg-main); color: #10B981; border: 1px solid var(--border); font-weight: bold;"></td></tr>
-                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Eski Yedekleri Sil:</td>
-                            <td style="padding: 5px 0;">
-                                <select id="ayar_yedek_silme" style="width:100%; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                                    <option>1 Hafta Sonra</option><option>1 Ay Sonra</option><option>3 Ay Sonra</option><option>6 Ay Sonra</option><option>1 Yıl Sonra</option><option>Asla Silme</option>
-                                </select>
-                            </td></tr>
-                    </table>
-                </fieldset>
-
-                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
-                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Otomatik Zamanlı Yedekleme </legend>
-                    <table style="width: 100%; font-size: 11px;">
-                        <tr><td style="width: 120px; color: var(--fg-main); padding: 5px 0;">Yedekleme Saati:</td>
-                            <td style="padding: 5px 0;"><input type="time" id="ayar_yedek_saati" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></td></tr>
-                        <tr><td style="color: var(--fg-main); padding: 5px 0;">Sıklık:</td>
-                            <td style="display:flex; gap:8px; align-items:center; padding: 5px 0;">
-                                <select id="ayar_yedek_sikligi" style="flex:1; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
-                                    <option>Her Gün</option><option>Haftada 1</option><option>Ayda 1</option><option>Özel Gün</option>
-                                </select>
-                                <div id="ayar_yedek_gun_sayisi_satir" style="display:none; align-items:center; gap:5px;">
-                                    <input type="number" id="ayar_yedek_gun_sayisi" min="1" value="3" style="width:50px; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"> <span style="color: var(--fg-sub);">günde bir</span>
-                                </div>
-                            </td></tr>
-                    </table>
-                    <div style="font-size:10px; color: var(--fg-sub); margin-top:8px;">Program açıkken, belirlenen saat geldiğinde veritabanı otomatik olarak yedeklenir.</div>
-                </fieldset>
-
-                <fieldset style="border: 1px solid var(--border); padding: 15px; margin-bottom: 15px; border-radius: 4px;">
-                    <legend style="color: var(--fg-main); font-weight: bold; font-size: 12px;"> Yedekten Geri Yükleme </legend>
-                    <div style="display:flex; gap:8px;">
-                        <select id="ayar_yedek_secim" style="flex:1; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"><option value="">Yedek dosyası bulunamadı</option></select>
-                        <button class="btn btn-dev" style="padding: 6px 12px;" onclick="yedekGeriYukle()">🔄 Geri Yükle</button>
-                    </div>
-                </fieldset>
-
-                <button class="btn btn-ogr" style="width: 100%; padding: 10px; font-size: 12px; margin-bottom: 10px;" onclick="ayarlariKaydet()">Değişiklikleri Kaydet</button>
-                <button class="btn" style="width: 100%; background-color: #8B5CF6; padding: 10px; margin-bottom: 10px;" onclick="sistemYedekle()">💾 Şimdi Yedek Al</button>
-                <button class="btn btn-kirmizi" style="width: 100%; padding: 10px; background-color: #FEE2E2; color: #B91C1C;" onclick="veritabaniniSifirla()">🗑️ Tüm Veritabanını Sıfırla</button>
-            </div>
-        </div>
-    </div>
+    
 
     <div id="raporlar_modal" class="modal-overlay">
         <div class="modal-content" style="width: 700px; padding: 0; background-color: var(--bg-main);">
@@ -270,55 +166,25 @@
     </div>
 
     
-    <div class="app-container">
-        <!-- SOL YAN MENÜ -->
-        <div class="sidebar">
-            <div class="sidebar-logo">
-                ⛭ OTO-YOKLAMA
-            </div>
-            <div class="sidebar-menu">
-                <button class="tab-btn aktif" id="main_tab_izin" onclick="sekmeAc(event, 'sekme_izin')">
-                    <span style="font-size: 16px;">📄</span> Yoklama / İzin
-                </button>
-                <button class="tab-btn" id="main_tab_teblig" onclick="sekmeAc(event, 'sekme_teblig')">
-                    <span style="font-size: 16px;">🖋️</span> Personel Tebliğ
-                </button>
-                <button class="tab-btn" id="main_tab_ayarlar" onclick="sekmeAc(event, 'sekme_ayarlar')">
-                    <span style="font-size: 16px;">⚙️</span> Ayarlar
-                </button>
-                <div style="flex:1"></div>
-                <div style="padding: 15px; border-top: 1px solid var(--border); display: flex; justify-content: center;">
-                    <div id="btn-tema" class="tema-switch dark" title="Aydınlık/Karanlık tema" onclick="temaDegistir()">
-                        <div class="switch-top"></div>
-                        <span class="ay">🌙</span>
-                        <span class="gunes">☀️</span>
-                    </div>
-                </div>
-            </div>
+            <div class="notebook-header" style="display: flex; align-items: center;">
+        <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')">📄 İzin Dilekçesi</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')">🖋️ Yazı Tebliği</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')">⚙️ Ayarlar ve Yedekleme</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_yardim')">💡 Yardım</button>
+        <div style="flex: 1; border-bottom: 1px solid var(--border); height: 100%;"></div>
+        <div id="btn_tema" class="tema-switch" onclick="temaDegistir()" style="margin-right: 15px; margin-left: 10px;" title="Gece/Gündüz Modu">
+            <div class="switch-top"></div>
+            <span class="ay">🌙</span>
+            <span class="gunes">⭐</span>
         </div>
-        
-        <!-- SAĞ İÇERİK ALANI -->
-        <div class="main-content">
-
-
+    </div>
     <div id="sekme_izin" class="tab-content aktif">
         <div class="top-bar">
             <h2 class="top-bar-title">YOKLAMA YÖNETİM PANELİ</h2>
             <div class="top-bar-buttons">
-                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
                 <input type="file" id="f-dev" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('devamsizlik-excel-yukle', event)">
-                
-                <button class="btn btn-ogr" onclick="document.getElementById('f-ogr').click()">Öğrenci Yükle</button>
-                <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()">Devamsızlık Yükle</button>
+                <button class="btn btn-dev" title="E-Okul'dan alınan devamsızlık Excel dosyasını yükleyin" onclick="document.getElementById('f-dev').click()">📥 Devamsızlık Yükle</button>
                 <button class="btn btn-rapor" title="Devamsızlık sınırlarına göre öğrenci raporları oluşturun" onclick="modalAc('raporlar_modal')">📄 Raporlar</button>
-                <div id="btn-tema" class="tema-switch dark" title="Aydınlık/Karanlık tema arasında geçiş yapın" onclick="temaDegistir()">
-                    <div class="switch-kutu">
-                        <span class="ikon gunes">☀️</span>
-                        <span class="ikon ay">🌙</span>
-                        <div class="switch-top"></div>
-                    </div>
-                </div>                <button class="btn btn-ayarlar" title="Okul bilgileri, dosya konumları ve yedekleme ayarları" onclick="modalAc('ayarlar_modal')">⚙️ Ayarlar</button>
-                <button class="btn btn-yardim" title="Kullanım kılavuzunu görüntüleyin" onclick="modalAc('yardim_modal')">❓ Yardım</button>
             </div>
         </div>
 
@@ -448,10 +314,7 @@
             <h2 class="top-bar-title">YAZI TEBLİĞİ VE PERSONEL YÖNETİMİ</h2>
             <div class="top-bar-buttons">
                 <input type="file" id="f-meb" style="display: none;" accept=".pdf" onchange="mebPdfYukle(event)">
-                <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
                 <button class="btn btn-kirmizi" title="MEB'den gelen resmi yazının PDF'ini yükleyin, sayı/konu/tarih otomatik okunsun" onclick="document.getElementById('f-meb').click()">📄 MEB Yazısı (PDF) Yükle & Çözümle</button>
-                <button class="btn btn-ogr" title="E-Okul/MEB'den indirilen personel listesini (Excel) toplu olarak içeri aktarın" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
-                <button class="btn btn-ayarlar" title="Tek tek personel ekleyin veya çıkarın" onclick="personelYonetimAc()">👤 Personel Yönetimi</button>
                 <button class="btn" style="background-color: #8B5CF6; color: white;" title="Yüklenen yazılardaki kelimelere göre otomatik personel seçimi kuralları oluşturun" onclick="akilliEslesmeModalAc()">🧠 Akıllı Eşleşmeler</button>
                 <button class="btn btn-dev" onclick="personelleriYukle()">🔄 Listeyi Yenile</button>
             </div>
@@ -536,29 +399,151 @@
         </div>
     </div>
 
-    <div id="sekme_ayarlar" class="tab-content">
+        <div id="sekme_ayarlar" class="tab-content">
         <div class="top-bar"><h2 class="top-bar-title">SİSTEM AYARLARI VE VERİTABANI YÖNETİMİ</h2></div>
-        <div style="display: flex; gap: 20px;">
-            <div class="filtre-card" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px; background-color: var(--bg-card); border: 1px solid var(--border);">
-                <h3 style="color: var(--tree-sel); margin-top: 0;">⚙️ Klasör Ayarları</h3>
-                <div style="width: 100%; margin-bottom: 10px;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">PDF Kayıt Klasörü:</span><br><input type="text" id="ayar-pdf" style="width: 100%; padding: 8px; margin-top: 5px; font-size:12px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main);"></div>
-                <div style="width: 100%; margin-bottom: 10px;"><span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Yedekleme Klasörü:</span><br><input type="text" id="ayar-yedek" style="width: 100%; padding: 8px; margin-top: 5px; font-size:12px; background-color: var(--bg-main); border: 1px solid var(--border); color: var(--fg-main);"></div>
-                <button class="btn btn-dev" style="padding: 12px; margin-top: 10px; width: 100%; font-size:12px;" onclick="ayarlariKaydet()">💾 Ayarları Kaydet</button>
+        <div style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <!-- Sol Kolon -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">👤 Personel ve Veri İşlemleri</legend>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
+                                <button class="btn btn-ogr" style="flex: 1; padding: 8px;" onclick="document.getElementById('f-ogr').click()">👨‍🎓 Öğrenci Yükle</button>
+                                
+                                <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
+                                <button class="btn btn-ogr" style="flex: 1; padding: 8px;" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
+                            </div>
+                            <button class="btn btn-ayarlar" style="width: 100%; padding: 8px;" onclick="personelYonetimAc()">⚙️ Personel Yönetimi (Ekle / Çıkar)</button>
+                        </div>
+                    </fieldset>
+
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">🏫 Kurumsal Kimlik</legend>
+                        <table style="width: 100%; font-size: 12px; border-spacing: 0 8px;">
+                            <tr>
+                                <td style="width: 110px; color: var(--fg-main); font-weight: bold;">Okul Adı:</td>
+                                <td><input type="text" id="ayar_okul_adi" style="width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--fg-main); font-weight: bold;">MEB Logosu:</td>
+                                <td style="display: flex; gap: 8px; align-items:center;">
+                                    <span id="ayar_meb_logo_ad" style="font-size:11px; color: var(--fg-sub); flex:1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Yüklenmedi</span>
+                                    <input type="file" id="f-meb-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('meb', event)">
+                                    <button class="btn btn-temizle" style="padding: 4px 10px; border: 1px solid var(--border);" onclick="document.getElementById('f-meb-logo').click()">Logo Seç</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--fg-main); font-weight: bold;">Okul Logosu:</td>
+                                <td style="display: flex; gap: 8px; align-items:center;">
+                                    <span id="ayar_okul_logo_ad" style="font-size:11px; color: var(--fg-sub); flex:1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Yüklenmedi</span>
+                                    <input type="file" id="f-okul-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('okul', event)">
+                                    <button class="btn btn-temizle" style="padding: 4px 10px; border: 1px solid var(--border);" onclick="document.getElementById('f-okul-logo').click()">Logo Seç</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+                    
+                </div>
+                
+                <!-- Sağ Kolon -->
+                <div style="display: flex; flex-direction: column; gap: 20px;">
+                    
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">📂 Dosya ve Çıktı Yönetimi</legend>
+                        <table style="width: 100%; font-size: 12px; border-spacing: 0 8px;">
+                            <tr>
+                                <td style="width: 130px; color: var(--fg-main); font-weight: bold;">PDF Kayıt Yeri:</td>
+                                <td><input type="text" id="ayar_pdf_yol" style="width:100%; padding: 6px; background: var(--bg-main); color: #3B82F6; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;"></td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--fg-main); font-weight: bold;">Yedek Kayıt Yeri:</td>
+                                <td><input type="text" id="ayar_yedek_yol" style="width:100%; padding: 6px; background: var(--bg-main); color: #10B981; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;"></td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--fg-main); font-weight: bold;">Eski Yedekleri Sil:</td>
+                                <td>
+                                    <select id="ayar_yedek_silme" style="width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                                        <option>1 Hafta Sonra</option><option>1 Ay Sonra</option><option>3 Ay Sonra</option><option>6 Ay Sonra</option><option>1 Yıl Sonra</option><option>Asla Silme</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        </table>
+                    </fieldset>
+
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">⏱️ Otomatik Zamanlı Yedekleme</legend>
+                        <table style="width: 100%; font-size: 12px; border-spacing: 0 8px;">
+                            <tr>
+                                <td style="width: 130px; color: var(--fg-main); font-weight: bold;">Yedekleme Saati:</td>
+                                <td><input type="time" id="ayar_yedek_saati" style="padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"></td>
+                            </tr>
+                            <tr>
+                                <td style="color: var(--fg-main); font-weight: bold;">Sıklık:</td>
+                                <td style="display:flex; gap:8px; align-items:center;">
+                                    <select id="ayar_yedek_sikligi" style="flex:1; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
+                                        <option>Her Gün</option><option>Haftada 1</option><option>Ayda 1</option><option>Özel Gün</option>
+                                    </select>
+                                    <div id="ayar_yedek_gun_sayisi_satir" style="display:none; align-items:center; gap:5px;">
+                                        <input type="number" id="ayar_yedek_gun_sayisi" min="1" value="3" style="width:50px; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"> 
+                                        <span style="color: var(--fg-sub);">günde bir</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                        <div style="font-size:10px; color: var(--fg-sub); margin-top:5px; line-height: 1.4;">Program açıkken, belirlenen saat geldiğinde veritabanı otomatik olarak yedeklenir.</div>
+                    </fieldset>
+
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">🔄 Yedekten Geri Yükleme</legend>
+                        <div style="display:flex; gap:10px;">
+                            <select id="ayar_yedek_secim" style="flex:1; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"><option value="">Yedek dosyası bulunamadı</option></select>
+                            <button class="btn btn-dev" style="padding: 6px 15px;" onclick="yedekGeriYukle()">🔄 Geri Yükle</button>
+                        </div>
+                    </fieldset>
+                    
+                </div>
             </div>
-            <div class="filtre-card" style="flex: 1; flex-direction: column; align-items: flex-start; gap: 10px; padding: 25px; background-color: var(--bg-card); border: 1px solid var(--border);">
-                <h3 style="color: var(--tree-sel); margin-top: 0;">📦 Veritabanı ve Güvenlik</h3>
-                <p style="font-size: 11px; color: var(--fg-sub);">Tüm verilerinizi (Öğrenciler, Devamsızlıklar, Personeller) çökme riskine karşı güvenle yedekleyebilirsiniz.</p>
-                <button class="btn btn-ogr" style="padding: 12px; width: 100%; font-size: 13px;" onclick="sistemYedekle()">📦 Hemen Yedek Al</button>
-                <hr style="border-color: var(--border); width: 100%; margin: 25px 0;">
-                <h3 style="color: #EF4444; margin-top: 0;">⚠️ Tehlikeli İşlemler</h3>
-                <p style="font-size: 11px; color: var(--fg-sub);">Dönem sonlarında (Eğitim yılı bittiğinde) sistemi temizlemek için kullanılır. Bu işlem geri alınamaz!</p>
-                <button class="btn btn-kirmizi" style="padding: 12px; width: 100%; font-size: 13px;" onclick="veritabaniniSifirla()">🗑️ Tüm Sistemi Sıfırla (Fabrika Ayarları)</button>
+
+            <!-- Alt Butonlar -->
+            <div style="display: flex; gap: 15px; margin-top: auto; padding-top: 10px;">
+                <button class="btn btn-ogr" style="flex: 1; padding: 12px; font-size: 14px; font-weight: bold;" onclick="ayarlariKaydet()">✔️ Değişiklikleri Kaydet</button>
+                <button class="btn" style="flex: 1; background-color: #8B5CF6; color: white; padding: 12px; font-size: 14px; font-weight: bold;" onclick="sistemYedekle()">💾 Şimdi Yedek Al</button>
+                <button class="btn btn-kirmizi" style="flex: 1; background-color: #FEE2E2; color: #B91C1C; padding: 12px; font-size: 14px; font-weight: bold;" onclick="veritabaniniSifirla()">🗑️ Tüm Veritabanını Sıfırla</button>
             </div>
+            
+        </div>
+    </div>
+    
+    <div id="sekme_yardim" class="tab-content">
+        <div class="top-bar"><h2 class="top-bar-title">YARDIM VE KULLANIM REHBERİ</h2></div>
+        <div style="padding: 10px; overflow-y: auto;">
+            
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
+                    <h3 style="color: var(--tree-sel); margin-top: 0;">1. Öğrenci Yükleme</h3>
+                    <p style="color: var(--fg-main); font-size: 12px; line-height: 1.6;">
+                        Sisteme yeni öğrencileri dahil etmek veya mevcut listeyi güncellemek için:<br><br>
+                        1. E-Okul sisteminden güncel 'Sınıf Listesi'ni Excel (xls, xlsx) formatında indirin.<br>
+                        2. Üst menüde yer alan 'Öğrenci Yükle' butonuna tıklayarak indirdiğiniz dosyayı seçin.<br>
+                        3. Sistem; mevcut öğrencileri korur, sadece yeni gelenleri ekler veya değişiklikleri günceller.
+                    </p>
+                </div>
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px; border-radius: 4px; margin-bottom: 10px;">
+                    <h3 style="color: var(--tree-sel); margin-top: 0;">2. Devamsızlık Yükleme</h3>
+                    <p style="color: var(--fg-main); font-size: 12px; line-height: 1.6;">
+                        Öğrencilerin güncel devamsızlık verilerini işlemek için:<br><br>
+                        1. E-Okul'dan okulun genel veya sınıflar bazında 'Devamsızlık Listesi'ni Excel olarak indirin.<br>
+                        2. 'Devamsızlık Yükle' butonuna basarak bu Excel'i sisteme okutun.<br>
+                        3. Mükemmel Eşleşme: Sistem aynı devamsızlığı asla iki kez girmez! Her gün güvenle aynı listeyi yükleyebilirsiniz.
+                    </p>
+                
         </div>
     </div>
 
+
     <script src="app.js"></script>
-        </div>
-    </div>
 </body>
 </html>

@@ -1,3 +1,12 @@
+
+        // TEMA YÜKLEME
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTema = localStorage.getItem('temaPref') || 'gece';
+            karanlikMod = (savedTema === 'gece');
+            // Wait a tiny bit for elements to exist
+            setTimeout(() => temaDegistir(savedTema), 50);
+        });
+
 const API = 'http://127.0.0.1:8000';
 
         // --- BİLDİRİM (TOAST) SİSTEMİ ---
@@ -58,21 +67,29 @@ const API = 'http://127.0.0.1:8000';
         
         function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
-        function temaDegistir() {
+        
+        function temaDegistir(forceState = null) {
             const root = document.documentElement; 
             const btnTema = document.getElementById('btn-tema');
             
-            if (karanlikMod) {
-                // Gündüz Moduna Geçiş (Kırmızıları CSS değişkenlerine bağladık)
+            // Eğer forceState verilmişse onu kullan (başlangıçta okumak için)
+            if (forceState !== null) {
+                karanlikMod = (forceState === 'gece');
+            } else {
+                karanlikMod = !karanlikMod; // Toggle
+            }
+            
+            if (!karanlikMod) {
+                // Gündüz Moduna Geçiş
                 root.style.setProperty('--bg-main', '#F1F5F9'); 
                 root.style.setProperty('--bg-card', '#FFFFFF'); 
                 root.style.setProperty('--fg-main', '#0F172A'); 
                 root.style.setProperty('--fg-sub', '#475569'); 
                 root.style.setProperty('--border', '#CBD5E1');
-                root.style.setProperty('--dev-bg', '#FEE2E2'); // Gündüz modu devamsızlık arka planı
-                root.style.setProperty('--dev-fg', '#991B1B'); // Gündüz modu devamsızlık yazısı
-                karanlikMod = false;
+                root.style.setProperty('--dev-bg', '#FEE2E2'); 
+                root.style.setProperty('--dev-fg', '#991B1B'); 
                 if(btnTema) { btnTema.classList.remove('dark'); btnTema.classList.add('light'); }
+                localStorage.setItem('temaPref', 'gunduz');
             } else {
                 // Gece Moduna Geçiş
                 root.style.setProperty('--bg-main', '#0F172A'); 
@@ -80,15 +97,29 @@ const API = 'http://127.0.0.1:8000';
                 root.style.setProperty('--fg-main', '#F8FAFC'); 
                 root.style.setProperty('--fg-sub', '#94A3B8'); 
                 root.style.setProperty('--border', '#334155');
-                root.style.setProperty('--dev-bg', '#7F1D1D'); // Gece modu devamsızlık arka planı
-                root.style.setProperty('--dev-fg', '#FEF2F2'); // Gece modu devamsızlık yazısı
-                karanlikMod = true;
+                root.style.setProperty('--dev-bg', '#7F1D1D'); 
+                root.style.setProperty('--dev-fg', '#FEF2F2'); 
                 if(btnTema) { btnTema.classList.remove('light'); btnTema.classList.add('dark'); }
+                localStorage.setItem('temaPref', 'gece');
             }
             
-            if (document.getElementById('yillik_modal').style.display === 'flex' && seciliOgrenci) { yillikListeAc(seciliOgrenci.no, seciliOgrenci.ad); }
-            takvimiCiz();
+            // Tablodaki hata hücrelerini tekrar boya (eski kodun parçası)
+            const dHucreler = document.querySelectorAll('#tree_tum_liste td');
+            dHucreler.forEach(td => {
+                if(td.textContent.includes('Gün)') || td.style.color === 'white' || td.style.color === 'var(--dev-fg)') {
+                    td.style.backgroundColor = 'var(--dev-bg)';
+                    td.style.color = 'var(--dev-fg)';
+                }
+            });
+            const dbHucreler = document.querySelectorAll('#tree_detay_govde td');
+            dbHucreler.forEach(td => {
+                if(td.textContent === 'Özürsüz' || td.style.color === 'white' || td.style.color === 'var(--dev-fg)') {
+                    td.style.backgroundColor = 'var(--dev-bg)';
+                    td.style.color = 'var(--dev-fg)';
+                }
+            });
         }
+
 
         function sekmeAc(evt, sekmeId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('aktif'));

@@ -177,30 +177,30 @@ def ogrenci_detay_getir(ogr_no: str):
 async def ogrenci_excel_yukle(dosya: UploadFile = File(...)):
 
     with gecici_dosya_olustur(dosya, prefix='temp_') as temp_yol:
-    mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
-    yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
-    if hata:
-        return {"basarili": False, "mesaj": hata}
-    if yeni_liste:
-        mevcut_ogrenciler.extend(yeni_liste)
-        db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
-        return {"basarili": True, "mesaj": f"{len(yeni_liste)} yeni öğrenci eklendi!"}
-    return {"basarili": False, "mesaj": "Dosyada yeni öğrenci bulunamadı."}
+        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
+        yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
+        if hata:
+            return {"basarili": False, "mesaj": hata}
+        if yeni_liste:
+            mevcut_ogrenciler.extend(yeni_liste)
+            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            return {"basarili": True, "mesaj": f"{len(yeni_liste)} yeni öğrenci eklendi!"}
+        return {"basarili": False, "mesaj": "Dosyada yeni öğrenci bulunamadı."}
 
 
 @app.post("/devamsizlik-excel-yukle")
 async def devamsizlik_excel_yukle(dosya: UploadFile = File(...)):
 
     with gecici_dosya_olustur(dosya, prefix='temp_dev_') as temp_yol:
-    mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
-    yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
-    if hata:
-        return {"basarili": False, "mesaj": hata}
-    if eklenen > 0:
-        mevcut_devamsizliklar.extend(yeni_liste)
-        db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
-        return {"basarili": True, "mesaj": f"{eklenen} yeni devamsızlık işlendi!"}
-    return {"basarili": False, "mesaj": "Yeni devamsızlık bulunamadı."}
+        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
+        yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
+        if hata:
+            return {"basarili": False, "mesaj": hata}
+        if eklenen > 0:
+            mevcut_devamsizliklar.extend(yeni_liste)
+            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            return {"basarili": True, "mesaj": f"{eklenen} yeni devamsızlık işlendi!"}
+        return {"basarili": False, "mesaj": "Yeni devamsızlık bulunamadı."}
 
 
 @app.delete("/ogrenci-sil/{ogr_no}")
@@ -367,47 +367,48 @@ def personel_sil(ad: str):
 @app.post("/meb-pdf-oku")
 async def meb_pdf_oku(dosya: UploadFile = File(...)):
 
-    with gecici_dosya_olustur(dosya, prefix='temp_meb_') as temp_yol:
-    with open(temp_yol, "rb") as file:
-        ilk_sayfa = PyPDF2.PdfReader(file).pages[0].extract_text()
+    try:
+        with gecici_dosya_olustur(dosya, prefix='temp_meb_') as temp_yol:
+            with open(temp_yol, "rb") as file:
+                ilk_sayfa = PyPDF2.PdfReader(file).pages[0].extract_text()
 
-    tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
-    tarih = tarih_match.group(0) if tarih_match else ""
+            tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
+            tarih = tarih_match.group(0) if tarih_match else ""
 
-    sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
-    if not sayi_match:
-        sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
-    sayi = sayi_match.group(1) if sayi_match else ""
+            sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
+            if not sayi_match:
+                sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
+            sayi = sayi_match.group(1) if sayi_match else ""
 
-    konu = ""
-    konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
-    if konu_match:
-        konu_ham = konu_match.group(1).strip()
-        konu = " ".join(konu_ham.split())
-        if sayi and sayi in konu:
-            konu = konu.replace(sayi, "").replace(":", "").strip()
+            konu = ""
+            konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
+            if konu_match:
+                konu_ham = konu_match.group(1).strip()
+                konu = " ".join(konu_ham.split())
+                if sayi and sayi in konu:
+                    konu = konu.replace(sayi, "").replace(":", "").strip()
 
-    # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU ---
-    kurum = ""
-    tc_match = re.search(r'T\.\s*C\.\s*\r?\n((?:.*\r?\n){1,4})', ilk_sayfa)
-    if tc_match:
-        satirlar = [s.strip() for s in tc_match.group(1).split('\n') if s.strip()]
-        if len(satirlar) >= 2:
-            kurum = satirlar[1]   # T.C.'den sonraki 2. dolu satır = kurumun asıl adı
-        elif satirlar:
-            kurum = satirlar[0]
+            # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU ---
+            kurum = ""
+            tc_match = re.search(r'T\.\s*C\.\s*\r?\n((?:.*\r?\n){1,4})', ilk_sayfa)
+            if tc_match:
+                satirlar = [s.strip() for s in tc_match.group(1).split('\n') if s.strip()]
+                if len(satirlar) >= 2:
+                    kurum = satirlar[1]   # T.C.'den sonraki 2. dolu satır = kurumun asıl adı
+                elif satirlar:
+                    kurum = satirlar[0]
 
-    ana_klasor, _ = pdf_klasoru_hazirla()
-    gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
-    if not os.path.exists(gecici_klasor):
-        os.makedirs(gecici_klasor)
-    kalici_yol = os.path.join(gecici_klasor, f"son_meb_yazisi_{uuid.uuid4().hex[:8]}.pdf")
-    shutil.copy(temp_yol, kalici_yol)
+            ana_klasor, _ = pdf_klasoru_hazirla()
+            gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
+            if not os.path.exists(gecici_klasor):
+                os.makedirs(gecici_klasor)
+            kalici_yol = os.path.join(gecici_klasor, f"son_meb_yazisi_{uuid.uuid4().hex[:8]}.pdf")
+            shutil.copy(temp_yol, kalici_yol)
 
-    return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "kurum": kurum, "gecici_pdf_yolu": kalici_yol}
+            return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "kurum": kurum, "gecici_pdf_yolu": kalici_yol}
 
-except Exception as e:
-    return {"basarili": False, "mesaj": str(e)}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
 
 @app.post("/teblig-bireysel-pdf")
 def teblig_bireysel_pdf(veri: dict):
