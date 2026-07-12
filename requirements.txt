@@ -1,0 +1,9 @@
+fastapi
+uvicorn
+pywebview
+pandas
+PyPDF2
+python-multipart
+reportlab
+tkcalendar
+openpyxl

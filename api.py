@@ -18,6 +18,10 @@ import threading
 import time
 import platform
 import subprocess
+import logging
+
+logging.basicConfig(filename='app.log', level=logging.ERROR, 
+                    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s')
 
 def dosyayi_otomatik_ac(dosya_yolu):
     """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
@@ -28,7 +32,8 @@ def dosyayi_otomatik_ac(dosya_yolu):
             subprocess.call(('open', dosya_yolu))
         else:
             subprocess.call(('xdg-open', dosya_yolu))
-    except Exception:
+    except Exception as e:
+        logging.error(f"dosyayi_otomatik_ac hatasi: {e}")
         pass
 
 app = FastAPI(title="Oto-Yoklama API V2")
@@ -46,10 +51,34 @@ db = VeritabaniYoneticisi(yollar["DB"])
 ayarlar = SistemMotoru.ayarlari_yukle(yollar["AYARLAR"])
 
 
+
+from contextlib import contextmanager
+
+@contextmanager
+def gecici_dosya_olustur(dosya: UploadFile, prefix="temp_"):
+    temp_yol = f"{prefix}{dosya.filename}"
+    with open(temp_yol, "wb") as buffer:
+        shutil.copyfileobj(dosya.file, buffer)
+    try:
+        yield temp_yol
+    finally:
+        if os.path.exists(temp_yol):
+            os.remove(temp_yol)
+
+
+_son_ayarlar_mtime = 0
+
 def ayarlari_al():
-    """Ayarları her seferinde diskten taze okur (ayar penceresi açıkken bile güncel kalsın diye)."""
-    global ayarlar
-    ayarlar = SistemMotoru.ayarlari_yukle(yollar["AYARLAR"])
+    """Ayarları sadece dosya degistiginde okur (Cache)."""
+    global ayarlar, _son_ayarlar_mtime
+    try:
+        mtime = os.path.getmtime(yollar["AYARLAR"])
+    except OSError:
+        mtime = 0
+        
+    if mtime != _son_ayarlar_mtime or _son_ayarlar_mtime == 0:
+        ayarlar = SistemMotoru.ayarlari_yukle(yollar["AYARLAR"])
+        _son_ayarlar_mtime = mtime
     return ayarlar
 
 
@@ -92,7 +121,8 @@ def _zamanlanmis_yedek_dongusu():
                             elif siklik == "Özel Gün" and fark_gun >= int(ayar.get("yedek_gun_sayisi", 3)): yedekle = True
                             elif siklik == "Haftada 1" and fark_gun >= 7: yedekle = True
                             elif siklik == "Ayda 1" and fark_gun >= 30: yedekle = True
-                        except Exception:
+                        except Exception as e:
+                            logging.error(f"Zamanlanmis yedek kontrol hatasi: {e}")
                             pass
 
                     if yedekle:
@@ -100,7 +130,8 @@ def _zamanlanmis_yedek_dongusu():
                         if basarili:
                             ayar["son_yedekleme_gunu"] = bugun_str
                             SistemMotoru.ayarlari_kaydet(yollar["AYARLAR"], ayar)
-        except Exception:
+        except Exception as e:
+            logging.error(f"_zamanlanmis_yedek_dongusu hatasi: {e}")
             pass
         time.sleep(60)  # Saati her 60 saniyede bir kontrol eder
 
@@ -144,42 +175,32 @@ def ogrenci_detay_getir(ogr_no: str):
 
 @app.post("/ogrenci-excel-yukle")
 async def ogrenci_excel_yukle(dosya: UploadFile = File(...)):
-    temp_yol = f"temp_{dosya.filename}"
-    with open(temp_yol, "wb") as buffer:
-        shutil.copyfileobj(dosya.file, buffer)
-    try:
-        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
-        yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
-        if hata:
-            return {"basarili": False, "mesaj": hata}
-        if yeni_liste:
-            mevcut_ogrenciler.extend(yeni_liste)
-            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
-            return {"basarili": True, "mesaj": f"{len(yeni_liste)} yeni öğrenci eklendi!"}
-        return {"basarili": False, "mesaj": "Dosyada yeni öğrenci bulunamadı."}
-    finally:
-        if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+
+    with gecici_dosya_olustur(dosya, prefix='temp_') as temp_yol:
+    mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
+    yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
+    if hata:
+        return {"basarili": False, "mesaj": hata}
+    if yeni_liste:
+        mevcut_ogrenciler.extend(yeni_liste)
+        db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+        return {"basarili": True, "mesaj": f"{len(yeni_liste)} yeni öğrenci eklendi!"}
+    return {"basarili": False, "mesaj": "Dosyada yeni öğrenci bulunamadı."}
 
 
 @app.post("/devamsizlik-excel-yukle")
 async def devamsizlik_excel_yukle(dosya: UploadFile = File(...)):
-    temp_yol = f"temp_dev_{dosya.filename}"
-    with open(temp_yol, "wb") as buffer:
-        shutil.copyfileobj(dosya.file, buffer)
-    try:
-        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
-        yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
-        if hata:
-            return {"basarili": False, "mesaj": hata}
-        if eklenen > 0:
-            mevcut_devamsizliklar.extend(yeni_liste)
-            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
-            return {"basarili": True, "mesaj": f"{eklenen} yeni devamsızlık işlendi!"}
-        return {"basarili": False, "mesaj": "Yeni devamsızlık bulunamadı."}
-    finally:
-        if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+
+    with gecici_dosya_olustur(dosya, prefix='temp_dev_') as temp_yol:
+    mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
+    yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
+    if hata:
+        return {"basarili": False, "mesaj": hata}
+    if eklenen > 0:
+        mevcut_devamsizliklar.extend(yeni_liste)
+        db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+        return {"basarili": True, "mesaj": f"{eklenen} yeni devamsızlık işlendi!"}
+    return {"basarili": False, "mesaj": "Yeni devamsızlık bulunamadı."}
 
 
 @app.delete("/ogrenci-sil/{ogr_no}")
@@ -261,7 +282,8 @@ def personelleri_getir():
         db.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel")
         personel_listesi = [{'ad': r[0], 'brans': r[1], 'gorev': r[2], 'grup': r[3]} for r in db.cursor.fetchall()]
         return {"personeller": personel_listesi}
-    except:
+    except Exception as e:
+        logging.error(f"personelleri_getir hatasi: {e}")
         return {"personeller": []}
 
 
@@ -344,53 +366,48 @@ def personel_sil(ad: str):
 
 @app.post("/meb-pdf-oku")
 async def meb_pdf_oku(dosya: UploadFile = File(...)):
-    temp_yol = f"temp_meb_{dosya.filename}"
-    with open(temp_yol, "wb") as buffer:
-        shutil.copyfileobj(dosya.file, buffer)
-    try:
-        with open(temp_yol, "rb") as file:
-            ilk_sayfa = PyPDF2.PdfReader(file).pages[0].extract_text()
 
-        tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
-        tarih = tarih_match.group(0) if tarih_match else ""
+    with gecici_dosya_olustur(dosya, prefix='temp_meb_') as temp_yol:
+    with open(temp_yol, "rb") as file:
+        ilk_sayfa = PyPDF2.PdfReader(file).pages[0].extract_text()
 
-        sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
-        if not sayi_match:
-            sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
-        sayi = sayi_match.group(1) if sayi_match else ""
+    tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
+    tarih = tarih_match.group(0) if tarih_match else ""
 
-        konu = ""
-        konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
-        if konu_match:
-            konu_ham = konu_match.group(1).strip()
-            konu = " ".join(konu_ham.split())
-            if sayi and sayi in konu:
-                konu = konu.replace(sayi, "").replace(":", "").strip()
+    sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
+    if not sayi_match:
+        sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
+    sayi = sayi_match.group(1) if sayi_match else ""
 
-        # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU ---
-        kurum = ""
-        tc_match = re.search(r'T\.\s*C\.\s*\r?\n((?:.*\r?\n){1,4})', ilk_sayfa)
-        if tc_match:
-            satirlar = [s.strip() for s in tc_match.group(1).split('\n') if s.strip()]
-            if len(satirlar) >= 2:
-                kurum = satirlar[1]   # T.C.'den sonraki 2. dolu satır = kurumun asıl adı
-            elif satirlar:
-                kurum = satirlar[0]
+    konu = ""
+    konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
+    if konu_match:
+        konu_ham = konu_match.group(1).strip()
+        konu = " ".join(konu_ham.split())
+        if sayi and sayi in konu:
+            konu = konu.replace(sayi, "").replace(":", "").strip()
 
-        ana_klasor, _ = pdf_klasoru_hazirla()
-        gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
-        if not os.path.exists(gecici_klasor):
-            os.makedirs(gecici_klasor)
-        kalici_yol = os.path.join(gecici_klasor, f"son_meb_yazisi_{uuid.uuid4().hex[:8]}.pdf")
-        shutil.copy(temp_yol, kalici_yol)
+    # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU ---
+    kurum = ""
+    tc_match = re.search(r'T\.\s*C\.\s*\r?\n((?:.*\r?\n){1,4})', ilk_sayfa)
+    if tc_match:
+        satirlar = [s.strip() for s in tc_match.group(1).split('\n') if s.strip()]
+        if len(satirlar) >= 2:
+            kurum = satirlar[1]   # T.C.'den sonraki 2. dolu satır = kurumun asıl adı
+        elif satirlar:
+            kurum = satirlar[0]
 
-        return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "kurum": kurum, "gecici_pdf_yolu": kalici_yol}
+    ana_klasor, _ = pdf_klasoru_hazirla()
+    gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
+    if not os.path.exists(gecici_klasor):
+        os.makedirs(gecici_klasor)
+    kalici_yol = os.path.join(gecici_klasor, f"son_meb_yazisi_{uuid.uuid4().hex[:8]}.pdf")
+    shutil.copy(temp_yol, kalici_yol)
 
-    except Exception as e:
-        return {"basarili": False, "mesaj": str(e)}
-    finally:
-        if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+    return {"basarili": True, "sayi": sayi, "konu": konu, "tarih": tarih, "kurum": kurum, "gecici_pdf_yolu": kalici_yol}
+
+except Exception as e:
+    return {"basarili": False, "mesaj": str(e)}
 
 @app.post("/teblig-bireysel-pdf")
 def teblig_bireysel_pdf(veri: dict):
@@ -419,18 +436,7 @@ def teblig_toplu_pdf(veri: dict):
         
         motor.teblig_tebellug_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['personeller'], yol, kurum, yuklenen_pdf)
         
-        # PDF oluşturulduktan sonra ekranda anında otomatik açılması için:
-        try:
-            import platform
-            import subprocess
-            if platform.system() == 'Windows':
-                os.startfile(yol)
-            elif platform.system() == 'Darwin':
-                subprocess.call(('open', yol))
-            else:
-                subprocess.call(('xdg-open', yol))
-        except Exception:
-            pass
+        dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
             
         return {"basarili": True, "mesaj": f"Toplu Liste Oluşturuldu:\n{yol}", "yol": yol}
     except Exception as e:
@@ -452,7 +458,8 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
         try:
             gg, aa, yy = map(int, str(ozel_deger).split('/'))
             hedef_tarih_obj = datetime(yy, aa, gg)
-        except Exception:
+        except Exception as e:
+            logging.error(f"_rapor_verisi_hazirla tarih formati hatasi: {e}")
             return None, "Tarih formatı hatalı! (GG/AA/YYYY olmalı)"
 
     veri = []
@@ -486,7 +493,8 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
                             break
                     if bulundu:
                         break
-                except Exception:
+                except Exception as e:
+                    logging.error(f"_rapor_verisi_hazirla dongu hatasi: {e}")
                     pass
             if not bulundu:
                 continue

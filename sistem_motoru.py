@@ -2,6 +2,7 @@ import os
 import json
 import shutil
 from datetime import datetime
+import logging
 
 class SistemMotoru:
     @staticmethod
@@ -24,7 +25,7 @@ class SistemMotoru:
         for k in klasor_listesi:
             if not os.path.exists(k):
                 try: os.makedirs(k)
-                except: pass
+                except Exception as e: logging.error(f"Klasor olusturulamadi {k}: {e}")
                 
         return yollar
 
@@ -34,7 +35,8 @@ class SistemMotoru:
         if os.path.exists(ayar_dosyasi):
             try:
                 with open(ayar_dosyasi, 'r', encoding='utf-8') as f: return json.load(f)
-            except: pass
+            except Exception as e:
+                logging.error(f"ayarlari_yukle hatasi: {e}")
         return {}
 
     @staticmethod
@@ -42,7 +44,8 @@ class SistemMotoru:
         """Ayarları JSON dosyasına yazar."""
         try:
             with open(ayar_dosyasi, 'w', encoding='utf-8') as f: json.dump(ayarlar, f, ensure_ascii=False, indent=4)
-        except: pass
+        except Exception as e:
+            logging.error(f"ayarlari_kaydet hatasi: {e}")
 
     @staticmethod
     def yedek_al(db_yolu, ayarlar, varsayilan_yedek_klasoru):
@@ -79,7 +82,8 @@ class SistemMotoru:
                         "tarih": datetime.fromtimestamp(mtime).strftime("%d/%m/%Y %H:%M"),
                         "boyut_kb": round(os.path.getsize(tam_yol) / 1024, 1)
                     })
-                except: pass
+                except Exception as e:
+                    logging.error(f"yedekleri_listele dosya okuma hatasi {dosya}: {e}")
         sonuc.sort(key=lambda x: x["tarih"], reverse=True)
         return sonuc
 
@@ -104,4 +108,5 @@ class SistemMotoru:
                     mtime = os.path.getmtime(dosya_yolu)
                     if (su_an - datetime.fromtimestamp(mtime)).days > limit_gun:
                         os.remove(dosya_yolu)
-                except: pass
+                except Exception as e:
+                    logging.error(f"eski_yedekleri_temizle dosya silme hatasi {dosya_yolu}: {e}")

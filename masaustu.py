@@ -6,6 +6,10 @@ import time
 import json
 import socket
 import urllib.request
+import logging
+
+logging.basicConfig(filename='app.log', level=logging.ERROR, 
+                    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s')
 
 # api.py içindeki FastAPI motorumuzu (app) buraya çağırıyoruz
 from api import app
@@ -45,7 +49,8 @@ def pencere_durumu_yukle():
             x, y = None, None
 
         return {"width": genislik, "height": yukseklik, "x": x, "y": y, "maximized": maximized}
-    except Exception:
+    except Exception as e:
+        logging.error(f"pencere_durumu_yukle hatasi: {e}")
         return dict(VARSAYILAN_DURUM)
 
 
@@ -61,7 +66,8 @@ def pencere_durumu_kaydet(pencere):
         }
         with open(PENCERE_DOSYASI, "w", encoding="utf-8") as f:
             json.dump(durum, f)
-    except Exception:
+    except Exception as e:
+        logging.error(f"pencere_durumu_kaydet hatasi: {e}")
         pass  # Kaydetme başarısız olursa program kapanışını asla engellemesin
 
 
@@ -71,7 +77,8 @@ def api_zaten_calisiyor_mu():
     try:
         with urllib.request.urlopen("http://127.0.0.1:8000/ayarlar-getir", timeout=1) as r:
             return r.status == 200
-    except Exception:
+    except Exception as e:
+        logging.error(f"api_zaten_calisiyor_mu hatasi: {e}")
         return False
 
 
@@ -87,7 +94,8 @@ def sunucuyu_baslat():
     # sessizce durur; program çökmez, sadece yeni bir sunucu başlatmamış olur.
     try:
         uvicorn.run(app, host="127.0.0.1", port=8000, log_level="critical")
-    except (SystemExit, OSError):
+    except (SystemExit, OSError) as e:
+        logging.error(f"sunucuyu_baslat hatasi (Port dolu olabilir): {e}")
         pass
 
 
