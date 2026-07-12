@@ -417,7 +417,7 @@ def teblig_bireysel_pdf(veri: dict):
     try:
         motor = PDFYoneticisi(ayar)
         yuklenen_pdf = veri.get("gecici_pdf_yolu")
-        motor.bireysel_teblig_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['eden'], veri['edilen'], veri['yer'], yol, yuklenen_pdf)
+        motor.bireysel_teblig_ciz(veri.get('kurum', ''), veri['sayi'], veri['konu'], veri['tarih'], veri['eden'], veri['edilen'], veri['yer'], yol, yuklenen_pdf)
         
         dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
         return {"basarili": True, "mesaj": f"PDF Oluşturuldu:\n{yol}", "yol": yol}

@@ -391,7 +391,7 @@
                     <select id="b-edilen" style="width: 100%; padding: 6px; margin-top: 5px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></select>
                 </div>
                 <div>
-                    <span style="font-size: 11px; font-weight: bold; color: var(--fg-main);">Tebliğ Yeri:</span><br>
+                    <span style="font-size: 11px; font-weight: bold; color: var(--fg-main);">Tebliğ Yeri ve Saati:</span><br>
                     <input type="text" id="b-yer" value="Okul Müdürlüğü" style="width: 100%; padding: 6px; margin-top: 5px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
                 </div>
                 <button class="btn btn-yardim" style="margin-top: auto; padding: 12px; font-size:11px;" title="Seçilen tebliğ eden/edilen kişiler için tek kişilik tebliğ-tebellüğ belgesi oluşturur" onclick="bireyselTebligPdfAl()">✉️ Bireysel Çıktı Al</button>
@@ -404,23 +404,9 @@
         <div style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                <!-- Sol Kolon -->
+                <!-- Sol Kolon: Kurumsal Kimlik ve Veritabanı -->
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                     
-                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
-                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">👤 Personel ve Veri İşlemleri</legend>
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
-                                <button class="btn btn-ogr" style="flex: 1; padding: 8px;" onclick="document.getElementById('f-ogr').click()">👨‍🎓 Öğrenci Yükle</button>
-                                
-                                <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
-                                <button class="btn btn-ogr" style="flex: 1; padding: 8px;" onclick="document.getElementById('f-personel').click()">📥 Personel Excel Yükle</button>
-                            </div>
-                            <button class="btn btn-ayarlar" style="width: 100%; padding: 8px;" onclick="personelYonetimAc()">⚙️ Personel Yönetimi (Ekle / Çıkar)</button>
-                        </div>
-                    </fieldset>
-
                     <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
                         <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">🏫 Kurumsal Kimlik</legend>
                         <table style="width: 100%; font-size: 12px; border-spacing: 0 8px;">
@@ -446,10 +432,25 @@
                             </tr>
                         </table>
                     </fieldset>
+
+                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">👤 Veri İçe Aktarma ve Sıfırlama</legend>
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
+                                <button class="btn btn-ogr" style="flex: 1; padding: 8px;" onclick="document.getElementById('f-ogr').click()">👨‍🎓 Öğrenci Yükle</button>
+                                
+                                <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
+                                <button class="btn btn-ogr" style="flex: 1; padding: 8px;" onclick="document.getElementById('f-personel').click()">📥 Personel Yükle</button>
+                            </div>
+                            <button class="btn btn-ayarlar" style="width: 100%; padding: 8px;" onclick="personelYonetimAc()">⚙️ Personel Yönetimi (Ekle / Çıkar)</button>
+                            <button class="btn btn-kirmizi" style="width: 100%; background-color: #FEE2E2; color: #B91C1C; padding: 8px; font-weight: bold;" onclick="veritabaniniSifirla()">🗑️ Tüm Veritabanını Sıfırla</button>
+                        </div>
+                    </fieldset>
                     
                 </div>
                 
-                <!-- Sağ Kolon -->
+                <!-- Sağ Kolon: Klasör Yolları ve Yedekleme -->
                 <div style="display: flex; flex-direction: column; gap: 20px;">
                     
                     <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
@@ -463,23 +464,15 @@
                                 <td style="color: var(--fg-main); font-weight: bold;">Yedek Kayıt Yeri:</td>
                                 <td><input type="text" id="ayar_yedek_yol" style="width:100%; padding: 6px; background: var(--bg-main); color: #10B981; border: 1px solid var(--border); border-radius: 4px; font-weight: bold;"></td>
                             </tr>
-                            <tr>
-                                <td style="color: var(--fg-main); font-weight: bold;">Eski Yedekleri Sil:</td>
-                                <td>
-                                    <select id="ayar_yedek_silme" style="width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                                        <option>1 Hafta Sonra</option><option>1 Ay Sonra</option><option>3 Ay Sonra</option><option>6 Ay Sonra</option><option>1 Yıl Sonra</option><option>Asla Silme</option>
-                                    </select>
-                                </td>
-                            </tr>
                         </table>
                     </fieldset>
 
                     <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
-                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">⏱️ Otomatik Zamanlı Yedekleme</legend>
-                        <table style="width: 100%; font-size: 12px; border-spacing: 0 8px;">
+                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">💾 Yedekleme İşlemleri</legend>
+                        <table style="width: 100%; font-size: 12px; border-spacing: 0 8px; margin-bottom: 10px;">
                             <tr>
                                 <td style="width: 130px; color: var(--fg-main); font-weight: bold;">Yedekleme Saati:</td>
-                                <td><input type="time" id="ayar_yedek_saati" style="padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"></td>
+                                <td><input type="time" id="ayar_yedek_saati" style="width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"></td>
                             </tr>
                             <tr>
                                 <td style="color: var(--fg-main); font-weight: bold;">Sıklık:</td>
@@ -493,26 +486,30 @@
                                     </div>
                                 </td>
                             </tr>
+                            <tr>
+                                <td style="color: var(--fg-main); font-weight: bold;">Eski Yedekleri Sil:</td>
+                                <td>
+                                    <select id="ayar_yedek_silme" style="width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                                        <option>1 Hafta Sonra</option><option>1 Ay Sonra</option><option>3 Ay Sonra</option><option>6 Ay Sonra</option><option>1 Yıl Sonra</option><option>Asla Silme</option>
+                                    </select>
+                                </td>
+                            </tr>
                         </table>
-                        <div style="font-size:10px; color: var(--fg-sub); margin-top:5px; line-height: 1.4;">Program açıkken, belirlenen saat geldiğinde veritabanı otomatik olarak yedeklenir.</div>
-                    </fieldset>
-
-                    <fieldset style="border: 1px solid var(--border); padding: 15px; border-radius: 6px; background-color: var(--bg-card);">
-                        <legend style="color: var(--tree-sel); font-weight: bold; font-size: 13px; padding: 0 5px;">🔄 Yedekten Geri Yükleme</legend>
-                        <div style="display:flex; gap:10px;">
+                        
+                        <div style="border-top: 1px solid var(--border); margin: 15px 0; padding-top: 15px; display: flex; gap: 10px; align-items: center;">
                             <select id="ayar_yedek_secim" style="flex:1; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;"><option value="">Yedek dosyası bulunamadı</option></select>
-                            <button class="btn btn-dev" style="padding: 6px 15px;" onclick="yedekGeriYukle()">🔄 Geri Yükle</button>
+                            <button class="btn btn-dev" style="padding: 6px 15px; font-weight: bold;" onclick="yedekGeriYukle()">🔄 Geri Yükle</button>
                         </div>
+                        
+                        <button class="btn" style="width: 100%; background-color: #8B5CF6; color: white; padding: 8px; font-weight: bold;" onclick="sistemYedekle()">💾 Şimdi Manuel Yedek Al</button>
                     </fieldset>
                     
                 </div>
             </div>
 
             <!-- Alt Butonlar -->
-            <div style="display: flex; gap: 15px; margin-top: auto; padding-top: 10px;">
-                <button class="btn btn-ogr" style="flex: 1; padding: 12px; font-size: 14px; font-weight: bold;" onclick="ayarlariKaydet()">✔️ Değişiklikleri Kaydet</button>
-                <button class="btn" style="flex: 1; background-color: #8B5CF6; color: white; padding: 12px; font-size: 14px; font-weight: bold;" onclick="sistemYedekle()">💾 Şimdi Yedek Al</button>
-                <button class="btn btn-kirmizi" style="flex: 1; background-color: #FEE2E2; color: #B91C1C; padding: 12px; font-size: 14px; font-weight: bold;" onclick="veritabaniniSifirla()">🗑️ Tüm Veritabanını Sıfırla</button>
+            <div style="display: flex; margin-top: auto; padding-top: 10px;">
+                <button class="btn btn-ogr" style="width: 100%; padding: 12px; font-size: 14px; font-weight: bold;" onclick="ayarlariKaydet()">✔️ Değişiklikleri Kaydet</button>
             </div>
             
         </div>

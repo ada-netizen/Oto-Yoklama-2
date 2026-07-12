@@ -299,8 +299,11 @@ class PDFYoneticisi:
         c.save()
         return True, ""
 
-    def bireysel_teblig_ciz(self, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, kayit_yeri, yuklenen_pdf=None):
+    def bireysel_teblig_ciz(self, kurum, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, kayit_yeri, yuklenen_pdf=None):
         from reportlab.lib.pagesizes import A4
+        from reportlab.platypus import Table, TableStyle, Paragraph
+        from reportlab.lib import colors
+        from reportlab.lib.styles import ParagraphStyle
         from datetime import datetime
         import io
         
@@ -314,57 +317,59 @@ class PDFYoneticisi:
         # A5 Makbuzunu diske değil, bilgisayarın "Geçici Hafızasına (RAM)" çiziyoruz
         temp_pdf = io.BytesIO()
         c = canvas.Canvas(temp_pdf, pagesize=A4)
+        bugun = datetime.now().strftime("%d/%m/%Y")
+        
+        def turkce_title(metin):
+            if not metin: return ""
+            kucuk_harfler = metin.replace('I', 'ı').replace('İ', 'i').lower()
+            kelimeler = kucuk_harfler.split()
+            sonuc = []
+            for k in kelimeler:
+                ilk_harf = k[0].replace('i', 'İ').replace('ı', 'I').upper() if k[0] in ['i', 'ı'] else k[0].upper()
+                sonuc.append(ilk_harf + k[1:])
+            return " ".join(sonuc)
+
+        style_n = ParagraphStyle(name='N', fontName=self.font, fontSize=11, leading=14)
+        style_c = ParagraphStyle(name='C', fontName=self.font, fontSize=11, leading=14, alignment=1)
+        style_cb = ParagraphStyle(name='CB', fontName=self.font_bold, fontSize=11, leading=14, alignment=1)
         
         # ================= 2 ADET A5 (ÜST VE ALT) ÇİZİMİ =================
         def a5_belge_ciz(y_offset):
-            baslangic_y = y_offset + 380
+            baslangic_y = y_offset + 370
             
             c.setFont(self.font_bold, 14)
             c.drawCentredString(genislik / 2, baslangic_y, self.metin_duzelt("TEBLİĞ - TEBELLÜĞ BELGESİ"))
             
-            c.setFont(self.font_bold, 11)
-            c.drawString(40, baslangic_y - 40, self.metin_duzelt("YAZININ TARİH VE SAYISI"))
-            c.drawString(200, baslangic_y - 40, ":")
-            c.setFont(self.font, 11)
-            c.drawString(210, baslangic_y - 40, self.metin_duzelt(f"{yazi_tarihi} - {sayi}"))
+            data = [
+                [Paragraph(self.metin_duzelt("TEBLİĞ YAPILACAK<br/>YAZININ TARİHİ VE SAYISI"), style_n), Paragraph(self.metin_duzelt(f"{kurum}'nün {yazi_tarihi} tarih ve {sayi} sayılı yazısı."), style_n)],
+                [Paragraph(self.metin_duzelt("YAZININ ÖZÜ"), style_n), Paragraph(self.metin_duzelt(konu), style_n)],
+                [Paragraph(self.metin_duzelt("TEBLİĞ EDİLDİĞİ YER VE<br/>SAAT"), style_n), Paragraph(self.metin_duzelt(t_yeri), style_n)],
+                [Paragraph(self.metin_duzelt("&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda adı soyadı, görevi ve görev yeri yazılı bulunan personele söz konusu yazı tebliğ edilmiştir."), style_n), ''],
+                [[Paragraph(self.metin_duzelt("TEBLİĞ EDEN"), style_cb),
+                  Paragraph(self.metin_duzelt(f"<br/>{bugun}<br/>İmza<br/>{t_eden['ad']}<br/>{t_eden['gorev']}"), style_c)],
+                 [Paragraph(self.metin_duzelt("TEBELLÜĞ EDEN"), style_cb),
+                  Paragraph(self.metin_duzelt(f"<br/>{bugun}<br/>İmza<br/>{t_edilen['ad']}<br/>{t_edilen['gorev']}"), style_c)]]
+            ]
             
-            c.setFont(self.font_bold, 11)
-            c.drawString(40, baslangic_y - 65, self.metin_duzelt("YAZININ ÖZÜ (KONUSU)"))
-            c.drawString(200, baslangic_y - 65, ":")
+            col_widths = [genislik * 0.4, genislik * 0.5]
             
-            p_konu2 = Paragraph(self.metin_duzelt(konu), ParagraphStyle(name='N', fontName=self.font, fontSize=11, leading=14))
-            p_konu2.wrapOn(c, genislik - 240, 100)
-            p_konu2.drawOn(c, 210, baslangic_y - 65 - (p_konu2.height - 11))
+            t = Table(data, colWidths=col_widths)
+            t.setStyle(TableStyle([
+                ('GRID', (0,0), (-1,2), 1, colors.black),
+                ('BOX', (0,3), (-1,3), 1, colors.black),
+                ('SPAN', (0,3), (1,3)),
+                ('BOX', (0,4), (-1,4), 1, colors.black),
+                ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+                ('TOPPADDING', (0,0), (-1,-1), 8),
+            ]))
             
-            y_next = baslangic_y - 65 - (p_konu2.height - 11) - 25
+            t.wrapOn(c, genislik, yukseklik)
+            t_width, t_height = t.wrap(genislik, yukseklik)
             
-            c.setFont(self.font_bold, 11)
-            c.drawString(40, y_next, self.metin_duzelt("TEBLİĞ EDİLEN YER"))
-            c.drawString(200, y_next, ":")
-            c.setFont(self.font, 11)
-            c.drawString(210, y_next, self.metin_duzelt(t_yeri))
-            
-            y_next -= 25
-            bugun = datetime.now().strftime("%d/%m/%Y")
-            c.setFont(self.font_bold, 11)
-            c.drawString(40, y_next, self.metin_duzelt("TEBLİĞ TARİHİ VE SAATİ"))
-            c.drawString(200, y_next, ":")
-            c.setFont(self.font, 11)
-            c.drawString(210, y_next, self.metin_duzelt(f"{bugun}   Saat: ......:......"))
-            
-            y_next -= 50
-            c.setFont(self.font_bold, 11)
-            c.drawCentredString(140, y_next, self.metin_duzelt("TEBLİĞ EDEN"))
-            c.drawCentredString(425, y_next, self.metin_duzelt("TEBELLÜĞ EDEN"))
-            
-            y_next -= 45
-            c.setFont(self.font, 10)
-            c.drawCentredString(140, y_next, self.metin_duzelt(t_eden['ad']))
-            c.drawCentredString(425, y_next, self.metin_duzelt(t_edilen['ad']))
-            
-            y_next -= 15
-            c.drawCentredString(140, y_next, self.metin_duzelt(t_eden['gorev']))
-            c.drawCentredString(425, y_next, self.metin_duzelt(t_edilen['gorev']))
+            x = (genislik - t_width) / 2
+            y = baslangic_y - 15 - t_height
+            t.drawOn(c, x, y)
             
             if y_offset > 0:
                 c.setDash(6, 4)

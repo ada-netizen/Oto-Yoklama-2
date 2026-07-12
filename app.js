@@ -70,7 +70,7 @@ const API = 'http://127.0.0.1:8000';
         
         function temaDegistir(forceState = null) {
             const root = document.documentElement; 
-            const btnTema = document.getElementById('btn-tema');
+            const btnTema = document.getElementById('btn_tema');
             
             // Eğer forceState verilmişse onu kullan (başlangıçta okumak için)
             if (forceState !== null) {
@@ -904,6 +904,33 @@ const API = 'http://127.0.0.1:8000';
                 personeller: seciliPersoneller 
             };
             fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+        }
+        
+        function bireyselTebligPdfAl() {
+            const edenSecim = document.getElementById('b-eden');
+            const edilenSecim = document.getElementById('b-edilen');
+            if(edenSecim.selectedIndex < 0 || edilenSecim.selectedIndex < 0) return bildirimGoster("Lütfen tebliğ eden ve edilen kişileri seçin!", "hata");
+            
+            const edenAd = edenSecim.value;
+            const edilenAd = edilenSecim.value;
+            
+            const edenPersonel = tumPersoneller.find(p => p.ad === edenAd);
+            const edilenPersonel = tumPersoneller.find(p => p.ad === edilenAd);
+            
+            const edenGorev = edenPersonel ? edenPersonel.gorev : "İdareci";
+            const edilenGorev = edilenPersonel ? edilenPersonel.gorev : "Personel";
+            
+            const veri = { 
+                sayi: document.getElementById('t-sayi') ? document.getElementById('t-sayi').value : "", 
+                konu: document.getElementById('t-konu') ? document.getElementById('t-konu').value : "", 
+                tarih: document.getElementById('t-tarih') ? document.getElementById('t-tarih').value : "", 
+                kurum: document.getElementById('t-kurum') ? document.getElementById('t-kurum').value : "",
+                eden: { ad: edenAd, gorev: edenGorev },
+                edilen: { ad: edilenAd, gorev: edilenGorev },
+                yer: document.getElementById('b-yer').value,
+                gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : ""
+            };
+            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
         
 
