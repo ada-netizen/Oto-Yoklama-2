@@ -299,6 +299,87 @@ class PDFYoneticisi:
         c.save()
         return True, ""
 
+    def personel_raporu_ciz(self, veri, kayit_yeri):
+        from reportlab.lib.pagesizes import A4
+        c = canvas.Canvas(kayit_yeri, pagesize=A4)
+        w, h = A4
+
+        def basligi_ciz():
+            c.setFont(self.font_bold, 14)
+            c.drawCentredString(w / 2, h - 50, self.metin_duzelt("Personel Listesi"))
+            y = h - 80
+            c.setFont(self.font_bold, 10)
+            c.drawString(50, y, "Ad Soyad")
+            c.drawString(200, y, self.metin_duzelt("Branş"))
+            c.drawString(350, y, self.metin_duzelt("Görev"))
+            c.drawString(450, y, "Grup")
+            c.line(40, y - 5, w - 40, y - 5)
+            return y - 20
+
+        y_pos = basligi_ciz()
+        c.setFont(self.font, 10)
+        for satir in veri:
+            if y_pos < 50:
+                c.showPage()
+                y_pos = basligi_ciz()
+                c.setFont(self.font, 10)
+            
+            c.drawString(50, y_pos, self.metin_duzelt(str(satir[0])))
+            c.drawString(200, y_pos, self.metin_duzelt(str(satir[1])))
+            c.drawString(350, y_pos, self.metin_duzelt(str(satir[2])))
+            c.drawString(450, y_pos, self.metin_duzelt(str(satir[3])))
+            y_pos -= 15
+
+        c.save()
+        return True, ""
+
+    def esik_raporu_pdf_ciz(self, veri, kayit_yeri):
+        from reportlab.lib.pagesizes import A4
+        c = canvas.Canvas(kayit_yeri, pagesize=A4)
+        w, h = A4
+
+        def basligi_ciz():
+            c.setFont(self.font_bold, 14)
+            c.drawCentredString(w / 2, h - 50, self.metin_duzelt("Sınıf Bazlı Devamsızlık Eşik Raporu"))
+            y = h - 80
+            c.setFont(self.font_bold, 10)
+            c.drawString(50, y, self.metin_duzelt("Sınıf/Şube"))
+            c.drawString(150, y, "5-14 Gün")
+            c.drawString(250, y, "15-24 Gün")
+            c.drawString(350, y, "25-39 Gün")
+            c.drawString(450, y, "40+ Gün")
+            c.line(40, y - 5, w - 40, y - 5)
+            return y - 20
+
+        y_pos = basligi_ciz()
+        for satir in veri:
+            if y_pos < 50:
+                c.showPage()
+                y_pos = basligi_ciz()
+            
+            sube = self.metin_duzelt(str(satir[0]))
+            
+            # Check if this is a subtotal or grand total row
+            if "Toplam" in sube or "TOPLAM" in sube:
+                c.setFont(self.font_bold, 10)
+                # Background highlight for totals
+                c.setFillColorRGB(0.9, 0.9, 0.9)
+                c.rect(40, y_pos - 2, w - 80, 15, fill=1, stroke=0)
+                c.setFillColorRGB(0, 0, 0)
+                c.line(40, y_pos - 4, w - 40, y_pos - 4) # underline totals
+            else:
+                c.setFont(self.font, 10)
+            
+            c.drawString(50, y_pos, sube)
+            c.drawString(150, y_pos, str(satir[1]))
+            c.drawString(250, y_pos, str(satir[2]))
+            c.drawString(350, y_pos, str(satir[3]))
+            c.drawString(450, y_pos, str(satir[4]))
+            y_pos -= 15
+
+        c.save()
+        return True, ""
+
     def bireysel_teblig_ciz(self, kurum, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, kayit_yeri, yuklenen_pdf=None):
         from reportlab.lib.pagesizes import A4
         from reportlab.platypus import Table, TableStyle, Paragraph

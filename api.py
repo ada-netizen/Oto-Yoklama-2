@@ -361,7 +361,70 @@ def personel_ekle(veri: dict):
 def personel_sil(ad: str):
     db.cursor.execute("DELETE FROM personel WHERE ad_soyad = ?", (ad,))
     db.conn.commit()
+    
+    # Eşleşmeleri sil (ad silindiği için eski eşleşmeleri de temizlemek iyi olabilir, ama şimdilik bırakıyoruz)
     return {"basarili": True, "mesaj": f"{ad} silindi."}
+
+@app.put("/personel-guncelle/{eski_ad}")
+def personel_guncelle(eski_ad: str, veri: dict):
+    yeni_ad = str(veri.get("ad", "")).strip().upper()
+    if not yeni_ad:
+        return {"basarili": False, "mesaj": "Ad Soyad boş bırakılamaz!"}
+    gorev = str(veri.get("gorev", "")).strip().upper() or "-"
+    brans = str(veri.get("brans", "")).strip().upper() or "-"
+    grup = veri.get("grup") or _personel_grup_tahmin_et(gorev)
+
+    db.cursor.execute("UPDATE personel SET ad_soyad=?, brans=?, gorev=?, grup=? WHERE ad_soyad=?", (yeni_ad, brans, gorev, grup, eski_ad))
+    db.conn.commit()
+    
+    # Oto-eşleşmeleri güncelle
+    ayar = ayarlari_al()
+    eslesmeler = ayar.get("oto_eslesmeler", [])
+    degisiklik_var = False
+    for eslesme in eslesmeler:
+        if eslesme.get("hedef") == eski_ad:
+            eslesme["hedef"] = yeni_ad
+            degisiklik_var = True
+    
+    if degisiklik_var:
+        ayar["oto_eslesmeler"] = eslesmeler
+        SistemMotoru.ayarlari_kaydet(yollar["AYARLAR"], ayar)
+        
+    return {"basarili": True, "mesaj": f"Personel güncellendi."}
+
+@app.get("/personel-excel-indir")
+def personel_excel_indir():
+    db.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel ORDER BY ad_soyad")
+    personel_listesi = [{'Ad Soyad': r[0], 'Branş': r[1], 'Görev': r[2], 'Grup': r[3]} for r in db.cursor.fetchall()]
+    
+    if not personel_listesi:
+        return {"basarili": False, "mesaj": "Personel listesi boş!"}
+        
+    df = pd.DataFrame(personel_listesi)
+    ana_klasor, ayar = pdf_klasoru_hazirla()
+    yol = os.path.join(ana_klasor, "Personel_Listesi.xlsx")
+    df.to_excel(yol, index=False)
+    subprocess.Popen(['start', yol], shell=True)
+    return {"basarili": True, "mesaj": "Excel dosyası oluşturuldu."}
+
+@app.get("/personel-pdf-indir")
+def personel_pdf_indir():
+    db.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel ORDER BY ad_soyad")
+    veri = [[r[0], r[1], r[2], r[3]] for r in db.cursor.fetchall()]
+    
+    if not veri:
+        return {"basarili": False, "mesaj": "Personel listesi boş!"}
+        
+    ana_klasor, ayar = pdf_klasoru_hazirla()
+    yol = os.path.join(ana_klasor, "Personel_Listesi.pdf")
+    motor = PDFYoneticisi(ayar)
+    
+    # Yeni eklenecek PDF methodu: personel_raporu_ciz
+    motor.personel_raporu_ciz(veri, yol)
+    
+    subprocess.Popen(['start', yol], shell=True)
+    return {"basarili": True, "mesaj": "PDF oluşturuldu."}
+
 
 
 @app.post("/meb-pdf-oku")
@@ -510,8 +573,139 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
         veri.sort(key=anahtar)
     else:
         veri.sort(key=lambda x: x[3], reverse=True)
-
     return veri, None
+
+
+@app.get("/rapor-esik-siniflar/{format_tipi}")
+def rapor_esik_siniflar(format_tipi: str):
+    try:
+        # Tüm öğrencileri al
+        db.cursor.execute("SELECT no, ad_soyad, sube FROM ogrenciler")
+        ogrenciler = [{'no': r[0], 'ad_soyad': r[1], 'sube': r[2]} for r in db.cursor.fetchall()]
+        
+        # Tüm devamsızlıkları al (hafta sonu mantığıyla günleri toplama)
+        db.cursor.execute("SELECT no, tur, gun FROM devamsizliklar")
+        dev_kayitlar = db.cursor.fetchall()
+        
+        # Öğrenci başına devamsızlık toplamı
+        dev_toplamlari = {o['no']: 0.0 for o in ogrenciler}
+        
+        # Tur: Özürsüz -> D, Y, SY
+        # Tur: Özürlü -> G, I, S, R, M
+        # Tur: Diğer -> N, F, SV (bunları saymıyoruz)
+        sayilmayacak_turler = ['N', 'F', 'SV']
+        
+        for no, tur, gun in dev_kayitlar:
+            if not tur or tur.upper() in sayilmayacak_turler:
+                continue
+            
+            try:
+                gun_mik = float(gun)
+            except:
+                gun_mik = 0.0
+            
+            # Not: Hafta sonu detayı tam hesaplanamıyor (tarih eksik), fakat kabaca "gun" sayısını topluyoruz.
+            # "özürlü ve özürsüz devamsızlık toplamlarına göre" dediği için direkt gunMiktari topluyoruz.
+            if no in dev_toplamlari:
+                dev_toplamlari[no] += gun_mik
+                
+        # Sınıflara göre grupla
+        sinif_verileri = {}
+        for ogr in ogrenciler:
+            sube = ogr['sube']
+            no = ogr['no']
+            toplam = dev_toplamlari[no]
+            
+            if toplam < 5:
+                continue # 5 günden az olanlar rapora dahil değil
+                
+            if sube not in sinif_verileri:
+                sinif_verileri[sube] = {'5-14': 0, '15-24': 0, '25-39': 0, '40+': 0}
+                
+            if 5 <= toplam <= 14.5:
+                sinif_verileri[sube]['5-14'] += 1
+            elif 15 <= toplam <= 24.5:
+                sinif_verileri[sube]['15-24'] += 1
+            elif 25 <= toplam <= 39.5:
+                sinif_verileri[sube]['25-39'] += 1
+            elif toplam >= 40:
+                sinif_verileri[sube]['40+'] += 1
+
+        # Sınıfları alfabetik/Sayısal sırala
+        def sinif_sirala(sube_adi):
+            import re
+            m = re.match(r'(\d+)', sube_adi)
+            num = int(m.group(1)) if m else 99
+            return (num, sube_adi)
+            
+        sirali_subeler = sorted(sinif_verileri.keys(), key=sinif_sirala)
+        
+        # Sonuç dizisini oluştur (Ara toplamlar ile birlikte)
+        import re
+        veri_listesi = []
+        
+        mevcut_kademe = None
+        kademe_toplamlari = [0, 0, 0, 0]
+        genel_toplamlar = [0, 0, 0, 0]
+        
+        for sube in sirali_subeler:
+            m = re.match(r'(\d+)', sube)
+            kademe = int(m.group(1)) if m else 99
+            
+            # Eğer kademe değiştiyse ve mevcut kademe varsa, ara toplam satırı ekle
+            if mevcut_kademe is not None and kademe != mevcut_kademe:
+                veri_listesi.append([f"{mevcut_kademe}. Sınıflar Toplamı", kademe_toplamlari[0], kademe_toplamlari[1], kademe_toplamlari[2], kademe_toplamlari[3]])
+                kademe_toplamlari = [0, 0, 0, 0]
+                
+            mevcut_kademe = kademe
+            v = sinif_verileri[sube]
+            veri_listesi.append([sube, v['5-14'], v['15-24'], v['25-39'], v['40+']])
+            
+            kademe_toplamlari[0] += v['5-14']
+            kademe_toplamlari[1] += v['15-24']
+            kademe_toplamlari[2] += v['25-39']
+            kademe_toplamlari[3] += v['40+']
+            
+            genel_toplamlar[0] += v['5-14']
+            genel_toplamlar[1] += v['15-24']
+            genel_toplamlar[2] += v['25-39']
+            genel_toplamlar[3] += v['40+']
+
+        # Son kademenin ara toplamını ekle
+        if mevcut_kademe is not None:
+            veri_listesi.append([f"{mevcut_kademe}. Sınıflar Toplamı", kademe_toplamlari[0], kademe_toplamlari[1], kademe_toplamlari[2], kademe_toplamlari[3]])
+            
+        # Genel toplamı ekle
+        veri_listesi.append(["GENEL TOPLAM", genel_toplamlar[0], genel_toplamlar[1], genel_toplamlar[2], genel_toplamlar[3]])
+
+        if not veri_listesi:
+            return {"basarili": False, "mesaj": "Bu kritere uygun öğrenci bulunamadı."}
+
+        ana_klasor, ayar = pdf_klasoru_hazirla()
+        rapor_klasoru = os.path.join(ana_klasor, "Raporlar")
+        if not os.path.exists(rapor_klasoru):
+            os.makedirs(rapor_klasoru)
+
+        baslik = "Sınıf Bazlı Devamsızlık Eşik Raporu"
+        dosya_adi_temiz = "Sinif_Bazli_Esik_Raporu"
+        bugun_str = datetime.now().strftime("%d_%m_%Y_%H%M")
+        otomatik_isim = f"{dosya_adi_temiz}_{bugun_str}"
+        yol = ""
+
+        if format_tipi == "excel":
+            yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.xlsx")
+            motor = ExcelMotoru()
+            # We will add esik_raporu_excel_ciz to excel_motoru.py
+            motor.esik_raporu_excel_ciz(veri_listesi, yol)
+        else:
+            yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
+            motor = PDFYoneticisi(ayar)
+            motor.esik_raporu_pdf_ciz(veri_listesi, yol)
+
+        dosyayi_otomatik_ac(yol)
+        return {"basarili": True, "mesaj": f"Rapor başarıyla oluşturuldu:\n{yol}", "yol": yol}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
 
 
 @app.post("/rapor-al")

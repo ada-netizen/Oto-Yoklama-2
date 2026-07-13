@@ -109,3 +109,7 @@ class ExcelMotoru:
             return yeni_liste, eklenen, None
         except Exception as e:
             return None, 0, f"Excel Okuma Hatası: {str(e)}"
+
+    def esik_raporu_excel_ciz(self, veri, kayit_yeri):
+        df = pd.DataFrame(veri, columns=['Sınıf/Şube', '5-14 Gün', '15-24 Gün', '25-39 Gün', '40+ Gün'])
+        df.to_excel(kayit_yeri, index=False)
