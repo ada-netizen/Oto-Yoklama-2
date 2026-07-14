@@ -20,7 +20,13 @@ class VeritabaniYoneticisi:
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_no ON ogrenciler (no)")
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
         
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT)")
+        self.cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
+        # Eski veritabanlarını güncelle (Hata verirse zaten kolon vardır, yoksay)
+        try:
+            self.cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT")
+        except sqlite3.OperationalError:
+            pass
+            
         self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
         
         self.conn.commit()

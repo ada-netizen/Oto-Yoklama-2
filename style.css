@@ -1,12 +1,17 @@
 /* ================= BİREBİR TKINTER TEMA (sabitler.py) ================= */
         :root {
             --bg-main: #0F172A;
-            --bg-card: #1E293B;
+            --bg-card: rgba(30, 41, 59, 0.7); /* Glassmorphism arka plan */
+            --bg-card-solid: #1E293B;
             --fg-main: #F8FAFC;
             --fg-sub: #94A3B8;
-            --border: #334155;
-            --tree-sel: #38BB94;
-            --font-ui: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --border: rgba(51, 65, 85, 0.6);
+            --tree-sel: #38BDF8; /* Daha canlı bir seçim rengi */
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --glass-blur: blur(12px);
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
         }
 
         body { font-family: var(--font-ui); background-color: var(--bg-main); color: var(--fg-main); margin: 0; padding: 5px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
@@ -20,11 +25,13 @@
         .tab-content.aktif { display: flex; }
 
         /* --- ÜST PANEL VE BUTONLAR --- */
-        .top-bar { background-color: var(--bg-card); border: 1px solid var(--border); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .top-bar { background-color: var(--bg-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: var(--shadow-sm); }
         .top-bar-title { font-size: 20px; font-weight: bold; color: var(--tree-sel); margin: 0; }
         .top-bar-buttons { display: flex; gap: 5px; }
         
-        .btn { border: none; padding: 6px 15px; font-size: 10px; font-weight: bold; cursor: pointer; font-family: var(--font-ui); color: #FFFFFF; border-radius: 3px; }
+        .btn { border: none; padding: 6px 15px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-ui); color: #FFFFFF; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; box-shadow: var(--shadow-sm); letter-spacing: 0.3px; }
+        .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); filter: brightness(1.1); }
+        .btn:active { transform: translateY(1px); box-shadow: none; }
         .btn-yardim { background-color: #F59E0B; } .btn-yardim:hover { background-color: #D97706; }
         .btn-ayarlar { background-color: #475569; } .btn-ayarlar:hover { background-color: #64748B; }
         .btn-gece { background-color: #E2E8F0; color: #1E293B; } .btn-gece:hover { background-color: #CBD5E1; }
@@ -35,7 +42,7 @@
         .btn-temizle { background-color: #E2E8F0; color: #1E293B; padding: 3px 12px; font-size: 10px; }
 
         /* --- TABLO STİLLERİ (TREEVIEW) --- */
-        .tree-card { background-color: var(--bg-card); border: 1px solid var(--border); flex: 1; overflow-y: auto; }
+        .tree-card { background-color: var(--bg-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 8px; flex: 1; overflow-y: auto; box-shadow: var(--shadow-sm); }
         .tr-secili { background-color: var(--tree-sel) !important; color: #FFFFFF !important; }
         .tr-secili td { color: #FFFFFF !important; }
 
@@ -51,13 +58,15 @@
         .context-menu-item { padding: 8px 15px; cursor: pointer; color: var(--fg-main); font-size: 11px; font-weight: bold; }
         .context-menu-item:hover { background-color: var(--border); }
         
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 2000; justify-content: center; align-items: center; }
-        .modal-content { background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; box-shadow: 0 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 2000; justify-content: center; align-items: center; }
+        .modal-content { background-color: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow-lg); display: flex; flex-direction: column; overflow: hidden; transform: scale(0.95); opacity: 0; animation: modalAcilis 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes modalAcilis { to { transform: scale(1); opacity: 1; } }
         
         /* --- YENİ: GÖZ YORMAYAN BÜYÜK FONT VE FERAH SATIR AYARLARI --- */
         table, th, td { font-size: 13px !important; }
-        .btn { font-size: 12px !important; padding: 8px 15px !important; }
-        input, select { font-size: 12px !important; padding: 6px !important; }
+        .btn { font-size: 13px !important; padding: 8px 16px !important; }
+        input, select { font-size: 13px !important; padding: 8px 10px !important; border-radius: 6px !important; transition: all 0.2s ease; font-family: var(--font-ui); }
+        input:focus, select:focus { outline: none; border-color: var(--tree-sel) !important; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important; }
         .arama-label, .arama-entry, .arama-combo { font-size: 12px !important; }
              
         #tree_govde tr:hover { background-color: var(--border); }
@@ -208,10 +217,83 @@
         .icon-btn { background: transparent; border: none; font-size: 14px; cursor: pointer; padding: 4px; border-radius: 4px; transition: 0.2s; }
         .icon-btn:hover { background: rgba(255,255,255,0.1); }
 
-/* YENI AYARLAR KARTLARI (MODERN UI) */
-.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-.settings-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.settings-card-header { padding: 15px 20px; border-bottom: 1px solid var(--border); font-weight: bold; color: var(--tree-sel); display: flex; align-items: center; gap: 10px; }
-.settings-card-body { padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 15px; }
-.settings-label { font-size: 12px; font-weight: bold; color: var(--fg-main); width: 140px; flex-shrink: 0; }
+/* YENI AYARLAR SAYFASI (LIST-VIEW MODERN UI) */
+.settings-container-scroll { padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; }
+.settings-main-wrapper { max-width: 850px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+.settings-section { display: flex; flex-direction: column; gap: 12px; }
+.settings-section-title { font-size: 14px; font-weight: 700; color: var(--fg-sub); margin: 0; padding-left: 5px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.settings-list-card { background: var(--bg-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+.settings-list-item { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,0.05); gap: 20px; transition: background-color 0.2s; }
+.settings-list-item:hover { background: rgba(255,255,255,0.02); }
+.settings-list-item:last-child { border-bottom: none; }
+.settings-item-info { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 250px; }
+.settings-item-name { font-size: 14px; font-weight: 600; color: var(--fg-main); }
+.settings-item-desc { font-size: 12px; color: var(--fg-sub); line-height: 1.4; }
+.settings-item-action { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.settings-item-action input:not([type="file"]):not([type="checkbox"]), .settings-item-action select { min-width: 200px; padding: 8px 12px; }
+
+/* Dosya seçici aksiyonları için */
+.file-action { background: rgba(0,0,0,0.15); border: 1px dashed var(--border); padding: 6px 12px; border-radius: 6px; }
+.file-name { font-size: 11px; color: var(--fg-sub); max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: inline-block; }
+
+/* Çok uzun yollar için (Yedekleme Yolu, PDF Yolu) alt alta hizalama */
+.settings-list-item.vertical-action { flex-direction: column; align-items: flex-start; gap: 12px; }
+.settings-list-item.vertical-action .settings-item-action { width: 100%; }
+.settings-list-item.vertical-action input { width: 100%; }
+
+/* Dar Ekran Duyarlılığı (Responsive) */
+@media (max-width: 650px) {
+    .settings-list-item { flex-direction: column; align-items: flex-start; gap: 12px; padding: 15px; }
+    .settings-item-action { width: 100%; justify-content: flex-start; flex-wrap: wrap; }
+    .settings-item-action input, .settings-item-action select { width: 100%; min-width: unset; }
+}
+
+/* İhale Komisyon Özel Tasarımları */
+.komisyon-karti {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+.komisyon-karti:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 12px rgba(0,0,0,0.15);
+}
+.komisyon-select {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--bg-input, var(--bg-main));
+    color: var(--fg-main);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+}
+.komisyon-select:hover {
+    border-color: var(--tree-sel);
+    background-color: var(--bg-hover);
+}
+.komisyon-select:focus {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.personel-havuz-satir {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--fg-main);
+    font-size: 13px;
+}
+.personel-havuz-satir:hover {
+    background-color: var(--tree-sel);
+    color: white;
+    transform: translateX(4px);
+}

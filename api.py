@@ -1,11 +1,12 @@
 # ================= api.py (FULL BACKEND) =================
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from veritabani import VeritabaniYoneticisi
 from sistem_motoru import SistemMotoru
 from excel_motoru import ExcelMotoru
 from pdf_motoru import PDFYoneticisi
 from araclar import VeriAraclari
+import ihale_motoru
 import shutil
 import os
 import json
@@ -19,6 +20,8 @@ import time
 import platform
 import subprocess
 import logging
+from pydantic import BaseModel
+from typing import List, Optional, Any, Dict
 
 logging.basicConfig(filename='app.log', level=logging.ERROR, 
                     format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s')
@@ -51,7 +54,64 @@ db = VeritabaniYoneticisi(yollar["DB"])
 ayarlar = SistemMotoru.ayarlari_yukle(yollar["AYARLAR"])
 
 
+# =====================================================================
+# PYDANTIC MODELLERİ (VERİ DOĞRULAMA VE GÜVENLİK)
+# =====================================================================
+class DevamsizlikEkleRequest(BaseModel):
+    no: str
+    tarih: str
+    tur: str
+    gun: str
 
+class KayitModel(BaseModel):
+    tarih: Optional[str] = None
+    gun: Optional[str] = None
+    tarih_duzgun: Optional[str] = None
+    gun_str: Optional[str] = None
+    tur: str
+    
+    class Config:
+        extra = "allow"
+
+class PdfVeliFormuRequest(BaseModel):
+    no: str
+    ad: str
+    sube: str
+    kayitlar: List[KayitModel]
+
+class PersonelRequest(BaseModel):
+    ad: str
+    gorev: Optional[str] = "-"
+    brans: Optional[str] = "-"
+    grup: Optional[str] = None
+
+class PersonelModel(BaseModel):
+    ad: str
+    gorev: Optional[str] = "-"
+    brans: Optional[str] = "-"
+    
+class TebligBireyselRequest(BaseModel):
+    kurum: Optional[str] = ""
+    sayi: str
+    konu: str
+    tarih: str
+    eden: PersonelModel
+    edilen: PersonelModel
+    yer: str
+    gecici_pdf_yolu: Optional[str] = None
+
+class TebligTopluRequest(BaseModel):
+    kurum: Optional[str] = ""
+    sayi: str
+    konu: str
+    tarih: str
+    personeller: List[PersonelModel]
+    gecici_pdf_yolu: Optional[str] = None
+
+class RaporAlRequest(BaseModel):
+    tur: str
+    format: str
+    ozel_deger: Optional[str] = None
 from contextlib import contextmanager
 
 @contextmanager
@@ -221,14 +281,14 @@ def devamsizlik_sil(d_id: str):
 
 
 @app.post("/devamsizlik-manuel-ekle")
-def devamsizlik_manuel_ekle(veri: dict):
+def devamsizlik_manuel_ekle(veri: DevamsizlikEkleRequest):
     ogrenciler, devler = db.yukle()
     yeni = {
         "id": str(uuid.uuid4().hex),
-        "no": veri["no"],
-        "tarih": veri["tarih"],
-        "tur": veri["tur"],
-        "gun": veri["gun"],
+        "no": veri.no,
+        "tarih": veri.tarih,
+        "tur": veri.tur,
+        "gun": veri.gun,
         "secili": False
     }
     devler.append(yeni)
@@ -237,29 +297,34 @@ def devamsizlik_manuel_ekle(veri: dict):
 
 
 @app.post("/pdf-veli-formu")
-def pdf_veli_formu_olustur(veri: dict):
+def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: BackgroundTasks):
     ana_klasor, ayar = pdf_klasoru_hazirla()
-    sube_temiz = str(veri['sube']).replace("/", "-").replace("\\", "-").replace(":", "").strip()
+    sube_temiz = str(veri.sube).replace("/", "-").replace("\\", "-").replace(":", "").strip()
     sube_klasoru = os.path.join(ana_klasor, sube_temiz)
     if not os.path.exists(sube_klasoru):
         os.makedirs(sube_klasoru)
 
-    kayit_yeri = os.path.join(sube_klasoru, f"{veri['no']}_{veri['ad'].replace(' ', '_')}.pdf")
+    kayit_yeri = os.path.join(sube_klasoru, f"{veri.no}_{veri.ad.replace(' ', '_')}.pdf")
     try:
         # Ön yüzden gelen kayıtlarda ham 'tarih'/'gun' alanları var; PDF motoru
         # düzgün biçimlendirilmiş 'tarih_duzgun'/'gun_str' bekliyor. Burada dönüştürüyoruz.
         kayitlar_islenmis = []
-        for k in veri['kayitlar']:
-            k2 = dict(k)
-            k2['tarih_duzgun'] = k.get('tarih_duzgun') or VeriAraclari.tarih_formatla(k.get('tarih', ''))
-            k2['gun_str'] = k.get('gun_str') or VeriAraclari.temiz_sure(k.get('gun', ''))
+        for k in veri.kayitlar:
+            k2 = k.model_dump()
+            k2['tarih_duzgun'] = k.tarih_duzgun or VeriAraclari.tarih_formatla(k.tarih or '')
+            k2['gun_str'] = k.gun_str or VeriAraclari.temiz_sure(k.gun or '')
             kayitlar_islenmis.append(k2)
 
-        motor = PDFYoneticisi(ayar)
-        motor.veli_formu_ciz(veri['no'], veri['ad'], veri['sube'], kayitlar_islenmis, kayit_yeri)
-        
-        dosyayi_otomatik_ac(kayit_yeri) # OTOMATİK AÇMA EKLENDİ
-        return {"basarili": True, "mesaj": f"PDF Başarıyla Oluşturuldu!\nKonum: {kayit_yeri}", "yol": kayit_yeri}
+        def gorev_pdf_olustur():
+            try:
+                motor = PDFYoneticisi(ayar)
+                motor.veli_formu_ciz(veri.no, veri.ad, veri.sube, kayitlar_islenmis, kayit_yeri)
+                dosyayi_otomatik_ac(kayit_yeri)
+            except Exception as e:
+                logging.error(f"Veli formu cizim hatasi: {e}")
+
+        background_tasks.add_task(gorev_pdf_olustur)
+        return {"basarili": True, "mesaj": f"PDF işlemi arka plana alındı. Hazırlandığında otomatik açılacaktır.", "yol": kayit_yeri}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
@@ -340,13 +405,13 @@ async def personel_excel_yukle(dosya: UploadFile = File(...)):
 
 
 @app.post("/personel-ekle")
-def personel_ekle(veri: dict):
-    ad = str(veri.get("ad", "")).strip().upper()
+def personel_ekle(veri: PersonelRequest):
+    ad = str(veri.ad).strip().upper()
     if not ad:
         return {"basarili": False, "mesaj": "Ad Soyad boş bırakılamaz!"}
-    gorev = str(veri.get("gorev", "")).strip().upper() or "-"
-    brans = str(veri.get("brans", "")).strip().upper() or "-"
-    grup = veri.get("grup") or _personel_grup_tahmin_et(gorev)
+    gorev = str(veri.gorev).strip().upper() or "-"
+    brans = str(veri.brans).strip().upper() or "-"
+    grup = veri.grup or _personel_grup_tahmin_et(gorev)
 
     db.cursor.execute("PRAGMA table_info(personel)")
     if 'grup' not in [col[1] for col in db.cursor.fetchall()]:
@@ -355,6 +420,7 @@ def personel_ekle(veri: dict):
     db.cursor.execute("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", (ad, brans, gorev, grup))
     db.conn.commit()
     return {"basarili": True, "mesaj": f"{ad} eklendi."}
+
 
 
 @app.delete("/personel-sil/{ad}")
@@ -366,13 +432,13 @@ def personel_sil(ad: str):
     return {"basarili": True, "mesaj": f"{ad} silindi."}
 
 @app.put("/personel-guncelle/{eski_ad}")
-def personel_guncelle(eski_ad: str, veri: dict):
-    yeni_ad = str(veri.get("ad", "")).strip().upper()
+def personel_guncelle(eski_ad: str, veri: PersonelRequest):
+    yeni_ad = str(veri.ad).strip().upper()
     if not yeni_ad:
         return {"basarili": False, "mesaj": "Ad Soyad boş bırakılamaz!"}
-    gorev = str(veri.get("gorev", "")).strip().upper() or "-"
-    brans = str(veri.get("brans", "")).strip().upper() or "-"
-    grup = veri.get("grup") or _personel_grup_tahmin_et(gorev)
+    gorev = str(veri.gorev).strip().upper() or "-"
+    brans = str(veri.brans).strip().upper() or "-"
+    grup = veri.grup or _personel_grup_tahmin_et(gorev)
 
     db.cursor.execute("UPDATE personel SET ad_soyad=?, brans=?, gorev=?, grup=? WHERE ad_soyad=?", (yeni_ad, brans, gorev, grup, eski_ad))
     db.conn.commit()
@@ -474,37 +540,48 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
         return {"basarili": False, "mesaj": str(e)}
 
 @app.post("/teblig-bireysel-pdf")
-def teblig_bireysel_pdf(veri: dict):
+def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: BackgroundTasks):
     ana_klasor, ayar = pdf_klasoru_hazirla()
-    yol = os.path.join(ana_klasor, f"Bireysel_Teblig_{veri['edilen']['ad'].replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
+    yol = os.path.join(ana_klasor, f"Bireysel_Teblig_{veri.edilen.ad.replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
     try:
-        motor = PDFYoneticisi(ayar)
-        yuklenen_pdf = veri.get("gecici_pdf_yolu")
-        motor.bireysel_teblig_ciz(veri.get('kurum', ''), veri['sayi'], veri['konu'], veri['tarih'], veri['eden'], veri['edilen'], veri['yer'], yol, yuklenen_pdf)
+        yuklenen_pdf = veri.gecici_pdf_yolu
         
-        dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
-        return {"basarili": True, "mesaj": f"PDF Oluşturuldu:\n{yol}", "yol": yol}
+        def gorev_bireysel_teblig():
+            try:
+                motor = PDFYoneticisi(ayar)
+                motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, yol, yuklenen_pdf)
+                dosyayi_otomatik_ac(yol)
+            except Exception as e:
+                logging.error(f"Bireysel teblig cizim hatasi: {e}")
+
+        background_tasks.add_task(gorev_bireysel_teblig)
+        return {"basarili": True, "mesaj": f"Tebliğ PDF işlemi arka plana alındı, açılacaktır.", "yol": yol}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
 
 @app.post("/teblig-toplu-pdf")
-def teblig_toplu_pdf(veri: dict):
+def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks):
     ana_klasor, ayar = pdf_klasoru_hazirla()
     yol = os.path.join(ana_klasor, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")
     try:
-        motor = PDFYoneticisi(ayar)
-        # HTML'den gelen yeni veriler arka planda karşılanıyor
-        kurum = veri.get('kurum', '')
-        yuklenen_pdf = veri.get('gecici_pdf_yolu', '')
+        kurum = veri.kurum
+        yuklenen_pdf = veri.gecici_pdf_yolu
+        personeller_dict = [p.model_dump() for p in veri.personeller]
         
-        motor.teblig_tebellug_ciz(veri['sayi'], veri['konu'], veri['tarih'], veri['personeller'], yol, kurum, yuklenen_pdf)
-        
-        dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
-            
-        return {"basarili": True, "mesaj": f"Toplu Liste Oluşturuldu:\n{yol}", "yol": yol}
+        def gorev_toplu_teblig():
+            try:
+                motor = PDFYoneticisi(ayar)
+                motor.teblig_tebellug_ciz(veri.sayi, veri.konu, veri.tarih, personeller_dict, yol, kurum, yuklenen_pdf)
+                dosyayi_otomatik_ac(yol)
+            except Exception as e:
+                logging.error(f"Toplu teblig cizim hatasi: {e}")
+
+        background_tasks.add_task(gorev_toplu_teblig)
+        return {"basarili": True, "mesaj": f"Toplu Liste işlemi arka plana alındı, açılacaktır.", "yol": yol}
     except Exception as e:
         return {"basarili": False, "mesaj": f"PDF Hatası: {str(e)}"}
+
 
 
 # =====================================================================
@@ -577,7 +654,7 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
 
 
 @app.get("/rapor-esik-siniflar/{format_tipi}")
-def rapor_esik_siniflar(format_tipi: str):
+def rapor_esik_siniflar(format_tipi: str, background_tasks: BackgroundTasks):
     try:
         # Tüm öğrencileri al
         db.cursor.execute("SELECT no, ad_soyad, sube FROM ogrenciler")
@@ -604,8 +681,6 @@ def rapor_esik_siniflar(format_tipi: str):
             except:
                 gun_mik = 0.0
             
-            # Not: Hafta sonu detayı tam hesaplanamıyor (tarih eksik), fakat kabaca "gun" sayısını topluyoruz.
-            # "özürlü ve özürsüz devamsızlık toplamlarına göre" dediği için direkt gunMiktari topluyoruz.
             if no in dev_toplamlari:
                 dev_toplamlari[no] += gun_mik
                 
@@ -617,7 +692,7 @@ def rapor_esik_siniflar(format_tipi: str):
             toplam = dev_toplamlari[no]
             
             if toplam < 5:
-                continue # 5 günden az olanlar rapora dahil değil
+                continue 
                 
             if sube not in sinif_verileri:
                 sinif_verileri[sube] = {'5-14': 0, '15-24': 0, '25-39': 0, '40+': 0}
@@ -631,7 +706,6 @@ def rapor_esik_siniflar(format_tipi: str):
             elif toplam >= 40:
                 sinif_verileri[sube]['40+'] += 1
 
-        # Sınıfları alfabetik/Sayısal sırala
         def sinif_sirala(sube_adi):
             import re
             m = re.match(r'(\d+)', sube_adi)
@@ -640,7 +714,6 @@ def rapor_esik_siniflar(format_tipi: str):
             
         sirali_subeler = sorted(sinif_verileri.keys(), key=sinif_sirala)
         
-        # Sonuç dizisini oluştur (Ara toplamlar ile birlikte)
         import re
         veri_listesi = []
         
@@ -652,7 +725,6 @@ def rapor_esik_siniflar(format_tipi: str):
             m = re.match(r'(\d+)', sube)
             kademe = int(m.group(1)) if m else 99
             
-            # Eğer kademe değiştiyse ve mevcut kademe varsa, ara toplam satırı ekle
             if mevcut_kademe is not None and kademe != mevcut_kademe:
                 veri_listesi.append([f"{mevcut_kademe}. Sınıflar Toplamı", kademe_toplamlari[0], kademe_toplamlari[1], kademe_toplamlari[2], kademe_toplamlari[3]])
                 kademe_toplamlari = [0, 0, 0, 0]
@@ -671,11 +743,9 @@ def rapor_esik_siniflar(format_tipi: str):
             genel_toplamlar[2] += v['25-39']
             genel_toplamlar[3] += v['40+']
 
-        # Son kademenin ara toplamını ekle
         if mevcut_kademe is not None:
             veri_listesi.append([f"{mevcut_kademe}. Sınıflar Toplamı", kademe_toplamlari[0], kademe_toplamlari[1], kademe_toplamlari[2], kademe_toplamlari[3]])
             
-        # Genel toplamı ekle
         veri_listesi.append(["GENEL TOPLAM", genel_toplamlar[0], genel_toplamlar[1], genel_toplamlar[2], genel_toplamlar[3]])
 
         if not veri_listesi:
@@ -690,29 +760,32 @@ def rapor_esik_siniflar(format_tipi: str):
         dosya_adi_temiz = "Sinif_Bazli_Esik_Raporu"
         bugun_str = datetime.now().strftime("%d_%m_%Y_%H%M")
         otomatik_isim = f"{dosya_adi_temiz}_{bugun_str}"
-        yol = ""
+        
+        def gorev_esik_raporu():
+            try:
+                if format_tipi == "excel":
+                    yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.xlsx")
+                    motor = ExcelMotoru()
+                    motor.esik_raporu_excel_ciz(veri_listesi, yol)
+                else:
+                    yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
+                    motor = PDFYoneticisi(ayar)
+                    motor.esik_raporu_pdf_ciz(veri_listesi, yol)
+                dosyayi_otomatik_ac(yol)
+            except Exception as e:
+                logging.error(f"Esik raporu cizim hatasi: {e}")
 
-        if format_tipi == "excel":
-            yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.xlsx")
-            motor = ExcelMotoru()
-            # We will add esik_raporu_excel_ciz to excel_motoru.py
-            motor.esik_raporu_excel_ciz(veri_listesi, yol)
-        else:
-            yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
-            motor = PDFYoneticisi(ayar)
-            motor.esik_raporu_pdf_ciz(veri_listesi, yol)
-
-        dosyayi_otomatik_ac(yol)
-        return {"basarili": True, "mesaj": f"Rapor başarıyla oluşturuldu:\n{yol}", "yol": yol}
+        background_tasks.add_task(gorev_esik_raporu)
+        return {"basarili": True, "mesaj": f"Rapor arka planda oluşturuluyor...", "yol": "Raporlar"}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
 
 @app.post("/rapor-al")
-def rapor_al(veri: dict):
-    tur = veri.get("tur")
-    format_tipi = veri.get("format")  # "excel" | "pdf"
-    ozel_deger = veri.get("ozel_deger")
+def rapor_al(veri: RaporAlRequest, background_tasks: BackgroundTasks):
+    tur = veri.tur
+    format_tipi = veri.format  # "excel" | "pdf"
+    ozel_deger = veri.ozel_deger
 
     basliklar = {
         "ozursuz": "Özürsüz Devamsızlık Sınırını Aşan Öğrenciler (10+ Gün)",
@@ -744,17 +817,23 @@ def rapor_al(veri: dict):
     otomatik_isim = f"{dosya_adi_temiz}_{bugun_str}"
 
     try:
-        if format_tipi == "excel":
-            yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.xlsx")
-            df = pd.DataFrame(veri_listesi, columns=excel_kolonlar)
-            df.to_excel(yol, index=False)
-        else:
-                yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
-                motor = PDFYoneticisi(ayar)
-                motor.rapor_ciz(baslik, kolon4_adi, veri_listesi, yol)
-                
-        dosyayi_otomatik_ac(yol) # OTOMATİK AÇMA EKLENDİ
-        return {"basarili": True, "mesaj": f"Rapor başarıyla oluşturuldu:\n{yol}", "yol": yol, "adet": len(veri_listesi)}
+        def gorev_rapor():
+            try:
+                if format_tipi == "excel":
+                    yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.xlsx")
+                    df = pd.DataFrame(veri_listesi, columns=excel_kolonlar)
+                    df.to_excel(yol, index=False)
+                else:
+                    yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
+                    motor = PDFYoneticisi(ayar)
+                    motor.rapor_ciz(baslik, kolon4_adi, veri_listesi, yol)
+                        
+                dosyayi_otomatik_ac(yol)
+            except Exception as e:
+                logging.error(f"Rapor cizim hatasi: {e}")
+
+        background_tasks.add_task(gorev_rapor)
+        return {"basarili": True, "mesaj": f"Rapor arka planda oluşturuluyor...", "yol": "Raporlar", "adet": len(veri_listesi)}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
@@ -831,3 +910,58 @@ def yedek_geri_yukle(veri: dict):
 def veritabani_sifirla():
     db.sifirla()
     return {"basarili": True, "mesaj": "Tüm öğrenci, devamsızlık ve personel kayıtları SIFIRLANDI!"}
+
+@app.post("/ihale-excel-oku")
+async def ihale_excel_oku(dosya: UploadFile = File(...)):
+    try:
+        temp_path = os.path.join(yollar["TEMP"], f"ihale_{uuid.uuid4().hex}.xls")
+        with open(temp_path, "wb") as f:
+            shutil.copyfileobj(dosya.file, f)
+        
+        xl = pd.ExcelFile(temp_path)
+        sheet_name = xl.sheet_names[1] if len(xl.sheet_names) > 1 else xl.sheet_names[0]
+        
+        df = xl.parse(sheet_name)
+        df.dropna(how='all', inplace=True)
+        df.dropna(axis=1, how='all', inplace=True)
+        
+        kalemler = []
+        sira = 1
+        for idx, row in df.iterrows():
+            try:
+                cins = str(row.iloc[1]).strip()
+                if cins and cins.lower() not in ['nan', 'c i̇ n s i̇', 'c i n s i', 'none', 'satın alinacak malin']:
+                    miktar = row.iloc[2]
+                    birim = row.iloc[3]
+                    f1 = row.iloc[4]
+                    f2 = row.iloc[5]
+                    f3 = row.iloc[6]
+                    if pd.notna(miktar) and str(miktar).replace('.','',1).replace(',','',1).isdigit():
+                        kalemler.append({
+                            "sira": sira,
+                            "cins": cins,
+                            "miktar": float(miktar) if pd.notna(miktar) else 1,
+                            "birim": str(birim) if pd.notna(birim) else "Adet",
+                            "f1": float(f1) if pd.notna(f1) else 0.0,
+                            "f2": float(f2) if pd.notna(f2) else 0.0,
+                            "f3": float(f3) if pd.notna(f3) else 0.0,
+                        })
+                        sira += 1
+            except:
+                pass
+                
+        return {"basarili": True, "kalemler": kalemler}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+@app.post("/ihale-uret")
+def ihale_uret(veri: dict, background_tasks: BackgroundTasks):
+    ayar = ayarlari_al()
+    pdf_yol = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
+    try:
+        klasor = ihale_motoru.tum_evraklari_uret(veri, pdf_yol)
+        if platform.system() == "Windows":
+            os.startfile(klasor)
+        return {"basarili": True, "mesaj": "İhale evrakları başarıyla üretildi!", "klasor": klasor}
+    except Exception as e:
+        return {"basarili": False, "mesaj": f"Hata: {e}"}

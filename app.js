@@ -9,21 +9,29 @@
 
 const API = 'http://127.0.0.1:8000';
 
-        // --- BİLDİRİM (TOAST) SİSTEMİ ---
+        // --- BİLDİRİM (TOAST) SİSTEMİ (TOASTIFY ENTEGRASYONU) ---
         function bildirimGoster(mesaj, tur) {
             if(!mesaj) return;
             if(!tur) tur = 'bilgi';
-            const kutu = document.getElementById('toast_container');
-            if(!kutu) { console.log(mesaj); return; }
-            const toast = document.createElement('div');
-            toast.className = `toast ${tur}`;
-            toast.innerText = mesaj;
-            kutu.appendChild(toast);
-            requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('goster')));
-            setTimeout(() => {
-                toast.classList.remove('goster');
-                setTimeout(() => toast.remove(), 300);
-            }, 4000);
+            
+            // Hata ise kırmızı, bilgi ise yeşil tonları
+            const bgColor = tur === 'hata' ? 'linear-gradient(to right, #EF4444, #DC2626)' : 'linear-gradient(to right, #10B981, #059669)';
+            
+            Toastify({
+                text: mesaj,
+                duration: 4000,
+                gravity: "top", 
+                position: "center", 
+                stopOnFocus: true, 
+                style: {
+                    background: bgColor,
+                    borderRadius: "8px",
+                    fontWeight: "600",
+                    fontFamily: "'Inter', sans-serif",
+                    boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
+                    padding: "12px 24px"
+                }
+            }).showToast();
         }
 
         // --- YÜKLENİYOR GÖSTERGESİ ---
@@ -1528,3 +1536,283 @@ const API = 'http://127.0.0.1:8000';
                 lucide.createIcons();
             }
         };
+
+// ==========================================
+// İHALE MODÜLÜ (22/d) FONKSİYONLARI
+// ==========================================
+
+let ihaleKalemleri = [];
+
+function ihaleTablosunuCiz() {
+    const govde = document.getElementById("ihale_kalemleri_govde");
+    if (ihaleKalemleri.length === 0) {
+        govde.innerHTML = '<tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--fg-sub);">Excel şablonunu yüklediğinizde kalemler burada listelenecektir.</td></tr>';
+        return;
+    }
+
+    let html = "";
+    ihaleKalemleri.forEach((k, idx) => {
+        html += `
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 10px; text-align:center;">${k.sira}</td>
+                <td style="padding: 10px;">${k.cins}</td>
+                <td style="padding: 10px; text-align:center;">${k.miktar}</td>
+                <td style="padding: 10px; text-align:center;">${k.birim}</td>
+                <td style="padding: 10px; text-align:right;">${k.f1.toFixed(2)} ₺</td>
+                <td style="padding: 10px; text-align:right;">${k.f2.toFixed(2)} ₺</td>
+                <td style="padding: 10px; text-align:right;">${k.f3.toFixed(2)} ₺</td>
+            </tr>
+        `;
+    });
+    govde.innerHTML = html;
+}
+
+async function ihaleExcelYukle(event) {
+    const dosya = event.target.files[0];
+    if (!dosya) return;
+    
+    yuklemeGoster("İhale Exceli Okunuyor...");
+    const formData = new FormData();
+    formData.append("dosya", dosya);
+
+    try {
+        const res = await fetch("http://localhost:8000/ihale-excel-oku", {
+            method: "POST",
+            body: formData
+        });
+        const sonuc = await res.json();
+        
+        if (sonuc.basarili) {
+            ihaleKalemleri = sonuc.kalemler;
+            ihaleTablosunuCiz();
+            bildirimGoster("Excel başarıyla okundu. " + ihaleKalemleri.length + " kalem bulundu.", "basarili");
+        } else {
+            bildirimGoster("Hata: " + sonuc.mesaj, "hata");
+        }
+    } catch (e) {
+        bildirimGoster("Sunucuya bağlanılamadı.", "hata");
+    } finally {
+        yuklemeGizle();
+        event.target.value = "";
+    }
+}
+
+async function ihaleEvraklariniUret() {
+    const konu = document.getElementById("ihale_konusu").value;
+    const tarih = document.getElementById("ihale_tarihi").value;
+    const firma1 = document.getElementById("ihale_firma1").value;
+    const firma2 = document.getElementById("ihale_firma2").value;
+    const firma3 = document.getElementById("ihale_firma3").value;
+
+    if (ihaleKalemleri.length === 0) {
+        bildirimGoster("Lütfen önce Excel yükleyin.", "uyari");
+        return;
+    }
+    if (!konu || !firma1 || !firma2 || !firma3) {
+        bildirimGoster("Lütfen ihale konusu ve 3 firma adını girin.", "uyari");
+        return;
+    }
+
+    const secim_ids = [
+        "ihale_kom_yaklasik_1", "ihale_kom_yaklasik_2", "ihale_kom_yaklasik_3",
+        "ihale_kom_piyasa_1", "ihale_kom_piyasa_2", "ihale_kom_piyasa_3",
+        "ihale_kom_muayene_1", "ihale_kom_muayene_2", "ihale_kom_muayene_3"
+    ];
+    let komisyon_eksik = false;
+    let komisyonVerisi = {};
+    secim_ids.forEach(id => {
+        if (!ihaleKomisyonSecimleri[id]) komisyon_eksik = true;
+        komisyonVerisi[id] = ihaleKomisyonSecimleri[id];
+    });
+
+    if (komisyon_eksik) {
+        ihaleKomisyonHataModu = true;
+        bildirimGoster("Lütfen 'Görevli Kişiler' butonuna basarak eksik komisyon üyelerini seçin! (Eksik olanlar kırmızı işaretlendi)", "hata");
+        return;
+    }
+    
+    ihaleKomisyonHataModu = false;
+
+    const veri = {
+        ihale_konusu: konu,
+        tarih: tarih,
+        firmalar: [firma1, firma2, firma3],
+        kalemler: ihaleKalemleri,
+        komisyon: komisyonVerisi
+    };
+
+    yuklemeGoster("İhale Evrakları (PDF) Üretiliyor...");
+
+    try {
+        const res = await fetch("http://localhost:8000/ihale-uret", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(veri)
+        });
+        const sonuc = await res.json();
+        
+        if (sonuc.basarili) {
+            bildirimGoster("Evraklar başarıyla üretildi!", "basarili");
+        } else {
+            bildirimGoster("Hata: " + sonuc.mesaj, "hata");
+        }
+    } catch (e) {
+        bildirimGoster("Sunucuya bağlanılamadı.", "hata");
+    } finally {
+        yuklemeGizle();
+    }
+}
+
+let ihaleKomisyonSecimleri = {};
+let ihaleKomisyonHataModu = false;
+
+async function ihaleKomisyonModalAc() {
+    yuklemeGoster("Personel listesi alınıyor...");
+    try {
+        if (typeof tumPersoneller === 'undefined' || tumPersoneller.length === 0) {
+            const res = await fetch("http://localhost:8000/personeller");
+            const responseData = await res.json();
+            window.tumPersoneller = responseData.personeller || [];
+        }
+        
+        const gorevIds = [
+            "ihale_kom_yaklasik_1", "ihale_kom_yaklasik_2", "ihale_kom_yaklasik_3",
+            "ihale_kom_piyasa_1", "ihale_kom_piyasa_2", "ihale_kom_piyasa_3",
+            "ihale_kom_muayene_1", "ihale_kom_muayene_2", "ihale_kom_muayene_3"
+        ];
+        
+        gorevIds.forEach(id => {
+            const spanEl = document.getElementById("text_" + id);
+            const btnSec = document.getElementById("btn_sec_" + id);
+            const btnSil = document.getElementById("btn_sil_" + id);
+            if (spanEl) {
+                if (ihaleKomisyonSecimleri[id]) {
+                    spanEl.innerText = ihaleKomisyonSecimleri[id];
+                    spanEl.style.fontWeight = "bold";
+                    spanEl.style.color = "var(--fg-main)";
+                    spanEl.style.fontStyle = "normal";
+                    if(btnSec) btnSec.style.display = "none";
+                    if(btnSil) btnSil.style.display = "inline-block";
+                    spanEl.parentElement.style.backgroundColor = "transparent";
+                } else {
+                    spanEl.innerText = "Seçilmedi";
+                    spanEl.style.fontWeight = "normal";
+                    spanEl.style.color = "var(--fg-sub)";
+                    spanEl.style.fontStyle = "italic";
+                    if(btnSec) btnSec.style.display = "inline-block";
+                    if(btnSil) btnSil.style.display = "none";
+                    
+                    if (ihaleKomisyonHataModu) {
+                        spanEl.parentElement.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
+                    } else {
+                        spanEl.parentElement.style.backgroundColor = "transparent";
+                    }
+                }
+            }
+        });
+        
+        document.getElementById("ihale_komisyon_modal").style.display = "flex";
+    } catch (e) {
+        console.error("Modal açılamadı: ", e);
+        bildirimGoster("Hata: " + e.message, "hata");
+    } finally {
+        yuklemeGizle();
+    }
+}
+
+
+
+function ihaleKomisyonKaydet() {
+    // ihaleKomisyonSecimleri is already updated dynamically by personelAta and personelSil
+    
+    // Eğer tüm personeller tamamsa hata modunu kapat
+    const gorevIds = [
+        "ihale_kom_yaklasik_1", "ihale_kom_yaklasik_2", "ihale_kom_yaklasik_3",
+        "ihale_kom_piyasa_1", "ihale_kom_piyasa_2", "ihale_kom_piyasa_3",
+        "ihale_kom_muayene_1", "ihale_kom_muayene_2", "ihale_kom_muayene_3"
+    ];
+    let hepsiTamam = true;
+    gorevIds.forEach(id => {
+        if (!ihaleKomisyonSecimleri[id]) hepsiTamam = false;
+    });
+    if (hepsiTamam) ihaleKomisyonHataModu = false;
+    
+    bildirimGoster("Komisyon üyeleri başarıyla kaydedildi.", "bilgi");
+    modalKapat("ihale_komisyon_modal");
+}
+
+let secimIcinGorevId = null;
+
+function personelSecimEkraniAc(gorevId) {
+    secimIcinGorevId = gorevId;
+    document.getElementById("personel_arama_input").value = "";
+    personelHavuzunuCiz(window.tumPersoneller);
+    document.getElementById("personel_havuz_modal").style.display = "flex";
+    document.getElementById("personel_arama_input").focus();
+}
+
+function personelHavuzunuCiz(liste) {
+    const div = document.getElementById("personel_havuz_liste");
+    if (!liste || liste.length === 0) {
+        div.innerHTML = "<div style='padding:10px; color:var(--fg-sub); text-align:center;'>Personel bulunamadı.</div>";
+        return;
+    }
+    
+    let html = "";
+    liste.forEach(p => {
+        let adEscaped = p.ad.replace(/'/g, "\\'");
+        let zatenSeciliMi = Object.values(ihaleKomisyonSecimleri).includes(p.ad);
+        let extraInfo = zatenSeciliMi ? "<span style='font-size:11px; color:#F59E0B;'>(Görevli)</span>" : "";
+        
+        html += "<div class='personel-havuz-satir' onclick='personelAta(\"" + adEscaped + "\")'>" +
+            "<span style='font-weight:600;'>" + p.ad + "</span>" +
+            extraInfo +
+        "</div>";
+    });
+    div.innerHTML = html;
+}
+
+function personelAra() {
+    const aranan = document.getElementById("personel_arama_input").value.toLocaleLowerCase('tr-TR');
+    const filtrelenmis = window.tumPersoneller.filter(p => p.ad.toLocaleLowerCase('tr-TR').includes(aranan));
+    personelHavuzunuCiz(filtrelenmis);
+}
+
+function personelAta(ad) {
+    if (!secimIcinGorevId) return;
+    
+    ihaleKomisyonSecimleri[secimIcinGorevId] = ad;
+    
+    const spanEl = document.getElementById("text_" + secimIcinGorevId);
+    const btnSec = document.getElementById("btn_sec_" + secimIcinGorevId);
+    const btnSil = document.getElementById("btn_sil_" + secimIcinGorevId);
+    
+    if (spanEl) {
+        spanEl.innerText = ad;
+        spanEl.style.fontWeight = "bold";
+        spanEl.style.color = "var(--fg-main)";
+        spanEl.style.fontStyle = "normal";
+        spanEl.parentElement.style.backgroundColor = "transparent";
+    }
+    if (btnSec) btnSec.style.display = "none";
+    if (btnSil) btnSil.style.display = "inline-block";
+    
+    modalKapat("personel_havuz_modal");
+}
+
+function personelSil(gorevId) {
+    ihaleKomisyonSecimleri[gorevId] = "";
+    
+    const spanEl = document.getElementById("text_" + gorevId);
+    const btnSec = document.getElementById("btn_sec_" + gorevId);
+    const btnSil = document.getElementById("btn_sil_" + gorevId);
+    
+    if (spanEl) {
+        spanEl.innerText = "Seçilmedi";
+        spanEl.style.fontWeight = "normal";
+        spanEl.style.color = "var(--fg-sub)";
+        spanEl.style.fontStyle = "italic";
+    }
+    if (btnSec) btnSec.style.display = "inline-block";
+    if (btnSil) btnSil.style.display = "none";
+}

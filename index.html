@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Öğrenci Devamsızlık Sistemi - Premium Yönetim Paneli</title>
-    <link rel="stylesheet" href="style.css">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Toastify CSS & JS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    
+    <link rel="stylesheet" href="style.css?v=3">
     <script src="lucide.min.js"></script>
 </head>
 <body>
@@ -268,6 +278,7 @@
             <div class="notebook-header" style="display: flex; align-items: center;">
         <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')"><i data-lucide="file-text" width="16" height="16"></i> İzin Dilekçesi</button>
         <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')"><i data-lucide="pen-tool" width="16" height="16"></i> Yazı Tebliği</button>
+        <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ihale')"><i data-lucide="briefcase" width="16" height="16"></i> İhale Yönetimi</button>
         <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')"><i data-lucide="settings" width="16" height="16"></i> Ayarlar ve Yedekleme</button>
         <button class="tab-btn" onclick="sekmeAc(event, 'sekme_yardim')"><i data-lucide="lightbulb" width="16" height="16"></i> Yardım</button>
         <div style="flex: 1; border-bottom: 1px solid var(--border); height: 100%;"></div>
@@ -498,130 +509,255 @@
         </div>
     </div>
 
+    <div id="sekme_ihale" class="tab-content">
+        <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
+            <h2 class="top-bar-title" style="display:flex; align-items:center; gap:10px; margin:0;"><i data-lucide="briefcase" width="20" height="20"></i> İhale Yönetimi (22/d Doğrudan Temin)</h2>
+            <button class="btn btn-dev" style="margin-right:20px; padding: 6px 15px;" onclick="ihaleKomisyonModalAc()"><i data-lucide="users" width="16" height="16"></i> Görevli Kişiler</button>
+        </div>
+        
+        <div style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <!-- TEMEL BİLGİLER -->
+                <div class="settings-card" style="flex: 1; min-width: 300px;">
+                    <div class="settings-card-header"><i data-lucide="info" width="16" height="16"></i> İhale Temel Bilgileri</div>
+                    <div class="settings-card-body">
+                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+                            <span class="settings-label">İhale Konusu / İşin Adı:</span>
+                            <input type="text" id="ihale_konusu" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Örn: 2022 Yılı Kırtasiye Alımı">
+                        </div>
+                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+                            <span class="settings-label">Tarih:</span>
+                            <input type="date" id="ihale_tarihi" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FİRMALAR -->
+                <div class="settings-card" style="flex: 1; min-width: 300px;">
+                    <div class="settings-card-header"><i data-lucide="building" width="16" height="16"></i> Teklif Veren Firmalar</div>
+                    <div class="settings-card-body">
+                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+                            <span class="settings-label">1. Firma (Kazanan Olma İhtimali):</span>
+                            <input type="text" id="ihale_firma1" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Firma A">
+                        </div>
+                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+                            <span class="settings-label">2. Firma:</span>
+                            <input type="text" id="ihale_firma2" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Firma B">
+                        </div>
+                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
+                            <span class="settings-label">3. Firma:</span>
+                            <input type="text" id="ihale_firma3" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Firma C">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EXCEL YÜKLEME KISMI -->
+            <div class="settings-card">
+                <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span><i data-lucide="file-spreadsheet" width="16" height="16"></i> İhtiyaç ve Fiyat Listesi</span>
+                    <div style="display:flex; gap: 10px;">
+                        <input type="file" id="f-ihale-excel" style="display: none;" accept=".xlsx, .xls" onchange="ihaleExcelYukle(event)">
+                        <button class="btn btn-ogr" style="padding: 6px 12px; font-size:12px;" onclick="document.getElementById('f-ihale-excel').click()"><i data-lucide="upload" width="14" height="14"></i> Excel'den Yükle</button>
+                    </div>
+                </div>
+                <div class="settings-card-body" style="padding: 0; overflow-x: auto;">
+                    <table class="veri-tablosu" id="ihale_kalem_tablosu" style="width: 100%; min-width: 800px; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: rgba(0,0,0,0.2);">
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:center; width:40px;">#</th>
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:left;">Mal/Hizmet Cinsi</th>
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:center; width:80px;">Miktar</th>
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:center; width:80px;">Birim</th>
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:right;">1. Firma (₺)</th>
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:right;">2. Firma (₺)</th>
+                                <th style="padding: 10px; border: 1px solid var(--border); text-align:right;">3. Firma (₺)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ihale_kalemleri_govde">
+                            <tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--fg-sub);">Excel şablonunu yüklediğinizde kalemler burada listelenecektir.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ÜRET BUTONU -->
+            <div style="display: flex; margin-top: auto; padding-top: 10px; position: sticky; bottom: 0; background: var(--bg-main); z-index: 10; padding-bottom: 20px;">
+                <button class="btn btn-dev" style="width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.2);" onclick="ihaleEvraklariniUret()"><i data-lucide="file-check-2" width="18" height="18"></i> TÜM İHALE EVRAKLARINI (PDF) ÜRET</button>
+            </div>
+            
+        </div>
+    </div>
+
     <div id="sekme_ayarlar" class="tab-content">
         <div class="top-bar">
             <h2 class="top-bar-title" style="display:flex; align-items:center; gap:10px;"><i data-lucide="settings" width="20" height="20"></i> Sistem Ayarları ve Yönetim</h2>
         </div>
         
-        <div style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
-            <div class="settings-grid">
+        <div class="settings-container-scroll">
+            <div class="settings-main-wrapper">
                 
-                <!-- KURUMSAL KİMLİK KARTI -->
-                <div class="settings-card">
-                    <div class="settings-card-header"><i data-lucide="school" width="16" height="16"></i> Kurumsal Kimlik</div>
-                    <div class="settings-card-body">
-                        <div class="settings-row">
-                            <span class="settings-label">Okul Adı:</span>
-                            <input type="text" id="ayar_okul_adi" style="flex:1; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;">
+                <!-- KURUMSAL KİMLİK -->
+                <div class="settings-section">
+                    <h3 class="settings-section-title"><i data-lucide="school" width="16" height="16"></i> Kurumsal Kimlik</h3>
+                    <div class="settings-list-card">
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Okul Adı</span>
+                                <span class="settings-item-desc">Resmi yazışmalarda ve raporlarda görünecek kurum adı.</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <input type="text" id="ayar_okul_adi" placeholder="Örn: Atatürk İlkokulu">
+                            </div>
                         </div>
-                        <div class="settings-row">
-                            <span class="settings-label">MEB Logosu:</span>
-                            <div style="display: flex; gap: 8px; align-items:center; flex:1; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px;">
-                                <span id="ayar_meb_logo_ad" style="font-size:11px; color: var(--fg-sub); flex:1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 5px;">Yüklenmedi</span>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">MEB Logosu</span>
+                                <span class="settings-item-desc">Raporların sol üstünde yer alan bakanlık logosu.</span>
+                            </div>
+                            <div class="settings-item-action file-action">
+                                <span id="ayar_meb_logo_ad" class="file-name">Yüklenmedi</span>
                                 <input type="file" id="f-meb-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('meb', event)">
-                                <button class="btn btn-temizle" style="padding: 4px 10px; font-size:11px;" onclick="document.getElementById('f-meb-logo').click()">Logo Seç</button>
+                                <button class="btn btn-temizle" onclick="document.getElementById('f-meb-logo').click()">Seç</button>
                             </div>
                         </div>
-                        <div class="settings-row">
-                            <span class="settings-label">Okul Logosu:</span>
-                            <div style="display: flex; gap: 8px; align-items:center; flex:1; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px; padding: 4px;">
-                                <span id="ayar_okul_logo_ad" style="font-size:11px; color: var(--fg-sub); flex:1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 5px;">Yüklenmedi</span>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Okul Logosu</span>
+                                <span class="settings-item-desc">Raporların sağ üstünde yer alan kurum logosu.</span>
+                            </div>
+                            <div class="settings-item-action file-action">
+                                <span id="ayar_okul_logo_ad" class="file-name">Yüklenmedi</span>
                                 <input type="file" id="f-okul-logo" style="display:none;" accept=".png,.jpg,.jpeg" onchange="logoYukle('okul', event)">
-                                <button class="btn btn-temizle" style="padding: 4px 10px; font-size:11px;" onclick="document.getElementById('f-okul-logo').click()">Logo Seç</button>
+                                <button class="btn btn-temizle" onclick="document.getElementById('f-okul-logo').click()">Seç</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- VERİ İÇE AKTARMA KARTI -->
-                <div class="settings-card">
-                    <div class="settings-card-header" style="display:flex; align-items:center; gap:8px;"><i data-lucide="download" width="18" height="18"></i> Veri İçe Aktarma</div>
-                    <div class="settings-card-body" style="justify-content: center; gap: 10px;">
-                        <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
-                        <button class="btn btn-ogr" style="width: 100%; padding: 10px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="document.getElementById('f-ogr').click()"><i data-lucide="graduation-cap" width="16" height="16"></i> Öğrenci Excel Yükle</button>
-                        
-                        <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
-                        <button class="btn btn-ogr" style="width: 100%; padding: 10px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="document.getElementById('f-personel').click()"><i data-lucide="users" width="16" height="16"></i> Personel Excel Yükle</button>
-                        
-                        <button class="btn btn-ayarlar" style="width: 100%; padding: 10px; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="personelYonetimAc()"><i data-lucide="user-cog" width="16" height="16"></i> Personel Ekle/Çıkar</button>
-                        
-                        <div style="border-top: 1px solid var(--border); margin: 5px 0;"></div>
-                        
-                        <button class="btn btn-kirmizi" style="width: 100%; padding: 10px; font-weight: bold; display:flex; align-items:center; justify-content:center; gap:8px;" onclick="veritabaniniSifirla()"><i data-lucide="trash-2" width="16" height="16"></i> Tüm Veritabanını Sıfırla</button>
-                    </div>
-                </div>
-
-                <!-- ÇIKTI VE YEDEKLEME YOLLARI -->
-                <div class="settings-card">
-                    <div class="settings-card-header">📂 Dosya ve Çıktı Konumları</div>
-                    <div class="settings-card-body">
-                        <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 5px;">
-                            <span class="settings-label" style="width: auto;">PDF Çıktı Klasörü:</span>
-                            <input type="text" id="ayar_pdf_yol" style="width:100%; padding: 8px; background: var(--bg-main); color: #3B82F6; border: 1px solid var(--border); border-radius: 4px; font-weight: bold; font-family: monospace; outline:none;">
-                        </div>
-                        <div class="settings-row" style="flex-direction: column; align-items: flex-start; gap: 5px; margin-top: 5px;">
-                            <span class="settings-label" style="width: auto;">Yedekleme Klasörü:</span>
-                            <input type="text" id="ayar_yedek_yol" style="width:100%; padding: 8px; background: var(--bg-main); color: #10B981; border: 1px solid var(--border); border-radius: 4px; font-weight: bold; font-family: monospace; outline:none;">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- YEDEKLEME VE KURTARMA KARTI (BİRLEŞTİRİLMİŞ) -->
-                <div class="settings-card" style="grid-column: 1 / -1; max-width: 600px; margin: 0 auto; width: 100%;">
-                    <div class="settings-card-header" style="display:flex; align-items:center; gap:8px;"><i data-lucide="database-backup" width="18" height="18"></i> Yedekleme ve Kurtarma</div>
-                    <div class="settings-card-body" style="display:flex; flex-direction:column; gap:15px;">
-                        
-                        <!-- Otomatik Yedekleme Ayarları -->
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-                            <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                                <span class="settings-label" style="width:auto;"><i data-lucide="clock" width="14" height="14"></i> Yedekleme Saati:</span>
-                                <input type="time" id="ayar_yedek_saati" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;">
+                <!-- VERİ VE DOSYA YÖNETİMİ -->
+                <div class="settings-section">
+                    <h3 class="settings-section-title"><i data-lucide="database" width="16" height="16"></i> Veri Yönetimi</h3>
+                    <div class="settings-list-card">
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Öğrenci Verilerini İçe Aktar</span>
+                                <span class="settings-item-desc">E-Okul'dan alınan güncel öğrenci listesi (Excel).</span>
                             </div>
-                            <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                                <span class="settings-label" style="width:auto;"><i data-lucide="calendar" width="14" height="14"></i> Yedek Sıklığı:</span>
-                                <select id="ayar_yedek_sikligi" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
+                            <div class="settings-item-action">
+                                <input type="file" id="f-ogr" style="display: none;" accept=".xlsx, .xls, .csv" onchange="dosyaYukle('ogrenci-excel-yukle', event)">
+                                <button class="btn btn-ogr" onclick="document.getElementById('f-ogr').click()"><i data-lucide="upload" width="14" height="14"></i> Yükle</button>
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Personel Verilerini İçe Aktar</span>
+                                <span class="settings-item-desc">MEBBİS üzerinden alınan personel listesi (Excel).</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <input type="file" id="f-personel" style="display: none;" accept=".xlsx, .xls" onchange="personelExcelYukle(event)">
+                                <button class="btn btn-dev" onclick="document.getElementById('f-personel').click()"><i data-lucide="upload" width="14" height="14"></i> Yükle</button>
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Personel Ekle/Çıkar</span>
+                                <span class="settings-item-desc">Sistemdeki personelleri manuel yönetin.</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <button class="btn btn-ayarlar" onclick="personelYonetimAc()"><i data-lucide="user-cog" width="14" height="14"></i> Yönet</button>
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name" style="color: #EF4444;">Veritabanını Sıfırla</span>
+                                <span class="settings-item-desc">Tüm verileri tamamen siler. Geri alınamaz!</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <button class="btn btn-kirmizi" onclick="veritabaniniSifirla()"><i data-lucide="trash-2" width="14" height="14"></i> Sıfırla</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- YEDEKLEME VE ÇIKTI -->
+                <div class="settings-section">
+                    <h3 class="settings-section-title"><i data-lucide="shield-check" width="16" height="16"></i> Çıktı ve Yedekleme</h3>
+                    <div class="settings-list-card">
+                        <div class="settings-list-item vertical-action">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">PDF Çıktı Klasörü</span>
+                                <span class="settings-item-desc">Oluşturulan raporların kaydedileceği yol.</span>
+                            </div>
+                            <div class="settings-item-action wide-input">
+                                <input type="text" id="ayar_pdf_yol" style="color: #38BDF8; font-family: monospace;">
+                            </div>
+                        </div>
+                        <div class="settings-list-item vertical-action">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Yedekleme Klasörü</span>
+                                <span class="settings-item-desc">Veritabanı yedeklerinin (otomatik/manuel) tutulacağı klasör.</span>
+                            </div>
+                            <div class="settings-item-action wide-input">
+                                <input type="text" id="ayar_yedek_yol" style="color: #10B981; font-family: monospace;">
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Otomatik Yedekleme Saati</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <input type="time" id="ayar_yedek_saati">
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Otomatik Yedek Sıklığı</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <select id="ayar_yedek_sikligi" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
                                     <option>Her Gün</option><option>Haftada 1</option><option>Ayda 1</option><option>Özel Gün</option>
                                 </select>
                             </div>
-                            <div class="settings-row" id="ayar_yedek_gun_sayisi_satir" style="display:none; flex-direction:column; align-items:flex-start; gap:5px;">
-                                <span class="settings-label" style="width:auto;"><i data-lucide="calendar-days" width="14" height="14"></i> Kaç Günde Bir:</span>
-                                <div style="display:flex; align-items:center; gap:5px; width:100%;">
-                                    <input type="number" id="ayar_yedek_gun_sayisi" min="1" value="3" style="width:60px; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;"> 
-                                    <span style="color: var(--fg-sub); font-size:12px;">gün</span>
-                                </div>
+                        </div>
+                        <div class="settings-list-item" id="ayar_yedek_gun_sayisi_satir" style="display:none; background: rgba(0,0,0,0.1);">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name" style="padding-left:15px; border-left: 2px solid var(--tree-sel);">Özel Gün Sayısı</span>
                             </div>
-                            <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                                <span class="settings-label" style="width:auto;"><i data-lucide="calendar-off" width="14" height="14"></i> Eski Yedekleri Sil:</span>
-                                <select id="ayar_yedek_silme" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;">
+                            <div class="settings-item-action" style="display:flex; align-items:center; gap:8px;">
+                                <input type="number" id="ayar_yedek_gun_sayisi" min="1" value="3" style="width: 70px;">
+                                <span style="font-size:12px; color:var(--fg-sub);">gün</span>
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Eski Yedekleri Sil</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <select id="ayar_yedek_silme">
                                     <option>1 Hafta Sonra</option><option>1 Ay Sonra</option><option>3 Ay Sonra</option><option>6 Ay Sonra</option><option>1 Yıl Sonra</option><option>Asla Silme</option>
                                 </select>
                             </div>
                         </div>
-                        
-                        <div style="border-top: 1px solid var(--border); margin: 5px 0;"></div>
-
-                        <!-- Manuel Yedekleme ve Kurtarma -->
-                        <div style="display:flex; flex-direction:row; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
-                            <button class="btn" style="background-color: #8B5CF6; color: white; padding: 10px 20px; font-weight: bold; border-radius: 6px; display:flex; align-items:center; gap:8px;" onclick="sistemYedekle()"><i data-lucide="save" width="18" height="18"></i> Şimdi Manuel Yedek Al</button>
-                            
-                            <div style="display: flex; gap: 10px; align-items: center; flex: 1; min-width: 300px; justify-content: flex-end;">
-                                <select id="ayar_yedek_secim" style="flex:1; max-width: 250px; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;">
-                                    <option value="">Yedek dosyası bulunamadı</option>
-                                </select>
-                                <button class="btn btn-dev" style="padding: 10px 15px; font-weight: bold; border-radius: 6px; display:flex; align-items:center; gap:8px;" onclick="yedekGeriYukle()"><i data-lucide="refresh-cw" width="18" height="18"></i> Geri Yükle</button>
+                        <div class="settings-list-item vertical-action" style="background: rgba(0,0,0,0.1);">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name">Manuel Yedek & Kurtarma</span>
+                            </div>
+                            <div class="settings-item-action" style="display: flex; flex-direction: row; gap:10px; width:100%; align-items:center; flex-wrap: wrap;">
+                                <button class="btn" style="background-color: #8B5CF6;" onclick="sistemYedekle()"><i data-lucide="save" width="14" height="14"></i> Şimdi Yedek Al</button>
+                                <div style="flex:1; min-width: 20px;"></div>
+                                <select id="ayar_yedek_secim" style="flex:1; min-width: 200px;"><option value="">Yedek bulunamadı</option></select>
+                                <button class="btn btn-dev" onclick="yedekGeriYukle()"><i data-lucide="refresh-cw" width="14" height="14"></i> Kurtar</button>
                             </div>
                         </div>
-
                     </div>
                 </div>
 
+                <!-- Kaydet Butonu -->
+                <div style="display: flex; position: sticky; bottom: 0; background: var(--bg-main); padding: 15px 0; z-index: 10;">
+                    <button class="btn btn-ogr" style="width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.2);" onclick="ayarlariKaydet()"><i data-lucide="check" width="18" height="18"></i> T Ü M &nbsp;&nbsp; A Y A R L A R I &nbsp;&nbsp; K A Y D E T</button>
+                </div>
             </div>
-
-            <!-- Kaydet Butonu -->
-            <div style="display: flex; margin-top: auto; padding-top: 20px; position: sticky; bottom: 0; background: var(--bg-main); z-index: 10; padding-bottom: 20px;">
-                <button class="btn btn-ogr" style="width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.1);" onclick="ayarlariKaydet()"><i data-lucide="check" width="16" height="16"></i> T Ü M &nbsp;&nbsp; A Y A R L A R I &nbsp;&nbsp; K A Y D E T</button>
-            </div>
-            
         </div>
     </div>
     
@@ -649,8 +785,130 @@
                 
         </div>
     </div>
+    </div> <!-- /sekme_yardim -->
+    </div> <!-- /sag_panel_ana -->
+    </div> <!-- /ana-kapsayici -->
 
+    <div id="ihale_komisyon_modal" class="modal-overlay">
+        <div class="modal-content" style="width: 950px; padding: 0; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+                <h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;"><i data-lucide="users" width="18" height="18"></i> İhale Komisyon Üyeleri</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('ihale_komisyon_modal')">İptal</button>
+            </div>
+            <div style="padding: 20px; max-height: 75vh; overflow-y: auto; display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                <!-- Komisyon 1 -->
+                <div class="settings-card komisyon-karti" style="border-top: 3px solid #3B82F6;">
+                    <div class="settings-card-header"><i data-lucide="calculator" width="16" height="16"></i> Yaklaşık Maliyet Komisyonu</div>
+                    <div class="settings-card-body" style="padding:0 15px 15px 15px;">
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: #3B82F6; "><i data-lucide="crown" width="14" height="14" style="margin-right:4px; vertical-align:middle;"></i> 1. Üye (Başkan)</div>
+                            <div id="text_ihale_kom_yaklasik_1" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_yaklasik_1" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_yaklasik_1')">Seç</button>
+                                <button id="btn_sil_ihale_kom_yaklasik_1" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_yaklasik_1')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">2. Üye</div>
+                            <div id="text_ihale_kom_yaklasik_2" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_yaklasik_2" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_yaklasik_2')">Seç</button>
+                                <button id="btn_sil_ihale_kom_yaklasik_2" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_yaklasik_2')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">3. Üye</div>
+                            <div id="text_ihale_kom_yaklasik_3" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_yaklasik_3" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_yaklasik_3')">Seç</button>
+                                <button id="btn_sil_ihale_kom_yaklasik_3" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_yaklasik_3')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Komisyon 2 -->
+                <div class="settings-card komisyon-karti" style="border-top: 3px solid #10B981;">
+                    <div class="settings-card-header"><i data-lucide="search" width="16" height="16"></i> Piyasa Fiyat Komisyonu</div>
+                    <div class="settings-card-body" style="padding:0 15px 15px 15px;">
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: #10B981; "><i data-lucide="crown" width="14" height="14" style="margin-right:4px; vertical-align:middle;"></i> 1. Üye (Başkan)</div>
+                            <div id="text_ihale_kom_piyasa_1" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_piyasa_1" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_piyasa_1')">Seç</button>
+                                <button id="btn_sil_ihale_kom_piyasa_1" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_piyasa_1')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">2. Üye</div>
+                            <div id="text_ihale_kom_piyasa_2" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_piyasa_2" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_piyasa_2')">Seç</button>
+                                <button id="btn_sil_ihale_kom_piyasa_2" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_piyasa_2')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">3. Üye</div>
+                            <div id="text_ihale_kom_piyasa_3" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_piyasa_3" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_piyasa_3')">Seç</button>
+                                <button id="btn_sil_ihale_kom_piyasa_3" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_piyasa_3')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Komisyon 3 -->
+                <div class="settings-card komisyon-karti" style="border-top: 3px solid #F59E0B;">
+                    <div class="settings-card-header"><i data-lucide="check-square" width="16" height="16"></i> Muayene Kabul Komisyonu</div>
+                    <div class="settings-card-body" style="padding:0 15px 15px 15px;">
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: #F59E0B; "><i data-lucide="crown" width="14" height="14" style="margin-right:4px; vertical-align:middle;"></i> 1. Üye (Başkan)</div>
+                            <div id="text_ihale_kom_muayene_1" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_muayene_1" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_muayene_1')">Seç</button>
+                                <button id="btn_sil_ihale_kom_muayene_1" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_muayene_1')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">2. Üye</div>
+                            <div id="text_ihale_kom_muayene_2" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_muayene_2" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_muayene_2')">Seç</button>
+                                <button id="btn_sil_ihale_kom_muayene_2" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_muayene_2')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                        <div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+                            <div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">3. Üye</div>
+                            <div id="text_ihale_kom_muayene_3" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+                            <div style="display:flex; justify-content:flex-end;">
+                                <button id="btn_sec_ihale_kom_muayene_3" class="btn" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="personelSecimEkraniAc('ihale_kom_muayene_3')">Seç</button>
+                                <button id="btn_sil_ihale_kom_muayene_3" class="btn btn-kirmizi" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;" onclick="personelSil('ihale_kom_muayene_3')"><i data-lucide="trash" width="14" height="14"></i> Sil</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); text-align: right;">
+                <button class="btn btn-dev" style="padding: 10px 20px; font-weight:bold; border-radius:6px;" onclick="ihaleKomisyonKaydet()">Kaydet ve Kapat</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=9"></script>
+
+    <div id="personel_havuz_modal" class="modal-overlay" style="z-index:3000;">
+        <div class="modal-content" style="width: 400px; padding: 0; background-color: var(--bg-main);">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+                <h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;"><i data-lucide="user-plus" width="18" height="18"></i> Personel Seç</h2>
+                <button class="btn btn-kirmizi" style="padding: 5px 15px;" onclick="modalKapat('personel_havuz_modal')">Kapat</button>
+            </div>
+            <div style="padding: 15px; border-bottom: 1px solid var(--border);">
+                <input type="text" id="personel_arama_input" placeholder="Personel Ara..." onkeyup="personelAra()" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input); color:var(--fg-main); outline:none;">
+            </div>
+            <div id="personel_havuz_liste" style="padding: 10px 15px; max-height: 50vh; overflow-y: auto; display:flex; flex-direction:column; gap:5px;">
+                <!-- Personeller buraya JS ile yüklenecek -->
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
