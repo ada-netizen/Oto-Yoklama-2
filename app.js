@@ -1597,19 +1597,160 @@ async function ihaleExcelYukle(event) {
     }
 }
 
-async function ihaleEvraklariniUret() {
-    const konu = document.getElementById("ihale_konusu").value;
-    const tarih = document.getElementById("ihale_tarihi").value;
-    const firma1 = document.getElementById("ihale_firma1").value;
-    const firma2 = document.getElementById("ihale_firma2").value;
-    const firma3 = document.getElementById("ihale_firma3").value;
+function ihaleAdim3Goster() {
+    // Validate Step 2
+    const gecerliFirmalar = ihaleGeciciVeri.firmalar.filter(f => f.trim() !== "");
+    ihaleGeciciVeri.firmalar = gecerliFirmalar.length > 0 ? gecerliFirmalar : ["", "", ""];
+    const gecerliKalemler = ihaleGeciciVeri.kalemler.filter(k => k.cins && k.cins.trim() !== "");
 
-    if (ihaleKalemleri.length === 0) {
-        bildirimGoster("Lütfen önce Excel yükleyin.", "uyari");
+    if (gecerliKalemler.length === 0) {
+        bildirimGoster("Lütfen ihtiyaç listesine en az 1 kalem ekleyin.", "uyari");
         return;
     }
-    if (!konu || !firma1 || !firma2 || !firma3) {
-        bildirimGoster("Lütfen ihale konusu ve 3 firma adını girin.", "uyari");
+    if (!ihaleGeciciVeri.konu || gecerliFirmalar.length === 0) {
+        bildirimGoster("Lütfen ihale konusu (Adım 1) ve en az 1 kurum/kişi girin.", "uyari");
+        return;
+    }
+
+    const secim_ids = [
+        "ihale_kom_yaklasik_1", "ihale_kom_yaklasik_2", "ihale_kom_yaklasik_3",
+        "ihale_kom_piyasa_1", "ihale_kom_piyasa_2", "ihale_kom_piyasa_3",
+        "ihale_kom_muayene_1", "ihale_kom_muayene_2", "ihale_kom_muayene_3"
+    ];
+    let komisyon_eksik = false;
+    secim_ids.forEach(id => {
+        if (!ihaleKomisyonSecimleri[id]) komisyon_eksik = true;
+    });
+
+    if (komisyon_eksik) {
+        ihaleKomisyonHataModu = true;
+        bildirimGoster("Lütfen 'Görevli Yönetimi' butonuna basarak eksik komisyon üyelerini seçin! (Eksik olanlar kırmızı işaretlendi)", "hata");
+        return;
+    }
+    ihaleKomisyonHataModu = false;
+
+    // Hide Step 1 and Step 2
+    document.getElementById("ihale_icerik").children[0].style.display = "none";
+    document.getElementById("ihale_adim2_alani").style.display = "none";
+
+    const alan3 = document.getElementById("ihale_adim3_alani");
+    alan3.style.display = "flex";
+    
+    const bugun = new Date().toISOString().split('T')[0];
+
+    alan3.innerHTML = `
+        <div class="settings-card" style="flex: 1;">
+            <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><i data-lucide="printer" width="16" height="16"></i> 3. Adım: Belge Üretim Merkezi</span>
+                <button class="btn btn-ogr" style="padding: 4px 10px; font-size: 11px;" onclick="ihaleAdim3Geri()"><i data-lucide="arrow-left" width="14" height="14"></i> Geri Dön</button>
+            </div>
+            <div class="settings-card-body" style="padding: 15px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px; color: var(--fg-main);">Sıra</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Tarihi</th>
+                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Fiyat İsteme Belgesi</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_fiyat_isteme" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+    setTimeout(() => {
+        alan3.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function ihaleAdim3Geri() {
+    document.getElementById("ihale_icerik").children[0].style.display = "block";
+    document.getElementById("ihale_adim2_alani").style.display = "flex";
+    document.getElementById("ihale_adim3_alani").style.display = "none";
+}
+
+async function belgeUret(belgeTipi, format, tarih) {
+    if (!tarih) {
+        bildirimGoster("Lütfen belge tarihi seçin.", "uyari");
+        return;
+    }
+    
+    yuklemeGoster(format.toUpperCase() + " Üretiliyor...");
+
+    const gecerliKalemler = ihaleGeciciVeri.kalemler.filter(k => k.cins && k.cins.trim() !== "");
+    const secim_ids = [
+        "ihale_kom_yaklasik_1", "ihale_kom_yaklasik_2", "ihale_kom_yaklasik_3",
+        "ihale_kom_piyasa_1", "ihale_kom_piyasa_2", "ihale_kom_piyasa_3",
+        "ihale_kom_muayene_1", "ihale_kom_muayene_2", "ihale_kom_muayene_3"
+    ];
+    let komisyonVerisi = {};
+    secim_ids.forEach(id => {
+        komisyonVerisi[id] = ihaleKomisyonSecimleri[id];
+    });
+
+    const veri = {
+        ihale_konusu: ihaleGeciciVeri.konu,
+        butce_tertibi: ihaleGeciciVeri.tertibi,
+        resmi_baslik: ihaleGeciciVeri.resmi_baslik,
+        yazisma_kodu: ihaleGeciciVeri.yazisma_kodu,
+        firmalar: ihaleGeciciVeri.firmalar,
+        kalemler: gecerliKalemler,
+        komisyon: komisyonVerisi,
+        belge_tarihi: tarih,
+        belge_tipi: belgeTipi,
+        format: format
+    };
+
+    try {
+        const response = await fetch('http://localhost:8000/ihale-tekli-belge', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(veri)
+        });
+        
+        const sonuc = await response.json();
+        if (sonuc.basarili) {
+            bildirimGoster(sonuc.mesaj, "basarili");
+        } else {
+            bildirimGoster("Hata: " + sonuc.mesaj, "hata");
+        }
+    } catch (e) {
+        bildirimGoster("Sunucuya bağlanılamadı.", "hata");
+    } finally {
+        yuklemeGizle();
+    }
+}
+
+async function ihaleEvraklariniUret() {
+    // Remove empty firms
+    const gecerliFirmalar = ihaleGeciciVeri.firmalar.filter(f => f.trim() !== "");
+    ihaleGeciciVeri.firmalar = gecerliFirmalar.length > 0 ? gecerliFirmalar : ["", "", ""];
+
+    // Remove empty rows from kalemler before validating
+    const gecerliKalemler = ihaleGeciciVeri.kalemler.filter(k => k.cins && k.cins.trim() !== "");
+
+    if (gecerliKalemler.length === 0) {
+        bildirimGoster("Lütfen ihtiyaç listesine en az 1 kalem ekleyin.", "uyari");
+        return;
+    }
+    if (!ihaleGeciciVeri.konu || gecerliFirmalar.length === 0) {
+        bildirimGoster("Lütfen ihale konusu (Adım 1) ve en az 1 kurum/kişi girin.", "uyari");
         return;
     }
 
@@ -1627,17 +1768,22 @@ async function ihaleEvraklariniUret() {
 
     if (komisyon_eksik) {
         ihaleKomisyonHataModu = true;
-        bildirimGoster("Lütfen 'Görevli Kişiler' butonuna basarak eksik komisyon üyelerini seçin! (Eksik olanlar kırmızı işaretlendi)", "hata");
+        bildirimGoster("Lütfen 'Görevli Yönetimi' butonuna basarak eksik komisyon üyelerini seçin! (Eksik olanlar kırmızı işaretlendi)", "hata");
         return;
     }
     
     ihaleKomisyonHataModu = false;
 
+        const parseableKalemler = gecerliKalemler;
+
     const veri = {
-        ihale_konusu: konu,
-        tarih: tarih,
-        firmalar: [firma1, firma2, firma3],
-        kalemler: ihaleKalemleri,
+        ihale_konusu: ihaleGeciciVeri.konu,
+        tarih: "",
+        butce_tertibi: ihaleGeciciVeri.tertibi,
+        resmi_baslik: ihaleGeciciVeri.resmi_baslik,
+        yazisma_kodu: ihaleGeciciVeri.yazisma_kodu,
+        firmalar: ihaleGeciciVeri.firmalar,
+        kalemler: parseableKalemler,
         komisyon: komisyonVerisi
     };
 
@@ -1665,6 +1811,276 @@ async function ihaleEvraklariniUret() {
 
 let ihaleKomisyonSecimleri = {};
 let ihaleKomisyonHataModu = false;
+
+let ihaleGeciciVeri = {
+    konu: "",
+    tertibi: "",
+    resmi_baslik: "",
+    yazisma_kodu: "",
+    firmalar: ["", "", ""],
+    kalemler: []
+};
+
+function ihaleBaslat() {
+    let butceTertipleri = JSON.parse(localStorage.getItem("butce_tertipleri") || '["13.01.32.62-09.02.01.00-1-03.02"]');
+
+    if (!ihaleGeciciVeri.tertibi && butceTertipleri.length > 0) {
+        ihaleGeciciVeri.tertibi = butceTertipleri[0];
+    }
+    
+    if (!ihaleGeciciVeri.resmi_baslik) {
+        ihaleGeciciVeri.resmi_baslik = localStorage.getItem("ihale_resmi_baslik") || "";
+    }
+    if (!ihaleGeciciVeri.yazisma_kodu) {
+        ihaleGeciciVeri.yazisma_kodu = localStorage.getItem("ihale_yazisma_kodu") || "";
+    }
+
+    const icerik = document.getElementById("ihale_icerik");
+    icerik.style.alignItems = "stretch";
+    icerik.style.justifyContent = "flex-start";
+    
+    let tertipOptions = butceTertipleri.map(t => `<option value="${t}" ${ihaleGeciciVeri.tertibi === t ? 'selected' : ''}>${t}</option>`).join('');
+
+    icerik.innerHTML = `
+        <div style="background-color: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: var(--tree-sel);"><i data-lucide="info" width="18" height="18"></i> 1. Adım: İhale Temel Bilgileri</h3>
+            <p style="color: var(--fg-sub); font-size: 13px; margin-bottom: 15px;">Lütfen ihale konusu, bütçe tertibi ve resmi yazışma bilgilerini girerek başlayın.</p>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px;">
+                <div style="flex: 2; min-width: 250px;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--fg-main); display: block; margin-bottom: 5px;">İhale Konusu / İşin Adı:</label>
+                    <input type="text" id="ihale_konusu" style="width:100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Örn: 2026 Yılı Temizlik Malzemesi Alımı" value="${ihaleGeciciVeri.konu}" oninput="ihaleGeciciVeri.konu = this.value">
+                </div>
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--fg-main); display: block; margin-bottom: 5px;">Bütçe Tertibi:</label>
+                    <div style="display:flex; gap:5px;">
+                        <select id="ihale_tertibi" style="flex:1; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" onchange="ihaleGeciciVeri.tertibi = this.value">
+                            ${tertipOptions}
+                        </select>
+                        <button class="btn btn-dev" style="padding: 10px; font-size: 14px;" onclick="butceTertibiEkle()" title="Yeni Bütçe Tertibi Ekle"><i data-lucide="plus" width="16" height="16"></i></button>
+                        <button class="btn btn-sil" style="padding: 10px; font-size: 14px; background:transparent; border: 1px solid var(--border); color:#EF4444;" onclick="butceTertibiSil()" title="Seçili Bütçe Tertibini Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 2; min-width: 250px;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--fg-main); display: block; margin-bottom: 5px;">Resmi Yazı Başlığı (Kurum Adı vb.):</label>
+                    <textarea id="ihale_resmi_baslik" rows="3" style="width:100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; resize:vertical;" placeholder="Örn: T.C.
+KARTAL KAYMAKAMLIĞI
+Y Okulu Müdürlüğü" oninput="ihaleGeciciVeri.resmi_baslik = this.value; localStorage.setItem('ihale_resmi_baslik', this.value)">${ihaleGeciciVeri.resmi_baslik}</textarea>
+                </div>
+                
+                <div style="flex: 1; min-width: 200px;">
+                    <label style="font-size: 12px; font-weight: bold; color: var(--fg-main); display: block; margin-bottom: 5px;">Yazışma Kod Numarası:</label>
+                    <input type="text" id="ihale_yazisma_kodu" style="width:100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Örn: 12345678" value="${ihaleGeciciVeri.yazisma_kodu}" oninput="ihaleGeciciVeri.yazisma_kodu = this.value; localStorage.setItem('ihale_yazisma_kodu', this.value)">
+                </div>
+            </div>
+            
+            <div id="ihale_adim1_btn_container" style="margin-top: 20px; text-align: right;">
+                <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="ihaleAdim2Goster()"><i data-lucide="arrow-down" width="16" height="16"></i> İleri: İhtiyaç Listesi ve Firmalar</button>
+            </div>
+        </div>
+
+        <div id="ihale_adim2_alani" style="display: none; margin-top: 20px; flex-direction: column; gap: 20px;">
+        </div>
+        <div id="ihale_adim3_alani" style="display: none; margin-top: 20px; flex-direction: column; gap: 20px;">
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function butceTertibiEkle() {
+    const yeni = prompt("Yeni Bütçe Tertibini girin (Örn: 13.01.32.62-09.02.01.00-1-03.02):");
+    if (yeni && yeni.trim() !== "") {
+        let tertipler = JSON.parse(localStorage.getItem("butce_tertipleri") || '["13.01.32.62-09.02.01.00-1-03.02"]');
+        if (!tertipler.includes(yeni.trim())) {
+            tertipler.push(yeni.trim());
+            localStorage.setItem("butce_tertipleri", JSON.stringify(tertipler));
+            ihaleGeciciVeri.tertibi = yeni.trim();
+            ihaleBaslat(); // re-render
+        }
+    }
+}
+
+function butceTertibiSil() {
+    const secili = document.getElementById("ihale_tertibi").value;
+    if (!secili) return;
+    if (confirm(`'${secili}' bütçe tertibini silmek istediğinize emin misiniz?`)) {
+        let tertipler = JSON.parse(localStorage.getItem("butce_tertipleri") || '["13.01.32.62-09.02.01.00-1-03.02"]');
+        tertipler = tertipler.filter(t => t !== secili);
+        localStorage.setItem("butce_tertipleri", JSON.stringify(tertipler));
+        ihaleGeciciVeri.tertibi = tertipler.length > 0 ? tertipler[0] : "";
+        ihaleBaslat(); // re-render
+    }
+}
+
+function ihaleAdim2Goster() {
+    if (!ihaleGeciciVeri.konu) {
+        bildirimGoster("Lütfen ihale konusunu girin.", "uyari");
+        return;
+    }
+    
+    // Hide the button
+    document.getElementById("ihale_adim1_btn_container").style.display = "none";
+    
+    if (ihaleGeciciVeri.kalemler.length === 0) {
+        ihaleGeciciVeri.kalemler.push({sira: 1, cins: "", ozellik: "", miktar: "", birim: ""});
+    }
+
+    const alan2 = document.getElementById("ihale_adim2_alani");
+    alan2.style.display = "flex";
+    
+    alan2.innerHTML = `
+        <div class="settings-card" style="flex: 1;">
+            <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><i data-lucide="list" width="16" height="16"></i> İhtiyaç Listesi</span>
+                <button class="btn btn-ogr" style="padding: 4px 10px; font-size: 11px;" onclick="ihaleKalemSatiriEkle()"><i data-lucide="plus" width="14" height="14"></i> Yeni Satır</button>
+            </div>
+            <div class="settings-card-body" style="padding: 0; overflow-x: auto;">
+                <table class="inline-edit-table" id="ihale_kalem_tablosu" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align:center;">#</th>
+                            <th style="width: 250px;">Mal/Hizmet Cinsi</th>
+                            <th style="width: 200px;">Özellikleri</th>
+                            <th style="width: 80px; text-align:center;">Miktar</th>
+                            <th style="width: 80px; text-align:center;">Birim</th>
+                            <th style="width: 40px; text-align:center;"><i data-lucide="trash-2" width="14" height="14"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="ihale_kalemleri_govde">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="settings-card" style="flex: 1; min-width: 300px; margin-top: 10px;">
+            <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <span><i data-lucide="building" width="16" height="16"></i> İhaleye Katılan Kurum/Kişiler</span>
+                <button class="btn btn-dev" style="padding: 4px 10px; font-size: 11px;" onclick="ihaleFirmaEkle()"><i data-lucide="plus" width="14" height="14"></i> Kurum Ekle</button>
+            </div>
+            <div class="settings-card-body" style="display:flex; gap:10px; padding:15px; flex-wrap: wrap;" id="ihale_firmalar_govde">
+            </div>
+        </div>
+
+        <div style="display: flex; margin-top: auto; padding-top: 10px; position: sticky; bottom: 0; background: var(--bg-main); z-index: 10; padding-bottom: 20px; gap: 15px;">
+            <button class="btn btn-dev" id="ihale_adim2_btn" style="flex: 3; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.2);" onclick="ihaleAdim3Goster()"><i data-lucide="arrow-right" width="18" height="18"></i> İHALE BELGELERİNİ OLUŞTUR</button>
+        </div>
+    `;
+    
+    ihaleKalemTablosunuCiz();
+    ihaleFirmaTablosunuCiz();
+    lucide.createIcons();
+    
+    setTimeout(() => {
+        alan2.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+function ihaleKalemTablosunuCiz() {
+    const govde = document.getElementById("ihale_kalemleri_govde");
+    let html = "";
+    ihaleGeciciVeri.kalemler.forEach((k, idx) => {
+        k.sira = idx + 1;
+        html += `
+            <tr data-index="${idx}">
+                <td style="text-align:center; color: var(--fg-sub); font-size:11px;">${k.sira}</td>
+                <td><input type="text" class="kalem-input" data-field="cins" value="${k.cins}" placeholder="Cinsi"></td>
+                <td><input type="text" class="kalem-input" data-field="ozellik" value="${k.ozellik}" placeholder="Özellikleri"></td>
+                <td><input type="number" class="kalem-input" style="text-align:center;" data-field="miktar" value="${k.miktar}" placeholder="0"></td>
+                <td><input type="text" class="kalem-input" style="text-align:center;" data-field="birim" value="${k.birim}" placeholder="Adet"></td>
+                <td><button class="btn-kalem-sil" onclick="ihaleKalemSatiriSil(${idx})"><i data-lucide="x" width="14" height="14"></i></button></td>
+            </tr>
+        `;
+    });
+    govde.innerHTML = html;
+    
+    document.querySelectorAll(".kalem-input").forEach(input => {
+        input.addEventListener('input', (e) => {
+            const tr = e.target.closest("tr");
+            const idx = parseInt(tr.getAttribute("data-index"));
+            const field = e.target.getAttribute("data-field");
+            ihaleGeciciVeri.kalemler[idx][field] = e.target.value;
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const tr = e.target.closest("tr");
+                const idx = parseInt(tr.getAttribute("data-index"));
+                if (idx === ihaleGeciciVeri.kalemler.length - 1) {
+                    ihaleKalemSatiriEkle();
+                } else {
+                    const nextRow = tr.nextElementSibling;
+                    if (nextRow) nextRow.querySelector(`[data-field="${e.target.getAttribute("data-field")}"]`).focus();
+                }
+            }
+        });
+    });
+    
+    lucide.createIcons();
+}
+
+function ihaleFirmaTablosunuCiz() {
+    const govde = document.getElementById("ihale_firmalar_govde");
+    let html = "";
+    ihaleGeciciVeri.firmalar.forEach((firmaAdi, idx) => {
+        let title = (idx === 0) ? "1. Kurum/Kişi (Kazanan Olma İhtimali)" : `${idx + 1}. Kurum/Kişi`;
+        html += `
+            <div style="flex:1; min-width:200px; display:flex; flex-direction:column; gap:5px;">
+                <label style="font-size: 11px; font-weight: bold; color: var(--fg-main);">${title}</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="text" class="firma-input" data-index="${idx}" style="flex:1; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="İhaleye Katılan Kurum/Kişi" value="${firmaAdi}">
+                    <button class="btn btn-sil" style="padding: 8px; background:transparent; border: 1px solid var(--border); color:#EF4444;" onclick="ihaleFirmaSil(${idx})" title="Sil"><i data-lucide="trash-2" width="14" height="14"></i></button>
+                </div>
+            </div>
+        `;
+    });
+    govde.innerHTML = html;
+
+    document.querySelectorAll(".firma-input").forEach(input => {
+        input.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.getAttribute("data-index"));
+            ihaleGeciciVeri.firmalar[idx] = e.target.value;
+        });
+    });
+    
+    lucide.createIcons();
+}
+
+function ihaleFirmaEkle() {
+    ihaleGeciciVeri.firmalar.push("");
+    ihaleFirmaTablosunuCiz();
+}
+
+function ihaleFirmaSil(idx) {
+    ihaleGeciciVeri.firmalar.splice(idx, 1);
+    ihaleFirmaTablosunuCiz();
+}
+
+function ihaleKalemSatiriEkle() {
+    ihaleGeciciVeri.kalemler.push({sira: ihaleGeciciVeri.kalemler.length + 1, cins: "", ozellik: "", miktar: "", birim: ""});
+    ihaleKalemTablosunuCiz();
+    
+    setTimeout(() => {
+        const rows = document.querySelectorAll("#ihale_kalemleri_govde tr");
+        if(rows.length > 0) {
+            const lastRowInputs = rows[rows.length - 1].querySelectorAll("input");
+            if(lastRowInputs.length > 0) lastRowInputs[0].focus();
+        }
+    }, 50);
+}
+
+function ihaleKalemSatiriSil(idx) {
+    if (ihaleGeciciVeri.kalemler.length <= 1) {
+        bildirimGoster("En az 1 kalem olmalıdır.", "uyari");
+        return;
+    }
+    ihaleGeciciVeri.kalemler.splice(idx, 1);
+    ihaleKalemTablosunuCiz();
+}
 
 async function ihaleKomisyonModalAc() {
     yuklemeGoster("Personel listesi alınıyor...");

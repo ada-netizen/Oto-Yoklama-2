@@ -512,80 +512,17 @@
     <div id="sekme_ihale" class="tab-content">
         <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
             <h2 class="top-bar-title" style="display:flex; align-items:center; gap:10px; margin:0;"><i data-lucide="briefcase" width="20" height="20"></i> İhale Yönetimi (22/d Doğrudan Temin)</h2>
-            <button class="btn btn-dev" style="margin-right:20px; padding: 6px 15px;" onclick="ihaleKomisyonModalAc()"><i data-lucide="users" width="16" height="16"></i> Görevli Kişiler</button>
+            <div style="display:flex; gap:10px; margin-right:20px;">
+                <button class="btn btn-dev" style="padding: 6px 15px;" onclick="ihaleKomisyonModalAc()"><i data-lucide="users" width="16" height="16"></i> Görevli Yönetimi</button>
+                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 15px; font-weight: bold;" onclick="ihaleBaslat()"><i data-lucide="play" width="16" height="16"></i> İhale Başlat</button>
+            </div>
         </div>
         
-        <div style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-                <!-- TEMEL BİLGİLER -->
-                <div class="settings-card" style="flex: 1; min-width: 300px;">
-                    <div class="settings-card-header"><i data-lucide="info" width="16" height="16"></i> İhale Temel Bilgileri</div>
-                    <div class="settings-card-body">
-                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                            <span class="settings-label">İhale Konusu / İşin Adı:</span>
-                            <input type="text" id="ihale_konusu" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Örn: 2022 Yılı Kırtasiye Alımı">
-                        </div>
-                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                            <span class="settings-label">Tarih:</span>
-                            <input type="date" id="ihale_tarihi" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- FİRMALAR -->
-                <div class="settings-card" style="flex: 1; min-width: 300px;">
-                    <div class="settings-card-header"><i data-lucide="building" width="16" height="16"></i> Teklif Veren Firmalar</div>
-                    <div class="settings-card-body">
-                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                            <span class="settings-label">1. Firma (Kazanan Olma İhtimali):</span>
-                            <input type="text" id="ihale_firma1" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Firma A">
-                        </div>
-                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                            <span class="settings-label">2. Firma:</span>
-                            <input type="text" id="ihale_firma2" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Firma B">
-                        </div>
-                        <div class="settings-row" style="flex-direction:column; align-items:flex-start; gap:5px;">
-                            <span class="settings-label">3. Firma:</span>
-                            <input type="text" id="ihale_firma3" style="width:100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" placeholder="Firma C">
-                        </div>
-                    </div>
-                </div>
+        <div id="ihale_icerik" style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center;">
+            <div id="ihale_baslangic_mesaj" style="color: var(--fg-sub); font-size: 15px; text-align: center; display:flex; flex-direction:column; align-items:center; gap:15px; opacity: 0.6;">
+                <i data-lucide="mouse-pointer-click" width="48" height="48"></i>
+                <span>Yeni bir ihale süreci başlatmak için yukarıdaki <b>"İhale Başlat"</b> butonuna tıklayın.</span>
             </div>
-
-            <!-- EXCEL YÜKLEME KISMI -->
-            <div class="settings-card">
-                <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span><i data-lucide="file-spreadsheet" width="16" height="16"></i> İhtiyaç ve Fiyat Listesi</span>
-                    <div style="display:flex; gap: 10px;">
-                        <input type="file" id="f-ihale-excel" style="display: none;" accept=".xlsx, .xls" onchange="ihaleExcelYukle(event)">
-                        <button class="btn btn-ogr" style="padding: 6px 12px; font-size:12px;" onclick="document.getElementById('f-ihale-excel').click()"><i data-lucide="upload" width="14" height="14"></i> Excel'den Yükle</button>
-                    </div>
-                </div>
-                <div class="settings-card-body" style="padding: 0; overflow-x: auto;">
-                    <table class="veri-tablosu" id="ihale_kalem_tablosu" style="width: 100%; min-width: 800px; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: rgba(0,0,0,0.2);">
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:center; width:40px;">#</th>
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:left;">Mal/Hizmet Cinsi</th>
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:center; width:80px;">Miktar</th>
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:center; width:80px;">Birim</th>
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:right;">1. Firma (₺)</th>
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:right;">2. Firma (₺)</th>
-                                <th style="padding: 10px; border: 1px solid var(--border); text-align:right;">3. Firma (₺)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ihale_kalemleri_govde">
-                            <tr><td colspan="7" style="text-align:center; padding: 20px; color: var(--fg-sub);">Excel şablonunu yüklediğinizde kalemler burada listelenecektir.</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ÜRET BUTONU -->
-            <div style="display: flex; margin-top: auto; padding-top: 10px; position: sticky; bottom: 0; background: var(--bg-main); z-index: 10; padding-bottom: 20px;">
-                <button class="btn btn-dev" style="width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border-radius: 8px; box-shadow: 0 -4px 10px rgba(0,0,0,0.2);" onclick="ihaleEvraklariniUret()"><i data-lucide="file-check-2" width="18" height="18"></i> TÜM İHALE EVRAKLARINI (PDF) ÜRET</button>
-            </div>
-            
         </div>
     </div>
 

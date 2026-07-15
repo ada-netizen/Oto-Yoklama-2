@@ -906,10 +906,18 @@ def yedek_geri_yukle(veri: dict):
         return {"basarili": False, "mesaj": f"Yedek yüklenirken hata oluştu: {e}"}
 
 
-@app.delete("/veritabani-sifirla")
-def veritabani_sifirla():
-    db.sifirla()
-    return {"basarili": True, "mesaj": "Tüm öğrenci, devamsızlık ve personel kayıtları SIFIRLANDI!"}
+def safe_float(val, default=0.0):
+    if pd.isna(val):
+        return default
+    try:
+        s = str(val).replace('₺', '').replace('$', '').strip()
+        if ',' in s and '.' not in s:
+            s = s.replace(',', '.')
+        elif ',' in s and '.' in s:
+            s = s.replace(',', '')
+        return float(s)
+    except:
+        return default
 
 @app.post("/ihale-excel-oku")
 async def ihale_excel_oku(dosya: UploadFile = File(...)):
@@ -931,20 +939,26 @@ async def ihale_excel_oku(dosya: UploadFile = File(...)):
             try:
                 cins = str(row.iloc[1]).strip()
                 if cins and cins.lower() not in ['nan', 'c i̇ n s i̇', 'c i n s i', 'none', 'satın alinacak malin']:
-                    miktar = row.iloc[2]
+                    miktar_raw = row.iloc[2]
                     birim = row.iloc[3]
-                    f1 = row.iloc[4]
-                    f2 = row.iloc[5]
-                    f3 = row.iloc[6]
-                    if pd.notna(miktar) and str(miktar).replace('.','',1).replace(',','',1).isdigit():
+                    f1_raw = row.iloc[4]
+                    f2_raw = row.iloc[5]
+                    f3_raw = row.iloc[6]
+                    
+                    if pd.notna(cins) and pd.notna(miktar_raw):
+                        miktar = safe_float(miktar_raw, 1.0)
+                        f1 = safe_float(f1_raw, 0.0)
+                        f2 = safe_float(f2_raw, 0.0)
+                        f3 = safe_float(f3_raw, 0.0)
+                        
                         kalemler.append({
                             "sira": sira,
                             "cins": cins,
-                            "miktar": float(miktar) if pd.notna(miktar) else 1,
-                            "birim": str(birim) if pd.notna(birim) else "Adet",
-                            "f1": float(f1) if pd.notna(f1) else 0.0,
-                            "f2": float(f2) if pd.notna(f2) else 0.0,
-                            "f3": float(f3) if pd.notna(f3) else 0.0,
+                            "miktar": miktar,
+                            "birim": str(birim).strip() if pd.notna(birim) else "Adet",
+                            "f1": f1,
+                            "f2": f2,
+                            "f3": f3,
                         })
                         sira += 1
             except:
@@ -958,10 +972,72 @@ async def ihale_excel_oku(dosya: UploadFile = File(...)):
 def ihale_uret(veri: dict, background_tasks: BackgroundTasks):
     ayar = ayarlari_al()
     pdf_yol = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
+    
+    # Okul Müdürü (Harcama Yetkilisi) bul
+    mudur_adi = "Okul Müdürü"
+    try:
+        db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR%' AND gorev NOT LIKE '%MÜDÜR YARDIMCISI%' LIMIT 1")
+        row = db.cursor.fetchone()
+        if row:
+            mudur_adi = row[0]
+        else:
+            db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR%' LIMIT 1")
+            row = db.cursor.fetchone()
+            if row:
+                mudur_adi = row[0]
+    except Exception as e:
+        logging.error(f"mudur_bul hatasi: {e}")
+        
+    # Gerçekleştirme Görevlisi bul
+    m_yard_adi = "Müdür Yardımcısı"
+    try:
+        db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR YARDIMCISI%' LIMIT 1")
+        row = db.cursor.fetchone()
+        if row:
+            m_yard_adi = row[0]
+        else:
+            # İlk Piyasa Fiyat Komisyonu Üyesini Ata
+            piyasa_1 = veri.get('komisyon', {}).get('ihale_kom_piyasa_1')
+            if piyasa_1:
+                m_yard_adi = piyasa_1
+    except Exception as e:
+        logging.error(f"mudur_yardimcisi_bul hatasi: {e}")
+        
+    veri["okul_adi"] = ayar.get("okul_adi", "Okul Müdürlüğü")
+    veri["okul_muduru"] = mudur_adi
+    veri["gerceklesdirme_gorevlisi"] = m_yard_adi
+    
     try:
         klasor = ihale_motoru.tum_evraklari_uret(veri, pdf_yol)
         if platform.system() == "Windows":
             os.startfile(klasor)
         return {"basarili": True, "mesaj": "İhale evrakları başarıyla üretildi!", "klasor": klasor}
     except Exception as e:
+        return {"basarili": False, "mesaj": f"Hata: {e}"}
+
+@app.post("/ihale-tekli-belge")
+def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
+    ayar = ayarlari_al()
+    pdf_yol = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
+    
+    # Get personnel
+    mudur_adi = "Okul Müdürü"
+    try:
+        db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR%' AND gorev NOT LIKE '%MÜDÜR YARDIMCISI%' LIMIT 1")
+        row = db.cursor.fetchone()
+        if row:
+            mudur_adi = row[0]
+    except: pass
+
+    veri["okul_adi"] = ayar.get("okul_adi", "Okul Müdürlüğü")
+    veri["okul_muduru"] = mudur_adi
+    
+    try:
+        import ihale_tekli_belge_motoru
+        sonuc_dosyasi = ihale_tekli_belge_motoru.belge_uret(veri, pdf_yol)
+        if platform.system() == "Windows" and sonuc_dosyasi and os.path.exists(sonuc_dosyasi):
+            os.startfile(sonuc_dosyasi)
+        return {"basarili": True, "mesaj": "Belge başarıyla üretildi!", "dosya": sonuc_dosyasi}
+    except Exception as e:
+        logging.error(f"Tekli belge hatasi: {e}")
         return {"basarili": False, "mesaj": f"Hata: {e}"}
