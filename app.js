@@ -869,13 +869,28 @@ const API = 'http://127.0.0.1:8000';
                 const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
                 const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
                 
-                govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
-                    <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
-                    <td>${p.grup}</td>
-                    <td>${gorev}</td>
-                    <td>${brans}</td>
-                    <td><label for="chk_${i}" style="cursor:pointer; display:block;">${p.ad}</label></td>
-                </tr>`;
+                govde.innerHTML += `                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Fiyat İsteme</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_fiyat_isteme" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">2</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Hesap Cetveli</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_yaklasik_maliyet" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('yaklasik_maliyet', 'pdf', document.getElementById('tarih_yaklasik_maliyet').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('yaklasik_maliyet', 'excel', document.getElementById('tarih_yaklasik_maliyet').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>`;
             });
 
             const masterKutu = document.getElementById('chk_master_personel');
@@ -1657,13 +1672,24 @@ function ihaleAdim3Goster() {
                     <tbody>
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
-                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Fiyat İsteme Belgesi</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Fiyat İsteme</td>
                             <td style="padding: 15px 10px;">
                                 <input type="date" id="tarih_fiyat_isteme" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                                 <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
                                 <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">2</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Hesap Cetveli</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_yaklasik_maliyet" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('pdf')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('excel')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                     </tbody>
@@ -1809,14 +1835,14 @@ async function ihaleEvraklariniUret() {
     }
 }
 
-let ihaleKomisyonSecimleri = {};
+let ihaleKomisyonSecimleri = JSON.parse(localStorage.getItem('ihaleKomisyonSecimleri') || '{}');
 let ihaleKomisyonHataModu = false;
 
 let ihaleGeciciVeri = {
     konu: "",
     tertibi: "",
-    resmi_baslik: "",
-    yazisma_kodu: "",
+    resmi_baslik: localStorage.getItem("ihale_resmi_baslik") || "",
+    yazisma_kodu: localStorage.getItem("ihale_yazisma_kodu") || "",
     firmalar: ["", "", ""],
     kalemler: []
 };
@@ -2088,7 +2114,7 @@ async function ihaleKomisyonModalAc() {
         if (typeof tumPersoneller === 'undefined' || tumPersoneller.length === 0) {
             const res = await fetch("http://localhost:8000/personeller");
             const responseData = await res.json();
-            window.tumPersoneller = responseData.personeller || [];
+            tumPersoneller = responseData.personeller || [];
         }
         
         const gorevIds = [
@@ -2140,6 +2166,7 @@ async function ihaleKomisyonModalAc() {
 
 function ihaleKomisyonKaydet() {
     // ihaleKomisyonSecimleri is already updated dynamically by personelAta and personelSil
+    localStorage.setItem("ihaleKomisyonSecimleri", JSON.stringify(ihaleKomisyonSecimleri));
     
     // Eğer tüm personeller tamamsa hata modunu kapat
     const gorevIds = [
@@ -2162,7 +2189,7 @@ let secimIcinGorevId = null;
 function personelSecimEkraniAc(gorevId) {
     secimIcinGorevId = gorevId;
     document.getElementById("personel_arama_input").value = "";
-    personelHavuzunuCiz(window.tumPersoneller);
+    personelHavuzunuCiz(tumPersoneller);
     document.getElementById("personel_havuz_modal").style.display = "flex";
     document.getElementById("personel_arama_input").focus();
 }
@@ -2190,7 +2217,7 @@ function personelHavuzunuCiz(liste) {
 
 function personelAra() {
     const aranan = document.getElementById("personel_arama_input").value.toLocaleLowerCase('tr-TR');
-    const filtrelenmis = window.tumPersoneller.filter(p => p.ad.toLocaleLowerCase('tr-TR').includes(aranan));
+    const filtrelenmis = tumPersoneller.filter(p => p.ad.toLocaleLowerCase('tr-TR').includes(aranan));
     personelHavuzunuCiz(filtrelenmis);
 }
 
@@ -2231,4 +2258,156 @@ function personelSil(gorevId) {
     }
     if (btnSec) btnSec.style.display = "inline-block";
     if (btnSil) btnSil.style.display = "none";
+}
+
+
+// Fiyat Giriş Modal Mantığı
+let seciliBelgeFormat = "";
+
+function fiyatGirisModalAc(format) {
+    seciliBelgeFormat = format;
+    fiyatGirisTablosunuCiz();
+    document.getElementById("fiyat_giris_modal").style.display = "flex";
+}
+
+function fiyatGirisTablosunuCiz() {
+    const thead = document.getElementById("fiyat_giris_thead");
+    const tbody = document.getElementById("fiyat_giris_tbody");
+    const tfoot = document.getElementById("fiyat_giris_tfoot");
+    
+    // Header
+    let theadHtml = `
+        <tr style="background-color: var(--bg-main);">
+            <th rowspan="2" style="width: 250px;">Mal/Hizmet Cinsi</th>
+            <th rowspan="2" style="width: 60px; text-align:center;">Miktar</th>
+    `;
+    ihaleGeciciVeri.firmalar.forEach((firma, idx) => {
+        let fAd = firma.trim() === "" ? `Firma ${idx+1}` : firma.substring(0,15);
+        theadHtml += `<th colspan="2" style="text-align:center; color:#3B82F6;">${fAd}</th>`;
+    });
+    theadHtml += `
+            <th colspan="2" style="text-align:center; color:#10B981;">İdarece Tespit Edilen<br>Yaklaşık Maliyet Hesabı (KDV Hariç)</th>
+        </tr>
+        <tr style="background-color: var(--bg-main);">
+    `;
+    ihaleGeciciVeri.firmalar.forEach(() => {
+        theadHtml += `
+            <th style="width: 80px; text-align:center;">Birim Fiyat</th>
+            <th style="width: 90px; text-align:center;">Toplam Fiyat</th>
+        `;
+    });
+    theadHtml += `
+            <th style="width: 80px; text-align:center;">Birim Yak. Mal.</th>
+            <th style="width: 90px; text-align:center;">Top. Yak. Mal.</th>
+        </tr>
+    `;
+    thead.innerHTML = document.createElement("table").innerHTML = theadHtml;
+
+    // Body
+    let tbodyHtml = "";
+    ihaleGeciciVeri.kalemler.forEach((k, idx) => {
+        if(!k.fiyatlar) k.fiyatlar = [];
+        let trHtml = `
+            <tr data-index="${idx}">
+                <td style="font-weight:bold;">${k.cins}</td>
+                <td style="text-align:center;" class="td-miktar">${k.miktar}</td>
+        `;
+        ihaleGeciciVeri.firmalar.forEach((_, fidx) => {
+            let fyt = (k.fiyatlar && k.fiyatlar[fidx] !== undefined) ? k.fiyatlar[fidx] : "";
+            trHtml += `
+                <td><input type="number" step="0.01" class="fiyat-modal-input" data-fidx="${fidx}" style="width:100%; padding:6px; border:1px solid var(--border); border-radius:4px; text-align:right;" value="${fyt}" placeholder="0.00"></td>
+                <td style="text-align:right; color:var(--fg-sub);" class="td-toplam" data-fidx="${fidx}">0.00</td>
+            `;
+        });
+        trHtml += `
+                <td style="text-align:right; font-weight:bold; color:#10B981;" class="td-yak-birim">0.00</td>
+                <td style="text-align:right; font-weight:bold; color:#10B981;" class="td-yak-toplam">0.00</td>
+            </tr>
+        `;
+        tbodyHtml += trHtml;
+    });
+    tbody.innerHTML = tbodyHtml;
+
+    // Footer
+    let tfootHtml = `
+        <tr>
+            <td colspan="2" style="text-align:right; padding:10px;">KDV HARİÇ GENEL TOPLAM:</td>
+    `;
+    ihaleGeciciVeri.firmalar.forEach((_, fidx) => {
+        tfootHtml += `
+            <td></td>
+            <td style="text-align:right; padding:10px;" id="tf_genel_${fidx}">0.00</td>
+        `;
+    });
+    tfootHtml += `
+            <td></td>
+            <td style="text-align:right; padding:10px; color:#10B981;" id="tf_genel_yak">0.00</td>
+        </tr>
+    `;
+    tfoot.innerHTML = tfootHtml;
+
+    // Listeners
+    document.querySelectorAll(".fiyat-modal-input").forEach(input => {
+        input.addEventListener('input', (e) => {
+            const tr = e.target.closest("tr");
+            const idx = parseInt(tr.getAttribute("data-index"));
+            const fidx = parseInt(e.target.getAttribute("data-fidx"));
+            let val = parseFloat(e.target.value);
+            if(!ihaleGeciciVeri.kalemler[idx].fiyatlar) ihaleGeciciVeri.kalemler[idx].fiyatlar = [];
+            ihaleGeciciVeri.kalemler[idx].fiyatlar[fidx] = isNaN(val) ? "" : val;
+            fiyatGirisHesapla();
+        });
+    });
+
+    fiyatGirisHesapla();
+}
+
+function fiyatGirisHesapla() {
+    let genelToplamlar = Array(ihaleGeciciVeri.firmalar.length).fill(0);
+    let genelYaklasikToplam = 0;
+
+    const rows = document.querySelectorAll("#fiyat_giris_tbody tr");
+    rows.forEach(tr => {
+        const idx = parseInt(tr.getAttribute("data-index"));
+        const k = ihaleGeciciVeri.kalemler[idx];
+        const miktar = parseFloat(k.miktar) || 0;
+        
+        let yaklasikBirimTop = 0;
+        let yaklasikGecerliFirmaSayisi = 0;
+
+        ihaleGeciciVeri.firmalar.forEach((_, fidx) => {
+            let bf = parseFloat((k.fiyatlar && k.fiyatlar[fidx]) ? k.fiyatlar[fidx] : 0) || 0;
+            let tf = bf * miktar;
+            
+            if(bf > 0) {
+                yaklasikBirimTop += bf;
+                yaklasikGecerliFirmaSayisi++;
+            }
+            genelToplamlar[fidx] += tf;
+
+            tr.querySelector(`.td-toplam[data-fidx="${fidx}"]`).innerText = tf > 0 ? tf.toFixed(2) : "0.00";
+        });
+
+        let yaklasikBirim = 0;
+        let yaklasikToplam = 0;
+        if(yaklasikGecerliFirmaSayisi > 0) {
+            yaklasikBirim = yaklasikBirimTop / yaklasikGecerliFirmaSayisi;
+            yaklasikToplam = yaklasikBirim * miktar;
+            genelYaklasikToplam += yaklasikToplam;
+        }
+
+        tr.querySelector(".td-yak-birim").innerText = yaklasikBirim > 0 ? yaklasikBirim.toFixed(2) : "0.00";
+        tr.querySelector(".td-yak-toplam").innerText = yaklasikToplam > 0 ? yaklasikToplam.toFixed(2) : "0.00";
+    });
+
+    ihaleGeciciVeri.firmalar.forEach((_, fidx) => {
+        document.getElementById(`tf_genel_${fidx}`).innerText = genelToplamlar[fidx] > 0 ? genelToplamlar[fidx].toFixed(2) : "0.00";
+    });
+    document.getElementById("tf_genel_yak").innerText = genelYaklasikToplam > 0 ? genelYaklasikToplam.toFixed(2) : "0.00";
+}
+
+function fiyatGirisTamamla() {
+    modalKapat("fiyat_giris_modal");
+    let tarih = document.getElementById('tarih_yaklasik_maliyet').value;
+    belgeUret('yaklasik_maliyet', seciliBelgeFormat, tarih);
 }

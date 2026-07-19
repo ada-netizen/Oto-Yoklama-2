@@ -470,7 +470,7 @@ def personel_excel_indir():
     ana_klasor, ayar = pdf_klasoru_hazirla()
     yol = os.path.join(ana_klasor, "Personel_Listesi.xlsx")
     df.to_excel(yol, index=False)
-    subprocess.Popen(['start', yol], shell=True)
+    os.startfile(yol)
     return {"basarili": True, "mesaj": "Excel dosyası oluşturuldu."}
 
 @app.get("/personel-pdf-indir")
@@ -488,7 +488,7 @@ def personel_pdf_indir():
     # Yeni eklenecek PDF methodu: personel_raporu_ciz
     motor.personel_raporu_ciz(veri, yol)
     
-    subprocess.Popen(['start', yol], shell=True)
+    os.startfile(yol)
     return {"basarili": True, "mesaj": "PDF oluşturuldu."}
 
 
@@ -1039,5 +1039,6 @@ def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
             os.startfile(sonuc_dosyasi)
         return {"basarili": True, "mesaj": "Belge başarıyla üretildi!", "dosya": sonuc_dosyasi}
     except Exception as e:
-        logging.error(f"Tekli belge hatasi: {e}")
+        import traceback
+        logging.error(f"Tekli belge hatasi: {e}\n{traceback.format_exc()}")
         return {"basarili": False, "mesaj": f"Hata: {e}"}
