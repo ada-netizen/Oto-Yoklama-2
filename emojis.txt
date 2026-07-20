@@ -1,5 +1,0 @@
-995: // --- 🧠 GELİŞMİŞ AKILLI EŞLEŞTİRME MOTORU ---
-1177: bildirimGoster(`🧠 Akıllı Eşleşme Çalıştı!\n${secilenAdlar.length} personel (Grup/Branş) otomatik seçildi.`, "bilgi");
-1218: <button class="icon-btn" style="color:#EF4444;" onclick="personelGrubuSil('${g}')" title="Sil">🗑️</button>
-1296: <button class="icon-btn" style="color:var(--tree-sel);" onclick="personelDuzenleBaslat('${p.ad}')" title="Düzenle">✏️</button>
-1297: <button class="icon-btn" style="color:#EF4444;" onclick="personelSil('${p.ad}')" title="Sil">🗑️</button>

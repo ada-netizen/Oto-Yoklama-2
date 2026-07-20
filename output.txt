@@ -1,4 +1,0 @@
-171: <button class="btn btn-rapor" style="padding: 5px 12px; display:flex; align-items:center; gap:5px;" onclick="document.getElementById('personel_export_menu').classList.toggle('acik')"><i data-lucide="download" width="16" height="16"></i> Dışa Aktar ▼</button>
-172: <div id="personel_export_menu" class="personel-filtre-panel" style="right: 0; left: auto; min-width: 120px; z-index: 9999;">
-173: <div class="personel-filtre-item" onclick="personelPdfIndir(); document.getElementById('personel_export_menu').classList.remove('acik')"><i data-lucide="file-text" width="16" height="16"></i> PDF İndir</div>
-174: <div class="personel-filtre-item" onclick="personelExcelIndir(); document.getElementById('personel_export_menu').classList.remove('acik')"><i data-lucide="bar-chart" width="16" height="16"></i> Excel İndir</div>

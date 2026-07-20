@@ -968,52 +968,7 @@ async def ihale_excel_oku(dosya: UploadFile = File(...)):
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
-@app.post("/ihale-uret")
-def ihale_uret(veri: dict, background_tasks: BackgroundTasks):
-    ayar = ayarlari_al()
-    pdf_yol = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
-    
-    # Okul Müdürü (Harcama Yetkilisi) bul
-    mudur_adi = "Okul Müdürü"
-    try:
-        db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR%' AND gorev NOT LIKE '%MÜDÜR YARDIMCISI%' LIMIT 1")
-        row = db.cursor.fetchone()
-        if row:
-            mudur_adi = row[0]
-        else:
-            db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR%' LIMIT 1")
-            row = db.cursor.fetchone()
-            if row:
-                mudur_adi = row[0]
-    except Exception as e:
-        logging.error(f"mudur_bul hatasi: {e}")
-        
-    # Gerçekleştirme Görevlisi bul
-    m_yard_adi = "Müdür Yardımcısı"
-    try:
-        db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR YARDIMCISI%' LIMIT 1")
-        row = db.cursor.fetchone()
-        if row:
-            m_yard_adi = row[0]
-        else:
-            # İlk Piyasa Fiyat Komisyonu Üyesini Ata
-            piyasa_1 = veri.get('komisyon', {}).get('ihale_kom_piyasa_1')
-            if piyasa_1:
-                m_yard_adi = piyasa_1
-    except Exception as e:
-        logging.error(f"mudur_yardimcisi_bul hatasi: {e}")
-        
-    veri["okul_adi"] = ayar.get("okul_adi", "Okul Müdürlüğü")
-    veri["okul_muduru"] = mudur_adi
-    veri["gerceklesdirme_gorevlisi"] = m_yard_adi
-    
-    try:
-        klasor = ihale_motoru.tum_evraklari_uret(veri, pdf_yol)
-        if platform.system() == "Windows":
-            os.startfile(klasor)
-        return {"basarili": True, "mesaj": "İhale evrakları başarıyla üretildi!", "klasor": klasor}
-    except Exception as e:
-        return {"basarili": False, "mesaj": f"Hata: {e}"}
+
 
 @app.post("/ihale-tekli-belge")
 def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
@@ -1033,8 +988,8 @@ def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
     veri["okul_muduru"] = mudur_adi
     
     try:
-        import ihale_tekli_belge_motoru
-        sonuc_dosyasi = ihale_tekli_belge_motoru.belge_uret(veri, pdf_yol)
+        import ihale_motoru
+        sonuc_dosyasi = ihale_motoru.belge_uret(veri, pdf_yol)
         if platform.system() == "Windows" and sonuc_dosyasi and os.path.exists(sonuc_dosyasi):
             os.startfile(sonuc_dosyasi)
         return {"basarili": True, "mesaj": "Belge başarıyla üretildi!", "dosya": sonuc_dosyasi}

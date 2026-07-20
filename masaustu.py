@@ -148,4 +148,5 @@ if __name__ == '__main__':
     pencere.events.closing += _kapaniyor
 
     # 6. Programı başlat
-    webview.start()
+    cache_klasoru = os.path.join(os.getcwd(), 'webview_cache')
+    webview.start(private_mode=False, storage_path=cache_klasoru)
