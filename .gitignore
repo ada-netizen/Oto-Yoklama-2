@@ -11,3 +11,12 @@ env/
 *.tmp
 *.temp
 *.yoklama_veritabani.db
+veri.db
+yak_mal.json
+webview_cache/
+.tmp.driveupload/
+Eski_Dosyalar_Arsivi/
+graphify-out/
+*.pdf
+*.xlsx
+*.xls

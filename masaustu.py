@@ -112,6 +112,14 @@ if __name__ == '__main__':
         t.start()
         time.sleep(1)
 
+    try:
+        from guncelleyici import GuncellemeMotoru
+        with open("versiyon.txt", "r", encoding="utf-8") as vf:
+            mevcut_versiyon = vf.read().strip()
+        GuncellemeMotoru.kontrol_et(mevcut_versiyon)
+    except Exception as e:
+        logging.error(f"Guncelleme motoru baslatilamadi: {e}")
+
     # 2. Tasarladığımız HTML dosyasının yolunu bul
     html_yolu = os.path.join(os.getcwd(), 'index.html')
 
