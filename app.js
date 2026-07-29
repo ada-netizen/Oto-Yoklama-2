@@ -901,6 +901,7 @@ const API = 'http://127.0.0.1:8000';
                 eden: { ad: edenAd, gorev: edenGorev },
                 edilen: { ad: edilenAd, gorev: edilenGorev },
                 yer: document.getElementById('b-yer').value,
+                teblig_tarihi: document.getElementById('b-tarih') ? document.getElementById('b-tarih').value : null,
                 gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : ""
             };
             fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));

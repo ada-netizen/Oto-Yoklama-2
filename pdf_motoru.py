@@ -252,8 +252,8 @@ class PDFYoneticisi:
                 except AttributeError:
                     merger = PyPDF2.PdfFileMerger()
                 
-                merger.append(yuklenen_pdf) 
                 merger.append(temp_pdf)     
+                merger.append(yuklenen_pdf) 
                 merger.write(kayit_yeri)
                 merger.close()
                 if os.path.exists(temp_pdf): os.remove(temp_pdf)
@@ -380,7 +380,7 @@ class PDFYoneticisi:
         c.save()
         return True, ""
 
-    def bireysel_teblig_ciz(self, kurum, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, kayit_yeri, yuklenen_pdf=None):
+    def bireysel_teblig_ciz(self, kurum, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, teblig_tarihi, kayit_yeri, yuklenen_pdf=None):
         from reportlab.lib.pagesizes import A4
         from reportlab.platypus import Table, TableStyle, Paragraph
         from reportlab.lib import colors
@@ -398,7 +398,10 @@ class PDFYoneticisi:
         # A5 Makbuzunu diske değil, bilgisayarın "Geçici Hafızasına (RAM)" çiziyoruz
         temp_pdf = io.BytesIO()
         c = canvas.Canvas(temp_pdf, pagesize=A4)
-        bugun = datetime.now().strftime("%d/%m/%Y")
+        if teblig_tarihi:
+            bugun = teblig_tarihi
+        else:
+            bugun = datetime.now().strftime("%d/%m/%Y")
         
         def turkce_title(metin):
             if not metin: return ""
@@ -424,8 +427,8 @@ class PDFYoneticisi:
             data = [
                 [Paragraph(self.metin_duzelt("TEBLİĞ YAPILACAK<br/>YAZININ TARİHİ VE SAYISI"), style_n), Paragraph(self.metin_duzelt(f"{kurum}'nün {yazi_tarihi} tarih ve {sayi} sayılı yazısı."), style_n)],
                 [Paragraph(self.metin_duzelt("YAZININ ÖZÜ"), style_n), Paragraph(self.metin_duzelt(konu), style_n)],
-                [Paragraph(self.metin_duzelt("TEBLİĞ EDİLDİĞİ YER VE<br/>SAAT"), style_n), Paragraph(self.metin_duzelt(t_yeri), style_n)],
-                [Paragraph(self.metin_duzelt("&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda adı soyadı, görevi ve görev yeri yazılı bulunan personele söz konusu yazı tebliğ edilmiştir."), style_n), ''],
+                [Paragraph(self.metin_duzelt("TEBLİĞ EDİLDİĞİ YER<br/>VE SAAT"), style_n), Paragraph(self.metin_duzelt(f"{t_yeri}"), style_n)],
+                [Paragraph(self.metin_duzelt("&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda bilgileri verilen belgeyi tebliğ aldım."), style_n), ''],
                 [[Paragraph(self.metin_duzelt("TEBLİĞ EDEN"), style_cb),
                   Paragraph(self.metin_duzelt(f"<br/>{bugun}<br/>İmza<br/>{t_eden['ad']}<br/>{t_eden['gorev']}"), style_c)],
                  [Paragraph(self.metin_duzelt("TEBELLÜĞ EDEN"), style_cb),
@@ -472,11 +475,11 @@ class PDFYoneticisi:
         # ================= PDF'LERİ BİRLEŞTİRME MUCİZESİ =================
         merger = PyPDF2.PdfMerger()
 
-        # 1. Klasöre gidip senin seçtiğin DYS Orijinal Resmi Yazısını (PDF) alır
-        merger.append(yuklenen_pdf)
-
-        # 2. Üzerine bizim RAM'de hazırladığımız Makaslı A5 Makbuzunu yapıştırır
+        # 1. Önce bizim RAM'de hazırladığımız Makaslı A5 Makbuzunu (Tebliğ Belgesi) ekler
         merger.append(temp_pdf)
+
+        # 2. Sonra klasöre gidip senin seçtiğin DYS Orijinal Resmi Yazısını (PDF) arkasına ekler
+        merger.append(yuklenen_pdf)
 
         # 3. Sonuç olarak ikisini tek bir PDF dosyası olarak kaydeder!
         with open(kayit_yeri, "wb") as f_out:

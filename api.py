@@ -98,6 +98,7 @@ class TebligBireyselRequest(BaseModel):
     eden: PersonelModel
     edilen: PersonelModel
     yer: str
+    teblig_tarihi: Optional[str] = None
     gecici_pdf_yolu: Optional[str] = None
 
 class TebligTopluRequest(BaseModel):
@@ -513,7 +514,23 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
             konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
             if konu_match:
                 konu_ham = konu_match.group(1).strip()
-                konu = " ".join(konu_ham.split())
+                
+                # Konu ile İlgi arasında kalan hedef makam adını ayıklama
+                lines = konu_ham.split('\n')
+                temiz_lines = []
+                for line in lines:
+                    line_str = line.strip()
+                    if not line_str: continue
+                    
+                    # Kurum hitap kelimelerinden birini içeriyorsa veya satır tamamen büyük harfliyse (min 15 karakter) dur!
+                    if re.search(r'(?:MÜDÜRLÜĞÜNE|LİSESİNE|KAYMAKAMLIĞINA|VALİLİĞİNE|BAKANLIĞINA|OKULUNA|MERKEZİNE|BAŞKANLIĞINA|MÜDÜRLÜĞÜ|LİSESİ)\b', line_str, re.IGNORECASE):
+                        break
+                    if len(line_str) > 15 and line_str.isupper():
+                        break
+                        
+                    temiz_lines.append(line_str)
+                
+                konu = " ".join(temiz_lines)
                 if sayi and sayi in konu:
                     konu = konu.replace(sayi, "").replace(":", "").strip()
 
@@ -549,7 +566,7 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
         def gorev_bireysel_teblig():
             try:
                 motor = PDFYoneticisi(ayar)
-                motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, yol, yuklenen_pdf)
+                motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, yol, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
             except Exception as e:
                 logging.error(f"Bireysel teblig cizim hatasi: {e}")
