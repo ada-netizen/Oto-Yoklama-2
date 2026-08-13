@@ -2526,3 +2526,56 @@ function fiyatGirisTamamla() {
     let tarih = document.getElementById('tarih_yaklasik_maliyet').value;
     belgeUret('yaklasik_maliyet', seciliBelgeFormat, tarih);
 }
+
+// ==========================================
+// TEBLİĞ MODÜLÜ UI FONKSİYONLARI
+// ==========================================
+function tebligModuDegistir(mod) {
+    const btnToplu = document.getElementById('btn_alt_toplu');
+    const btnBireysel = document.getElementById('btn_alt_bireysel');
+    const viewToplu = document.getElementById('view_toplu_teblig');
+    const viewBireysel = document.getElementById('view_bireysel_teblig');
+
+    if (!btnToplu || !btnBireysel || !viewToplu || !viewBireysel) return;
+
+    if (mod === 'toplu') {
+        btnToplu.style.background = 'var(--tree-sel)';
+        btnToplu.style.color = 'white';
+        
+        btnBireysel.style.background = 'transparent';
+        btnBireysel.style.color = 'var(--fg-sub)';
+        
+        viewToplu.style.display = 'flex';
+        viewBireysel.style.display = 'none';
+    } else {
+        btnBireysel.style.background = 'var(--tree-sel)';
+        btnBireysel.style.color = 'white';
+        
+        btnToplu.style.background = 'transparent';
+        btnToplu.style.color = 'var(--fg-sub)';
+        
+        viewToplu.style.display = 'none';
+        viewBireysel.style.display = 'flex';
+    }
+}
+
+// ==========================================
+// YARDIM MODÜLÜ UI FONKSİYONLARI
+// ==========================================
+function yardimIcerikGoster(id, btnElement) {
+    // Tüm içerikleri gizle
+    const icerikler = document.querySelectorAll('.yardim-icerik');
+    icerikler.forEach(el => el.style.display = 'none');
+    
+    // Tüm butonlardan active sınıfını kaldır
+    const butonlar = document.querySelectorAll('.yardim-menu-btn');
+    butonlar.forEach(btn => btn.classList.remove('active'));
+    
+    // Seçileni göster ve butonunu aktif yap
+    const secilenIcerik = document.getElementById(id);
+    if (secilenIcerik) secilenIcerik.style.display = 'block';
+    
+    if (btnElement) {
+        btnElement.classList.add('active');
+    }
+}
