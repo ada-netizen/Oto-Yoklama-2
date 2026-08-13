@@ -45,8 +45,7 @@
 
     <div id="raporlar_modal" class="modal-overlay">
         <div class="modal-content" style="width: 700px; padding: 0; background-color: var(--bg-main);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Raporlar</h2>
                 <button class="btn btn-kirmizi" style="padding: 5px 15px;"
                     onclick="modalKapat('raporlar_modal')">Kapat</button>
@@ -152,8 +151,7 @@
 
     <div id="akilli_eslesme_modal" class="modal-overlay">
         <div class="modal-content" style="width: 600px; padding: 0; background-color: var(--bg-main);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2 style="margin:0; color: #8B5CF6; font-size: 16px;"><i data-lucide="brain" width="16"
                         height="16"></i> Akıllı Personel Eşleştirme</h2>
                 <button class="btn btn-kirmizi" style="padding: 5px 15px;"
@@ -205,8 +203,7 @@
     <!-- ================= YILLIK DEVAMSIZLIK MODAL ================= -->
     <div id="yillik_modal" class="modal-overlay">
         <div class="modal-content" style="width: 1100px; padding: 0; background-color: var(--bg-main);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2 id="modal_baslik" style="margin:0; color: var(--tree-sel); font-size: 16px;">Yıllık Devamsızlık
                     Karnesi</h2>
                 <button class="btn btn-kirmizi" style="padding: 5px 15px;"
@@ -230,8 +227,7 @@
     <div id="personel_yonetim_modal" class="modal-overlay">
         <div class="modal-content"
             style="width: 850px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2
                     style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
                     <i data-lucide="users" width="16" height="16"></i> Personel Yönetimi
@@ -351,8 +347,7 @@
     <div id="personel_grup_yonetim_modal" class="modal-overlay" style="z-index: 1100;">
         <div class="modal-content"
             style="width: 450px; max-width: 95vw; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 0;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h3 style="margin:0; color: var(--tree-sel); font-size: 15px;"><i data-lucide="users" width="16"
                         height="16"></i> Personel Gruplarını Yönet</h3>
                 <button class="icon-btn" style="color: var(--fg-main);"
@@ -398,7 +393,8 @@
     </div>
     <div id="sekme_izin" class="tab-content aktif">
         <div class="top-bar">
-            <h2 class="top-bar-title">YOKLAMA YÖNETİM PANELİ</h2>
+            <h2 class="top-bar-title"><i data-lucide="check-square" width="20" height="20"></i> Yoklama Yönetim Paneli
+            </h2>
             <div class="top-bar-buttons">
                 <input type="file" id="f-dev" style="display: none;" accept=".xlsx, .xls, .csv"
                     onchange="dosyaYukle('devamsizlik-excel-yukle', event)">
@@ -635,258 +631,284 @@
 
     <div id="sekme_teblig" class="tab-content">
         <div style="display: flex; flex-direction: column; gap: 15px; height: 100%;">
-            <div class="top-bar" style="margin-bottom: 0;">
-                <h2 class="top-bar-title"><i data-lucide="mail" width="20" height="20"></i> YAZI TEBLİĞİ VE PERSONEL
-                    YÖNETİMİ</h2>
+            <div class="top-bar">
+                <h2 class="top-bar-title"><i data-lucide="mail" width="20" height="20"></i> Yazı Tebliği ve Personel
+                    Yönetimi</h2>
                 <div class="top-bar-buttons">
-                    <button class="btn btn-dev"
-                        title="Yüklenen yazılardaki kelimelere göre otomatik personel seçimi kuralları oluşturun"
-                        onclick="akilliEslesmeModalAc()"><i data-lucide="brain" width="16" height="16"></i> Akıllı
-                        Eşleşmeler</button>
                 </div>
             </div>
 
-            <div class="modern-card"
-                style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; flex-shrink: 0;">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.02);">
-                    <h3
-                        style="margin: 0; font-size: 14px; color: var(--tree-sel); display: flex; align-items: center; gap: 8px;">
-                        <i data-lucide="file-text" width="18" height="18"></i> Belge Bilgileri
-                    </h3>
-                    <input type="file" id="f-meb" style="display: none;" accept=".pdf" onchange="mebPdfYukle(event)">
-                    <button class="btn"
-                        style="padding: 6px 12px; font-size: 12px; border-radius: 6px; background-color: transparent; border: 1px solid var(--border); color: var(--fg-main);"
-                        title="MEB'den gelen resmi yazının PDF'ini yükleyin, sayı/konu/tarih otomatik okunsun"
-                        onclick="document.getElementById('f-meb').click()"><i data-lucide="upload-cloud" width="14"
-                            height="14"></i> PDF'den Otomatik Doldur</button>
-                </div>
-
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; padding: 15px 20px;">
-                    <input type="hidden" id="t-pdf-yol">
-                    <div>
-                        <label
-                            style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Geldiği
-                            Yer (Kurum)</label>
-                        <input type="text" id="t-kurum"
-                            style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Evrak
-                            Sayısı</label>
-                        <input type="text" id="t-sayi"
-                            style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Tarih</label>
-                        <input type="text" id="t-tarih"
-                            style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
-                    </div>
-                    <div>
-                        <label
-                            style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Konu</label>
-                        <input type="text" id="t-konu"
-                            style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
-                    </div>
-                </div>
-            </div>
-
-            <div style="display: flex; justify-content: center; margin: 5px 0; flex-shrink: 0;">
-                <div class="segmented-control"
-                    style="display: inline-flex; background-color: var(--bg-card); padding: 4px; border-radius: 8px; border: 1px solid var(--border);">
-                    <button id="btn_alt_toplu" class="segmented-btn" onclick="tebligModuDegistir('toplu')"
-                        style="padding: 8px 24px; border: none; background: var(--tree-sel); color: white; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"><i
-                            data-lucide="users" width="16" height="16"></i> Toplu Tebliğ (İmza Sirküsü)</button>
-                    <button id="btn_alt_bireysel" class="segmented-btn" onclick="tebligModuDegistir('bireysel')"
-                        style="padding: 8px 24px; border: none; background: transparent; color: var(--fg-sub); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"><i
-                            data-lucide="user" width="16" height="16"></i> Bireysel Tebliğ</button>
-                </div>
-            </div>
-
-            <div style="flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
-
-                <div id="view_toplu_teblig" style="display: flex; flex-direction: column; height: 100%; gap: 15px;">
-                    <div
-                        style="background: var(--bg-card); padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-shrink: 0;">
-                        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;"
-                            class="chip-container">
-                            <style>
-                                .chip-checkbox {
-                                    display: none;
-                                }
-
-                                .chip-label {
-                                    padding: 6px 12px;
-                                    font-size: 11px;
-                                    font-weight: 600;
-                                    color: var(--fg-sub);
-                                    background-color: var(--bg-main);
-                                    border: 1px solid var(--border);
-                                    border-radius: 16px;
-                                    cursor: pointer;
-                                    transition: all 0.2s;
-                                    user-select: none;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 4px;
-                                }
-
-                                .chip-checkbox:checked+.chip-label {
-                                    background-color: var(--tree-sel);
-                                    color: white;
-                                    border-color: var(--tree-sel);
-                                }
-
-                                .chip-label:hover {
-                                    filter: brightness(0.95);
-                                }
-                            </style>
-                            <input type="checkbox" id="grp_tumu" class="chip-checkbox" onchange="filtreTumuDegisti()">
-                            <label for="grp_tumu" class="chip-label"><i data-lucide="users" width="14" height="14"></i>
-                                Tümü</label>
-
-                            <input type="checkbox" id="grp_idare" class="chip-checkbox" onchange="filtreleriHesapla()">
-                            <label for="grp_idare" class="chip-label"><i data-lucide="shield" width="14"
-                                    height="14"></i> İdare</label>
-
-                            <input type="checkbox" id="grp_ogretmenler" class="chip-checkbox"
-                                onchange="filtreleriHesapla()">
-                            <label for="grp_ogretmenler" class="chip-label"><i data-lucide="book-open" width="14"
-                                    height="14"></i> Öğretmenler</label>
-
-                            <input type="checkbox" id="grp_diger" class="chip-checkbox" onchange="filtreleriHesapla()">
-                            <label for="grp_diger" class="chip-label"><i data-lucide="briefcase" width="14"
-                                    height="14"></i> Diğer</label>
-                        </div>
-
+            <div style="display: flex; flex-direction: row; gap: 20px; flex: 1; overflow: hidden;">
+                <!-- Sol Sütun (Belge Bilgileri) -->
+                <div style="flex: 3; display: flex; flex-direction: column; gap: 15px;">
+                    <div class="modern-card"
+                        style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden; height: 100%;">
                         <div
-                            style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 400px; position: relative;">
-                            <i data-lucide="search" width="14" height="14"
-                                style="position: absolute; left: 10px; color: var(--fg-sub);"></i>
-                            <input type="text" id="personel_ara" placeholder="Personel Ara (Örn: Matematik, Müdür)..."
-                                style="flex: 1; padding: 8px 8px 8px 30px; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); font-size: 12px; outline: none; transition: border-color 0.2s;"
-                                onkeyup="personelTablosunuDoldur()">
-                            <button class="btn btn-temizle"
-                                style="padding: 8px 12px; font-size: 11px; border-radius: 6px;"
-                                onclick="personelTumunuTemizle()"><i data-lucide="trash-2" width="14" height="14"></i>
-                                Temizle</button>
+                            style="display: flex; flex-direction: column; gap: 15px; padding: 15px 20px; border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.02);">
+                            <h3
+                                style="margin: 0; font-size: 14px; color: var(--tree-sel); display: flex; align-items: center; gap: 8px;">
+                                <i data-lucide="file-text" width="18" height="18"></i> Belge Bilgileri
+                            </h3>
+                            <div style="display: flex; flex-direction: column; gap: 15px; width: 100%;">
+                                <input type="file" id="f-meb" style="display: none;" accept=".pdf"
+                                    onchange="mebPdfYukle(event)">
+                                <button class="btn btn-kirmizi"
+                                    style="width: 100%; justify-content: center; padding: 14px; font-size: 13px; font-weight: bold; border-radius: 8px;"
+                                    title="MEB'den gelen resmi yazının PDF'ini yükleyin, sayı/konu/tarih otomatik okunsun"
+                                    onclick="document.getElementById('f-meb').click()"><i data-lucide="upload-cloud"
+                                        width="18" height="18"></i> PDF'den Otomatik Doldur</button>
+                                <button class="btn btn-dev" style="width: 100%; justify-content: center; padding: 10px;"
+                                    title="Yüklenen yazılardaki kelimelere göre otomatik personel seçimi kuralları oluşturun"
+                                    onclick="akilliEslesmeModalAc()"><i data-lucide="brain" width="16" height="16"></i>
+                                    Akıllı
+                                    Eşleşmeler</button>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="tree-card"
-                        style="flex:1; border: 1px solid var(--border); border-radius: 8px; overflow-y: auto; background-color: var(--bg-main); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
-                        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
-                            <thead style="position: sticky; top: 0; background-color: var(--bg-card); z-index: 1;">
-                                <tr>
-                                    <th
-                                        style="width: 5%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align: center;">
-                                        <input type="checkbox" id="chk_master_personel"
-                                            title="Ekranda görünenleri seç/bırak"
-                                            onchange="personelMasterSecim(this.checked)">
-                                    </th>
-                                    <th
-                                        style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                        Personel Grubu</th>
-                                    <th
-                                        style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                        Görev</th>
-                                    <th
-                                        style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                        Branş</th>
-                                    <th
-                                        style="width: 35%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                        Ad Soyad</th>
-                                </tr>
-                            </thead>
-                            <tbody id="personel-govde">
-                                <tr>
-                                    <td colspan="5" style="text-align: center; color:var(--fg-sub); padding:20px;">
-                                        Personel listesi bekleniyor...</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; padding-top: 5px; flex-shrink: 0;">
-                        <span id="lbl_secili_personel_sayisi"
-                            style="font-size: 13px; font-weight: 600; color: #10B981; background-color: rgba(16, 185, 129, 0.1); padding: 6px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;"><i
-                                data-lucide="check-circle" width="16" height="16"></i> Seçili: 0 Kişi</span>
-                        <button class="btn btn-rapor"
-                            style="padding: 10px 20px; font-size: 14px; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);"
-                            title="İşaretlenen tüm personel için tek bir imza sirküsü listesi PDF olarak oluşturur"
-                            onclick="topluTebligPdfAl()"><i data-lucide="file-stack" width="18" height="18"></i> İmza
-                            Sirküsü Çıkar</button>
+                        <div style="display: flex; flex-direction: column; gap: 15px; padding: 20px;">
+                            <input type="hidden" id="t-pdf-yol">
+                            <div>
+                                <label
+                                    style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Geldiği
+                                    Yer (Kurum)</label>
+                                <input type="text" id="t-kurum"
+                                    style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Evrak
+                                    Sayısı</label>
+                                <input type="text" id="t-sayi"
+                                    style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Tarih</label>
+                                <input type="text" id="t-tarih"
+                                    style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display: block; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Konu</label>
+                                <textarea id="t-konu" rows="4"
+                                    style="box-sizing: border-box; width: 100%; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); padding: 8px 10px; outline: none; transition: border-color 0.2s; resize: vertical;"></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div id="view_bireysel_teblig"
-                    style="display: none; height: 100%; align-items: center; justify-content: center;">
+                <!-- Sağ Sütun (Tebliğ Edilecek Kişiler) -->
+                <div
+                    style="flex: 7; display: flex; flex-direction: column; overflow: hidden; background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
                     <div
-                        style="width: 100%; max-width: 600px; padding: 30px; display: flex; flex-direction: column; gap: 20px; background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
-                        <div style="text-align: center; margin-bottom: 10px;">
+                        style="display: flex; justify-content: center; padding: 15px; border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.02); flex-shrink: 0;">
+                        <div class="segmented-control"
+                            style="display: inline-flex; background-color: var(--bg-card); padding: 4px; border-radius: 8px; border: 1px solid var(--border);">
+                            <button id="btn_alt_toplu" class="segmented-btn" onclick="tebligModuDegistir('toplu')"
+                                style="padding: 8px 24px; border: none; background: var(--tree-sel); color: white; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"><i
+                                    data-lucide="users" width="16" height="16"></i> Toplu Tebliğ (İmza Sirküsü)</button>
+                            <button id="btn_alt_bireysel" class="segmented-btn" onclick="tebligModuDegistir('bireysel')"
+                                style="padding: 8px 24px; border: none; background: transparent; color: var(--fg-sub); border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;"><i
+                                    data-lucide="user" width="16" height="16"></i> Bireysel Tebliğ</button>
+                        </div>
+                    </div>
+
+                    <div style="flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
+
+                        <div id="view_toplu_teblig"
+                            style="display: flex; flex-direction: column; height: 100%; gap: 15px;">
                             <div
-                                style="display: inline-flex; padding: 12px; background-color: rgba(16, 185, 129, 0.1); border-radius: 50%; color: #10B981; margin-bottom: 15px;">
-                                <i data-lucide="mail-open" width="32" height="32"></i>
+                                style="background: var(--bg-card); padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-shrink: 0;">
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;"
+                                    class="chip-container">
+                                    <style>
+                                        .chip-checkbox {
+                                            display: none;
+                                        }
+
+                                        .chip-label {
+                                            padding: 6px 12px;
+                                            font-size: 11px;
+                                            font-weight: 600;
+                                            color: var(--fg-sub);
+                                            background-color: var(--bg-main);
+                                            border: 1px solid var(--border);
+                                            border-radius: 16px;
+                                            cursor: pointer;
+                                            transition: all 0.2s;
+                                            user-select: none;
+                                            display: flex;
+                                            align-items: center;
+                                            gap: 4px;
+                                        }
+
+                                        .chip-checkbox:checked+.chip-label {
+                                            background-color: var(--tree-sel);
+                                            color: white;
+                                            border-color: var(--tree-sel);
+                                        }
+
+                                        .chip-label:hover {
+                                            filter: brightness(0.95);
+                                        }
+                                    </style>
+                                    <input type="checkbox" id="grp_tumu" class="chip-checkbox"
+                                        onchange="filtreTumuDegisti()">
+                                    <label for="grp_tumu" class="chip-label"><i data-lucide="users" width="14"
+                                            height="14"></i>
+                                        Tümü</label>
+
+                                    <input type="checkbox" id="grp_idare" class="chip-checkbox"
+                                        onchange="filtreleriHesapla()">
+                                    <label for="grp_idare" class="chip-label"><i data-lucide="shield" width="14"
+                                            height="14"></i> İdare</label>
+
+                                    <input type="checkbox" id="grp_ogretmenler" class="chip-checkbox"
+                                        onchange="filtreleriHesapla()">
+                                    <label for="grp_ogretmenler" class="chip-label"><i data-lucide="book-open"
+                                            width="14" height="14"></i> Öğretmenler</label>
+
+                                    <input type="checkbox" id="grp_diger" class="chip-checkbox"
+                                        onchange="filtreleriHesapla()">
+                                    <label for="grp_diger" class="chip-label"><i data-lucide="briefcase" width="14"
+                                            height="14"></i> Diğer</label>
+                                </div>
+
+                                <div
+                                    style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 400px; position: relative;">
+                                    <i data-lucide="search" width="14" height="14"
+                                        style="position: absolute; left: 10px; color: var(--fg-sub);"></i>
+                                    <input type="text" id="personel_ara"
+                                        placeholder="Personel Ara (Örn: Matematik, Müdür)..."
+                                        style="flex: 1; padding: 8px 8px 8px 30px; background-color: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; color: var(--fg-main); font-size: 12px; outline: none; transition: border-color 0.2s;"
+                                        onkeyup="personelTablosunuDoldur()">
+                                    <button class="btn btn-temizle"
+                                        style="padding: 8px 12px; font-size: 11px; border-radius: 6px;"
+                                        onclick="personelTumunuTemizle()"><i data-lucide="trash-2" width="14"
+                                            height="14"></i>
+                                        Temizle</button>
+                                </div>
                             </div>
-                            <h3 style="color: var(--fg-main); margin: 0; font-size: 18px;">Bireysel Tebliğ Formu</h3>
-                            <p style="color: var(--fg-sub); font-size: 13px; margin-top: 6px;">Tek bir personel için
-                                tebliğ-tebellüğ belgesi oluşturun.</p>
+
+                            <div class="tree-card"
+                                style="flex:1; border: 1px solid var(--border); border-radius: 8px; overflow-y: auto; background-color: var(--bg-main); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+                                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                    <thead
+                                        style="position: sticky; top: 0; background-color: var(--bg-card); z-index: 1;">
+                                        <tr>
+                                            <th
+                                                style="width: 5%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align: center;">
+                                                <input type="checkbox" id="chk_master_personel"
+                                                    title="Ekranda görünenleri seç/bırak"
+                                                    onchange="personelMasterSecim(this.checked)">
+                                            </th>
+                                            <th
+                                                style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
+                                                Personel Grubu</th>
+                                            <th
+                                                style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
+                                                Görev</th>
+                                            <th
+                                                style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
+                                                Branş</th>
+                                            <th
+                                                style="width: 35%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
+                                                Ad Soyad</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="personel-govde">
+                                        <tr>
+                                            <td colspan="5"
+                                                style="text-align: center; color:var(--fg-sub); padding:20px;">
+                                                Personel listesi bekleniyor...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: stretch; padding-top: 10px; flex-shrink: 0; gap: 15px;">
+                                <span id="lbl_secili_personel_sayisi"
+                                    style="font-size: 14px; font-weight: 600; color: #10B981; background-color: rgba(16, 185, 129, 0.1); padding: 0 20px; border-radius: 8px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; border: 1px solid rgba(16, 185, 129, 0.2);"><i
+                                        data-lucide="check-circle" width="20" height="20"></i> Seçili: 0 Kişi</span>
+                                <button class="btn btn-rapor"
+                                    style="flex: 1; padding: 14px; font-size: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); display: flex; justify-content: center; align-items: center; gap: 8px;"
+                                    title="İşaretlenen tüm personel için tek bir imza sirküsü listesi PDF olarak oluşturur"
+                                    onclick="topluTebligPdfAl()"><i data-lucide="file-stack" width="20" height="20"></i>
+                                    İMZA SİRKÜSÜ ÇIKAR</button>
+                            </div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                            <div>
-                                <label
-                                    style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebliğ
-                                    Eden (İdareci)</label>
-                                <select id="b-eden"
-                                    style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"></select>
-                            </div>
-                            <div>
-                                <label
-                                    style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebellüğ
-                                    Eden (Personel)</label>
-                                <select id="b-edilen"
-                                    style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"></select>
-                            </div>
-                            <div>
-                                <label
-                                    style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tarih
-                                    <span style="font-weight: normal; font-size: 10px; opacity: 0.8;">(Boş bırakılırsa
-                                        bugün)</span></label>
-                                <input type="text" id="b-tarih" placeholder="GG.AA.YYYY"
-                                    style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;">
-                            </div>
-                            <div>
-                                <label
-                                    style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Yer
-                                    ve Saat</label>
-                                <input type="text" id="b-yer" value="Okul Müdürlüğü"
-                                    style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;">
+                        <div id="view_bireysel_teblig"
+                            style="display: none; height: 100%; align-items: center; justify-content: center;">
+                            <div
+                                style="width: 100%; max-width: 600px; padding: 30px; display: flex; flex-direction: column; gap: 20px; background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);">
+                                <div style="text-align: center; margin-bottom: 10px;">
+                                    <div
+                                        style="display: inline-flex; padding: 12px; background-color: rgba(16, 185, 129, 0.1); border-radius: 50%; color: #10B981; margin-bottom: 15px;">
+                                        <i data-lucide="mail-open" width="32" height="32"></i>
+                                    </div>
+                                    <h3 style="color: var(--fg-main); margin: 0; font-size: 18px;">Bireysel Tebliğ Formu
+                                    </h3>
+                                    <p style="color: var(--fg-sub); font-size: 13px; margin-top: 6px;">Tek bir personel
+                                        için
+                                        tebliğ-tebellüğ belgesi oluşturun.</p>
+                                </div>
+
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div>
+                                        <label
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebliğ
+                                            Eden (İdareci)</label>
+                                        <select id="b-eden"
+                                            style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"></select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebellüğ
+                                            Eden (Personel)</label>
+                                        <select id="b-edilen"
+                                            style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;"></select>
+                                    </div>
+                                    <div>
+                                        <label
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tarih
+                                            <span style="font-weight: normal; font-size: 10px; opacity: 0.8;">(Boş
+                                                bırakılırsa
+                                                bugün)</span></label>
+                                        <input type="text" id="b-tarih" placeholder="GG.AA.YYYY"
+                                            style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;">
+                                    </div>
+                                    <div>
+                                        <label
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Yer
+                                            ve Saat</label>
+                                        <input type="text" id="b-yer" value="Okul Müdürlüğü"
+                                            style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;">
+                                    </div>
+                                </div>
+
+                                <button class="btn"
+                                    style="margin-top: 10px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; background-color: #10B981; color: white; border: none; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2); width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;"
+                                    title="Seçilen tebliğ eden/edilen kişiler için tek kişilik tebliğ-tebellüğ belgesi oluşturur"
+                                    onclick="bireyselTebligPdfAl()"><i data-lucide="printer" width="18" height="18"></i>
+                                    Bireysel PDF Çıktısı Al</button>
                             </div>
                         </div>
 
-                        <button class="btn"
-                            style="margin-top: 10px; padding: 12px; font-size: 14px; font-weight: bold; border-radius: 8px; background-color: #10B981; color: white; border: none; box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2); width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;"
-                            title="Seçilen tebliğ eden/edilen kişiler için tek kişilik tebliğ-tebellüğ belgesi oluşturur"
-                            onclick="bireyselTebligPdfAl()"><i data-lucide="printer" width="18" height="18"></i>
-                            Bireysel PDF Çıktısı Al</button>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
     <div id="sekme_ihale" class="tab-content">
-        <div class="top-bar" style="display:flex; justify-content:space-between; align-items:center;">
-            <h2 class="top-bar-title" style="display:flex; align-items:center; gap:10px; margin:0;"><i
-                    data-lucide="briefcase" width="20" height="20"></i> İhale Yönetimi (22/d Doğrudan Temin)</h2>
-            <div style="display:flex; gap:10px; margin-right:20px;">
-                <button class="btn" style="background-color: #3B82F6; color: white; padding: 6px 15px;"
-                    onclick="ihaleBilgiGirisiModalAc()"><i data-lucide="info" width="16" height="16"></i> Bilgi
+        <div class="top-bar">
+            <h2 class="top-bar-title"><i data-lucide="briefcase" width="20" height="20"></i> İhale Yönetimi (22/d
+                Doğrudan Temin)</h2>
+            <div class="top-bar-buttons">
+                <button class="btn" onclick="ihaleBilgiGirisiModalAc()"><i data-lucide="info" width="16"
+                        height="16"></i> Bilgi
                     Girişi</button>
                 <button class="btn btn-dev" style="padding: 6px 15px;" onclick="ihaleKomisyonModalAc()"><i
                         data-lucide="users" width="16" height="16"></i> Görevli Yönetimi</button>
@@ -908,8 +930,8 @@
 
     <div id="sekme_ayarlar" class="tab-content">
         <div class="top-bar">
-            <h2 class="top-bar-title" style="display:flex; align-items:center; gap:10px;"><i data-lucide="settings"
-                    width="20" height="20"></i> Sistem Ayarları ve Yönetim</h2>
+            <h2 class="top-bar-title"><i data-lucide="settings" width="20" height="20"></i> Sistem Ayarları ve Yönetim
+            </h2>
         </div>
 
         <div class="settings-container-scroll">
@@ -1092,8 +1114,8 @@
                             </div>
                             <div class="settings-item-action"
                                 style="display: flex; flex-direction: row; gap:10px; width:100%; align-items:center; flex-wrap: wrap;">
-                                <button class="btn" style="background-color: #8B5CF6;" onclick="sistemYedekle()"><i
-                                        data-lucide="save" width="14" height="14"></i> Şimdi Yedek Al</button>
+                                <button class="btn" class="btn btn-mor" onclick="sistemYedekle()"><i data-lucide="save"
+                                        width="14" height="14"></i> Şimdi Yedek Al</button>
                                 <div style="flex:1; min-width: 20px;"></div>
                                 <select id="ayar_yedek_secim" style="flex:1; min-width: 200px;">
                                     <option value="">Yedek bulunamadı</option>
@@ -1119,7 +1141,7 @@
 
     <div id="sekme_yardim" class="tab-content">
         <div class="top-bar">
-            <h2 class="top-bar-title"><i data-lucide="book-open" width="20" height="20"></i> YARDIM VE KULLANIM REHBERİ
+            <h2 class="top-bar-title"><i data-lucide="book-open" width="20" height="20"></i> Yardım ve Kullanım Rehberi
             </h2>
         </div>
 
@@ -1147,6 +1169,15 @@
                     </button>
                     <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_yedekleme', this)">
                         <i data-lucide="save" width="16" height="16"></i> Yedekleme & Ayarlar
+                    </button>
+                    <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_dilekce', this)">
+                        <i data-lucide="printer" width="16" height="16"></i> İzin Dilekçesi Oluşturma
+                    </button>
+                    <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_eslesme', this)">
+                        <i data-lucide="brain" width="16" height="16"></i> Akıllı Eşleşmeler
+                    </button>
+                    <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_personel', this)">
+                        <i data-lucide="user-cog" width="16" height="16"></i> Personel Düzenleme
                     </button>
 
                 </div>
@@ -1286,32 +1317,47 @@
                         style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
                         Yazı Tebliği ve İmza Sirküsü Rehberi</h2>
                     <p style="color: var(--fg-main); line-height: 1.6; font-size: 14px; margin-bottom: 20px;">
-                        Personelinize DYS (Milli Eğitim Bakanlığı Doküman Yönetim Sistemi) üzerinden gelen resmi yazıları pratik bir şekilde tebliğ etmek için bu sekmeyi kullanabilirsiniz. İşlemler aşağıdaki gibi yapılır:
+                        Personelinize DYS (Milli Eğitim Bakanlığı Doküman Yönetim Sistemi) üzerinden gelen resmi
+                        yazıları pratik bir şekilde tebliğ etmek için bu sekmeyi kullanabilirsiniz. İşlemler aşağıdaki
+                        gibi yapılır:
                     </p>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="upload-cloud" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 1. Otomatik Doldur Özelliği (Tavsiye Edilir)</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="upload-cloud" width="18"
+                            height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 1. Otomatik Doldur
+                        Özelliği (Tavsiye Edilir)</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
                         Gelen evraktaki bilgileri (Sayı, Konu, Kurum) tek tek elle yazmanıza gerek yoktur.<br><br>
                         • Sol menüden <b>Yazı Tebliği</b> sekmesini açın.<br>
                         • Üstteki <b>DYS PDF Yükle (Otomatik Doldur)</b> butonuna tıklayın.<br>
-                        • DYS'den indirdiğiniz PDF formatındaki üst yazıyı seçin. Program yapay zeka/analiz kullanarak Sayı, Konu ve Gönderen Kurum bilgilerini sizin yerinize saniyeler içinde alanlara dolduracaktır.
+                        • DYS'den indirdiğiniz PDF formatındaki üst yazıyı seçin. Program yapay zeka/analiz kullanarak
+                        Sayı, Konu ve Gönderen Kurum bilgilerini sizin yerinize saniyeler içinde alanlara dolduracaktır.
                     </div>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="users" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 2. Toplu Tebliğ Alınması</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="users" width="18" height="18"
+                            style="vertical-align: middle; color: var(--fg-sub);"></i> 2. Toplu Tebliğ Alınması</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
                         Bir yazıyı okuldaki çok sayıda öğretmene veya personele okutacaksanız bu modu kullanın.<br><br>
                         • Üstteki <b>Toplu Tebliğ</b> sekmesinin seçili olduğundan emin olun.<br>
                         • Listeden tebliğ edilecek personelleri işaretleyin.<br>
-                        • <b>Toplu Tebliğ Belgesi Üret</b> butonuna bastığınızda, seçtiğiniz kişilerin isimlerinin alt alta dizildiği ve karşılarında imza satırının bulunduğu standart bir <b>İmza Sirküsü</b> belgesi Word formatında oluşturulur.
+                        • <b>Toplu Tebliğ Belgesi Üret</b> butonuna bastığınızda, seçtiğiniz kişilerin isimlerinin alt
+                        alta dizildiği ve karşılarında imza satırının bulunduğu standart bir <b>İmza Sirküsü</b> belgesi
+                        Word formatında oluşturulur.
                     </div>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="user-check" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 3. Bireysel Tebliğ Alınması</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Bir yazıyı sadece tek bir kişiye (örneğin özel bir görevlendirme, ceza veya resmi bilgilendirme) tebliğ edecekseniz bu modu kullanın.<br><br>
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="user-check" width="18"
+                            height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 3. Bireysel Tebliğ
+                        Alınması</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                        Bir yazıyı sadece tek bir kişiye (örneğin özel bir görevlendirme, ceza veya resmi bilgilendirme)
+                        tebliğ edecekseniz bu modu kullanın.<br><br>
                         • Üstteki <b>Bireysel Tebliğ</b> sekmesine geçiş yapın.<br>
                         • Açılır listeden tebellüğ eden (yazıyı alan) <b>Personeli</b> seçin.<br>
                         • Diğer listeden tebliğ eden <b>İdareciyi</b> seçin.<br>
-                        • <b>Bireysel Tebliğ Belgesi Üret</b> butonuna bastığınızda, aynı A4 kağıdı üzerinde hem sizde hem personelde kalacak şekilde iki kopyalı (ortadan kesilebilir) resmi evrak oluşturulur.
+                        • <b>Bireysel Tebliğ Belgesi Üret</b> butonuna bastığınızda, aynı A4 kağıdı üzerinde hem sizde
+                        hem personelde kalacak şekilde iki kopyalı (ortadan kesilebilir) resmi evrak oluşturulur.
                     </div>
                 </div>
 
@@ -1321,35 +1367,117 @@
                         style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
                         Ayarlar ve Veri Yedekleme / Kurtarma Rehberi</h2>
                     <p style="color: var(--fg-main); line-height: 1.6; font-size: 14px; margin-bottom: 20px;">
-                        Programı uzun yıllar güvenle kullanmak ve veri kaybı yaşamamak için yedekleme sistemini mutlaka kullanmalısınız. Hiç bilmeyenler için tüm özellikler aşağıda anlatılmıştır:
+                        Programı uzun yıllar güvenle kullanmak ve veri kaybı yaşamamak için yedekleme sistemini mutlaka
+                        kullanmalısınız. Hiç bilmeyenler için tüm özellikler aşağıda anlatılmıştır:
                     </p>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="settings" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 1. Genel Ayarları Yapılandırma</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="settings" width="18"
+                            height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 1. Genel Ayarları
+                        Yapılandırma</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
                         Programın sol menüsünde yer alan <b>Ayarlar ve Yedekleme</b> sekmesine girin.
                         Burada programın çalışması için temel bilgileri girebilirsiniz:<br><br>
                         • <b>Okul Adı:</b> Çıktı raporlarında (Tebliğ ve Dilekçe vb.) antet olarak kullanılacaktır.<br>
-                        • <b>Kayıt Klasörü:</b> Üretilen Word, Excel ve PDF belgelerinin bilgisayarınızda varsayılan olarak nereye kaydedileceğini seçebilirsiniz. Seçmezseniz, masaüstüne kaydedilir.
+                        • <b>Kayıt Klasörü:</b> Üretilen Word, Excel ve PDF belgelerinin bilgisayarınızda varsayılan
+                        olarak nereye kaydedileceğini seçebilirsiniz. Seçmezseniz, masaüstüne kaydedilir.
                     </div>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="refresh-cw" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 2. Otomatik Yedekleme (Tavsiye Edilen)</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Siz unutsanız bile programınız sizin için belirlediğiniz sıklıkta veritabanınızı otomatik yedekler.<br><br>
-                        • Ayarlar sekmesindeki <b>Yedekleme Sıklığı</b> ayarından Her Gün, Haftada Bir veya Ayda Bir seçeneğini belirleyin.<br>
-                        • <b>Yedek Klasörü</b> butonuna tıklayarak yedeklerin bilgisayarınızda nerede birikeceğini belirleyin. Güvenlik için bu klasörün bir bulut sürücüsü (Google Drive vb.) olması şiddetle tavsiye edilir.
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="refresh-cw" width="18"
+                            height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 2. Otomatik Yedekleme
+                        (Tavsiye Edilen)</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                        Siz unutsanız bile programınız sizin için belirlediğiniz sıklıkta veritabanınızı otomatik
+                        yedekler.<br><br>
+                        • Ayarlar sekmesindeki <b>Yedekleme Sıklığı</b> ayarından Her Gün, Haftada Bir veya Ayda Bir
+                        seçeneğini belirleyin.<br>
+                        • <b>Yedek Klasörü</b> butonuna tıklayarak yedeklerin bilgisayarınızda nerede birikeceğini
+                        belirleyin. Güvenlik için bu klasörün bir bulut sürücüsü (Google Drive vb.) olması şiddetle
+                        tavsiye edilir.
                     </div>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="save" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 3. Manuel (Elle) Yedek Alma</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Programı güncelledikten sonra, çok sayıda öğrenci veya devamsızlık yüklemesi yaptıktan sonra ya da personelleri tamamen silmek gibi kritik bir işlem yapmadan <b>hemen önce</b>:<br><br>
-                        • <b>Ayarlar ve Yedekleme</b> sekmesindeki sağ üstte yer alan <b>Şimdi Yedekle</b> butonuna basarak o anın yedeğini saniyeler içinde alabilirsiniz.
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="save" width="18" height="18"
+                            style="vertical-align: middle; color: var(--fg-sub);"></i> 3. Manuel (Elle) Yedek Alma</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                        Programı güncelledikten sonra, çok sayıda öğrenci veya devamsızlık yüklemesi yaptıktan sonra ya
+                        da personelleri tamamen silmek gibi kritik bir işlem yapmadan <b>hemen önce</b>:<br><br>
+                        • <b>Ayarlar ve Yedekleme</b> sekmesindeki sağ üstte yer alan <b>Şimdi Yedekle</b> butonuna
+                        basarak o anın yedeğini saniyeler içinde alabilirsiniz.
                     </div>
 
-                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="corner-up-left" width="18" height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 4. Yedekten Geri Yükleme (Veri Kurtarma)</h3>
-                    <div style="background-color: var(--bg-main); border-left: 4px solid #EF4444; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Eğer yanlışlıkla bir personeli/sınıfı silerseniz veya veriler bozulursa hiçbir şey kaybetmiş sayılmazsınız.<br><br>
-                        • Ayarlar ekranındaki <b>Mevcut Yedekler</b> tablosunda, programın aldığı tüm yedekler (ister otomatik ister manuel) tarih ve saat sırasıyla listelenir.<br>
-                        • Kurtarmak istediğiniz geçmiş bir tarihi seçip yanındaki <b>Kurtar</b> butonuna tıkladığınızda, program o tarihteki haline birebir geri döner.
+                    <h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="corner-up-left" width="18"
+                            height="18" style="vertical-align: middle; color: var(--fg-sub);"></i> 4. Yedekten Geri
+                        Yükleme (Veri Kurtarma)</h3>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #EF4444; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
+                        Eğer yanlışlıkla bir personeli/sınıfı silerseniz veya veriler bozulursa hiçbir şey kaybetmiş
+                        sayılmazsınız.<br><br>
+                        • Ayarlar ekranındaki <b>Mevcut Yedekler</b> tablosunda, programın aldığı tüm yedekler (ister
+                        otomatik ister manuel) tarih ve saat sırasıyla listelenir.<br>
+                        • Kurtarmak istediğiniz geçmiş bir tarihi seçip yanındaki <b>Kurtar</b> butonuna tıkladığınızda,
+                        program o tarihteki haline birebir geri döner.
+                    </div>
+                </div>
+
+                <!-- İçerik 5: Dilekçe Üretme -->
+                <div id="y_dilekce" class="yardim-icerik" style="display: none;">
+                    <h2
+                        style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
+                        Dilekçe ve Raporlar Nasıl Çıkarılır?</h2>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 14px; line-height: 1.6;">
+                        Yoklama yönetim panelinde devamsızlıklar sisteme girildikten sonra, öğrencilere ait devamsızlık
+                        ihbar dilekçelerini veya raporları tek tıkla alabilirsiniz.<br><br>
+                        <strong>1. Dilekçe Türü Seçimi:</strong> "İzin Dilekçesi" sekmesinde yer alan "Dilekçe /
+                        Raporlar" panelini bulun.<br>
+                        <strong>2. Şablon Belirleme:</strong> 5 gün, 10 gün, 20 gün gibi devamsızlık sınırlarını aşan
+                        öğrencilere gönderilecek standart MEB şablonlarından birini (veya sisteme yüklediğiniz kendi
+                        şablonunuzu) seçin.<br>
+                        <strong>3. İlgili Kişiler:</strong> Rapor alınacak sınıfları veya şubeleri sol taraftaki ağaç
+                        yapısından işaretleyin.<br>
+                        <strong>4. PDF veya Word:</strong> Çıktı almak istediğiniz formatı belirleyerek "Oluştur"
+                        butonuna tıklayın. Belge, Ayarlar menüsünde seçtiğiniz "Kayıt Klasörü"ne otomatik kaydedilir.
+                    </div>
+                </div>
+
+                <!-- İçerik 6: Akıllı Eşleşmeler -->
+                <div id="y_eslesme" class="yardim-icerik" style="display: none;">
+                    <h2
+                        style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
+                        Akıllı Eşleşmeler Sistemi Nasıl Kullanılır?</h2>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 14px; line-height: 1.6;">
+                        Akıllı Eşleşmeler, DYS'den indirdiğiniz veya elinizde bulunan bir resmi yazının (PDF) içindeki
+                        kelimelere bakarak, yazının hangi öğretmen/personel grubuna tebliğ edileceğini <b>otomatik
+                            anlayan</b> ve işaretleyen bir sistemdir.<br><br>
+                        <strong>1. Kural Ekranını Açma:</strong> "Yazı Tebliği" sekmesindeki "Akıllı Eşleşmeler"
+                        butonuna tıklayın.<br>
+                        <strong>2. Anahtar Kelime Belirleme:</strong> "Kural Ekle" diyerek bir kelime belirleyin (Örn:
+                        <i>"Nöbet", "Zümre", "Müdür"</i>).<br>
+                        <strong>3. Hedef Grubu Seçme:</strong> Bu kelime yazı içinde geçerse hangi personellerin
+                        seçileceğini belirleyin (Örn: <i>"Sadece Müdür Yardımcıları"</i>).<br>
+                        <strong>4. Otomatik İşleyiş:</strong> Kuralları kaydedip kapattıktan sonra, <b>"PDF'den Otomatik
+                            Doldur"</b> diyerek bir evrak yüklediğinizde program saniyeler içinde yazıyı okur,
+                        kurallarınızı işletir ve sağ taraftaki listede ilgili kişileri sizin yerinize otomatik
+                        işaretler!
+                    </div>
+                </div>
+
+                <!-- İçerik 7: Personel Düzenleme -->
+                <div id="y_personel" class="yardim-icerik" style="display: none;">
+                    <h2
+                        style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
+                        Personel Listesi Nasıl Düzenlenir?</h2>
+                    <div
+                        style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 14px; line-height: 1.6;">
+                        Okulunuzdaki idareci, öğretmen ve diğer personelleri eklemek, silmek veya görev/branş bilgilerini güncellemek çok kolaydır:<br><br>
+                        <strong>1. Ayarlar Bölümü:</strong> Sol menüden <b>Ayarlar ve Yedekleme</b> sekmesini açın.<br>
+                        <strong>2. Personel Düzeni:</strong> Sayfanın sağ tarafında bulunan <b>Okul Personelleri Düzenleme Listesi</b> bölümüne gelin.<br>
+                        <strong>3. Personel Ekleme:</strong> Yeni bir personel eklemek için "Yeni Ekle" sekmesinden (Ad Soyad, Görev, Branş, Grup) doldurup "Kaydet"e basın.<br>
+                        <strong>4. Personel Silme/Düzenleme:</strong> Listelenen personellerin sağındaki kırmızı "Sil" butonuna basarak kişiyi silebilirsiniz. Bir personeli yanlış gruba aldıysanız önce silip, sonra doğru bilgilerle yeniden ekleyebilirsiniz.<br>
+                        <strong>5. Otomatik Güncelleme:</strong> Tüm bu işlemleriniz anında veritabanına kaydedilir, Yazı Tebliği ekranındaki personel ağacına otomatik yansır.
                     </div>
                 </div>
 
@@ -1362,8 +1490,7 @@
 
     <div id="ihale_komisyon_modal" class="modal-overlay">
         <div class="modal-content" style="width: 950px; padding: 0; background-color: var(--bg-main);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2
                     style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
                     <i data-lucide="users" width="18" height="18"></i> İhale Komisyon Üyeleri
@@ -1548,8 +1675,7 @@
 
     <div id="personel_havuz_modal" class="modal-overlay" style="z-index:3000;">
         <div class="modal-content" style="width: 400px; padding: 0; background-color: var(--bg-main);">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2
                     style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
                     <i data-lucide="user-plus" width="18" height="18"></i> Personel Seç
@@ -1573,8 +1699,7 @@
         style="z-index:4000; align-items:center; justify-content:center; display:none;">
         <div class="modal-content"
             style="width: 95%; max-width: 1200px; max-height: 90vh; padding: 0; background-color: var(--bg-main); display: flex; flex-direction: column;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2
                     style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
                     <i data-lucide="calculator" width="18" height="18"></i> Yaklaşık Maliyet Fiyat Girişi
@@ -1620,8 +1745,7 @@
         style="z-index:4000; align-items:center; justify-content:center; display:none;">
         <div class="modal-content"
             style="width: 95%; max-width: 500px; padding: 0; background-color: var(--bg-main); display: flex; flex-direction: column;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card);">
+            <div class="modal-header">
                 <h2
                     style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
                     <i data-lucide="info" width="18" height="18"></i> İhale Bilgi Girişi

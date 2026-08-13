@@ -25,9 +25,9 @@
         .tab-content.aktif { display: flex; }
 
         /* --- ÜST PANEL VE BUTONLAR --- */
-        .top-bar { background-color: var(--bg-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; box-shadow: var(--shadow-sm); }
-        .top-bar-title { font-size: 20px; font-weight: bold; color: var(--tree-sel); margin: 0; }
-        .top-bar-buttons { display: flex; gap: 5px; }
+        .top-bar { background-color: var(--bg-card); backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: 12px; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+        .top-bar-title { font-size: 20px; font-weight: bold; color: var(--tree-sel); margin: 0; display:flex; align-items:center; gap:10px; }
+        .top-bar-buttons { display: flex; gap: 10px; align-items:center; }
         
         .btn { border: none; padding: 6px 15px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font-ui); color: #FFFFFF; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s ease; box-shadow: var(--shadow-sm); letter-spacing: 0.3px; }
         .btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); filter: brightness(1.1); }
@@ -85,8 +85,7 @@
         .tr-secili { font-weight: bold; font-size: 13.5px !important; }
 
         /* --- YENİ: BOŞLUK DARALTMA VE LİSTE PUNTOSU AYARLARI --- */
-        .tab-content { padding: 5px 20px 20px 20px !important; } /* Sekmeler ile butonlar arasındaki dev boşluğu kapattık */
-        .top-bar { margin-bottom: 5px !important; padding: 10px 20px !important; } /* Butonlar ile alt paneller arasındaki boşluğu daralttık */
+        .tab-content { padding: 10px 20px 20px 20px !important; } /* Sekmeler ile butonlar arasındaki dev boşluğu kapattık */
         .paned-window { margin-top: 0px !important; } /* Araya giren ekstra boşluğu sıfırladık */
         
         /* --- YENİ: TKINTER BİREBİR BÜYÜK FONT, OTOMATİK SÜTUN VE DAR AYIRICILAR --- */
@@ -406,3 +405,6 @@
     color: #fff;
     font-weight: bold;
 }
+
+.modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card); }
+.modal-header h2 { margin: 0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:10px; }
