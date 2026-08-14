@@ -1768,8 +1768,11 @@ function ihaleSifirla() {
         icerik.innerHTML = `
             <div id="ihale_baslangic_mesaj" style="color: var(--fg-sub); font-size: 15px; text-align: center; display:flex; flex-direction:column; align-items:center; gap:15px; opacity: 0.6;">
                 <i data-lucide="mouse-pointer-click" width="48" height="48"></i>
-                <span>Yeni bir ihale süreci başlatmak için yukarıdaki <b>"İhale Başlat"</b> butonuna tıklayın.</span>
+                <span>Yeni bir ihale süreci başlatmak için aşağıdaki <b>"İhale Başlat"</b> butonuna tıklayın.</span>
             </div>
+            <button class="btn"
+                    style="background-color: #10B981; color: white; padding: 15px 30px; font-weight: bold; font-size: 18px; border-radius: 8px; margin-top: 20px;"
+                    onclick="ihaleBaslat()"><i data-lucide="play" width="24" height="24"></i> İhale Başlat</button>
         `;
         icerik.style.alignItems = "center";
         icerik.style.justifyContent = "center";
@@ -2059,6 +2062,28 @@ function ihaleBelgeUretimEkraniGoster() {
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
                                 <button class="btn btn-dev" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('pdf')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
                                 <button class="btn btn-yardim" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('excel')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">3</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Fiyat İsteme</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_ozel_fiyat" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('ozel_fiyat_isteme', 'pdf', document.getElementById('tarih_ozel_fiyat').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('ozel_fiyat_isteme', 'excel', document.getElementById('tarih_ozel_fiyat').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">4</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Piyasa Fiyat Araştırması Tutanağı</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_piyasa_arastirmasi" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn btn-dev" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('pdf', 'piyasa_arastirmasi')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn btn-yardim" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('excel', 'piyasa_arastirmasi')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                     </tbody>
@@ -2367,9 +2392,11 @@ function personelSil(gorevId) {
 
 // Fiyat Giriş Modal Mantığı
 let seciliBelgeFormat = "";
+let seciliBelgeTuru = "yaklasik_maliyet";
 
-function fiyatGirisModalAc(format) {
+function fiyatGirisModalAc(format, turu = 'yaklasik_maliyet') {
     seciliBelgeFormat = format;
+    seciliBelgeTuru = turu;
     ihaleFirmaTablosunuCiz();
     fiyatGirisTablosunuCiz();
     document.getElementById("fiyat_giris_modal").style.display = "flex";
@@ -2523,8 +2550,10 @@ function fiyatGirisHesapla() {
 
 function fiyatGirisTamamla() {
     modalKapat("fiyat_giris_modal");
-    let tarih = document.getElementById('tarih_yaklasik_maliyet').value;
-    belgeUret('yaklasik_maliyet', seciliBelgeFormat, tarih);
+    let inputId = seciliBelgeTuru === 'piyasa_arastirmasi' ? 'tarih_piyasa_arastirmasi' : 'tarih_yaklasik_maliyet';
+    let inputEl = document.getElementById(inputId);
+    let tarih = inputEl ? inputEl.value : "";
+    belgeUret(seciliBelgeTuru, seciliBelgeFormat, tarih);
 }
 
 // ==========================================

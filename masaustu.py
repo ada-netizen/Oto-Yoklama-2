@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
     # 4. Modern masaüstü penceresini oluştur ve HTML'i içine göm!
     pencere = webview.create_window(
-        title='Oto-Yoklama Sistemi V2',
+        title='Elektronik Okul Sistemi V2',
         url=html_yolu,
         width=kayitli["width"],
         height=kayitli["height"],

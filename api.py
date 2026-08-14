@@ -39,7 +39,7 @@ def dosyayi_otomatik_ac(dosya_yolu):
         logging.error(f"dosyayi_otomatik_ac hatasi: {e}")
         pass
 
-app = FastAPI(title="Oto-Yoklama API V2")
+app = FastAPI(title="Elektronik Okul API V2")
 
 app.add_middleware(
     CORSMiddleware,
@@ -558,8 +558,14 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
 
 @app.post("/teblig-bireysel-pdf")
 def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: BackgroundTasks):
-    ana_klasor, ayar = pdf_klasoru_hazirla()
-    yol = os.path.join(ana_klasor, f"Bireysel_Teblig_{veri.edilen.ad.replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
+    ayar = ayarlari_al()
+    yedek_klasoru = ayar.get("yedek_kayit_klasoru", yollar["YEDEK"])
+    
+    # Yeni klasör yapısını oluştur
+    teblig_klasoru = os.path.join(yedek_klasoru, "Tebliğler", "Bireysel Tebliğ-Tebellüğ")
+    os.makedirs(teblig_klasoru, exist_ok=True)
+    
+    yol = os.path.join(teblig_klasoru, f"Bireysel_Teblig_{veri.edilen.ad.replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
     try:
         yuklenen_pdf = veri.gecici_pdf_yolu
         
@@ -579,8 +585,14 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
 
 @app.post("/teblig-toplu-pdf")
 def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks):
-    ana_klasor, ayar = pdf_klasoru_hazirla()
-    yol = os.path.join(ana_klasor, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")
+    ayar = ayarlari_al()
+    yedek_klasoru = ayar.get("yedek_kayit_klasoru", yollar["YEDEK"])
+    
+    # Yeni klasör yapısını oluştur
+    teblig_klasoru = os.path.join(yedek_klasoru, "Tebliğler", "Toplu İmza Sirküsü")
+    os.makedirs(teblig_klasoru, exist_ok=True)
+    
+    yol = os.path.join(teblig_klasoru, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")
     try:
         kurum = veri.kurum
         yuklenen_pdf = veri.gecici_pdf_yolu
