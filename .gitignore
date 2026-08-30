@@ -20,3 +20,4 @@ graphify-out/
 *.pdf
 *.xlsx
 *.xls
+patch*.py
