@@ -1,35 +1,45 @@
 import sqlite3
+import threading
 
 class VeritabaniYoneticisi:
     def __init__(self, db_yolu):
         self.db_yolu = db_yolu
-        self.conn = None
-        self.cursor = None
-        self.baglan_ve_hazirla()
+        self._local = threading.local()
+        # Veritabanı dosyası ve tabloları ilk açılışta bir kez oluşturulur.
+        self._init_db()
 
-    def baglan_ve_hazirla(self):
-        # Veritabanına bağlanır
-        self.conn = sqlite3.connect(self.db_yolu, check_same_thread=False)
-        self.cursor = self.conn.cursor()
-        
-        # 1. TABLOLARI OLUŞTURMA (Eksik olan kısmı geri getirdik)
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS ogrenciler (no TEXT, ad_soyad TEXT, sube TEXT)")
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS devamsizliklar (id TEXT, no TEXT, tarih TEXT, tur TEXT, gun TEXT, secili INTEGER)")
-
-        # 2. ADIM: İNDEKSLER (Fihrist Motoru - "self" takısı eklendi ve tablo adları devamsizliklar olarak düzeltildi)
-        self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_no ON ogrenciler (no)")
-        self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
-        
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
-        # Eski veritabanlarını güncelle (Hata verirse zaten kolon vardır, yoksay)
+    def _init_db(self):
+        conn = sqlite3.connect(self.db_yolu)
+        cursor = conn.cursor()
+        cursor.execute("CREATE TABLE IF NOT EXISTS ogrenciler (no TEXT, ad_soyad TEXT, sube TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS devamsizliklar (id TEXT, no TEXT, tarih TEXT, tur TEXT, gun TEXT, secili INTEGER)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_no ON ogrenciler (no)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
         try:
-            self.cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT")
+            cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT")
         except sqlite3.OperationalError:
             pass
-            
-        self.cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
-        
-        self.conn.commit()
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
+        conn.commit()
+        conn.close()
+
+    @property
+    def conn(self):
+        if not hasattr(self._local, "conn"):
+            self._local.conn = sqlite3.connect(self.db_yolu, check_same_thread=False)
+        return self._local.conn
+
+    @property
+    def cursor(self):
+        if not hasattr(self._local, "cursor"):
+            self._local.cursor = self.conn.cursor()
+        return self._local.cursor
+
+    def baglan_ve_hazirla(self):
+        # Geriye dönük uyumluluk (api.py çağırıyor olabilir)
+        pass
+
 
     def yukle(self):
         # RAM'e çekilecek verileri listeler halinde hızlıca döndürür
@@ -73,5 +83,8 @@ class VeritabaniYoneticisi:
 
     def kapat(self):
         # Kapanışta bağlantıyı güvenle keser
-        if self.conn:
-            self.conn.close()
+        if hasattr(self._local, "conn"):
+            self._local.conn.close()
+            del self._local.conn
+            if hasattr(self._local, "cursor"):
+                del self._local.cursor
