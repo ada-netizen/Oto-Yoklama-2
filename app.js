@@ -19,7 +19,8 @@ const API = 'http://127.0.0.1:8000';
             
             Toastify({
                 text: mesaj,
-                duration: 4000,
+                duration: 6000,
+                escapeMarkup: false,
                 gravity: "top", 
                 position: "center", 
                 stopOnFocus: true, 
@@ -1487,9 +1488,29 @@ const API = 'http://127.0.0.1:8000';
                 .catch(() => { /* İnternet yoksa veya erişilemezse sessizce devam eder */ });
         }
 
+        function gecKalanlariIndir() {
+            fetch(`${API}/rapor-gec-bugun`)
+                .then(res => res.json())
+                .then(sonuc => {
+                    if(!sonuc.basarili) {
+                        bildirimGoster(sonuc.mesaj, "hata");
+                    } else {
+                        bildirimGoster(sonuc.mesaj, "bilgi");
+                    }
+                }).catch(e => bildirimGoster("Hata: " + e, "hata"));
+        }
+
         window.onload = function() {
             verileriYukle();
             ayarlariYukle();
+            
+            fetch(`${API}/gec-bugun-sayisi`).then(r => r.json()).then(data => {
+                if(data.basarili && data.sayi > 0) {
+                    setTimeout(() => {
+                        bildirimGoster(`Bugün ${data.sayi} öğrenci geç yazıldı. Listeyi görmek için <u style="cursor:pointer;" onclick="gecKalanlariIndir()">tıklayın</u>`, 'bilgi');
+                    }, 2000);
+                }
+            });
             ayarlariGetirPersonelGruplariIcin();
             resizerAktifEt('resizer1', 'sol_panel_ana', 'sag_panel_ana');
             resizerAktifEt('resizer2', 'takvim_alani_ana', 'onizleme_alani_ana');

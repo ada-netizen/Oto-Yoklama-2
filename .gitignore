@@ -21,3 +21,14 @@ graphify-out/
 *.xlsx
 *.xls
 patch*.py
+Thumbs.db
+*.db-journal
+*.sqlite3-journal
+*.db-shm
+*.db-wal
+.env
+.env.*
+*.bak
+*.swp
+*~
+diff.txt

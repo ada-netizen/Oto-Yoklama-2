@@ -948,6 +948,7 @@ def safe_float(val, default=0.0):
     except:
         return default
 
+
 @app.post("/ihale-excel-oku")
 async def ihale_excel_oku(dosya: UploadFile = File(...)):
     try:
@@ -955,56 +956,19 @@ async def ihale_excel_oku(dosya: UploadFile = File(...)):
         with open(temp_path, "wb") as f:
             shutil.copyfileobj(dosya.file, f)
         
-        xl = pd.ExcelFile(temp_path)
-        sheet_name = xl.sheet_names[1] if len(xl.sheet_names) > 1 else xl.sheet_names[0]
-        
-        df = xl.parse(sheet_name)
-        df.dropna(how='all', inplace=True)
-        df.dropna(axis=1, how='all', inplace=True)
-        
-        kalemler = []
-        sira = 1
-        for idx, row in df.iterrows():
-            try:
-                cins = str(row.iloc[1]).strip()
-                if cins and cins.lower() not in ['nan', 'c i̇ n s i̇', 'c i n s i', 'none', 'satın alinacak malin']:
-                    miktar_raw = row.iloc[2]
-                    birim = row.iloc[3]
-                    f1_raw = row.iloc[4]
-                    f2_raw = row.iloc[5]
-                    f3_raw = row.iloc[6]
-                    
-                    if pd.notna(cins) and pd.notna(miktar_raw):
-                        miktar = safe_float(miktar_raw, 1.0)
-                        f1 = safe_float(f1_raw, 0.0)
-                        f2 = safe_float(f2_raw, 0.0)
-                        f3 = safe_float(f3_raw, 0.0)
-                        
-                        kalemler.append({
-                            "sira": sira,
-                            "cins": cins,
-                            "miktar": miktar,
-                            "birim": str(birim).strip() if pd.notna(birim) else "Adet",
-                            "f1": f1,
-                            "f2": f2,
-                            "f3": f3,
-                        })
-                        sira += 1
-            except:
-                pass
-                
+        kalemler, hata = ExcelMotoru.ihale_oku(temp_path)
+        if hata:
+            return {"basarili": False, "mesaj": hata}
+            
         return {"basarili": True, "kalemler": kalemler}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
-
-
 
 @app.post("/ihale-tekli-belge")
 def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
     ayar = ayarlari_al()
     pdf_yol = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
     
-    # Get personnel
     mudur_adi = "Okul Müdürü"
     try:
         db.cursor.execute("SELECT ad_soyad FROM personel WHERE gorev LIKE '%MÜDÜR%' AND gorev NOT LIKE '%MÜDÜR YARDIMCISI%' LIMIT 1")
@@ -1026,3 +990,47 @@ def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
         import traceback
         logging.error(f"Tekli belge hatasi: {e}\n{traceback.format_exc()}")
         return {"basarili": False, "mesaj": f"Hata: {e}"}
+
+@app.get("/gec-bugun-sayisi")
+def gec_bugun_sayisi():
+    try:
+        bugun = datetime.now().strftime("%d/%m/%Y")
+        db.cursor.execute("SELECT COUNT(DISTINCT d.no) FROM devamsizliklar d JOIN ogrenciler o ON d.no = o.no WHERE d.tur = 'G' AND d.tarih = ?", (bugun,))
+        sayi = db.cursor.fetchone()[0]
+        return {"basarili": True, "sayi": sayi}
+    except Exception as e:
+        return {"basarili": False, "sayi": 0, "mesaj": str(e)}
+
+@app.get("/rapor-gec-bugun")
+def rapor_gec_bugun(background_tasks: BackgroundTasks):
+    try:
+        ayar = ayarlari_al()
+        bugun = datetime.now().strftime("%d/%m/%Y")
+        
+        db.cursor.execute("""
+            SELECT o.no, o.ad_soyad, o.sube 
+            FROM devamsizliklar d
+            JOIN ogrenciler o ON d.no = o.no
+            WHERE d.tur = 'G' AND d.tarih = ?
+            GROUP BY o.no, o.ad_soyad, o.sube
+            ORDER BY o.sube ASC, o.no ASC
+        """, (bugun,))
+        liste = db.cursor.fetchall()
+        
+        if not liste:
+            return {"basarili": False, "mesaj": "Bugün geç kalan öğrenci bulunamadı."}
+            
+        kayit_yeri = os.path.join(ayar.get("pdf_kayit_klasoru", yollar["PDF"]), f"Bugun_Gec_Kalanlar_{bugun.replace('/','_')}.pdf")
+        
+        def pdf_olustur():
+            try:
+                motor = PDFYoneticisi(ayar)
+                motor.gec_kalanlar_pdf_ciz(liste, bugun, kayit_yeri)
+                dosyayi_otomatik_ac(kayit_yeri)
+            except Exception as e:
+                logging.error(f"PDF olusturma hatasi: {e}")
+            
+        background_tasks.add_task(pdf_olustur)
+        return {"basarili": True, "mesaj": "PDF hazırlanıyor..."}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}

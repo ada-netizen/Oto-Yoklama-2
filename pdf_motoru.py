@@ -28,7 +28,7 @@ class PDFYoneticisi:
             for a, b in degisim.items(): metin = metin.replace(a, b)
         return metin
 
-    def veli_formu_ciz(self, ogrenci_no, ogrenci_ad, kisa_sube, secili_kayitlar, kayit_yeri):
+    def veli_formu_ciz(self, ogrenci_no, ogrenci_ad, kisa_sube, secili_kayitlar, kayit_yeri, ozurlu_str=0, ozursuz_str=0):
         """A5 Boyutunda Resmi Veli Devamsızlık Bildirim Formu Çizer"""
         genislik, yukseklik = 419.53, 595.27 # A5 Boyutu
         c = canvas.Canvas(kayit_yeri, pagesize=(genislik, yukseklik))
@@ -142,6 +142,24 @@ class PDFYoneticisi:
         c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
         c.drawString(x_colon, y_imza, ":")
         c.drawString(x_value, y_imza, noktalar)
+
+        # 5. Alt Sol Köşe: Güncel Devamsızlık Durumu
+        def draw_bold_value(c_obj, x, y, label, value_str):
+            c_obj.setFont(self.font, 9)
+            c_obj.drawString(x, y, self.metin_duzelt(label))
+            w = c_obj.stringWidth(self.metin_duzelt(label), self.font, 9)
+            c_obj.setFont(self.font_bold, 9)
+            c_obj.drawString(x + w, y, self.metin_duzelt(f"{value_str} Gün"))
+
+        draw_bold_value(c, 25, y_tarih, "Güncel Özürsüz Devamsızlık: ", str(ozursuz_str))
+        draw_bold_value(c, 25, y_tarih - 12, "Güncel Özürlü Devamsızlık: ", str(ozurlu_str))
+        
+        try:
+            toplam_hepsi = float(ozurlu_str) + float(ozursuz_str)
+            toplam_hepsi_str = int(toplam_hepsi) if float(toplam_hepsi).is_integer() else toplam_hepsi
+            draw_bold_value(c, 25, y_tarih - 24, "Toplam: ", str(toplam_hepsi_str))
+        except:
+            pass
 
         c.save()
         return True, ""
@@ -486,4 +504,64 @@ class PDFYoneticisi:
             merger.write(f_out)
 
         merger.close()
+        return True, ""
+
+    def gec_kalanlar_pdf_ciz(self, liste, bugun, kayit_yeri):
+        from reportlab.pdfgen import canvas
+        import re
+
+        def sinif_formatla(orj):
+            if not orj: return "-"
+            s = str(orj)
+            s = re.sub(r'\(.*?\)', '', s)
+            for w in ['Sınıfı', 'Sınıf', 'Şubesi', 'sınıfı', 'sınıf', 'şubesi']:
+                s = s.replace(w, '')
+            s = s.replace(' ', '').replace('.', '').replace(',', '')
+            return s.replace('/', '').upper() 
+
+        def formatli_sube(orj):
+            s = sinif_formatla(orj)
+            if len(s) >= 2 and not '/' in s:
+                match = re.match(r"(\d+)(.*)", s)
+                if match:
+                    return f"{match.group(1)}/{match.group(2)}"
+            return s
+
+        try:
+            font_isim = self.font
+            font_kalin = self.font_bold
+            baslik = f"{bugun} Tarihli Geç (G) Kalan Öğrenciler Listesi"
+            sutun3 = "Sınıf/Şube"
+        except:
+            font_isim = 'Helvetica'
+            font_kalin = 'Helvetica-Bold'
+            baslik = f"{bugun} Tarihli Gec (G) Kalan Ogrenciler Listesi"
+            sutun3 = "Sinif/Sube"
+
+        c = canvas.Canvas(kayit_yeri)
+        c.setFont(font_kalin, 16)
+        c.drawCentredString(300, 800, self.metin_duzelt(baslik))
+        
+        y = 750
+        c.setFont(font_kalin, 12)
+        c.drawString(50, y, "Numara")
+        c.drawString(150, y, "Ad Soyad")
+        c.drawString(450, y, self.metin_duzelt(sutun3))
+        c.line(50, y - 5, 550, y - 5)
+        
+        c.setFont(font_isim, 11)
+        y -= 25
+        for row in liste:
+            ogr_no, ad_soyad, sube_raw = row
+            sube = formatli_sube(sube_raw)
+            c.drawString(50, y, str(ogr_no))
+            c.drawString(150, y, self.metin_duzelt(str(ad_soyad)))
+            c.drawString(450, y, self.metin_duzelt(str(sube)))
+            y -= 20
+            if y < 50:
+                c.showPage()
+                c.setFont(font_isim, 11)
+                y = 800
+                
+        c.save()
         return True, ""
