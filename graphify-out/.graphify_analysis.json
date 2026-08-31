@@ -1,0 +1,361 @@
+{
+  "communities": {
+    "0": [
+      "api",
+      "api_devamsizlik_excel_yukle",
+      "api_devamsizlik_manuel_ekle",
+      "api_devamsizlik_sil",
+      "api_dosyayi_otomatik_ac",
+      "api_gecici_dosya_olustur",
+      "api_meb_pdf_oku",
+      "api_ogrenci_detay_getir",
+      "api_ogrenci_excel_yukle",
+      "api_ogrenci_sil",
+      "api_ogrencileri_getir",
+      "api_pdf_klasoru_hazirla",
+      "api_pdf_veli_formu_olustur",
+      "api_personel_ekle",
+      "api_personel_excel_yukle",
+      "api_personel_grup_tahmin_et",
+      "api_personel_sil",
+      "api_personelleri_getir",
+      "api_rapor_al",
+      "api_rapor_verisi_hazirla",
+      "api_rationale_27",
+      "api_rationale_292",
+      "api_teblig_bireysel_pdf",
+      "api_teblig_toplu_pdf",
+      "api_veritabani_sifirla",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_pdf_motoru_pdfyoneticisi_bireysel_teblig_ciz",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_pdf_motoru_pdfyoneticisi_init",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_pdf_motoru_pdfyoneticisi_metin_duzelt",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_pdf_motoru_pdfyoneticisi_rapor_ciz",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_pdf_motoru_pdfyoneticisi_teblig_tebellug_ciz",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_pdf_motoru_pdfyoneticisi_veli_formu_ciz",
+      "pdf_motoru",
+      "pdf_motoru_pdfyoneticisi",
+      "pdf_motoru_rationale_269",
+      "pdf_motoru_rationale_32",
+      "uploadfile"
+    ],
+    "1": [
+      "api_ayarlar_getir",
+      "api_ayarlar_kaydet",
+      "api_ayarlari_al",
+      "api_logo_yukle",
+      "api_rationale_586",
+      "api_rationale_72",
+      "api_yedek_al",
+      "api_yedek_geri_yukle",
+      "api_yedekler_listele",
+      "api_zamanlanmis_yedek_dongusu",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_sistem_motoru_sistemmotoru_ayarlari_kaydet",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_sistem_motoru_sistemmotoru_ayarlari_yukle",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_sistem_motoru_sistemmotoru_eski_yedekleri_temizle",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_sistem_motoru_sistemmotoru_klasorleri_ve_yollari_hazirla",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_sistem_motoru_sistemmotoru_yedek_al",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_sistem_motoru_sistemmotoru_yedekleri_listele",
+      "masaustu",
+      "masaustu_api_zaten_calisiyor_mu",
+      "masaustu_kapaniyor",
+      "masaustu_maximize_oldu",
+      "masaustu_pencere_durumu_kaydet",
+      "masaustu_pencere_durumu_yukle",
+      "masaustu_port_dinleniyor_mu",
+      "masaustu_rationale_28",
+      "masaustu_rationale_58",
+      "masaustu_rationale_75",
+      "masaustu_restore_oldu",
+      "masaustu_sunucuyu_baslat",
+      "sistem_motoru",
+      "sistem_motoru_rationale_10",
+      "sistem_motoru_rationale_34",
+      "sistem_motoru_rationale_44",
+      "sistem_motoru_rationale_52",
+      "sistem_motoru_rationale_70",
+      "sistem_motoru_rationale_92",
+      "sistem_motoru_sistemmotoru"
+    ],
+    "2": [
+      "app",
+      "app_aylar",
+      "app_calmonth",
+      "app_calyear",
+      "app_gecicidevamsizliklar",
+      "app_guncellemekontrolet",
+      "app_ogrencilistesi",
+      "app_onizlemesatirsec",
+      "app_ozelaydegistir",
+      "app_ozelcalmonth",
+      "app_ozelcalyear",
+      "app_ozelgunsec",
+      "app_ozeltakvimciz",
+      "app_personelfiltrepanelackapa",
+      "app_resizeraktifet",
+      "app_secilidevamsizliklar",
+      "app_secilionizlemesatirlari",
+      "app_sistemayarlari",
+      "app_splashkapat",
+      "app_tablosutunboyutlandirma",
+      "app_takvimbaloncuguac",
+      "app_temadegistir",
+      "app_tumpersoneller",
+      "app_yillikhoverenter",
+      "app_yillikhoverleave",
+      "app_yillikhucreler"
+    ],
+    "3": [
+      "araclar",
+      "araclar_veriaraclari",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_excel_tarih_cevir",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_hesapla_devamsizlik",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_kisa_sube_adi",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_parse_tarih",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_tarih_formatla",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_temiz_sure",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_araclar_veriaraclari_tr_upper",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_excel_motoru_excelmotoru_devamsizlik_oku",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_excel_motoru_excelmotoru_ogrenci_oku",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_test_motoru_testdevamsizlikmatematigi_test_gec_kalma_hesaplamasi",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_test_motoru_testdevamsizlikmatematigi_test_haftasonu_haric_hesaplama",
+      "excel_motoru",
+      "excel_motoru_excelmotoru",
+      "test_motoru",
+      "test_motoru_rationale_34",
+      "test_motoru_rationale_7",
+      "test_motoru_testdevamsizlikmatematigi"
+    ],
+    "4": [
+      "app_ayarlarikaydet",
+      "app_ayarlariyukle",
+      "app_bildirimgoster",
+      "app_bireyseltebligpdfal",
+      "app_kopyalaad",
+      "app_kopyalano",
+      "app_logoyukle",
+      "app_modalkapat",
+      "app_raporal",
+      "app_sistemyedekle",
+      "app_toplutebligpdfal",
+      "app_veritabaninisifirla",
+      "app_yedekgeriyukle",
+      "app_yedeklerilistele"
+    ],
+    "5": [
+      "app_aydegistir",
+      "app_gercekpdfistegiat",
+      "app_hucresagtikla",
+      "app_hucretikla",
+      "app_ogrencisec",
+      "app_onizlemecikar",
+      "app_onizlemeguncelle",
+      "app_onizlemetemizle",
+      "app_ozeltarihuygula",
+      "app_takvimiciz",
+      "app_toplusecim"
+    ],
+    "6": [
+      "app_basliklariguncelle",
+      "app_filtretemizle",
+      "app_modalac",
+      "app_sagtikmenuac",
+      "app_sinifformatla",
+      "app_sirala",
+      "app_tabloyudoldur",
+      "app_yilliklisteac"
+    ],
+    "7": [
+      "app_filtrelerihesapla",
+      "app_filtretumudegisti",
+      "app_personeldurumdegistir",
+      "app_personelfiltretopluuygula",
+      "app_personelmastersecim",
+      "app_personelsayaciguncelle",
+      "app_personeltablosunudoldur",
+      "app_personeltumunutemizle"
+    ],
+    "8": [
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_veritabani_veritabaniyoneticisi_baglan_ve_hazirla",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_veritabani_veritabaniyoneticisi_init",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_veritabani_veritabaniyoneticisi_kapat",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_veritabani_veritabaniyoneticisi_kaydet",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_veritabani_veritabaniyoneticisi_sifirla",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_veritabani_veritabaniyoneticisi_yukle",
+      "veritabani",
+      "veritabani_veritabaniyoneticisi"
+    ],
+    "9": [
+      "app_personelcikarlistesidoldur",
+      "app_personelekle",
+      "app_personelfiltrepaneldoldur",
+      "app_personelleriyukle",
+      "app_personelsil",
+      "app_personeltabac",
+      "app_personelyonetimac"
+    ],
+    "10": [
+      "app_dosyayukle",
+      "app_mebpdfyukle",
+      "app_otomatikpersonelsec",
+      "app_personelexcelyukle",
+      "app_yuklemegizle",
+      "app_yuklemegoster"
+    ],
+    "11": [
+      "app_aeturdegisti",
+      "app_akillieslesmeciz",
+      "app_akillieslesmeekle",
+      "app_akillieslesmemodalac",
+      "app_akillieslesmesil"
+    ],
+    "12": [
+      "app_ogrenciyitamamensil",
+      "app_pdfciktisial",
+      "app_sekmeac",
+      "app_verileriyukle"
+    ],
+    "13": [
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_guncelleyici_guncellememotoru_kontrol_et",
+      "c_users_halil_i_brahim_desktop_oto_yoklama_2_guncelleyici_guncellememotoru_uyari_goster",
+      "guncelleyici",
+      "guncelleyici_guncellememotoru"
+    ],
+    "14": [
+      "object"
+    ],
+    "15": [
+      "sabitler"
+    ]
+  },
+  "cohesion": {
+    "0": 0.09682539682539683,
+    "1": 0.07142857142857142,
+    "2": 0.08615384615384615,
+    "3": 0.16374269005847952,
+    "4": 0.15384615384615385,
+    "5": 0.3090909090909091,
+    "6": 0.2857142857142857,
+    "7": 0.25,
+    "8": 0.2857142857142857,
+    "9": 0.2857142857142857,
+    "10": 0.4666666666666667,
+    "11": 0.4,
+    "12": 0.5,
+    "13": 0.5,
+    "14": 1.0,
+    "15": 1.0
+  },
+  "gods": [
+    {
+      "id": "app_bildirimgoster",
+      "label": "bildirimGoster()",
+      "degree": 24
+    },
+    {
+      "id": "araclar_veriaraclari",
+      "label": "VeriAraclari",
+      "degree": 12
+    },
+    {
+      "id": "pdf_motoru_pdfyoneticisi",
+      "label": "PDFYoneticisi",
+      "degree": 12
+    },
+    {
+      "id": "api_ayarlari_al",
+      "label": "ayarlari_al()",
+      "degree": 11
+    },
+    {
+      "id": "app_takvimiciz",
+      "label": "takvimiCiz()",
+      "degree": 10
+    },
+    {
+      "id": "app_tabloyudoldur",
+      "label": "tabloyuDoldur()",
+      "degree": 9
+    },
+    {
+      "id": "app_onizlemeguncelle",
+      "label": "onizlemeGuncelle()",
+      "degree": 9
+    },
+    {
+      "id": "app_personeltablosunudoldur",
+      "label": "personelTablosunuDoldur()",
+      "degree": 9
+    },
+    {
+      "id": "sistem_motoru_sistemmotoru",
+      "label": "SistemMotoru",
+      "degree": 9
+    },
+    {
+      "id": "app_personelleriyukle",
+      "label": "personelleriYukle()",
+      "degree": 8
+    }
+  ],
+  "surprises": [
+    {
+      "source": "ExcelMotoru",
+      "target": "VeriAraclari",
+      "source_files": [
+        "excel_motoru.py",
+        "araclar.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "TestDevamsizlikMatematigi",
+      "target": "VeriAraclari",
+      "source_files": [
+        "test_motoru.py",
+        "araclar.py"
+      ],
+      "confidence": "INFERRED",
+      "relation": "uses",
+      "why": "inferred connection - not explicitly stated in source; connects across different repos/directories"
+    },
+    {
+      "source": "pdf_veli_formu_olustur()",
+      "target": "PDFYoneticisi",
+      "source_files": [
+        "api.py",
+        "pdf_motoru.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "teblig_bireysel_pdf()",
+      "target": "PDFYoneticisi",
+      "source_files": [
+        "api.py",
+        "pdf_motoru.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    },
+    {
+      "source": "teblig_toplu_pdf()",
+      "target": "PDFYoneticisi",
+      "source_files": [
+        "api.py",
+        "pdf_motoru.py"
+      ],
+      "confidence": "EXTRACTED",
+      "relation": "calls",
+      "why": "connects across different repos/directories"
+    }
+  ],
+  "tokens": {
+    "input": 0,
+    "output": 0
+  }
+}
