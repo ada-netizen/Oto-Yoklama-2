@@ -9,12 +9,19 @@ import socket
 import urllib.request
 import logging
 
-logging.basicConfig(filename='app.log', level=logging.ERROR, 
-                    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log", encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 
 # api.py içindeki FastAPI motorumuzu (app) buraya çağırıyoruz
 from api import app
 from sistem_motoru import SistemMotoru
+from sabitler import MEVCUT_VERSIYON
 
 yollar = SistemMotoru.klasorleri_ve_yollari_hazirla()
 PENCERE_DOSYASI = os.path.join(yollar["ANA"], "pencere_durumu.json")

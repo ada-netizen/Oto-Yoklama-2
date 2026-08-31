@@ -20,6 +20,7 @@ import time
 import platform
 import subprocess
 import logging
+from contextlib import contextmanager
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 
@@ -125,7 +126,6 @@ class RaporAlRequest(BaseModel):
     tur: str
     format: str
     ozel_deger: Optional[str] = None
-from contextlib import contextmanager
 
 @contextmanager
 def gecici_dosya_olustur(dosya: UploadFile, prefix="temp_"):
@@ -558,8 +558,19 @@ async def meb_pdf_oku(dosya: UploadFile = File(...)):
 
             ana_klasor, _ = pdf_klasoru_hazirla()
             gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
-            if not os.path.exists(gecici_klasor):
-                os.makedirs(gecici_klasor)
+            os.makedirs(gecici_klasor, exist_ok=True)
+
+            # Eski geçici MEB yazılarını temizle (24 saatten eski olanları sil)
+            try:
+                simdi = datetime.now().timestamp()
+                for eski_dosya in os.listdir(gecici_klasor):
+                    eski_yol = os.path.join(gecici_klasor, eski_dosya)
+                    if os.path.isfile(eski_yol) and (simdi - os.path.getmtime(eski_yol)) > 86400:
+                        os.remove(eski_yol)
+                        logging.info(f"Eski gecici MEB yazisi silindi: {eski_dosya}")
+            except Exception as temizlik_hatasi:
+                logging.warning(f"Gecici dosya temizleme hatasi: {temizlik_hatasi}")
+
             kalici_yol = os.path.join(gecici_klasor, f"son_meb_yazisi_{uuid.uuid4().hex[:8]}.pdf")
             shutil.copy(temp_yol, kalici_yol)
 
