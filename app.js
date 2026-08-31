@@ -698,7 +698,7 @@ const API = 'http://127.0.0.1:8000';
 
         function verileriYukle() {
             fetch(`${API}/ogrenciler`).then(res => res.json()).then(veri => {
-                ogrenciListesi = veri.ogrenciler;
+                ogrenciListesi = veri.ogrenciler || [];
                 let temizSubeler = [...new Set(ogrenciListesi.map(o => sinifFormatla(o.sube)))];
                 temizSubeler.sort((a, b) => (parseInt(a)||99) - (parseInt(b)||99));
                 const combo = document.getElementById('combo_arama_sube');
@@ -709,6 +709,9 @@ const API = 'http://127.0.0.1:8000';
                     combo.value = eskiSecim || "Tümü";
                 }
                 tabloyuDoldur();
+            }).catch(err => {
+                console.error('Öğrenci listesi yüklenemedi:', err);
+                bildirimGoster('Öğrenci listesi yüklenemedi. Sunucu bağlantısını kontrol edin.', 'hata');
             });
         }
         
