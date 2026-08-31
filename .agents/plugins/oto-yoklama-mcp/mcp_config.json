@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "sqlite-veri": {
+      "command": "mcp-server-sqlite",
+      "args": ["--db-path", "C:\\Users\\Halil İbrahim\\YoklamaOtomasyonuVerileri\\yoklama_veritabani.db"]
+    },
+    "puppeteer-tarayici": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+    },
+    "pdf-okuyucu": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-pdf"]
+    }
+  }
+}
