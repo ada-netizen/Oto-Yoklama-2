@@ -1,16 +1,28 @@
 {
   "mcpServers": {
     "sqlite-veri": {
-      "command": "C:\\Users\\HP\\AppData\\Local\\Python\\pythoncore-3.14-64\\Scripts\\mcp-server-sqlite.exe",
-      "args": ["--db-path", "C:\\Users\\HP\\Desktop\\Oto Yoklama 2\\veri.db"]
+      "command": "mcp-server-sqlite",
+      "args": ["--db-path", "C:\\Users\\Halil İbrahim\\YoklamaOtomasyonuVerileri\\yoklama_veritabani.db"]
     },
     "puppeteer-tarayici": {
-      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "command": "npx.cmd",
       "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
     },
     "pdf-okuyucu": {
-      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "command": "npx.cmd",
       "args": ["-y", "@modelcontextprotocol/server-pdf"]
+    },
+    "dosya-sistemi": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\Halil İbrahim\\YoklamaOtomasyonuVerileri", "C:\\Users\\Halil İbrahim\\Desktop\\Oto-Yoklama-2"]
+    },
+    "hafiza-memory": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "ardisik-dusunme": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }

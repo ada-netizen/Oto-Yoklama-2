@@ -23,8 +23,14 @@ import logging
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 
-logging.basicConfig(filename='app.log', level=logging.ERROR, 
-                    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s',
+    handlers=[
+        logging.FileHandler("app.log", encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
 
 def dosyayi_otomatik_ac(dosya_yolu):
     """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
@@ -44,7 +50,12 @@ app = FastAPI(title="Elektronik Okul API V2")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:8000",
+        "http://127.0.0.1",
+        "http://127.0.0.1:8000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
