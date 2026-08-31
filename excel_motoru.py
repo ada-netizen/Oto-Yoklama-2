@@ -109,3 +109,53 @@ class ExcelMotoru:
             return yeni_liste, eklenen, None
         except Exception as e:
             return None, 0, f"Excel Okuma Hatası: {str(e)}"
+
+    def esik_raporu_excel_ciz(self, veri, kayit_yeri):
+        df = pd.DataFrame(veri, columns=['Sınıf/Şube', '5-14 Gün', '15-24 Gün', '25-39 Gün', '40+ Gün'])
+        df.to_excel(kayit_yeri, index=False)
+
+
+    @staticmethod
+    def ihale_oku(dosya_yolu):
+        try:
+            xl = pd.ExcelFile(dosya_yolu)
+            sheet_name = xl.sheet_names[1] if len(xl.sheet_names) > 1 else xl.sheet_names[0]
+            
+            df = xl.parse(sheet_name)
+            df.dropna(how='all', inplace=True)
+            df.dropna(axis=1, how='all', inplace=True)
+            
+            def safe_float(val, default=0.0):
+                if pd.isna(val): return default
+                try:
+                    s = str(val).replace('₺', '').replace('$', '').strip()
+                    if ',' in s and '.' not in s: s = s.replace(',', '.')
+                    elif ',' in s and '.' in s: s = s.replace(',', '')
+                    return float(s)
+                except: return default
+
+            kalemler = []
+            sira = 1
+            for idx, row in df.iterrows():
+                try:
+                    cins = str(row.iloc[1]).strip()
+                    if cins and cins.lower() not in ['nan', 'c i n s i', 'none', 'satın alinacak malin']:
+                        miktar_raw = row.iloc[2]
+                        birim = row.iloc[3]
+                        
+                        if pd.notna(cins) and pd.notna(miktar_raw):
+                            kalemler.append({
+                                "sira": sira,
+                                "cins": cins,
+                                "miktar": safe_float(miktar_raw, 1.0),
+                                "birim": str(birim).strip() if pd.notna(birim) else "Adet",
+                                "f1": safe_float(row.iloc[4], 0.0),
+                                "f2": safe_float(row.iloc[5], 0.0),
+                                "f3": safe_float(row.iloc[6], 0.0),
+                            })
+                            sira += 1
+                except:
+                    pass
+            return kalemler, ""
+        except Exception as e:
+            return None, str(e)

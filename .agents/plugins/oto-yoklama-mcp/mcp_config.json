@@ -11,6 +11,18 @@
     "pdf-okuyucu": {
       "command": "npx.cmd",
       "args": ["-y", "@modelcontextprotocol/server-pdf"]
+    },
+    "dosya-sistemi": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\Halil İbrahim\\YoklamaOtomasyonuVerileri", "C:\\Users\\Halil İbrahim\\Desktop\\Oto-Yoklama-2"]
+    },
+    "hafiza-memory": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-memory"]
+    },
+    "ardisik-dusunme": {
+      "command": "npx.cmd",
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
     }
   }
 }

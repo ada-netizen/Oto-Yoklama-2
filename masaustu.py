@@ -1,5 +1,6 @@
 import webview
 import threading
+import multiprocessing
 import uvicorn
 import os
 import time
@@ -100,6 +101,7 @@ def sunucuyu_baslat():
 
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     # 1. 8000 portu zaten kullanımdaysa (programın önceki bir kopyası hâlâ açıksa)
     #    yeni bir sunucu başlatmaya ÇALIŞMA — bu, Windows'ta gördüğün
     #    "WinError 10048 / adres zaten kullanımda" çökmesine sebep oluyordu.
@@ -112,8 +114,32 @@ if __name__ == '__main__':
         t.start()
         time.sleep(1)
 
+    try:
+        from guncelleyici import GuncellemeMotoru
+        import sys
+        def resource_path_versiyon(relative_path):
+            try:
+                base_path = sys._MEIPASS
+            except Exception:
+                base_path = os.path.abspath(".")
+            return os.path.join(base_path, relative_path)
+            
+        with open(resource_path_versiyon("versiyon.txt"), "r", encoding="utf-8") as vf:
+            mevcut_versiyon = vf.read().strip()
+        GuncellemeMotoru.kontrol_et(mevcut_versiyon)
+    except Exception as e:
+        logging.error(f"Guncelleme motoru baslatilamadi: {e}")
+
+    import sys
+    def resource_path(relative_path):
+        try:
+            base_path = sys._MEIPASS
+        except Exception:
+            base_path = os.path.abspath(".")
+        return os.path.join(base_path, relative_path)
+
     # 2. Tasarladığımız HTML dosyasının yolunu bul
-    html_yolu = os.path.join(os.getcwd(), 'index.html')
+    html_yolu = resource_path('index.html')
 
     # 3. Daha önce kaydedilmiş pencere durumunu yükle
     kayitli = pencere_durumu_yukle()
@@ -121,7 +147,7 @@ if __name__ == '__main__':
 
     # 4. Modern masaüstü penceresini oluştur ve HTML'i içine göm!
     pencere = webview.create_window(
-        title='Oto-Yoklama Sistemi V2',
+        title='Elektronik Okul Sistemi V2',
         url=html_yolu,
         width=kayitli["width"],
         height=kayitli["height"],
@@ -148,4 +174,5 @@ if __name__ == '__main__':
     pencere.events.closing += _kapaniyor
 
     # 6. Programı başlat
-    webview.start()
+    cache_klasoru = os.path.join(os.getcwd(), 'webview_cache')
+    webview.start(private_mode=False, storage_path=cache_klasoru)

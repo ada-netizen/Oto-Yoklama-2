@@ -7,3 +7,5 @@ python-multipart
 reportlab
 tkcalendar
 openpyxl
+pytest
+httpx
