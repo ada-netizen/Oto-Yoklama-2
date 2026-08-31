@@ -29,15 +29,16 @@ logging.basicConfig(filename='app.log', level=logging.ERROR,
 def dosyayi_otomatik_ac(dosya_yolu):
     """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
     try:
+        import platform, subprocess
         if platform.system() == 'Windows':
-            os.startfile(dosya_yolu)
+            norm_yol = os.path.normpath(dosya_yolu)
+            os.startfile(norm_yol)
         elif platform.system() == 'Darwin':
             subprocess.call(('open', dosya_yolu))
         else:
             subprocess.call(('xdg-open', dosya_yolu))
     except Exception as e:
-        logging.error(f"dosyayi_otomatik_ac hatasi: {e}")
-        pass
+        logging.error(f"dosyayi_otomatik_ac hatasi ({dosya_yolu}): {e}")
 
 app = FastAPI(title="Elektronik Okul API V2")
 
