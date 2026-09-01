@@ -49,6 +49,95 @@ def dosyayi_otomatik_ac(dosya_yolu):
 
 app = FastAPI(title="Elektronik Okul API V2")
 
+import uuid
+import shutil
+import os
+
+islem_durumlari = {}
+
+@app.get("/islem-durumu/{job_id}")
+def islem_durumu(job_id: str):
+    return islem_durumlari.get(job_id, {"durum": "bulunamadi"})
+
+def ogrenci_isleme_gorevi(temp_yol, job_id):
+    try:
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabani okunuyor...", "yuzde": 10}
+        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Excel ayristiriliyor...", "yuzde": 40}
+        yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
+        if hata:
+            islem_durumlari[job_id] = {"durum": "hata", "mesaj": hata}
+            return
+        if yeni_liste:
+            mevcut_ogrenciler.extend(yeni_liste)
+            islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 80}
+            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": f"{len(yeni_liste)} yeni ogrenci eklendi!", "yuzde": 100}
+        else:
+            islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Dosyada yeni ogrenci bulunamadi."}
+    except Exception as e:
+        islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
+    finally:
+        if os.path.exists(temp_yol):
+            os.remove(temp_yol)
+
+def devamsizlik_isleme_gorevi(temp_yol, job_id):
+    try:
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabani okunuyor...", "yuzde": 10}
+        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Excel ayristiriliyor...", "yuzde": 40}
+        yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
+        if hata:
+            islem_durumlari[job_id] = {"durum": "hata", "mesaj": hata}
+            return
+        if eklenen > 0:
+            mevcut_devamsizliklar.extend(yeni_liste)
+            islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 80}
+            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": f"{eklenen} yeni devamsizlik islendi!", "yuzde": 100}
+        else:
+            islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Yeni devamsizlik bulunamadi."}
+    except Exception as e:
+        islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
+    finally:
+        if os.path.exists(temp_yol):
+            os.remove(temp_yol)
+
+def personel_isleme_gorevi(temp_yol, job_id):
+    try:
+        import pandas as pd
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Personel Excel okunuyor...", "yuzde": 30}
+        df_temp = pd.read_excel(temp_yol, header=None)
+        header_idx = 0
+        for i, row in df_temp.iterrows():
+            satir_metni = " ".join([str(x).upper() for x in row.values if pd.notna(x)])
+            if "AD" in satir_metni and "SOYAD" in satir_metni:
+                header_idx = i
+                break
+        df = pd.read_excel(temp_yol, header=header_idx)
+        df.columns = df.columns.str.strip().str.upper()
+        
+        personeller = []
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Kayitlar donusturuluyor...", "yuzde": 60}
+        for _, row in df.iterrows():
+            if pd.isna(row.get("AD")): continue
+            ad = str(row.get("AD", "")).strip()
+            soyad = str(row.get("SOYAD", "")).strip()
+            gorev = str(row.get("GÖREVİ", "")).strip()
+            brans = str(row.get("ALANI", "")).strip()
+            if not gorev or gorev == "nan": gorev = "-"
+            if not brans or brans == "nan": brans = "-"
+            personeller.append({"ad": ad, "soyad": soyad, "gorev": gorev, "brans": brans})
+        
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 90}
+        db.personel_kaydet(personeller)
+        islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": f"{len(personeller)} personel basariyla yuklendi!", "yuzde": 100}
+    except Exception as e:
+        islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
+    finally:
+        if os.path.exists(temp_yol):
+            os.remove(temp_yol)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -245,33 +334,25 @@ def ogrenci_detay_getir(ogr_no: str):
 
 
 @app.post("/ogrenci-excel-yukle")
-async def ogrenci_excel_yukle(dosya: UploadFile = File(...)):
-
-    with gecici_dosya_olustur(dosya, prefix='temp_') as temp_yol:
-        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
-        yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
-        if hata:
-            return {"basarili": False, "mesaj": hata}
-        if yeni_liste:
-            mevcut_ogrenciler.extend(yeni_liste)
-            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
-            return {"basarili": True, "mesaj": f"{len(yeni_liste)} yeni öğrenci eklendi!"}
-        return {"basarili": False, "mesaj": "Dosyada yeni öğrenci bulunamadı."}
+async def ogrenci_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFile = File(...)):
+    job_id = str(uuid.uuid4())
+    islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya aliniyor...", "yuzde": 0}
+    temp_yol = f"temp_ogr_{job_id}.xlsx"
+    with open(temp_yol, "wb") as buffer:
+        shutil.copyfileobj(dosya.file, buffer)
+    background_tasks.add_task(ogrenci_isleme_gorevi, temp_yol, job_id)
+    return {"basarili": True, "job_id": job_id}
 
 
 @app.post("/devamsizlik-excel-yukle")
-async def devamsizlik_excel_yukle(dosya: UploadFile = File(...)):
-
-    with gecici_dosya_olustur(dosya, prefix='temp_dev_') as temp_yol:
-        mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
-        yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
-        if hata:
-            return {"basarili": False, "mesaj": hata}
-        if eklenen > 0:
-            mevcut_devamsizliklar.extend(yeni_liste)
-            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
-            return {"basarili": True, "mesaj": f"{eklenen} yeni devamsızlık işlendi!"}
-        return {"basarili": False, "mesaj": "Yeni devamsızlık bulunamadı."}
+async def devamsizlik_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFile = File(...)):
+    job_id = str(uuid.uuid4())
+    islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya aliniyor...", "yuzde": 0}
+    temp_yol = f"temp_dev_{job_id}.xlsx"
+    with open(temp_yol, "wb") as buffer:
+        shutil.copyfileobj(dosya.file, buffer)
+    background_tasks.add_task(devamsizlik_isleme_gorevi, temp_yol, job_id)
+    return {"basarili": True, "job_id": job_id}
 
 
 @app.delete("/ogrenci-sil/{ogr_no}")
