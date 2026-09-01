@@ -1363,20 +1363,20 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
         pagesize=portrait(A4),
         rightMargin=15*mm,
         leftMargin=15*mm,
-        topMargin=15*mm,
+        topMargin=25*mm,
         bottomMargin=15*mm
     )
     
-    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=11, leading=14, alignment=4)
-    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=11, alignment=1, leading=14)
-    style_title = ParagraphStyle('Title_TR', fontName=font_bold, fontSize=14, alignment=1, leading=18, spaceAfter=20)
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=10, leading=14, alignment=4)
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=10, alignment=1, leading=14)
+    style_title = ParagraphStyle('Title_TR', fontName=font_bold, fontSize=12, alignment=1, leading=16, spaceAfter=15)
     
     elements = []
     
     elements.append(Paragraph("M U A Y E N E   R A P O R U", style_title))
     
     table_data = [
-        [Paragraph(x, ParagraphStyle('tb', fontName=font_bold, fontSize=11, alignment=1)) for x in ["Sıra\nNo", "Malzemenin Adı", "Miktarı", "Reddedilen\nMiktar", "Kabul Olunan\nMiktar"]]
+        [Paragraph(x, ParagraphStyle('tb', fontName=font_bold, fontSize=11, alignment=1)) for x in ["Sıra\nNo", "Malzemenin Adı", "Miktarı", "Kabul Olunan\nMiktar", "Reddedilen\nMiktar"]]
     ]
     
     kalemler = veri.get('kalemler', [])
@@ -1387,23 +1387,29 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
         miktar_str = f"{miktar} {birim}" if birim else miktar
         table_data.append([
             str(idx+1), 
-            Paragraph(cins, ParagraphStyle('tn', fontName=font_name, fontSize=11)), 
+            Paragraph(cins, ParagraphStyle('tn', fontName=font_name, fontSize=10)), 
             miktar_str, 
-            "-", 
-            miktar_str
+            miktar_str,
+            ""
         ])
         
-    t = Table(table_data, colWidths=[15*mm, 80*mm, 25*mm, 25*mm, 35*mm])
+    # Add empty rows to simulate a large table if there are few items
+    while len(table_data) < 15:
+        table_data.append(["", "", "", "", ""])
+        
+    t = Table(table_data, colWidths=[12*mm, 85*mm, 28*mm, 28*mm, 28*mm])
     t.setStyle(TableStyle([
         ('ALIGN', (0,0), (-1,-1), 'CENTER'),
         ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
         ('FONTNAME', (0,0), (-1,-1), font_name),
-        ('FONTSIZE', (0,0), (-1,-1), 11),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
         ('GRID', (0,0), (-1,-1), 0.5, colors.black),
-        ('WORDWRAP', (0,0), (-1,-1), True)
+        ('WORDWRAP', (0,0), (-1,-1), True),
+        ('BOTTOMPADDING', (0,1), (-1,-1), 6),
+        ('TOPPADDING', (0,1), (-1,-1), 6)
     ]))
     elements.append(t)
-    elements.append(Spacer(1, 10*mm))
+    elements.append(Spacer(1, 15*mm))
     
     tarih = format_date(veri.get('tarih', ''))
     kalem_sayisi = len(kalemler)
@@ -1411,7 +1417,7 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
     elements.append(Paragraph(text, style_normal))
     elements.append(Spacer(1, 20*mm))
     
-    elements.append(Paragraph("M U A Y E N E   V E   K A B U L   K O M İ S Y O N U", ParagraphStyle('kom', fontName=font_name, fontSize=11, alignment=1, spaceAfter=20)))
+    elements.append(Paragraph("M U A Y E N E   V E   K A B U L   K O M İ S Y O N U", ParagraphStyle('kom', fontName=font_bold, fontSize=10, alignment=1, spaceAfter=20)))
     
     komisyon = veri.get('komisyon', {})
     kom_isimler = [
@@ -1449,8 +1455,8 @@ def uret_muayene_kabul_excel(veri, hedef_klasor):
     ws.title = "Muayene Raporu"
     
     font_bold = Font(name='Times New Roman', bold=True, size=11)
-    font_normal = Font(name='Times New Roman', size=11)
-    font_title = Font(name='Times New Roman', bold=True, size=14)
+    font_normal = Font(name='Times New Roman', size=10)
+    font_title = Font(name='Times New Roman', bold=True, size=12)
     
     align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
     align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
@@ -1463,7 +1469,7 @@ def uret_muayene_kabul_excel(veri, hedef_klasor):
     ws['A1'].font = font_title
     ws['A1'].alignment = align_center
     
-    headers = ["Sıra No", "Malzemenin Adı", "Miktarı", "Reddedilen Miktar", "Kabul Olunan Miktar"]
+    headers = ["Sıra No", "Malzemenin Adı", "Miktarı", "Kabul Olunan Miktar", "Reddedilen Miktar"]
     ws.append([]) # row 2 empty
     ws.append(headers)
     for col in range(1, 6):
@@ -1475,8 +1481,8 @@ def uret_muayene_kabul_excel(veri, hedef_klasor):
     ws.column_dimensions['A'].width = 8
     ws.column_dimensions['B'].width = 40
     ws.column_dimensions['C'].width = 15
-    ws.column_dimensions['D'].width = 15
-    ws.column_dimensions['E'].width = 20
+    ws.column_dimensions['D'].width = 20
+    ws.column_dimensions['E'].width = 15
     
     kalemler = veri.get('kalemler', [])
     row_idx = 4
@@ -1498,14 +1504,21 @@ def uret_muayene_kabul_excel(veri, hedef_klasor):
         ws.cell(row=row_idx, column=3).alignment = align_center
         ws.cell(row=row_idx, column=3).font = font_normal
         
-        ws.cell(row=row_idx, column=4, value="-").border = thin_border
+        ws.cell(row=row_idx, column=4, value=miktar_str).border = thin_border
         ws.cell(row=row_idx, column=4).alignment = align_center
         ws.cell(row=row_idx, column=4).font = font_normal
         
-        ws.cell(row=row_idx, column=5, value=miktar_str).border = thin_border
+        ws.cell(row=row_idx, column=5, value="").border = thin_border
         ws.cell(row=row_idx, column=5).alignment = align_center
         ws.cell(row=row_idx, column=5).font = font_normal
         
+        row_idx += 1
+        
+    for _ in range(15 - len(kalemler)):
+        for col in range(1, 6):
+            cell = ws.cell(row=row_idx, column=col, value="")
+            cell.border = thin_border
+            cell.font = font_normal
         row_idx += 1
         
     row_idx += 1
@@ -1521,7 +1534,7 @@ def uret_muayene_kabul_excel(veri, hedef_klasor):
     row_idx += 4
     ws.merge_cells(f'A{row_idx}:E{row_idx}')
     cell = ws.cell(row=row_idx, column=1, value="M U A Y E N E   V E   K A B U L   K O M İ S Y O N U")
-    cell.font = font_normal
+    cell.font = font_bold
     cell.alignment = align_center
     
     row_idx += 2
