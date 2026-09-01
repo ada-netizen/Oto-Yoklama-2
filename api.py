@@ -124,7 +124,10 @@ class RaporAlRequest(BaseModel):
 
 @contextmanager
 def gecici_dosya_olustur(dosya: UploadFile, prefix="temp_"):
-    temp_yol = f"{prefix}{dosya.filename}"
+    # Güvenli geçici dosya adı: Türkçe karakter veya özel karakter içeren
+    # orijinal dosya adı yerine uuid tabanlı güvenli bir ad kullanıyoruz.
+    uzanti = os.path.splitext(dosya.filename or ".pdf")[1] or ".pdf"
+    temp_yol = f"{prefix}{uuid.uuid4().hex[:8]}{uzanti}"
     with open(temp_yol, "wb") as buffer:
         shutil.copyfileobj(dosya.file, buffer)
     try:
@@ -502,7 +505,7 @@ def personel_pdf_indir():
 
 
 @app.post("/meb-pdf-oku")
-async def meb_pdf_oku(dosya: UploadFile = File(...)):
+def meb_pdf_oku(dosya: UploadFile = File(...)):
 
     try:
         with gecici_dosya_olustur(dosya, prefix='temp_meb_') as temp_yol:
