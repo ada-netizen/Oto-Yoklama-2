@@ -435,6 +435,16 @@ function ihaleBaslat() {
             </div>
             <div class="accordion-content" id="acc_adim7_icerik"></div>
         </div>
+        <div class="accordion-item" id="acc_adim8" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim8')">
+                <div class="acc-title"><i data-lucide="file-check" width="18" height="18"></i> 8. Adım: Muayene Kabul</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim8" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim8_icerik"></div>
+        </div>
     `;
     lucide.createIcons();
     
@@ -787,7 +797,54 @@ function ihaleAdim7Goster() {
             <input type="checkbox" id="vif_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim7_btn_container').style.display = this.checked ? 'block' : 'none';">
         </div>
         <div id="adim7_btn_container" style="display: none; text-align: right;">
-            <p style="color: #10B981; font-size: 14px; margin-bottom: 10px; font-weight: bold;"><i data-lucide="check-circle" width="16" height="16"></i> İhale süreci tamamlanmıştır. Yeni bir ihale başlatabilirsiniz.</p>
+            <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim7Ileri()">
+                <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Muayene Kabul
+            </button>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function adim7Ileri() {
+    document.getElementById("check_adim7").style.display = "block";
+    document.getElementById("acc_adim7").classList.remove("open");
+    document.getElementById("acc_adim8").style.display = "block";
+    ihaleAdim8Goster();
+    document.getElementById("acc_adim8").classList.add("open");
+}
+
+function ihaleAdim8Goster() {
+    const alan = document.getElementById("acc_adim8_icerik");
+    const bugun = new Date().toISOString().split('T')[0];
+
+    alan.innerHTML = `
+        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
+            <div class="settings-card-body" style="padding: 0;">
+                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">İhale süreci tamamlanmıştır. Son olarak Muayene Kabul Belgesini üretebilirsiniz.</p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px; color: var(--fg-main); width: 50px;">Sıra</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Tarihi</th>
+                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Muayene Kabul Belgesi</td>
+                            <td style="padding: 15px 10px;">
+                                <input type="date" id="tarih_muayene_kabul" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                            </td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('muayene_kabul', 'pdf', document.getElementById('tarih_muayene_kabul').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('muayene_kabul', 'excel', document.getElementById('tarih_muayene_kabul').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     `;
     lucide.createIcons();

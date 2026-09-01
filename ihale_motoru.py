@@ -1334,6 +1334,222 @@ def uret_ozel_fiyat_isteme_excel(veri, hedef_klasor):
         
     wb.save(dosya_adi)
     return dosya_adi
+
+def uret_muayene_kabul_pdf(veri, hedef_klasor):
+    import datetime
+    import os
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+    from reportlab.lib.pagesizes import A4, portrait
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.units import mm
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    dosya_adi = os.path.join(hedef_klasor, f"Muayene_Kabul_{timestamp}.pdf")
+    
+    try:
+        pdfmetrics.registerFont(TTFont('Times_TR', r'C:\Windows\Fonts\times.ttf'))
+        pdfmetrics.registerFont(TTFont('Times_TR_Bold', r'C:\Windows\Fonts\timesbd.ttf'))
+        font_name = 'Times_TR'
+        font_bold = 'Times_TR_Bold'
+    except:
+        font_name = 'Helvetica'
+        font_bold = 'Helvetica-Bold'
+        
+    doc = SimpleDocTemplate(
+        dosya_adi,
+        pagesize=portrait(A4),
+        rightMargin=15*mm,
+        leftMargin=15*mm,
+        topMargin=15*mm,
+        bottomMargin=15*mm
+    )
+    
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=11, leading=14, alignment=4)
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=11, alignment=1, leading=14)
+    style_title = ParagraphStyle('Title_TR', fontName=font_bold, fontSize=14, alignment=1, leading=18, spaceAfter=20)
+    
+    elements = []
+    
+    elements.append(Paragraph("M U A Y E N E   R A P O R U", style_title))
+    
+    table_data = [
+        [Paragraph(x, ParagraphStyle('tb', fontName=font_bold, fontSize=11, alignment=1)) for x in ["Sıra\nNo", "Malzemenin Adı", "Miktarı", "Reddedilen\nMiktar", "Kabul Olunan\nMiktar"]]
+    ]
+    
+    kalemler = veri.get('kalemler', [])
+    for idx, k in enumerate(kalemler):
+        cins = k.get('cins', '')
+        miktar = str(k.get('miktar', ''))
+        birim = k.get('birim', '')
+        miktar_str = f"{miktar} {birim}" if birim else miktar
+        table_data.append([
+            str(idx+1), 
+            Paragraph(cins, ParagraphStyle('tn', fontName=font_name, fontSize=11)), 
+            miktar_str, 
+            "-", 
+            miktar_str
+        ])
+        
+    t = Table(table_data, colWidths=[15*mm, 80*mm, 25*mm, 25*mm, 35*mm])
+    t.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('FONTNAME', (0,0), (-1,-1), font_name),
+        ('FONTSIZE', (0,0), (-1,-1), 11),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.black),
+        ('WORDWRAP', (0,0), (-1,-1), True)
+    ]))
+    elements.append(t)
+    elements.append(Spacer(1, 10*mm))
+    
+    tarih = format_date(veri.get('tarih', ''))
+    kalem_sayisi = len(kalemler)
+    text = f"Yukarıda yazılı {kalem_sayisi} kalem malzeme, Mal Alımlarında Uygulanacak Ara Denetim ile Mal Alımları Muayene ve Kabul Yönetmeliğine göre İhale Dokümanında yazılı şartlar dahilinde muayene edilerek neticesi yazılmıştır.   {tarih}"
+    elements.append(Paragraph(text, style_normal))
+    elements.append(Spacer(1, 20*mm))
+    
+    elements.append(Paragraph("M U A Y E N E   V E   K A B U L   K O M İ S Y O N U", ParagraphStyle('kom', fontName=font_name, fontSize=11, alignment=1, spaceAfter=20)))
+    
+    komisyon = veri.get('komisyon', {})
+    kom_isimler = [
+        komisyon.get('ihale_kom_muayene_1', ''),
+        komisyon.get('ihale_kom_muayene_2', ''),
+        komisyon.get('ihale_kom_muayene_3', '')
+    ]
+    kom_titles = ["Başkan", "Üye", "Üye"]
+    
+    sig_data = [[Paragraph(f"{kom_isimler[0]}<br/>{kom_titles[0]}", style_center), 
+                 Paragraph(f"{kom_isimler[1]}<br/>{kom_titles[1]}", style_center), 
+                 Paragraph(f"{kom_isimler[2]}<br/>{kom_titles[2]}", style_center)]]
+    
+    sig_table = Table(sig_data, colWidths=[60*mm, 60*mm, 60*mm])
+    sig_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    elements.append(sig_table)
+    
+    doc.build(elements)
+    return dosya_adi
+
+def uret_muayene_kabul_excel(veri, hedef_klasor):
+    import datetime
+    import os
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, Border, Side
+    
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    dosya_adi = os.path.join(hedef_klasor, f"Muayene_Kabul_{timestamp}.xlsx")
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Muayene Raporu"
+    
+    font_bold = Font(name='Times New Roman', bold=True, size=11)
+    font_normal = Font(name='Times New Roman', size=11)
+    font_title = Font(name='Times New Roman', bold=True, size=14)
+    
+    align_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    align_justify = Alignment(horizontal='justify', vertical='top', wrap_text=True)
+    
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    
+    ws.merge_cells('A1:E1')
+    ws['A1'] = "M U A Y E N E   R A P O R U"
+    ws['A1'].font = font_title
+    ws['A1'].alignment = align_center
+    
+    headers = ["Sıra No", "Malzemenin Adı", "Miktarı", "Reddedilen Miktar", "Kabul Olunan Miktar"]
+    ws.append([]) # row 2 empty
+    ws.append(headers)
+    for col in range(1, 6):
+        cell = ws.cell(row=3, column=col)
+        cell.font = font_bold
+        cell.alignment = align_center
+        cell.border = thin_border
+        
+    ws.column_dimensions['A'].width = 8
+    ws.column_dimensions['B'].width = 40
+    ws.column_dimensions['C'].width = 15
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 20
+    
+    kalemler = veri.get('kalemler', [])
+    row_idx = 4
+    for idx, k in enumerate(kalemler):
+        cins = k.get('cins', '')
+        miktar = str(k.get('miktar', ''))
+        birim = k.get('birim', '')
+        miktar_str = f"{miktar} {birim}" if birim else miktar
+        
+        ws.cell(row=row_idx, column=1, value=idx+1).border = thin_border
+        ws.cell(row=row_idx, column=1).alignment = align_center
+        ws.cell(row=row_idx, column=1).font = font_normal
+        
+        ws.cell(row=row_idx, column=2, value=cins).border = thin_border
+        ws.cell(row=row_idx, column=2).alignment = align_left
+        ws.cell(row=row_idx, column=2).font = font_normal
+        
+        ws.cell(row=row_idx, column=3, value=miktar_str).border = thin_border
+        ws.cell(row=row_idx, column=3).alignment = align_center
+        ws.cell(row=row_idx, column=3).font = font_normal
+        
+        ws.cell(row=row_idx, column=4, value="-").border = thin_border
+        ws.cell(row=row_idx, column=4).alignment = align_center
+        ws.cell(row=row_idx, column=4).font = font_normal
+        
+        ws.cell(row=row_idx, column=5, value=miktar_str).border = thin_border
+        ws.cell(row=row_idx, column=5).alignment = align_center
+        ws.cell(row=row_idx, column=5).font = font_normal
+        
+        row_idx += 1
+        
+    row_idx += 1
+    tarih = format_date(veri.get('tarih', ''))
+    kalem_sayisi = len(kalemler)
+    text = f"Yukarıda yazılı {kalem_sayisi} kalem malzeme, Mal Alımlarında Uygulanacak Ara Denetim ile Mal Alımları Muayene ve Kabul Yönetmeliğine göre İhale Dokümanında yazılı şartlar dahilinde muayene edilerek neticesi yazılmıştır.   {tarih}"
+    
+    ws.merge_cells(f'A{row_idx}:E{row_idx+2}')
+    cell = ws.cell(row=row_idx, column=1, value=text)
+    cell.font = font_normal
+    cell.alignment = align_justify
+    
+    row_idx += 4
+    ws.merge_cells(f'A{row_idx}:E{row_idx}')
+    cell = ws.cell(row=row_idx, column=1, value="M U A Y E N E   V E   K A B U L   K O M İ S Y O N U")
+    cell.font = font_normal
+    cell.alignment = align_center
+    
+    row_idx += 2
+    komisyon = veri.get('komisyon', {})
+    kom_isimler = [
+        komisyon.get('ihale_kom_muayene_1', ''),
+        komisyon.get('ihale_kom_muayene_2', ''),
+        komisyon.get('ihale_kom_muayene_3', '')
+    ]
+    kom_titles = ["Başkan", "Üye", "Üye"]
+    
+    ws.cell(row=row_idx, column=1, value=kom_isimler[0]).font = font_normal
+    ws.cell(row=row_idx, column=3, value=kom_isimler[1]).font = font_normal
+    ws.cell(row=row_idx, column=5, value=kom_isimler[2]).font = font_normal
+    ws.cell(row=row_idx, column=1).alignment = align_center
+    ws.cell(row=row_idx, column=3).alignment = align_center
+    ws.cell(row=row_idx, column=5).alignment = align_center
+    
+    ws.cell(row=row_idx+1, column=1, value=kom_titles[0]).font = font_normal
+    ws.cell(row=row_idx+1, column=3, value=kom_titles[1]).font = font_normal
+    ws.cell(row=row_idx+1, column=5, value=kom_titles[2]).font = font_normal
+    ws.cell(row=row_idx+1, column=1).alignment = align_center
+    ws.cell(row=row_idx+1, column=3).alignment = align_center
+    ws.cell(row=row_idx+1, column=5).alignment = align_center
+    
+    wb.save(dosya_adi)
+    return dosya_adi
+
 def belge_uret(veri, pdf_yol):
 
     belge_tipi = veri.get("belge_tipi", "")
@@ -1364,6 +1580,12 @@ def belge_uret(veri, pdf_yol):
             return uret_piyasa_arastirmasi_pdf(veri, pdf_yol)
         else:
             return uret_piyasa_arastirmasi_excel(veri, pdf_yol)
+            
+    elif belge_tipi == "muayene_kabul":
+        if fmt == "pdf":
+            return uret_muayene_kabul_pdf(veri, pdf_yol)
+        else:
+            return uret_muayene_kabul_excel(veri, pdf_yol)
             
     return None
 
