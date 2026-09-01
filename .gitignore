@@ -7,18 +7,15 @@ venv/
 env/
 .env
 .env.*
-
 # Build and PyInstaller
 build/
 dist/
 *.spec
-
 # IDE and OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
-
 # App Data and Logs
 *.log
 *.tmp
@@ -33,7 +30,6 @@ yak_mal.json
 *.sqlite3-journal
 *.db-shm
 *.db-wal
-
 # Output and Caches
 webview_cache/
 .tmp.driveupload/

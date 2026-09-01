@@ -397,7 +397,7 @@ const API = 'http://127.0.0.1:8000';
             const dosya = event.target.files[0]; if (!dosya) return;
             const formData = new FormData(); formData.append("dosya", dosya);
             yuklemeGoster("Excel dosyasi sisteme aktariliyor...");
-            fetch(${API}/, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
+            fetch(`${API}/${endpoint}`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
                 if(v.basarili && v.job_id) { 
                     ilerlemeTakipEt(v.job_id);
                 } else { 
@@ -409,7 +409,7 @@ const API = 'http://127.0.0.1:8000';
         }
 
         function ilerlemeTakipEt(job_id) {
-            fetch(${API}/islem-durumu/).then(r => r.json()).then(durum => {
+            fetch(`${API}/islem-durumu/${job_id}`).then(r => r.json()).then(durum => {
                 if(durum.durum === 'tamamlandi') {
                     yuklemeGizle();
                     bildirimGoster(durum.mesaj, "bilgi");

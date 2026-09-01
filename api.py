@@ -49,9 +49,74 @@ def dosyayi_otomatik_ac(dosya_yolu):
 
 app = FastAPI(title="Elektronik Okul API V2")
 
+class LogMessage(BaseModel):
+    level: str
+    message: str
+
+@app.post("/log-error")
+def log_frontend_error(log: LogMessage):
+    if log.level == 'error':
+        logging.error(f"Frontend Error: {log.message}")
+    else:
+        logging.info(f"Frontend Log: {log.message}")
+    return {"status": "ok"}
+
 import uuid
 import shutil
 import os
+
+@app.get("/olcu-birimleri")
+def olcu_birimleri_getir():
+    try:
+        import pandas as pd
+        df = pd.read_excel('ölçü birimleri.xlsx', header=None)
+        birimler = df[0].dropna().tolist()
+        return {"birimler": birimler}
+    except Exception as e:
+        logging.error(f"Ölçü birimleri okunurken hata: {e}")
+        return {"birimler": []}
+
+class SablonVerisi(BaseModel):
+    kalemler: List[Dict]
+    firmaVergiler: List[str]
+
+@app.post("/sablon-hazirla")
+def sablon_hazirla(veri: SablonVerisi):
+    try:
+        logging.info(f"SABLON HAZIRLA DATA: {veri.dict()}")
+        import openpyxl
+        wb = openpyxl.load_workbook("sablon.xlsx")
+        ws = wb.active
+        
+        ws.delete_rows(2, ws.max_row)
+        
+        row_idx = 2
+        for kalem in veri.kalemler:
+            ws[f"A{row_idx}"] = kalem.get('cins', '')
+            ws[f"B{row_idx}"] = kalem.get('miktar', '')
+            ws[f"C{row_idx}"] = kalem.get('birim', '')
+            row_idx += 1
+            
+            for fidx, vkn in enumerate(veri.firmaVergiler):
+                if vkn and str(vkn).strip():
+                    ws[f"H{row_idx}"] = str(vkn).strip()
+                    fiyatlar = kalem.get('fiyatlar', [])
+                    if fidx < len(fiyatlar) and fiyatlar[fidx] not in (None, ""):
+                        ws[f"G{row_idx}"] = float(fiyatlar[fidx])
+                    row_idx += 1
+                    
+        ayar = ayarlari_al()
+        ana_klasor = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
+        if not os.path.exists(ana_klasor):
+            os.makedirs(ana_klasor)
+        dosya_yolu = os.path.join(ana_klasor, "Yaklasik_Maliyet_Sablon.xlsx")
+        wb.save(dosya_yolu)
+        dosyayi_otomatik_ac(dosya_yolu)
+        
+        return {"basarili": True, "mesaj": "Şablon hazırlandı ve açıldı."}
+    except Exception as e:
+        logging.error(f"Şablon hazırlanırken hata: {e}")
+        return {"basarili": False, "mesaj": str(e)}
 
 islem_durumlari = {}
 

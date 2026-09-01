@@ -1,6 +1,15 @@
 // ==========================================
 
 let ihaleKalemleri = [];
+let olcuBirimleri = [];
+function olcuBirimleriniGetir() {
+    fetch(`${API}/olcu-birimleri`).then(r => r.json()).then(data => {
+        if(data && data.birimler) {
+            olcuBirimleri = data.birimler;
+        }
+    }).catch(e => console.error("Ölçü birimleri çekilemedi: ", e));
+}
+document.addEventListener('DOMContentLoaded', olcuBirimleriniGetir);
 
 function ihaleTablosunuCiz() {
     const govde = document.getElementById("ihale_kalemleri_govde");
@@ -376,13 +385,55 @@ function ihaleBaslat() {
 
         <div class="accordion-item" id="acc_adim3" style="display: none;">
             <div class="accordion-header" onclick="toggleAcc('adim3')">
-                <div class="acc-title"><i data-lucide="file-check" width="18" height="18"></i> 3. Adım: Belge Üretimi</div>
+                <div class="acc-title"><i data-lucide="file-check" width="18" height="18"></i> 3. Adım: Yaklaşık Maliyet</div>
                 <div class="acc-actions">
                     <i data-lucide="check-circle" class="acc-check" id="check_adim3" width="18" height="18" style="display:none; color:#10B981;"></i>
                     <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
                 </div>
             </div>
             <div class="accordion-content" id="acc_adim3_icerik"></div>
+        </div>
+        <div class="accordion-item" id="acc_adim4" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim4')">
+                <div class="acc-title"><i data-lucide="check-square" width="18" height="18"></i> 4. Adım: İhale Onayı</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim4" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim4_icerik"></div>
+        </div>
+
+        <div class="accordion-item" id="acc_adim5" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim5')">
+                <div class="acc-title"><i data-lucide="banknote" width="18" height="18"></i> 5. Adım: Harcama Ekleme</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim5" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim5_icerik"></div>
+        </div>
+
+        <div class="accordion-item" id="acc_adim6" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim6')">
+                <div class="acc-title"><i data-lucide="file-check" width="18" height="18"></i> 6. Adım: Piyasa Fiyat Araştırması</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim6" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim6_icerik"></div>
+        </div>
+        <div class="accordion-item" id="acc_adim7" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim7')">
+                <div class="acc-title"><i data-lucide="check-square" width="18" height="18"></i> 7. Adım: VİF Girişi</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim7" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim7_icerik"></div>
         </div>
     `;
     lucide.createIcons();
@@ -553,12 +604,140 @@ function ihaleBelgeUretimEkraniGoster() {
                                 <input type="date" id="tarih_yaklasik_maliyet" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn btn-dev" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('pdf')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn btn-yardim" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('excel')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('pdf')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('excel')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
+                    </tbody>
+                </table>
+                <div id="ihale_adim3_btn_container" style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim3Ileri()">
+                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: İhale Onayı
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function adim3Ileri() {
+    document.getElementById("check_adim3").style.display = "block";
+    document.getElementById("acc_adim3").classList.remove("open");
+    document.getElementById("acc_adim4").style.display = "block";
+    ihaleAdim4Goster();
+    document.getElementById("acc_adim4").classList.add("open");
+}
+
+function ihaleAdim4Goster() {
+    const alan = document.getElementById("acc_adim4_icerik");
+    alan.innerHTML = `
+        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+            <label for="ebys_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">EBYS platformu üzerinden ihale onayı alındı mı?</label>
+            <input type="checkbox" id="ebys_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim4_btn_container').style.display = this.checked ? 'block' : 'none';">
+        </div>
+        <div id="adim4_btn_container" style="display: none; text-align: right;">
+            <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim4Ileri()">
+                <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Harcama Ekleme
+            </button>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function adim4Ileri() {
+    document.getElementById("check_adim4").style.display = "block";
+    document.getElementById("acc_adim4").classList.remove("open");
+    document.getElementById("acc_adim5").style.display = "block";
+    ihaleAdim5Goster();
+    document.getElementById("acc_adim5").classList.add("open");
+}
+
+function sablonIndir() {
+    yuklemeGoster("Şablon hazırlanıyor...");
+    fetch(`${API}/sablon-hazirla`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            kalemler: ihaleGeciciVeri.kalemler,
+            firmaVergiler: ihaleGeciciVeri.firmaVergiler
+        })
+    }).then(r => r.json()).then(v => {
+        yuklemeGizle();
+        if(v.basarili) {
+            bildirimGoster(v.mesaj, "bilgi");
+        } else {
+            bildirimGoster("Hata: " + v.mesaj, "hata");
+        }
+    }).catch(e => {
+        yuklemeGizle();
+        bildirimGoster("Hata: " + e, "hata");
+    });
+}
+
+function ihaleAdim5Goster() {
+    const alan = document.getElementById("acc_adim5_icerik");
+    alan.innerHTML = `
+        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
+            <div class="settings-card-body" style="padding: 0;">
+                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Şimdi MYS üzerinden Harcama Ekleme adımlarını gerçekleştirin. Yaklaşık Maliyet şablonu otomatik olarak hazırlanmıştır.</p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px; color: var(--fg-main); width: 50px;">Sıra</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
+                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 15px 10px; color: var(--fg-sub);">3</td>
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Şablonu</td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="sablonIndir()"><i data-lucide="download" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim5Ileri()">
+                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Piyasa Fiyat Araştırması
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function adim5Ileri() {
+    document.getElementById("check_adim5").style.display = "block";
+    document.getElementById("acc_adim5").classList.remove("open");
+    document.getElementById("acc_adim6").style.display = "block";
+    ihaleAdim6Goster();
+    document.getElementById("acc_adim6").classList.add("open");
+}
+
+function ihaleAdim6Goster() {
+    const alan6 = document.getElementById("acc_adim6_icerik");
+    const bugun = new Date().toISOString().split('T')[0];
+
+    alan6.innerHTML = `
+        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
+            <div class="settings-card-body" style="padding: 0;">
+                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Harcama ekleme tamamlandı. Son belgeleri üretebilirsiniz.</p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px; color: var(--fg-main);">Sıra</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Tarihi</th>
+                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
                             <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Fiyat İsteme</td>
                             <td style="padding: 15px 10px;">
                                 <input type="date" id="tarih_ozel_fiyat" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
@@ -569,19 +748,46 @@ function ihaleBelgeUretimEkraniGoster() {
                             </td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 15px 10px; color: var(--fg-sub);">4</td>
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">2</td>
                             <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Piyasa Fiyat Araştırması Tutanağı</td>
                             <td style="padding: 15px 10px;">
                                 <input type="date" id="tarih_piyasa_arastirmasi" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn btn-dev" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('pdf', 'piyasa_arastirmasi')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn btn-yardim" style="padding: 6px 12px; font-size: 13px; border-radius: 6px;" onclick="fiyatGirisModalAc('excel', 'piyasa_arastirmasi')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('pdf', 'piyasa_arastirmasi')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('excel', 'piyasa_arastirmasi')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                     </tbody>
                 </table>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim6Ileri()">
+                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: VİF Girişi
+                    </button>
+                </div>
             </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function adim6Ileri() {
+    document.getElementById("check_adim6").style.display = "block";
+    document.getElementById("acc_adim6").classList.remove("open");
+    document.getElementById("acc_adim7").style.display = "block";
+    ihaleAdim7Goster();
+    document.getElementById("acc_adim7").classList.add("open");
+}
+
+function ihaleAdim7Goster() {
+    const alan = document.getElementById("acc_adim7_icerik");
+    alan.innerHTML = `
+        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+            <label for="vif_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">TKYS platformundan VİF girişi yapıldı mı?</label>
+            <input type="checkbox" id="vif_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim7_btn_container').style.display = this.checked ? 'block' : 'none';">
+        </div>
+        <div id="adim7_btn_container" style="display: none; text-align: right;">
+            <p style="color: #10B981; font-size: 14px; margin-bottom: 10px; font-weight: bold;"><i data-lucide="check-circle" width="16" height="16"></i> İhale süreci tamamlanmıştır. Yeni bir ihale başlatabilirsiniz.</p>
         </div>
     `;
     lucide.createIcons();
@@ -598,7 +804,12 @@ function ihaleKalemTablosunuCiz() {
                 <td><input type="text" class="kalem-input" data-field="cins" value="${k.cins}" placeholder="Cinsi"></td>
                 <td><input type="text" class="kalem-input" data-field="ozellik" value="${k.ozellik}" placeholder="Özellikleri"></td>
                 <td><input type="number" class="kalem-input" style="text-align:center;" data-field="miktar" value="${k.miktar}" placeholder="0"></td>
-                <td><input type="text" class="kalem-input" style="text-align:center;" data-field="birim" value="${k.birim}" placeholder="Adet"></td>
+                <td>
+                    <select class="kalem-input" style="text-align:center; width: 100%; padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" data-field="birim">
+                        <option value="">Seçiniz</option>
+                        ${olcuBirimleri.map(b => `<option value="${b}" ${k.birim === b ? 'selected' : ''}>${b}</option>`).join('')}
+                    </select>
+                </td>
                 <td><button class="btn-kalem-sil" onclick="ihaleKalemSatiriSil(${idx})"><i data-lucide="x" width="14" height="14"></i></button></td>
             </tr>
         `;
