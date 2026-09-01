@@ -110,11 +110,15 @@ def sunucuyu_baslat():
 if __name__ == '__main__':
     multiprocessing.freeze_support()
     # 1. 8000 portu zaten kullanımdaysa (programın önceki bir kopyası hâlâ açıksa)
-    #    yeni bir sunucu başlatmaya ÇALIŞMA — bu, Windows'ta gördüğün
-    #    "WinError 10048 / adres zaten kullanımda" çökmesine sebep oluyordu.
     if port_dinleniyor_mu("127.0.0.1", 8000) and api_zaten_calisiyor_mu():
-        # Zaten çalışan kendi sunucumuz var, onu kullanmaya devam ederiz.
-        pass
+        import tkinter as tk
+        from tkinter import messagebox
+        import sys
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showwarning("Zaten Çalışıyor", "Oto Yoklama programı zaten arka planda veya başka bir pencerede çalışıyor.\n\nLütfen açık olan pencereyi kullanın veya görev yöneticisinden kapatıp tekrar deneyin.")
+        root.destroy()
+        sys.exit(0)
     else:
         t = threading.Thread(target=sunucuyu_baslat)
         t.daemon = True
