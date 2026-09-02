@@ -759,9 +759,30 @@ const API = 'http://127.0.0.1:8000';
 
         function gercekPdfIstegiAt(kayitlar) {
             let ad = seciliOgrenci.ad;
-            
             const sube = document.querySelector('.tr-secili td')?.innerText || "Bilinmiyor";
-            const veri = { no: seciliOgrenci.no, ad: ad, sube: sube, kayitlar: kayitlar };
+            
+            let ozsuz_str = "0";
+            let ozu_str = "0";
+            const lblKalan = document.getElementById('lbl_kalan_ozursuz');
+            const lblYeni = document.getElementById('lbl_yeni_ozurlu');
+            
+            if(lblKalan) {
+                let sayi = parseFloat(lblKalan.innerText);
+                if(!isNaN(sayi)) ozsuz_str = String(sayi);
+            }
+            if(lblYeni) {
+                let sayi = parseFloat(lblYeni.innerText);
+                if(!isNaN(sayi)) ozu_str = String(sayi);
+            }
+            
+            const veri = { 
+                no: seciliOgrenci.no, 
+                ad: ad, 
+                sube: sube, 
+                kayitlar: kayitlar,
+                ozurlu_str: ozu_str,
+                ozursuz_str: ozsuz_str
+            };
 
             fetch(`${API}/pdf-veli-formu`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
             .then(res => res.json()).then(sonuc => {

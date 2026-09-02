@@ -240,6 +240,8 @@ class PdfVeliFormuRequest(BaseModel):
     ad: str
     sube: str
     kayitlar: List[KayitModel]
+    ozurlu_str: Optional[str] = "0"
+    ozursuz_str: Optional[str] = "0"
 
 class PersonelRequest(BaseModel):
     ad: str
@@ -456,12 +458,14 @@ def devamsizlik_manuel_ekle(veri: DevamsizlikEkleRequest):
 @app.post("/pdf-veli-formu")
 def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: BackgroundTasks):
     ana_klasor, ayar = pdf_klasoru_hazirla()
+    izin_klasoru = os.path.join(ana_klasor, "İzin Dilekçeleri")
     sube_temiz = str(veri.sube).replace("/", "-").replace("\\", "-").replace(":", "").strip()
-    sube_klasoru = os.path.join(ana_klasor, sube_temiz)
+    sube_klasoru = os.path.join(izin_klasoru, sube_temiz)
     if not os.path.exists(sube_klasoru):
         os.makedirs(sube_klasoru)
 
-    kayit_yeri = os.path.join(sube_klasoru, f"{veri.no}_{veri.ad.replace(' ', '_')}.pdf")
+    zaman_damgasi = datetime.now().strftime("%d-%m-%Y_%H%M%S")
+    kayit_yeri = os.path.join(sube_klasoru, f"{veri.no}_{veri.ad.replace(' ', '_')}_{zaman_damgasi}.pdf")
     try:
         # Ön yüzden gelen kayıtlarda ham 'tarih'/'gun' alanları var; PDF motoru
         # düzgün biçimlendirilmiş 'tarih_duzgun'/'gun_str' bekliyor. Burada dönüştürüyoruz.
@@ -475,7 +479,7 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
         def gorev_pdf_olustur():
             try:
                 motor = PDFYoneticisi(ayar)
-                motor.veli_formu_ciz(veri.no, veri.ad, veri.sube, kayitlar_islenmis, kayit_yeri)
+                motor.veli_formu_ciz(veri.no, veri.ad, veri.sube, kayitlar_islenmis, kayit_yeri, veri.ozurlu_str, veri.ozursuz_str)
                 dosyayi_otomatik_ac(kayit_yeri)
             except Exception as e:
                 logging.error(f"Veli formu cizim hatasi: {e}")
@@ -726,10 +730,10 @@ def meb_pdf_oku(dosya: UploadFile = File(...)):
 @app.post("/teblig-bireysel-pdf")
 def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: BackgroundTasks):
     ayar = ayarlari_al()
-    yedek_klasoru = ayar.get("yedek_kayit_klasoru", yollar["YEDEK"])
+    ana_klasor = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
     
     # Yeni klasör yapısını oluştur
-    teblig_klasoru = os.path.join(yedek_klasoru, "Tebliğler", "Bireysel Tebliğ-Tebellüğ")
+    teblig_klasoru = os.path.join(ana_klasor, "Bireysel Tebliğ")
     os.makedirs(teblig_klasoru, exist_ok=True)
     
     yol = os.path.join(teblig_klasoru, f"Bireysel_Teblig_{veri.edilen.ad.replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
@@ -753,10 +757,10 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
 @app.post("/teblig-toplu-pdf")
 def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks):
     ayar = ayarlari_al()
-    yedek_klasoru = ayar.get("yedek_kayit_klasoru", yollar["YEDEK"])
+    ana_klasor = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
     
     # Yeni klasör yapısını oluştur
-    teblig_klasoru = os.path.join(yedek_klasoru, "Tebliğler", "Toplu İmza Sirküsü")
+    teblig_klasoru = os.path.join(ana_klasor, "Toplu Tebliğ")
     os.makedirs(teblig_klasoru, exist_ok=True)
     
     yol = os.path.join(teblig_klasoru, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")

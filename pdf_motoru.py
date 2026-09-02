@@ -86,7 +86,7 @@ class PDFYoneticisi:
         c.setFont(self.font, 10)
         toplam_gun = 0.0
         for kayit in secili_kayitlar:
-            if y_pozisyon < 100:
+            if y_pozisyon < 135:
                 c.showPage(); c.setFont(self.font, 10)
                 y_pozisyon = yukseklik - 50
             
@@ -104,62 +104,87 @@ class PDFYoneticisi:
         toplam_str = int(toplam_gun) if float(toplam_gun).is_integer() else toplam_gun
         c.drawString(260, y_pozisyon - 5, f"{toplam_str} Gün")
 
-        # --- 4. İMZA ALANI ---
-        # --- 4. İMZA ALANI ---
-        bugun = datetime.now().strftime("%d/%m/%Y") 
-        c.setFont(self.font, 10)
+        # --- 4. İMZA ALANI VE DEVAMSIZLIK TABLOSU (YAN YANA HÜCRELER) ---
+        c.setLineWidth(0.5)
+        kutu_x_sol = 25
+        kutu_x_sag = genislik - 25
+        kutu_y_alt = 35
+        kutu_y_ust = 110
+        orta_x = genislik / 2
         
-        # 25 karakterlik bir ismin rahatça sığabilmesi için ideal nokta sayısı (yaklaşık 120 punto genişlik)
-        noktalar = "." * 45
-        nokta_genislik = c.stringWidth(noktalar, self.font, 10)
+        # Dış çerçeve ve orta çizgi
+        c.rect(kutu_x_sol, kutu_y_alt, kutu_x_sag - kutu_x_sol, kutu_y_ust - kutu_y_alt)
+        c.line(orta_x, kutu_y_alt, orta_x, kutu_y_ust)
         
-        # İp gibi hizalama için sağ kenardan geriye doğru kusursuz matematik hesaplaması
-        sag_margin = genislik - 30
-        x_value = sag_margin - nokta_genislik
-        x_colon = x_value - 10
-        x_label = x_colon - 55
+        # Sol Taraf Yatay Çizgiler (3 Satır)
+        satir_yukseklik = (kutu_y_ust - kutu_y_alt) / 3
+        c.line(kutu_x_sol, kutu_y_alt + satir_yukseklik, orta_x, kutu_y_alt + satir_yukseklik)
+        c.line(kutu_x_sol, kutu_y_alt + 2 * satir_yukseklik, orta_x, kutu_y_alt + 2 * satir_yukseklik)
         
-        # Yüksekliği belirleyen Y koordinatları
-        y_tarih = 80
-        y_ad = 60
-        y_veli = 48
-        y_imza = 30
-        
-        # 1. Satır: Tarih
-        merkez_x = x_value + (nokta_genislik / 2)
-        c.drawCentredString(merkez_x, y_tarih, f"Tarih : {bugun}")
-        
-        # 2. Satır: Ad Soyad
-        c.drawString(x_label, y_ad, "Ad Soyad")
-        c.drawString(x_colon, y_ad, ":")
-        c.drawString(x_value, y_ad, noktalar)
-        
-        # 3. Ara Satır: Velisi (Noktaların genişliğinin tam merkezine ortalanır)
-        merkez_x = x_value + (nokta_genislik / 2)
-        c.drawCentredString(merkez_x, y_veli, "Velisi")
-        
-        # 4. Satır: İmza
-        c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
-        c.drawString(x_colon, y_imza, ":")
-        c.drawString(x_value, y_imza, noktalar)
-
-        # 5. Alt Sol Köşe: Güncel Devamsızlık Durumu
-        def draw_bold_value(c_obj, x, y, label, value_str):
+        # Sol Taraf Metinleri
+        def sol_metin_ciz(c_obj, x, y, label, value_str):
             c_obj.setFont(self.font, 9)
             c_obj.drawString(x, y, self.metin_duzelt(label))
             w = c_obj.stringWidth(self.metin_duzelt(label), self.font, 9)
             c_obj.setFont(self.font_bold, 9)
             c_obj.drawString(x + w, y, self.metin_duzelt(f"{value_str} Gün"))
 
-        draw_bold_value(c, 25, y_tarih, "Güncel Özürsüz Devamsızlık: ", str(ozursuz_str))
-        draw_bold_value(c, 25, y_tarih - 12, "Güncel Özürlü Devamsızlık: ", str(ozurlu_str))
+        # Y kordinatlarını satırların tam ortasına gelecek şekilde hesapla (baseline için hafif aşağı ofset)
+        y_satir3 = kutu_y_alt + (satir_yukseklik * 2.5) - 3  # Üst satır
+        y_satir2 = kutu_y_alt + (satir_yukseklik * 1.5) - 3  # Orta satır
+        y_satir1 = kutu_y_alt + (satir_yukseklik * 0.5) - 3  # Alt satır
+
+        sol_icerik_x = kutu_x_sol + 10
+        sol_metin_ciz(c, sol_icerik_x, y_satir3, "Özürsüz Devamsızlık: ", str(ozursuz_str))
+        sol_metin_ciz(c, sol_icerik_x, y_satir2, "Özürlü Devamsızlık: ", str(ozurlu_str))
         
         try:
             toplam_hepsi = float(ozurlu_str) + float(ozursuz_str)
             toplam_hepsi_str = int(toplam_hepsi) if float(toplam_hepsi).is_integer() else toplam_hepsi
-            draw_bold_value(c, 25, y_tarih - 24, "Toplam: ", str(toplam_hepsi_str))
         except:
-            pass
+            toplam_hepsi_str = 0
+            
+        sol_metin_ciz(c, sol_icerik_x, y_satir1, "Toplam Devamsızlık: ", str(toplam_hepsi_str))
+
+        # Sağ Taraf Metinleri
+        c.setFont(self.font, 9)
+        bugun = datetime.now().strftime("%d/%m/%Y")
+        
+        sag_icerik_x = orta_x + 10
+        noktalar = "." * 40
+        nokta_genislik = c.stringWidth(noktalar, self.font, 9)
+        
+        # Sağ Y kordinatları
+        y_tarih = kutu_y_ust - 15
+        y_ad = kutu_y_ust - 35
+        y_veli = kutu_y_ust - 50
+        y_imza = kutu_y_alt + 10
+        
+        x_label = sag_icerik_x
+        x_colon = x_label + 45
+        x_value = kutu_x_sag - nokta_genislik - 10
+        merkez_x_nokta = x_value + (nokta_genislik / 2)
+        
+        # 1. Tarih
+        c.drawCentredString(merkez_x_nokta, y_tarih, f"Tarih: {bugun}")
+
+        # 2. Ad Soyad
+        c.drawString(x_label, y_ad, "Ad Soyad")
+        c.drawString(x_colon, y_ad, ":")
+        c.drawString(x_value, y_ad, noktalar)
+        
+        # 3. Velisi
+        c.drawCentredString(merkez_x_nokta, y_veli, "Velisi")
+        
+        # 4. İmza
+        c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
+        c.drawString(x_colon, y_imza, ":")
+        c.drawString(x_value, y_imza, noktalar)
+        
+        # 5. ALT NOT
+        not_y = kutu_y_alt - 15
+        c.setFont(self.font, 8)
+        c.drawString(kutu_x_sol, not_y, self.metin_duzelt("Not: Toplam devamsızlık süresi 10 gün özürsüz, 20 gün özürlü olmak üzere 30 gün ile sınırlıdır."))
 
         c.save()
         return True, ""
