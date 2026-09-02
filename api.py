@@ -1201,3 +1201,27 @@ def rapor_gec_bugun(background_tasks: BackgroundTasks):
         return {"basarili": True, "mesaj": "PDF hazırlanıyor..."}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
+
+@app.delete("/veritabani-sifirla")
+def veritabani_sifirla():
+    db.sifirla()
+    return {"basarili": True, "mesaj": "Tüm veritabanı başarıyla sıfırlandı."}
+
+@app.delete("/ogrencileri-sifirla")
+def ogrencileri_sifirla():
+    try:
+        db.cursor.execute("DELETE FROM ogrenciler")
+        db.cursor.execute("DELETE FROM devamsizliklar")
+        db.conn.commit()
+        return {"basarili": True, "mesaj": "Tüm öğrenciler ve devamsızlıkları silindi."}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+@app.delete("/personel-sifirla")
+def personel_sifirla():
+    try:
+        db.cursor.execute("DELETE FROM personel")
+        db.conn.commit()
+        return {"basarili": True, "mesaj": "Tüm personel silindi."}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}

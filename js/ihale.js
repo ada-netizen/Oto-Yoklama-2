@@ -264,6 +264,7 @@ function ihaleSifirla() {
         // Komisyon seçimlerini sıfırla
         ihaleKomisyonSecimleri = {};
         localStorage.setItem("ihaleKomisyonSecimleri", JSON.stringify(ihaleKomisyonSecimleri));
+        localStorage.removeItem("ihale_aktif_adim");
         
         // Ekranı başlangıç durumuna döndür
         const icerik = document.getElementById("ihale_icerik");
@@ -276,6 +277,7 @@ function ihaleSifirla() {
                     style="background-color: #10B981; color: white; padding: 15px 30px; font-weight: bold; font-size: 18px; border-radius: 8px; margin-top: 20px;"
                     onclick="ihaleBaslat()"><i data-lucide="play" width="24" height="24"></i> İhale Başlat</button>
         `;
+        icerik.style.display = "flex";
         icerik.style.alignItems = "center";
         icerik.style.justifyContent = "center";
         lucide.createIcons();
@@ -290,6 +292,17 @@ function ihaleSifirla() {
 // Load draft initially
 ihaleTaslaginiYukle();
 
+document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem("ihale_aktif_adim")) ihaleBaslat();
+});
+
+window.addEventListener('click', function(e) {
+    let btn = e.target.closest('button');
+    if (btn && btn.getAttribute('onclick')) {
+        let match = btn.getAttribute('onclick').match(/adim(\d+)Ileri\(\)/);
+        if (match) localStorage.setItem("ihale_aktif_adim", parseInt(match[1]) + 1);
+    }
+});
 function ihaleBilgiGirisiModalAc() {
     document.getElementById('ihale_resmi_yazi_basligi').value = ihaleGeciciVeri.resmi_baslik || localStorage.getItem("ihale_resmi_baslik") || "";
     document.getElementById('ihale_yazisma_kod').value = ihaleGeciciVeri.yazisma_kodu || localStorage.getItem("ihale_yazisma_kodu") || "";
@@ -331,6 +344,7 @@ function ihaleBaslat() {
     }
 
     const icerik = document.getElementById("ihale_icerik");
+    icerik.style.display = "block";
     icerik.style.alignItems = "stretch";
     icerik.style.justifyContent = "flex-start";
     
@@ -445,14 +459,36 @@ function ihaleBaslat() {
             </div>
             <div class="accordion-content" id="acc_adim8_icerik"></div>
         </div>
+        <div class="accordion-item" id="acc_adim9" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim9')">
+                <div class="acc-title"><i data-lucide="credit-card" width="18" height="18"></i> 9. Adım: Ödeme Emri Oluşturma</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim9" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim9_icerik"></div>
+        </div>
     `;
     lucide.createIcons();
     
-    // Check if we need to show other steps immediately (if loading from draft)
-    if (ihaleGeciciVeri.kalemler && ihaleGeciciVeri.kalemler.length > 0) {
+    let aktifAdim = parseInt(localStorage.getItem("ihale_aktif_adim")) || 1;
+    if (aktifAdim > 1 && ihaleGeciciVeri.kalemler && ihaleGeciciVeri.kalemler.length > 0) {
+        for (let i = 1; i < aktifAdim; i++) {
+            let nxt = i + 1;
+            let cAcc = document.getElementById("acc_adim" + i);
+            if (cAcc) { cAcc.classList.remove("open"); document.getElementById("check_adim" + i).style.display = "inline-block"; }
+            let nAcc = document.getElementById("acc_adim" + nxt);
+            if (nAcc) {
+                nAcc.style.display = "block";
+                if (nxt === 3) ihaleBelgeUretimEkraniGoster();
+                else if (window["ihaleAdim" + nxt + "Goster"]) window["ihaleAdim" + nxt + "Goster"](true);
+                if (nxt === aktifAdim) { nAcc.classList.add("open"); setTimeout(() => nAcc.scrollIntoView({behavior: "smooth", block: "start"}), 100); }
+            }
+        }
+    } else if (ihaleGeciciVeri.kalemler && ihaleGeciciVeri.kalemler.length > 0) {
         document.getElementById("acc_adim2").style.display = "block";
         ihaleAdim2Goster(true); // true means just render inside without auto-toggling
-        // But if we want to jump to step 2, we can call toggleAcc
     }
 }
 
@@ -844,6 +880,66 @@ function ihaleAdim8Goster() {
                         </tr>
                     </tbody>
                 </table>
+                <div id="ihale_adim8_btn_container" style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim8Ileri()"><i data-lucide="arrow-down" width="16" height="16"></i> İleri: Ödeme Emri Oluşturma</button>
+                </div>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+}
+
+function adim8Ileri() {
+    document.getElementById("acc_adim8").classList.remove("open");
+    document.getElementById("check_adim8").style.display = "inline-block";
+    
+    document.getElementById("acc_adim9").style.display = "block";
+    ihaleAdim9Goster();
+    document.getElementById("acc_adim9").classList.add("open");
+}
+
+function ihaleAdim9Goster() {
+    const alan = document.getElementById("acc_adim9_icerik");
+    const bugun = new Date().toISOString().split('T')[0];
+
+    alan.innerHTML = `
+        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
+            <div class="settings-card-body" style="padding: 0;">
+                <p style="color: var(--fg-main); font-weight: bold; font-size: 15px; margin: 0 0 10px 0;"><i data-lucide="alert-circle" width="18" height="18" style="color: #F59E0B; margin-right: 5px; vertical-align: middle;"></i> Bu adımda şimdi MYS'den ödeme emri oluşturmanız gerekmektedir.</p>
+                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Ek olarak şu belgeleri ödeme emri belgesine eklemeniz gerekmektedir (MYS'ye Yüklerken):</p>
+                
+                <div style="background-color: var(--bg-main); padding: 15px; border-radius: 6px; border: 1px solid var(--border); margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" style="width: 16px; height: 16px;">
+                        <span style="color: var(--fg-main); font-size: 14px;">Fatura</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" style="width: 16px; height: 16px;">
+                        <span style="color: var(--fg-main); font-size: 14px;">Borcu Yoktur Belgesi</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" style="width: 16px; height: 16px;">
+                        <span style="color: var(--fg-main); font-size: 14px;">Muayene Komisyonu Kabul Belgesi</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; cursor: pointer;">
+                        <input type="checkbox" style="width: 16px; height: 16px;">
+                        <span style="color: var(--fg-main); font-size: 14px;">Varlık İşlem Fişi (VİF)</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; margin-bottom: 0px; cursor: pointer;">
+                        <input type="checkbox" style="width: 16px; height: 16px;">
+                        <span style="color: var(--fg-main); font-size: 14px;">Piyasa Fiyat Araştırması Tutanağı</span>
+                    </label>
+                </div>
+
+                <div style="display: flex; align-items: center; justify-content: space-between; background-color: var(--bg-card); padding: 15px; border-radius: 6px; border: 1px dashed var(--border);">
+                    <div style="display: flex; flex-direction: column; gap: 5px;">
+                        <span style="color: var(--fg-main); font-weight: bold; font-size: 14px;">MYS Yaklaşık Maliyet Şablonu</span>
+                        <span style="color: var(--fg-sub); font-size: 12px;">MYS'ye yüklenecek excel formatında şablon</span>
+                    </div>
+                    <div>
+                        <button class="btn" style="background-color: #10B981; color: white; padding: 8px 15px; font-size: 13px; font-weight: bold;" onclick="belgeUret('mys_yaklasik_maliyet', 'excel', '${bugun}')"><i data-lucide="download" width="16" height="16"></i> Excel Olarak İndir</button>
+                    </div>
+                </div>
             </div>
         </div>
     `;

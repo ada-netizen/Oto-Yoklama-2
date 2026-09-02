@@ -102,9 +102,10 @@ def sunucuyu_baslat():
     # sessizce durur; program çökmez, sadece yeni bir sunucu başlatmamış olur.
     try:
         uvicorn.run(app, host="127.0.0.1", port=8000, log_level="critical")
-    except (SystemExit, OSError) as e:
-        logging.error(f"sunucuyu_baslat hatasi (Port dolu olabilir): {e}")
-        pass
+    except Exception as e:
+        import traceback
+        logging.error(f"sunucuyu_baslat hatasi: {e}")
+        logging.error(traceback.format_exc())
 
 
 if __name__ == '__main__':
@@ -123,7 +124,13 @@ if __name__ == '__main__':
         t = threading.Thread(target=sunucuyu_baslat)
         t.daemon = True
         t.start()
-        time.sleep(1)
+        # Sunucunun gerçekten hazır olmasını aktif olarak bekle (en fazla 10 saniye)
+        for _ in range(50):
+            if port_dinleniyor_mu("127.0.0.1", 8000):
+                break
+            time.sleep(0.2)
+        else:
+            logging.warning("Sunucu 10 saniye içinde başlatılamadı, yine de devam ediliyor.")
 
     try:
         from guncelleyici import GuncellemeMotoru
@@ -185,5 +192,5 @@ if __name__ == '__main__':
     pencere.events.closing += _kapaniyor
 
     # 6. Programı başlat
-    cache_klasoru = os.path.join(os.getcwd(), 'webview_cache')
+    cache_klasoru = os.path.join(os.getcwd(), 'webview_cache_v3')
     webview.start(private_mode=False, storage_path=cache_klasoru)

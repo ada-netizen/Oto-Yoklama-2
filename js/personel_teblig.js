@@ -507,6 +507,22 @@
             }
         }
 
+        function ogrencileriSifirla() {
+            if(confirm("Tüm öğrenci ve devamsızlık kayıtları SİLİNECEK.\nPersonel verilerine dokunulmayacak.\nEmin misiniz?")) {
+                if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
+                    fetch(`${API}/ogrencileri-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
+                }
+            }
+        }
+
+        function personelSifirla() {
+            if(confirm("Tüm personel kayıtları SİLİNECEK.\nÖğrenci verilerine dokunulmayacak.\nEmin misiniz?")) {
+                if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
+                    fetch(`${API}/personel-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
+                }
+            }
+        }
+
 
         
 

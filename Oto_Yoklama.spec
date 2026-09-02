@@ -5,7 +5,7 @@ a = Analysis(
     ['masaustu.py'],
     pathex=[],
     binaries=[],
-    datas=[('index.html', '.'), ('app.js', '.'), ('style.css', '.'), ('lucide.min.js', '.'), ('versiyon.txt', '.')],
+    datas=[('index.html', '.'), ('js', 'js'), ('style.css', '.'), ('lucide.min.js', '.'), ('versiyon.txt', '.')],
     hiddenimports=['uvicorn.logging', 'uvicorn.loops', 'uvicorn.loops.auto', 'uvicorn.protocols', 'uvicorn.protocols.http', 'uvicorn.protocols.http.auto', 'uvicorn.protocols.websockets', 'uvicorn.protocols.websockets.auto', 'uvicorn.lifespan', 'uvicorn.lifespan.on', 'uvicorn.lifespan.off', 'webview'],
     hookspath=[],
     hooksconfig={},

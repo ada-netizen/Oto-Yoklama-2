@@ -932,7 +932,7 @@
         </div>
 
         <div id="ihale_icerik"
-            style="padding: 20px; overflow-y: auto; height: calc(100% - 50px); box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center;">
+            style="padding: 20px; overflow-y: auto; flex: 1; min-height: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center;">
             <div id="ihale_baslangic_mesaj"
                 style="color: var(--fg-sub); font-size: 15px; text-align: center; display:flex; flex-direction:column; align-items:center; gap:15px; opacity: 0.6;">
                 <i data-lucide="mouse-pointer-click" width="48" height="48"></i>
@@ -1036,6 +1036,24 @@
                             <div class="settings-item-action">
                                 <button class="btn btn-ayarlar" onclick="personelYonetimAc()"><i data-lucide="user-cog"
                                         width="14" height="14"></i> Yönet</button>
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name" style="color: #F59E0B;">Öğrencileri Sil</span>
+                                <span class="settings-item-desc">Sadece öğrencileri ve devamsızlıkları siler.</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <button class="btn btn-uyari" style="background-color: transparent; border: 1px solid #F59E0B; color: #F59E0B; padding: 6px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;" onclick="ogrencileriSifirla()"><i data-lucide="users-x" width="14" height="14"></i> Öğrencileri Sil</button>
+                            </div>
+                        </div>
+                        <div class="settings-list-item">
+                            <div class="settings-item-info">
+                                <span class="settings-item-name" style="color: #F59E0B;">Personeli Sil</span>
+                                <span class="settings-item-desc">Sadece personel kayıtlarını siler.</span>
+                            </div>
+                            <div class="settings-item-action">
+                                <button class="btn btn-uyari" style="background-color: transparent; border: 1px solid #F59E0B; color: #F59E0B; padding: 6px 12px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 5px; font-weight: 500;" onclick="personelSifirla()"><i data-lucide="user-x" width="14" height="14"></i> Personeli Sil</button>
                             </div>
                         </div>
                         <div class="settings-list-item">
