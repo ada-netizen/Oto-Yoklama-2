@@ -9,7 +9,8 @@ class VeritabaniYoneticisi:
         self._init_db()
 
     def _init_db(self):
-        conn = sqlite3.connect(self.db_yolu)
+        bellek_veritabani = self.db_yolu == ":memory:"
+        conn = self.conn if bellek_veritabani else sqlite3.connect(self.db_yolu)
         cursor = conn.cursor()
         cursor.execute("CREATE TABLE IF NOT EXISTS ogrenciler (no TEXT, ad_soyad TEXT, sube TEXT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS devamsizliklar (id TEXT, no TEXT, tarih TEXT, tur TEXT, gun TEXT, secili INTEGER)")
@@ -22,7 +23,8 @@ class VeritabaniYoneticisi:
             pass
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
         conn.commit()
-        conn.close()
+        if not bellek_veritabani:
+            conn.close()
 
     @property
     def conn(self):

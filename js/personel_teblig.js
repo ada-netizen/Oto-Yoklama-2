@@ -1,12 +1,26 @@
         // --- PERSONEL YÖNETİMİ ---
         function personelExcelYukle(event) {
             const dosya = event.target.files[0]; if (!dosya) return;
-            const formData = new FormData(); formData.append("dosya", dosya);
-            yuklemeGoster("Personel listesi işleniyor...");
-            fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
-                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) personelleriYukle();
+            const onizlemeFormu = new FormData(); onizlemeFormu.append("dosya", dosya); onizlemeFormu.append("tur", "personel");
+            yuklemeGoster("Personel dosyası doğrulanıyor ve önizleme hazırlanıyor...");
+            fetch(`${API}/excel-onizle`, { method: 'POST', body: onizlemeFormu }).then(r => r.json()).then(onizleme => {
+                if(!onizleme.basarili) throw new Error(onizleme.mesaj);
+                const baslik = onizleme.sutunlar.join(' | ');
+                const satirlar = onizleme.onizleme.slice(0, 5).map(satir => Object.values(satir).join(' | ')).join('\n');
+                const hataMetni = onizleme.hatalar.length ? `\n\nUyarılar:\n${onizleme.hatalar.join('\n')}` : '';
+                if(!confirm(`${onizleme.toplam_satir} personel satırı bulundu.\n\n${baslik}\n${satirlar}${hataMetni}\n\nListeyi aktarmaya devam edilsin mi?`)) return null;
+                const formData = new FormData(); formData.append("dosya", dosya);
+                yuklemeGoster("Personel listesi işleniyor...");
+                return fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData });
+            }).then(r => r ? r.json() : null).then(v => {
+                if(!v) return;
+                if(v.basarili && v.job_id) {
+                    ilerlemeTakipEt(v.job_id, personelleriYukle);
+                } else {
+                    bildirimGoster(v.mesaj, "hata");
+                }
                 event.target.value = '';
-            }).catch(() => bildirimGoster("Bağlantı hatası! Sunucuyu kontrol edin.", "hata")).finally(() => yuklemeGizle());
+            }).catch(err => { bildirimGoster(err.message || "Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); }).finally(() => yuklemeGizle());
         }
 
         function personelYonetimAc() { modalAc('personel_yonetim_modal'); yonetimPersonelTablosunuDoldur(); }
@@ -498,6 +512,23 @@
         }
 
         function sistemYedekle() { fetch(`${API}/yedek-al`, { method: 'POST' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); yedekleriListele(); }); }
+
+        function loglariGoster() {
+            fetch(`${API}/loglar`).then(r => r.json()).then(v => {
+                const govde = document.getElementById('ayar_log_govde');
+                if(!govde) return;
+                govde.style.display = 'block';
+                govde.textContent = v.loglar.length ? v.loglar.map(l => `[${l.zaman}] ${l.seviye.toUpperCase()} | ${l.islem}: ${l.mesaj}`).join('\n') : 'Henüz işlem kaydı yok.';
+            }).catch(() => bildirimGoster('Loglar okunamadı.', 'hata'));
+        }
+
+        function sonIslemiGeriAl() {
+            if(!confirm('Son güvenli yedeğe dönülecek. Mevcut durum önce ayrıca yedeklenecek. Devam edilsin mi?')) return;
+            fetch(`${API}/son-islemi-geri-al`, { method: 'POST' }).then(r => r.json()).then(v => {
+                bildirimGoster(v.mesaj, v.basarili ? 'bilgi' : 'hata');
+                if(v.basarili) location.reload();
+            }).catch(() => bildirimGoster('Geri alma işlemi başarısız.', 'hata'));
+        }
         
         function veritabaniniSifirla() {
             if(confirm("Tüm öğrenciler, devamsızlıklar ve personeller SİLİNECEK.\nEmin misiniz?")) {
@@ -534,12 +565,22 @@
 
         // --- OTOMATİK GÜNCELLEME KONTROLÜ (GitHub) ---
         const MEVCUT_VERSIYON = "v1.1";
+        function surumKarsilastir(a, b) {
+            const parcalaraAyir = surum => String(surum).trim().toLowerCase().replace(/^v/, '').split('.').map(Number);
+            const sol = parcalaraAyir(a); const sag = parcalaraAyir(b);
+            for(let i = 0; i < Math.max(sol.length, sag.length); i++) {
+                const solDeger = sol[i] || 0; const sagDeger = sag[i] || 0;
+                if(solDeger !== sagDeger) return solDeger - sagDeger;
+            }
+            return 0;
+        }
+
         function guncellemeKontrolEt() {
             fetch("https://raw.githubusercontent.com/ada-netizen/Yoklama-Otomasyonu/refs/heads/main/versiyon.txt", { cache: "no-store" })
                 .then(r => r.ok ? r.text() : Promise.reject())
                 .then(metin => {
                     const enYeni = metin.trim();
-                    if (enYeni > MEVCUT_VERSIYON) {
+                    if (surumKarsilastir(enYeni, MEVCUT_VERSIYON) > 0) {
                         if (confirm(`Programın yeni bir sürümü bulundu!\n\nSizin Sürümünüz: ${MEVCUT_VERSIYON}\nYeni Sürüm: ${enYeni}\n\nYeni sürümü indirmek ister misiniz?`)) {
                             window.open("https://github.com/ada-netizen/yoklama_otomasyonu/releases/latest", "_blank");
                         }

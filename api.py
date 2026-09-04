@@ -20,6 +20,7 @@ import time
 import platform
 import subprocess
 import logging
+import tempfile
 from contextlib import contextmanager
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
@@ -119,6 +120,98 @@ def sablon_hazirla(veri: SablonVerisi):
         return {"basarili": False, "mesaj": str(e)}
 
 islem_durumlari = {}
+MAX_IMPORT_SIZE = 25 * 1024 * 1024
+ALLOWED_IMPORT_EXTENSIONS = {".xlsx", ".xls", ".csv"}
+
+
+def excel_yukleme_dogrula(dosya):
+    """Excel/CSV yüklemelerini boyut ve uzantı açısından kontrol eder."""
+    dosya_adi = dosya.filename or ""
+    uzanti = os.path.splitext(dosya_adi)[1].lower()
+    if uzanti not in ALLOWED_IMPORT_EXTENSIONS:
+        return None, "Yalnızca XLSX, XLS veya CSV dosyaları yüklenebilir."
+
+    try:
+        dosya.file.seek(0, os.SEEK_END)
+        boyut = dosya.file.tell()
+        dosya.file.seek(0)
+    except (AttributeError, OSError) as e:
+        return None, f"Dosya okunamadı: {e}"
+
+    if boyut == 0:
+        return None, "Yüklenen dosya boş."
+    if boyut > MAX_IMPORT_SIZE:
+        return None, "Dosya boyutu 25 MB sınırını aşamaz."
+    return uzanti, None
+
+
+@app.post("/excel-onizle")
+async def excel_onizle(dosya: UploadFile = File(...), tur: str = Form("personel")):
+    """İçe aktarmadan önce dosyanın ilk satırlarını ve temel hatalarını döndürür."""
+    uzanti, hata = excel_yukleme_dogrula(dosya)
+    if hata:
+        return {"basarili": False, "mesaj": hata}
+    if tur not in {"ogrenci", "devamsizlik", "personel"}:
+        return {"basarili": False, "mesaj": "Geçersiz içe aktarma türü."}
+
+    temp_yol = os.path.join(tempfile.gettempdir(), f"onizleme_{uuid.uuid4().hex}{uzanti}")
+    try:
+        with open(temp_yol, "wb") as buffer:
+            shutil.copyfileobj(dosya.file, buffer)
+
+        if uzanti == ".csv":
+            try:
+                df_ham = pd.read_csv(temp_yol, header=None, encoding="utf-8-sig")
+            except UnicodeDecodeError:
+                df_ham = pd.read_csv(temp_yol, header=None, encoding="cp1254")
+        else:
+            df_ham = pd.read_excel(temp_yol, header=None)
+        if df_ham.empty:
+            return {"basarili": False, "mesaj": "Dosya boş."}
+
+        header_idx = 0
+        if tur == "personel":
+            for i, row in df_ham.iterrows():
+                basliklar = {_excel_sutunu_bul([deger], ["AD SOYAD", "ADI SOYADI"]) for deger in row.values}
+                if any(basliklar):
+                    header_idx = i
+                    break
+
+        if uzanti == ".csv":
+            try:
+                df = pd.read_csv(temp_yol, header=header_idx, encoding="utf-8-sig")
+            except UnicodeDecodeError:
+                df = pd.read_csv(temp_yol, header=header_idx, encoding="cp1254")
+        else:
+            df = pd.read_excel(temp_yol, header=header_idx)
+        df.columns = [str(sutun).strip() for sutun in df.columns]
+
+        hatalar = []
+        if tur == "personel":
+            ad_sutunu = _excel_sutunu_bul(df.columns, ["AD SOYAD", "ADI SOYADI"])
+            if not ad_sutunu:
+                hatalar.append("Ad Soyad sütunu bulunamadı.")
+            else:
+                eksik_ad = int(df[ad_sutunu].isna().sum())
+                if eksik_ad:
+                    hatalar.append(f"{eksik_ad} satırda ad-soyad eksik.")
+
+        onizleme = df.fillna("").head(20).astype(str).to_dict(orient="records")
+        return {
+            "basarili": True,
+            "tur": tur,
+            "toplam_satir": int(len(df)),
+            "gosterilen_satir": len(onizleme),
+            "sutunlar": list(df.columns),
+            "onizleme": onizleme,
+            "hatalar": hatalar,
+        }
+    except Exception as e:
+        logging.error(f"Excel önizleme hatası: {e}")
+        return {"basarili": False, "mesaj": f"Dosya önizlenemedi: {e}"}
+    finally:
+        if os.path.exists(temp_yol):
+            os.remove(temp_yol)
 
 @app.get("/islem-durumu/{job_id}")
 def islem_durumu(job_id: str):
@@ -132,12 +225,18 @@ def ogrenci_isleme_gorevi(temp_yol, job_id):
         yeni_liste, hata = ExcelMotoru.ogrenci_oku(temp_yol, mevcut_ogrenciler)
         if hata:
             islem_durumlari[job_id] = {"durum": "hata", "mesaj": hata}
+            islem_logla("hata", "Öğrenci aktarımı", hata)
             return
-        if yeni_liste:
+        if yeni_liste and len(yeni_liste) > 0:
             mevcut_ogrenciler.extend(yeni_liste)
             islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 80}
-            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            basarili, hata = db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            if not basarili:
+                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Veritabanina kaydedilemedi: {hata}"}
+                islem_logla("hata", "Öğrenci aktarımı", f"Veritabanına kaydedilemedi: {hata}")
+                return
             islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": f"{len(yeni_liste)} yeni ogrenci eklendi!", "yuzde": 100}
+            islem_logla("bilgi", "Öğrenci aktarımı", f"{len(yeni_liste)} öğrenci aktarıldı.")
         else:
             islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Dosyada yeni ogrenci bulunamadi."}
     except Exception as e:
@@ -154,12 +253,18 @@ def devamsizlik_isleme_gorevi(temp_yol, job_id):
         yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
         if hata:
             islem_durumlari[job_id] = {"durum": "hata", "mesaj": hata}
+            islem_logla("hata", "Devamsızlık aktarımı", hata)
             return
-        if eklenen > 0:
+        if eklenen > 0 and len(yeni_liste) > 0:
             mevcut_devamsizliklar.extend(yeni_liste)
             islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 80}
-            db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            basarili, hata = db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
+            if not basarili:
+                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Veritabanina kaydedilemedi: {hata}"}
+                islem_logla("hata", "Devamsızlık aktarımı", f"Veritabanına kaydedilemedi: {hata}")
+                return
             islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": f"{eklenen} yeni devamsizlik islendi!", "yuzde": 100}
+            islem_logla("bilgi", "Devamsızlık aktarımı", f"{eklenen} kayıt aktarıldı.")
         else:
             islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Yeni devamsizlik bulunamadi."}
     except Exception as e:
@@ -181,7 +286,9 @@ def personel_isleme_gorevi(temp_yol, job_id):
                 break
         df = pd.read_excel(temp_yol, header=header_idx)
         df.columns = df.columns.str.strip().str.upper()
-        
+        if df.empty:
+            islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Excel dosyası boş."}
+            return
         personeller = []
         islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Kayitlar donusturuluyor...", "yuzde": 60}
         for _, row in df.iterrows():
@@ -214,6 +321,44 @@ app.add_middleware(
 yollar = SistemMotoru.klasorleri_ve_yollari_hazirla()
 db = VeritabaniYoneticisi(yollar["DB"])
 ayarlar = SistemMotoru.ayarlari_yukle(yollar["AYARLAR"])
+islem_loglari = []
+
+
+def islem_logla(seviye, islem, mesaj):
+    """Kullanıcıya gösterilebilecek hassas olmayan işlem kaydı oluşturur."""
+    kayit = {
+        "zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "seviye": seviye,
+        "islem": islem,
+        "mesaj": mesaj,
+    }
+    islem_loglari.append(kayit)
+    del islem_loglari[:-200]
+    try:
+        with open(yollar["LOG"], "a", encoding="utf-8") as dosya:
+            dosya.write(json.dumps(kayit, ensure_ascii=False) + "\n")
+    except OSError:
+        pass
+
+
+@app.get("/loglar")
+def loglari_getir():
+    try:
+        with open(yollar["LOG"], "r", encoding="utf-8") as dosya:
+            kayitlar = [json.loads(satir) for satir in dosya if satir.strip()]
+        return {"loglar": list(reversed(kayitlar[-200:]))}
+    except (OSError, json.JSONDecodeError):
+        return {"loglar": list(reversed(islem_loglari))}
+
+
+@app.delete("/loglar")
+def loglari_temizle():
+    islem_loglari.clear()
+    try:
+        open(yollar["LOG"], "w", encoding="utf-8").close()
+    except OSError as e:
+        return {"basarili": False, "mesaj": f"Loglar temizlenemedi: {e}"}
+    return {"basarili": True, "mesaj": "İşlem logları temizlendi."}
 
 
 # =====================================================================
@@ -402,9 +547,12 @@ def ogrenci_detay_getir(ogr_no: str):
 
 @app.post("/ogrenci-excel-yukle")
 async def ogrenci_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFile = File(...)):
+    uzanti, hata = excel_yukleme_dogrula(dosya)
+    if hata:
+        return {"basarili": False, "mesaj": hata}
     job_id = str(uuid.uuid4())
     islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya aliniyor...", "yuzde": 0}
-    temp_yol = f"temp_ogr_{job_id}.xlsx"
+    temp_yol = f"temp_ogr_{job_id}{uzanti}"
     with open(temp_yol, "wb") as buffer:
         shutil.copyfileobj(dosya.file, buffer)
     background_tasks.add_task(ogrenci_isleme_gorevi, temp_yol, job_id)
@@ -413,9 +561,12 @@ async def ogrenci_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFi
 
 @app.post("/devamsizlik-excel-yukle")
 async def devamsizlik_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFile = File(...)):
+    uzanti, hata = excel_yukleme_dogrula(dosya)
+    if hata:
+        return {"basarili": False, "mesaj": hata}
     job_id = str(uuid.uuid4())
     islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya aliniyor...", "yuzde": 0}
-    temp_yol = f"temp_dev_{job_id}.xlsx"
+    temp_yol = f"temp_dev_{job_id}{uzanti}"
     with open(temp_yol, "wb") as buffer:
         shutil.copyfileobj(dosya.file, buffer)
     background_tasks.add_task(devamsizlik_isleme_gorevi, temp_yol, job_id)
@@ -427,7 +578,9 @@ def ogrenci_sil(ogr_no: str):
     ogrenciler, devler = db.yukle()
     yeni_ogr = [o for o in ogrenciler if str(o['no']).strip() != str(ogr_no).strip()]
     yeni_dev = [d for d in devler if str(d['no']).strip() != str(ogr_no).strip()]
-    db.kaydet(yeni_ogr, yeni_dev)
+    basarili, hata = db.kaydet(yeni_ogr, yeni_dev)
+    if not basarili:
+        return {"basarili": False, "mesaj": f"Öğrenci silinemedi: {hata}"}
     return {"basarili": True, "mesaj": f"{ogr_no} numaralı öğrenci ve devamsızlıkları silindi."}
 
 
@@ -435,7 +588,9 @@ def ogrenci_sil(ogr_no: str):
 def devamsizlik_sil(d_id: str):
     ogrenciler, devler = db.yukle()
     yeni_dev = [d for d in devler if str(d.get('id', '')) != str(d_id)]
-    db.kaydet(ogrenciler, yeni_dev)
+    basarili, hata = db.kaydet(ogrenciler, yeni_dev)
+    if not basarili:
+        return {"basarili": False, "mesaj": f"Devamsızlık kaydı silinemedi: {hata}"}
     return {"basarili": True, "mesaj": "Devamsızlık kaydı başarıyla silindi."}
 
 
@@ -451,7 +606,9 @@ def devamsizlik_manuel_ekle(veri: DevamsizlikEkleRequest):
         "secili": False
     }
     devler.append(yeni)
-    db.kaydet(ogrenciler, devler)
+    basarili, hata = db.kaydet(ogrenciler, devler)
+    if not basarili:
+        return {"basarili": False, "mesaj": f"Devamsızlık kaydedilemedi: {hata}"}
     return {"basarili": True, "mesaj": "Manuel devamsızlık eklendi."}
 
 
@@ -467,6 +624,8 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
     zaman_damgasi = datetime.now().strftime("%d-%m-%Y_%H%M%S")
     kayit_yeri = os.path.join(sube_klasoru, f"{veri.no}_{veri.ad.replace(' ', '_')}_{zaman_damgasi}.pdf")
     try:
+        job_id = str(uuid.uuid4())
+        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "PDF hazırlığı başlatıldı...", "yuzde": 0}
         # Ön yüzden gelen kayıtlarda ham 'tarih'/'gun' alanları var; PDF motoru
         # düzgün biçimlendirilmiş 'tarih_duzgun'/'gun_str' bekliyor. Burada dönüştürüyoruz.
         kayitlar_islenmis = []
@@ -478,14 +637,17 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
 
         def gorev_pdf_olustur():
             try:
+                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "PDF oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
                 motor.veli_formu_ciz(veri.no, veri.ad, veri.sube, kayitlar_islenmis, kayit_yeri, veri.ozurlu_str, veri.ozursuz_str)
                 dosyayi_otomatik_ac(kayit_yeri)
+                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "PDF oluşturuldu.", "yuzde": 100, "yol": kayit_yeri}
             except Exception as e:
                 logging.error(f"Veli formu cizim hatasi: {e}")
+                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"PDF oluşturulamadı: {e}", "yuzde": 100}
 
         background_tasks.add_task(gorev_pdf_olustur)
-        return {"basarili": True, "mesaj": f"PDF işlemi arka plana alındı. Hazırlandığında otomatik açılacaktır.", "yol": kayit_yeri}
+        return {"basarili": True, "mesaj": "PDF işlemi başlatıldı.", "job_id": job_id, "yol": kayit_yeri}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
@@ -502,6 +664,16 @@ def _personel_grup_tahmin_et(gorev):
     return "Diğer Personel"
 
 
+def _excel_sutunu_bul(sutunlar, adaylar):
+    """Excel başlıklarındaki boşluk ve Türkçe büyük/küçük harf farklarını tolere eder."""
+    normalize = lambda deger: re.sub(r"[^A-ZÇĞİÖŞÜ0-9]", "", str(deger).strip().upper())
+    aday_seti = {normalize(aday) for aday in adaylar}
+    for sutun in sutunlar:
+        if normalize(sutun) in aday_seti:
+            return sutun
+    return None
+
+
 @app.get("/personeller")
 def personelleri_getir():
     try:
@@ -513,14 +685,13 @@ def personelleri_getir():
         return {"personeller": []}
 
 
-@app.post("/personel-excel-yukle")
-async def personel_excel_yukle(dosya: UploadFile = File(...)):
-    """E-Okul/MEB'den indirilen personel Excel listesini okuyup personel tablosunu tamamen günceller."""
-    temp_yol = f"temp_personel_{dosya.filename}"
-    with open(temp_yol, "wb") as buffer:
-        shutil.copyfileobj(dosya.file, buffer)
+def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
+    """Hazırlanmış personel dosyasını okur ve tek transaction ile kaydeder."""
     try:
-        df_temp = pd.read_excel(temp_yol, header=None)
+        tablo_oku = pd.read_csv if uzanti == ".csv" else pd.read_excel
+        df_temp = tablo_oku(temp_yol, header=None)
+        if df_temp.empty:
+            return {"basarili": False, "mesaj": "Excel dosyası boş."}
         header_idx = 0
         for i, row in df_temp.iterrows():
             satir_metni = " ".join([str(x).upper() for x in row.values if pd.notna(x)])
@@ -528,12 +699,13 @@ async def personel_excel_yukle(dosya: UploadFile = File(...)):
                 header_idx = i
                 break
 
-        df = pd.read_excel(temp_yol, header=header_idx)
+        df = tablo_oku(temp_yol, header=header_idx)
         df.columns = df.columns.str.strip().str.upper()
 
-        ad_sutunu = 'AD SOYAD' if 'AD SOYAD' in df.columns else ('ADI SOYADI' if 'ADI SOYADI' in df.columns else None)
+        ad_sutunu = _excel_sutunu_bul(df.columns, ['AD SOYAD', 'ADI SOYADI'])
         if not ad_sutunu:
             return {"basarili": False, "mesaj": "Excel'de 'Ad Soyad' başlığı bulunamadı!"}
+        grup_sutunu = _excel_sutunu_bul(df.columns, ['GRUP', 'PERSONEL TÜRÜ', 'PERSONEL TURU', 'TÜR', 'TUR'])
 
         yeni_personeller = []
         for _, row in df.iterrows():
@@ -550,12 +722,30 @@ async def personel_excel_yukle(dosya: UploadFile = File(...)):
             if not gorev or gorev.lower() == 'nan': gorev = "-"
 
             if ad and ad.lower() != 'nan':
-                grup = _personel_grup_tahmin_et(gorev)
+                grup = ""
+                if grup_sutunu:
+                    grup = str(row[grup_sutunu]).strip()
+                    if not grup or grup.lower() == 'nan':
+                        grup = ""
+                if not grup:
+                    grup = _personel_grup_tahmin_et(gorev)
                 yeni_personeller.append((ad, brans, gorev, grup))
 
-        db.cursor.execute("DELETE FROM personel")
-        db.cursor.executemany("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", yeni_personeller)
-        db.conn.commit()
+        if not yeni_personeller:
+            return {"basarili": False, "mesaj": "Excel'de aktarılacak geçerli personel bulunamadı."}
+
+        yedek_basarili, yedek_hatasi = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
+        if not yedek_basarili:
+            return {"basarili": False, "mesaj": f"Aktarım öncesi yedek alınamadı: {yedek_hatasi}"}
+
+        try:
+            db.cursor.execute("BEGIN TRANSACTION")
+            db.cursor.execute("DELETE FROM personel")
+            db.cursor.executemany("INSERT INTO personel (ad_soyad, brans, gorev, grup) VALUES (?, ?, ?, ?)", yeni_personeller)
+            db.conn.commit()
+        except Exception:
+            db.conn.rollback()
+            raise
 
         return {"basarili": True, "mesaj": f"{len(yeni_personeller)} personel yüklendi ve gruplandırıldı."}
     except Exception as e:
@@ -563,6 +753,35 @@ async def personel_excel_yukle(dosya: UploadFile = File(...)):
     finally:
         if os.path.exists(temp_yol):
             os.remove(temp_yol)
+
+
+def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id):
+    try:
+        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Personel Excel okunuyor...", "yuzde": 30}
+        sonuc = _personel_excel_yukle_dogrudan(temp_yol, uzanti)
+        if sonuc["basarili"]:
+            islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": sonuc["mesaj"], "yuzde": 100}
+        else:
+            islem_durumlari[job_id] = {"durum": "hata", "mesaj": sonuc["mesaj"], "yuzde": 100}
+    except Exception as e:
+        islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e), "yuzde": 100}
+        if os.path.exists(temp_yol):
+            os.remove(temp_yol)
+
+
+@app.post("/personel-excel-yukle")
+async def personel_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFile = File(...)):
+    """Personel Excel aktarımını arka plana alır ve işlem kimliği döndürür."""
+    uzanti, hata = excel_yukleme_dogrula(dosya)
+    if hata:
+        return {"basarili": False, "mesaj": hata}
+    job_id = str(uuid.uuid4())
+    islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya alınıyor...", "yuzde": 0}
+    temp_yol = f"temp_personel_{job_id}{uzanti}"
+    with open(temp_yol, "wb") as buffer:
+        shutil.copyfileobj(dosya.file, buffer)
+    background_tasks.add_task(personel_excel_isleme_gorevi, temp_yol, uzanti, job_id)
+    return {"basarili": True, "job_id": job_id}
 
 
 @app.post("/personel-ekle")
@@ -739,17 +958,22 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
     yol = os.path.join(teblig_klasoru, f"Bireysel_Teblig_{veri.edilen.ad.replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
     try:
         yuklenen_pdf = veri.gecici_pdf_yolu
+        job_id = str(uuid.uuid4())
+        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Bireysel tebliğ hazırlığı başlatıldı...", "yuzde": 0}
         
         def gorev_bireysel_teblig():
             try:
+                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Bireysel tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
                 motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, yol, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
+                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Bireysel tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:
                 logging.error(f"Bireysel teblig cizim hatasi: {e}")
+                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Bireysel tebliğ oluşturulamadı: {e}", "yuzde": 100}
 
         background_tasks.add_task(gorev_bireysel_teblig)
-        return {"basarili": True, "mesaj": f"Tebliğ PDF işlemi arka plana alındı, açılacaktır.", "yol": yol}
+        return {"basarili": True, "mesaj": "Bireysel tebliğ işlemi başlatıldı.", "job_id": job_id, "yol": yol}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
@@ -768,17 +992,22 @@ def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks
         kurum = veri.kurum
         yuklenen_pdf = veri.gecici_pdf_yolu
         personeller_dict = [p.model_dump() for p in veri.personeller]
+        job_id = str(uuid.uuid4())
+        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Toplu tebliğ hazırlığı başlatıldı...", "yuzde": 0}
         
         def gorev_toplu_teblig():
             try:
+                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Toplu tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
                 motor.teblig_tebellug_ciz(veri.sayi, veri.konu, veri.tarih, personeller_dict, yol, kurum, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
+                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Toplu tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:
                 logging.error(f"Toplu teblig cizim hatasi: {e}")
+                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Toplu tebliğ oluşturulamadı: {e}", "yuzde": 100}
 
         background_tasks.add_task(gorev_toplu_teblig)
-        return {"basarili": True, "mesaj": f"Toplu Liste işlemi arka plana alındı, açılacaktır.", "yol": yol}
+        return {"basarili": True, "mesaj": "Toplu tebliğ işlemi başlatıldı.", "job_id": job_id, "yol": yol}
     except Exception as e:
         return {"basarili": False, "mesaj": f"PDF Hatası: {str(e)}"}
 
@@ -1078,7 +1307,9 @@ def yedek_al():
     if basarili:
         ayar["son_yedekleme_gunu"] = datetime.now().strftime("%Y-%m-%d")
         SistemMotoru.ayarlari_kaydet(yollar["AYARLAR"], ayar)
+        islem_logla("bilgi", "Yedekleme", "Veritabanı yedeği oluşturuldu.")
         return {"basarili": True, "mesaj": "Veritabanı başarıyla yedeklendi!"}
+    islem_logla("hata", "Yedekleme", f"Yedekleme başarısız: {hata}")
     return {"basarili": False, "mesaj": f"Yedekleme Hatası: {hata}"}
 
 
@@ -1093,17 +1324,35 @@ def yedek_geri_yukle(veri: dict):
     ayar = ayarlari_al()
     hedef_klasor = ayar.get("yedek_kayit_klasoru", yollar["YEDEK"])
     dosya_adi = veri.get("dosya", "")
+    if os.path.basename(dosya_adi) != dosya_adi or not dosya_adi.startswith("veritabani_yedek_") or not dosya_adi.endswith(".db"):
+        return {"basarili": False, "mesaj": "Geçersiz yedek dosyası."}
     kaynak_yol = os.path.join(hedef_klasor, dosya_adi)
     if not os.path.exists(kaynak_yol):
         return {"basarili": False, "mesaj": "Seçilen yedek dosyası bulunamadı."}
     try:
+        mevcut_yedek_basarili, mevcut_yedek_hatasi = SistemMotoru.yedek_al(db.db_yolu, ayar, yollar["YEDEK"])
+        if not mevcut_yedek_basarili:
+            return {"basarili": False, "mesaj": f"Mevcut veriler korunamadı: {mevcut_yedek_hatasi}"}
         db.kapat()
         shutil.copy(kaynak_yol, yollar["DB"])
         db.baglan_ve_hazirla()
+        islem_logla("uyarı", "Geri yükleme", f"Yedek geri yüklendi: {dosya_adi}")
         return {"basarili": True, "mesaj": "Yedek başarıyla yüklendi. Sayfayı yenileyin."}
     except Exception as e:
         db.baglan_ve_hazirla()
+        islem_logla("hata", "Geri yükleme", f"Yedek yüklenemedi: {e}")
         return {"basarili": False, "mesaj": f"Yedek yüklenirken hata oluştu: {e}"}
+
+
+@app.post("/son-islemi-geri-al")
+def son_islemi_geri_al():
+    yedekler = SistemMotoru.yedekleri_listele(ayarlari_al(), yollar["YEDEK"])
+    if not yedekler:
+        return {"basarili": False, "mesaj": "Geri alınabilecek bir yedek bulunamadı."}
+    sonuc = yedek_geri_yukle({"dosya": yedekler[0]["dosya_adi"]})
+    if sonuc["basarili"]:
+        islem_logla("uyarı", "Geri alma", "Son işlem geri alındı.")
+    return sonuc
 
 
 def safe_float(val, default=0.0):
@@ -1208,15 +1457,23 @@ def rapor_gec_bugun(background_tasks: BackgroundTasks):
 
 @app.delete("/veritabani-sifirla")
 def veritabani_sifirla():
+    basarili, hata = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
+    if not basarili:
+        return {"basarili": False, "mesaj": f"Sıfırlama öncesi yedek alınamadı: {hata}"}
     db.sifirla()
+    islem_logla("uyarı", "Veritabanı sıfırlama", "Tüm veritabanı sıfırlandı.")
     return {"basarili": True, "mesaj": "Tüm veritabanı başarıyla sıfırlandı."}
 
 @app.delete("/ogrencileri-sifirla")
 def ogrencileri_sifirla():
     try:
+        basarili, hata = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
+        if not basarili:
+            return {"basarili": False, "mesaj": f"Sıfırlama öncesi yedek alınamadı: {hata}"}
         db.cursor.execute("DELETE FROM ogrenciler")
         db.cursor.execute("DELETE FROM devamsizliklar")
         db.conn.commit()
+        islem_logla("uyarı", "Öğrenci sıfırlama", "Öğrenci ve devamsızlık kayıtları sıfırlandı.")
         return {"basarili": True, "mesaj": "Tüm öğrenciler ve devamsızlıkları silindi."}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
@@ -1224,8 +1481,12 @@ def ogrencileri_sifirla():
 @app.delete("/personel-sifirla")
 def personel_sifirla():
     try:
+        basarili, hata = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
+        if not basarili:
+            return {"basarili": False, "mesaj": f"Sıfırlama öncesi yedek alınamadı: {hata}"}
         db.cursor.execute("DELETE FROM personel")
         db.conn.commit()
+        islem_logla("uyarı", "Personel sıfırlama", "Tüm personel kayıtları sıfırlandı.")
         return {"basarili": True, "mesaj": "Tüm personel silindi."}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}

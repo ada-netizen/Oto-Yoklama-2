@@ -13,8 +13,13 @@ class PDFYoneticisi:
         self.ayarlar = ayarlar
         # Türkçe Karakter Destekli Font Ayarları
         try:
-            pdfmetrics.registerFont(TTFont('ArialTR', 'arial.ttf'))
-            pdfmetrics.registerFont(TTFont('ArialTR-Bold', 'arialbd.ttf'))
+            font_yolu = 'arial.ttf'
+            kalin_font_yolu = 'arialbd.ttf'
+            if os.path.exists('C:/Windows/Fonts/arial.ttf'):
+                font_yolu = 'C:/Windows/Fonts/arial.ttf'
+                kalin_font_yolu = 'C:/Windows/Fonts/arialbd.ttf'
+            pdfmetrics.registerFont(TTFont('ArialTR', font_yolu))
+            pdfmetrics.registerFont(TTFont('ArialTR-Bold', kalin_font_yolu))
             self.font = 'ArialTR'
             self.font_bold = 'ArialTR-Bold'
         except:

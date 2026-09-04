@@ -3,15 +3,29 @@
 # Çalıştırmak için: uv run pytest tests/ -v
 
 from fastapi.testclient import TestClient
+from io import BytesIO
 import sys
 import os
+import pytest
+import pandas as pd
 
 # Üst klasörü import yollarına ekle ki api.py bulunabilsin
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from api import app
+import api
+
+app = api.app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_database(monkeypatch, tmp_path):
+    """Her API testi gerçek kullanıcı veritabanından bağımsız çalışır."""
+    test_db = api.VeritabaniYoneticisi(str(tmp_path / "test.db"))
+    monkeypatch.setattr(api, "db", test_db)
+    yield
+    test_db.kapat()
 
 
 # -----------------------------------------------------------
@@ -81,6 +95,79 @@ def test_personel_ekle_veri_yapisi():
     veri = {"ad": "Test Kullanıcı", "gorev": "Öğretmen", "brans": "Matematik"}
     response = client.post("/personel-ekle", json=veri)
     assert response.status_code != 422
+
+
+def test_personel_excel_yukleme_korur_personel_grubunu():
+    """Excel'deki Grup değeri görev tahmininin üzerine yazılmamalı."""
+    excel = BytesIO()
+    pd.DataFrame([
+        {"Ad Soyad": "Excel İdare", "Branş": "-", "Görev": "Öğretmen", "Grup": "İdare"},
+        {"Ad Soyad": "Excel Öğretmen", "Branş": "Türkçe", "Görev": "Memur", "Grup": "Öğretmenler"},
+    ]).to_excel(excel, index=False)
+    excel.seek(0)
+
+    response = client.post(
+        "/personel-excel-yukle",
+        files={"dosya": ("personel.xlsx", excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["basarili"] is True
+    personeller = {p["ad"]: p["grup"] for p in client.get("/personeller").json()["personeller"]}
+    assert personeller["Excel İdare"] == "İdare"
+    assert personeller["Excel Öğretmen"] == "Öğretmenler"
+
+
+def test_excel_yukleme_izin_verilmeyen_uzantiyi_reddeder():
+    response = client.post(
+        "/personel-excel-yukle",
+        files={"dosya": ("personel.txt", b"Ad Soyad\nTest", "text/plain")},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "basarili": False,
+        "mesaj": "Yalnızca XLSX, XLS veya CSV dosyaları yüklenebilir.",
+    }
+
+
+def test_bos_excel_yukleme_mevcut_personeli_silmez():
+    excel = BytesIO()
+    pd.DataFrame(columns=["Ad Soyad", "Branş", "Görev", "Grup"]).to_excel(excel, index=False)
+    excel.seek(0)
+
+    response = client.post(
+        "/personel-excel-yukle",
+        files={"dosya": ("bos.xlsx", excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["basarili"] is True
+    job_id = response.json()["job_id"]
+    assert client.get(f"/islem-durumu/{job_id}").json()["durum"] == "hata"
+
+
+def test_excel_onizleme_satir_sutun_ve_hatalari_dondurur():
+    excel = BytesIO()
+    pd.DataFrame([
+        {"Ad Soyad": "Önizleme Personeli", "Branş": "Matematik", "Görev": "Öğretmen", "Grup": "İdare"},
+        {"Ad Soyad": None, "Branş": "", "Görev": "Memur", "Grup": "İdare"},
+    ]).to_excel(excel, index=False)
+    excel.seek(0)
+
+    response = client.post(
+        "/excel-onizle",
+        data={"tur": "personel"},
+        files={"dosya": ("onizleme.xlsx", excel, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")},
+    )
+
+    sonuc = response.json()
+    assert response.status_code == 200
+    assert sonuc["basarili"] is True
+    assert sonuc["toplam_satir"] == 2
+    assert "Ad Soyad" in sonuc["sutunlar"]
+    assert sonuc["hatalar"] == ["1 satırda ad-soyad eksik."]
+    assert len(sonuc["onizleme"]) == 2
 
 
 # -----------------------------------------------------------

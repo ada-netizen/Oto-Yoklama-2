@@ -8,6 +8,7 @@ import json
 import socket
 import urllib.request
 import logging
+import glob
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,6 +31,8 @@ VARSAYILAN_DURUM = {"width": 1280, "height": 800, "x": None, "y": None, "maximiz
 
 # Pencere maximize/restore olaylarını takip etmek için basit bir hafıza
 son_durum = {"maximized": False}
+sunucu = None
+sunucu_thread = None
 
 
 def pencere_durumu_yukle():
@@ -96,12 +99,25 @@ def port_dinleniyor_mu(host, port):
         return s.connect_ex((host, port)) == 0
 
 
+def gecici_dosyalari_temizle():
+    for desen in ("temp_ogr_*", "temp_dev_*", "temp_personel_*"):
+        for dosya in glob.glob(desen):
+            try:
+                if os.path.isfile(dosya):
+                    os.remove(dosya)
+            except OSError as e:
+                logging.warning(f"Gecici dosya silinemedi ({dosya}): {e}")
+
+
 def sunucuyu_baslat():
+    global sunucu
     # Arka planda gizlice API sunucusunu çalıştırır.
     # Port zaten kullanımdaysa (örn. programın kapanmayan eski bir kopyası) burada
     # sessizce durur; program çökmez, sadece yeni bir sunucu başlatmamış olur.
     try:
-        uvicorn.run(app, host="127.0.0.1", port=8000, log_level="critical")
+        config = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="critical")
+        sunucu = uvicorn.Server(config)
+        sunucu.run()
     except Exception as e:
         import traceback
         logging.error(f"sunucuyu_baslat hatasi: {e}")
@@ -110,6 +126,7 @@ def sunucuyu_baslat():
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
+    gecici_dosyalari_temizle()
     # 1. 8000 portu zaten kullanımdaysa (programın önceki bir kopyası hâlâ açıksa)
     if port_dinleniyor_mu("127.0.0.1", 8000) and api_zaten_calisiyor_mu():
         import tkinter as tk
@@ -121,9 +138,8 @@ if __name__ == '__main__':
         root.destroy()
         sys.exit(0)
     else:
-        t = threading.Thread(target=sunucuyu_baslat)
-        t.daemon = True
-        t.start()
+        sunucu_thread = threading.Thread(target=sunucuyu_baslat, name="oto-yoklama-api", daemon=True)
+        sunucu_thread.start()
         # Sunucunun gerçekten hazır olmasını aktif olarak bekle (en fazla 10 saniye)
         for _ in range(50):
             if port_dinleniyor_mu("127.0.0.1", 8000):
@@ -186,6 +202,10 @@ if __name__ == '__main__':
 
     def _kapaniyor():
         pencere_durumu_kaydet(pencere)
+        if sunucu is not None:
+            sunucu.should_exit = True
+        if sunucu_thread is not None and sunucu_thread.is_alive():
+            sunucu_thread.join(timeout=5)
 
     pencere.events.maximized += _maximize_oldu
     pencere.events.restored += _restore_oldu

@@ -395,25 +395,40 @@ const API = 'http://127.0.0.1:8000';
         }
                 function dosyaYukle(endpoint, event) {
             const dosya = event.target.files[0]; if (!dosya) return;
-            const formData = new FormData(); formData.append("dosya", dosya);
-            yuklemeGoster("Excel dosyasi sisteme aktariliyor...");
-            fetch(`${API}/${endpoint}`, { method: 'POST', body: formData }).then(r => r.json()).then(v => { 
-                if(v.basarili && v.job_id) { 
-                    ilerlemeTakipEt(v.job_id);
-                } else { 
-                    yuklemeGizle();
-                    bildirimGoster("Hata: " + v.mesaj, "hata"); 
-                }
-                event.target.value = ''; 
-            }).catch(err => { yuklemeGizle(); bildirimGoster("Baglanti hatasi! Sunucuyu kontrol edin.", "hata"); });
+                    const tur = endpoint.includes('ogrenci') ? 'ogrenci' : 'devamsizlik';
+                    const onizlemeFormu = new FormData();
+                    onizlemeFormu.append("dosya", dosya);
+                    onizlemeFormu.append("tur", tur);
+                    yuklemeGoster("Dosya doğrulanıyor ve önizleme hazırlanıyor...");
+                    fetch(`${API}/excel-onizle`, { method: 'POST', body: onizlemeFormu }).then(r => r.json()).then(onizleme => {
+                        if(!onizleme.basarili) throw new Error(onizleme.mesaj);
+                        const baslik = onizleme.sutunlar.join(' | ');
+                        const satirlar = onizleme.onizleme.slice(0, 5).map(satir => Object.values(satir).join(' | ')).join('\n');
+                        const hataMetni = onizleme.hatalar.length ? `\n\nUyarılar:\n${onizleme.hatalar.join('\n')}` : '';
+                        const onay = confirm(`${onizleme.toplam_satir} satır bulundu.\n\n${baslik}\n${satirlar}${hataMetni}\n\nAktarıma devam edilsin mi?`);
+                        if(!onay) { yuklemeGizle(); return null; }
+                        const formData = new FormData(); formData.append("dosya", dosya);
+                        yuklemeGoster("Excel dosyasi sisteme aktariliyor...");
+                        return fetch(`${API}/${endpoint}`, { method: 'POST', body: formData });
+                    }).then(r => r ? r.json() : null).then(v => {
+                        if(!v) return;
+                        if(v.basarili && v.job_id) {
+                            ilerlemeTakipEt(v.job_id);
+                        } else {
+                            yuklemeGizle();
+                            bildirimGoster("Hata: " + v.mesaj, "hata");
+                        }
+                        event.target.value = '';
+                    }).catch(err => { yuklemeGizle(); bildirimGoster(err.message || "Baglanti hatasi! Sunucuyu kontrol edin.", "hata"); });
         }
 
-        function ilerlemeTakipEt(job_id) {
+        function ilerlemeTakipEt(job_id, tamamlaninca) {
             fetch(`${API}/islem-durumu/${job_id}`).then(r => r.json()).then(durum => {
                 if(durum.durum === 'tamamlandi') {
                     yuklemeGizle();
                     bildirimGoster(durum.mesaj, "bilgi");
                     verileriYukle();
+                    if(tamamlaninca) tamamlaninca();
                 } else if(durum.durum === 'hata') {
                     yuklemeGizle();
                     bildirimGoster("Hata: " + durum.mesaj, "hata");
@@ -786,7 +801,11 @@ const API = 'http://127.0.0.1:8000';
 
             fetch(`${API}/pdf-veli-formu`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
             .then(res => res.json()).then(sonuc => {
-                bildirimGoster(sonuc.mesaj, sonuc.basarili ? "bilgi" : "hata"); geciciDevamsizliklar = []; seciliDevamsizliklar.forEach(d => d.secili = false); takvimiCiz(); onizlemeGuncelle();
+                if(sonuc.basarili && sonuc.job_id) {
+                    ilerlemeTakipEt(sonuc.job_id, () => { geciciDevamsizliklar = []; seciliDevamsizliklar.forEach(d => d.secili = false); takvimiCiz(); onizlemeGuncelle(); });
+                } else {
+                    bildirimGoster(sonuc.mesaj, "hata");
+                }
             });
         }
         
@@ -929,7 +948,10 @@ const API = 'http://127.0.0.1:8000';
                 gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : "", // YENİ EKLENDİ
                 personeller: seciliPersoneller 
             };
-            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
+                if(v.basarili && v.job_id) ilerlemeTakipEt(v.job_id);
+                else bildirimGoster(v.mesaj, "hata");
+            });
         }
         
         function bireyselTebligPdfAl() {
@@ -957,7 +979,10 @@ const API = 'http://127.0.0.1:8000';
                 teblig_tarihi: document.getElementById('b-tarih') ? document.getElementById('b-tarih').value : null,
                 gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : ""
             };
-            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
+                if(v.basarili && v.job_id) ilerlemeTakipEt(v.job_id);
+                else bildirimGoster(v.mesaj, "hata");
+            });
         }
         
 

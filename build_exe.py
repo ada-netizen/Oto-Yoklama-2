@@ -1,6 +1,4 @@
 import PyInstaller.__main__
-import os
-
 PyInstaller.__main__.run([
     'masaustu.py',
     '--name=Oto_Yoklama',
@@ -8,9 +6,9 @@ PyInstaller.__main__.run([
     '--onefile',
     '--icon=logo.ico',
     '--add-data=index.html;.',
-    '--add-data=app.js;.',
     '--add-data=style.css;.',
     '--add-data=lucide.min.js;.',
+    '--add-data=js;js',
     '--add-data=versiyon.txt;.',
     '--hidden-import=uvicorn.logging',
     '--hidden-import=uvicorn.loops',
