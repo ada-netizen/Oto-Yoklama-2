@@ -398,6 +398,7 @@ class PersonelModel(BaseModel):
     ad: str
     gorev: Optional[str] = "-"
     brans: Optional[str] = "-"
+    grup: Optional[str] = "-"
     
 class TebligBireyselRequest(BaseModel):
     kurum: Optional[str] = ""
