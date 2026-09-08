@@ -25,6 +25,32 @@ from contextlib import contextmanager
 from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 
+VARSAYILAN_OLCU_BIRIMLERI = [
+    "ADET_BIRIM",
+    "AFIF_BIRIM_FIYATI",
+    "ATV_BIRIM_FIYATI",
+    "ALTIN_AYARI",
+    "KG_METREKARE",
+    "TON_BASINA_TASIMA_KAPASITESI",
+    "ADET_CIFT",
+    "BRUT_KALORI_DEGERI",
+    "BIN_LITRE",
+    "GUMUS",
+    "GRAM",
+    "GROS_TON",
+    "YUZ_ADET",
+    "KILOGRAM_ADET",
+    "KILOWATT_SAAT",
+    "KILOWATT",
+    "LITRE",
+    "METRE",
+    "METREKUP",
+    "METREKARE",
+    "TON",
+    "KALEM",
+    "PUAN",
+]
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(filename)s - %(message)s',
@@ -72,10 +98,10 @@ def olcu_birimleri_getir():
         import pandas as pd
         df = pd.read_excel('ölçü birimleri.xlsx', header=None)
         birimler = df[0].dropna().tolist()
-        return {"birimler": birimler}
+        return {"birimler": birimler or VARSAYILAN_OLCU_BIRIMLERI}
     except Exception as e:
         logging.error(f"Ölçü birimleri okunurken hata: {e}")
-        return {"birimler": []}
+        return {"birimler": VARSAYILAN_OLCU_BIRIMLERI}
 
 class SablonVerisi(BaseModel):
     kalemler: List[Dict]

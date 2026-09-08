@@ -1,11 +1,24 @@
 // ==========================================
 
 let ihaleKalemleri = [];
-let olcuBirimleri = [];
+let olcuBirimleri = [
+    "ADET_BIRIM", "AFIF_BIRIM_FIYATI", "ATV_BIRIM_FIYATI", "ALTIN_AYARI",
+    "KG_METREKARE", "TON_BASINA_TASIMA_KAPASITESI", "ADET_CIFT", "BRUT_KALORI_DEGERI",
+    "BIN_LITRE", "GUMUS", "GRAM", "GROS_TON", "YUZ_ADET", "KILOGRAM_ADET",
+    "KILOWATT_SAAT", "KILOWATT", "LITRE", "METRE", "METREKUP", "METREKARE",
+    "TON", "KALEM", "PUAN"
+];
 function olcuBirimleriniGetir() {
-    fetch(`${API}/olcu-birimleri`).then(r => r.json()).then(data => {
-        if(data && data.birimler) {
+    fetch(`${API}/olcu-birimleri`).then(r => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+    }).then(data => {
+        if(data && Array.isArray(data.birimler) && data.birimler.length) {
             olcuBirimleri = data.birimler;
+        }
+        const govde = document.getElementById("ihale_kalemleri_govde");
+        if (govde && typeof ihaleKalemTablosunuCiz === "function" && ihaleGeciciVeri?.kalemler) {
+            ihaleKalemTablosunuCiz();
         }
     }).catch(e => console.error("Ölçü birimleri çekilemedi: ", e));
 }

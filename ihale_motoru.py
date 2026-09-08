@@ -200,8 +200,8 @@ def uret_fiyat_isteme_pdf(veri, hedef_klasor):
         
         ('SPAN', (0,0), (5,0)),
         
-        ('SPAN', (0, start_bottom), (3, start_bottom)),
-        ('ALIGN', (0, start_bottom), (3, start_bottom), 'RIGHT'),
+        ('SPAN', (0, start_bottom), (4, start_bottom)),
+        ('ALIGN', (0, start_bottom), (4, start_bottom), 'RIGHT'),
         
         ('SPAN', (0, start_bottom+1), (3, start_bottom+1)),
         ('VALIGN', (0, start_bottom+1), (3, start_bottom+1), 'TOP'),
@@ -1018,7 +1018,7 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     if len(komisyon_uyeleri) > 0:
         imza_data = [[]]
         for uidx, uye in enumerate(komisyon_uyeleri):
-            title = "Öğretmen"
+            title = "Başkan" if uidx == 0 else "Üye"
             imza_data[0].append(Paragraph(f"{uye}<br/>{title}", style_center))
         
         col_w = 180*mm / len(komisyon_uyeleri)
@@ -1034,7 +1034,8 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     # 5. Tablo (Font 8, Yeni Kolonlar)
     table_data = []
     # Super Header
-    table_data.append([Paragraph("Satın Alınacak Malın", ParagraphStyle('Super1_TR', fontName=font_name, fontSize=8, alignment=0, leading=10)), "", "", "", "", Paragraph("Teklif Edilen KDV Hariç", ParagraphStyle('Super2_TR', fontName=font_name, fontSize=8, alignment=0, leading=10)), ""])
+    super_header_style = ParagraphStyle('SuperHeader_TR', fontName=font_name, fontSize=10, alignment=1, leading=12)
+    table_data.append([Paragraph("Satın Alınacak Malın", super_header_style), "", "", "", "", Paragraph("Teklif Edilen KDV Hariç", super_header_style), ""])
     
     # Headers
     headers = ["S.No", "Cinsi", "Özellikleri", "Ölçüsü", "Miktarı", "Birim Fiyatı\n(TL)", "Toplam Fiyatı\n(TL)"]
