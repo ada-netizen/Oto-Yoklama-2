@@ -1,4 +1,5 @@
 import os
+import re
 import datetime
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.pdfgen import canvas
@@ -42,6 +43,86 @@ def get_komisyon(veri):
             if ad and ad.strip(): 
                 uyeler.append(ad.strip())
     return uyeler
+
+
+def get_ihale_konu(veri):
+    for key in ("konu", "ihale_konusu", "ihale_adi", "is_adi"):
+        val = veri.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    return "Kırtasiye Alımı"
+
+
+def _ilk_harfleri_buyuk_yap(metin):
+    if not metin:
+        return ""
+    kelimeler = []
+    for kelime in str(metin).replace("\\n", " ").split():
+        if not kelime:
+            continue
+        if len(kelime) == 1:
+            kelimeler.append(kelime.upper())
+        else:
+            kelimeler.append(kelime[:1].upper() + kelime[1:].lower())
+    return " ".join(kelimeler)
+
+
+def _idare_adi_olustur(baslik=None, okul_adi=None):
+    adaylar = []
+    for deger in [baslik, okul_adi]:
+        if isinstance(deger, str):
+            metin = deger.replace("\\n", "\n").strip()
+            if metin:
+                adaylar.append(" ".join(s.strip() for s in metin.split("\n") if s.strip()))
+    if not adaylar:
+        return "İdare Müdürlüğü"
+
+    idare = _ilk_harfleri_buyuk_yap(adaylar[0].strip())
+    idare_lower = idare.lower()
+
+    if "müdürlüğü" in idare_lower or "müdürlük" in idare_lower:
+        return idare
+    if re.search(r"(okulu|lisesi|ortaokulu|ilkokulu|anaokulu|merkezi|idaresi|birimi|kurumu|kaymakamlığı|valiliği|başkanlığı)$", idare, flags=re.IGNORECASE):
+        return f"{idare} Müdürlüğü"
+    if any(pat in idare_lower for pat in ["okul", "lise", "ortaokul", "ilkokul", "anaokul", "kaymakamlık", "valilik", "başkanlık", "kurum", "daire", "bölge", "ofis"]):
+        return f"{idare} Müdürlüğü"
+    return idare
+
+
+def _ay_adi_tr(ay_no):
+    adlar = {
+        1: "Ocak", 2: "Şubat", 3: "Mart", 4: "Nisan", 5: "Mayıs", 6: "Haziran",
+        7: "Temmuz", 8: "Ağustos", 9: "Eylül", 10: "Ekim", 11: "Kasım", 12: "Aralık"
+    }
+    return adlar.get(ay_no, str(ay_no))
+
+
+def _temiz_klasor_adi(metin):
+    temiz = re.sub(r"[^\w\sçÇğĞıİöÖşŞüÜ-]", " ", metin, flags=re.UNICODE)
+    temiz = re.sub(r"\s+", " ", temiz).strip()
+    return temiz
+
+
+def get_ihale_klasoru(veri, base_klasor):
+    tarih_metin = veri.get("belge_tarihi") or veri.get("tarih") or datetime.datetime.now().strftime("%Y-%m-%d")
+    tarih_dt = None
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%Y/%m/%d"):
+        try:
+            tarih_dt = datetime.datetime.strptime(str(tarih_metin).split("T")[0], fmt)
+            break
+        except ValueError:
+            continue
+    if tarih_dt is None:
+        tarih_dt = datetime.datetime.now()
+
+    konu = get_ihale_konu(veri)
+    klasor_adi = f"{tarih_dt.year} {_ay_adi_tr(tarih_dt.month)} {_temiz_klasor_adi(konu)}"
+    ihale_ana = os.path.join(base_klasor, "Ihale")
+    os.makedirs(ihale_ana, exist_ok=True)
+    hedef = os.path.join(ihale_ana, klasor_adi)
+    os.makedirs(hedef, exist_ok=True)
+    return hedef
+
 
 def uret_fiyat_isteme_pdf(veri, hedef_klasor):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -485,7 +566,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
             except: d = datetime.datetime.now()
         tarih = d.strftime("%d.%m.%Y")
         
-    konu = veri.get("konu", "Kırtasiye Alımı")
+    konu = get_ihale_konu(veri)
     
     baslik = veri.get("resmi_baslik", "")
     lines = [L.strip() for L in baslik.split("\n") if L.strip()]
@@ -625,6 +706,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
         
         # Row 3 merges
         ('SPAN', (0,3), (0,4)), # Sira No
+        ('ROTATION', (0,3), (0,4), 90),
         ('SPAN', (1,3), (4,3)), # Mal ve Hizmet
         ('SPAN', (5,3), (6,3)), # Firm 1
         ('SPAN', (7,3), (8,3)), # Firm 2
@@ -663,7 +745,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
     elements.append(Paragraph(p2, style_normal))
     elements.append(Spacer(1, 5*mm))
     
-    elements.append(Paragraph("YAKLAŞIK MALİYET TESPİT KOMİSYONU", style_center))
+    elements.append(Paragraph("YAKLAŞIK MALİYET TESPİTİ YAPAN GÖREVLİLER", style_center))
     elements.append(Spacer(1, 5*mm))
     
     def get_komisyon_local(veri):
@@ -1568,39 +1650,40 @@ def belge_uret(veri, pdf_yol):
 
     belge_tipi = veri.get("belge_tipi", "")
     fmt = veri.get("format", "pdf")
-    
-    if not os.path.exists(pdf_yol):
-        os.makedirs(pdf_yol)
-        
+    hedef_klasor = get_ihale_klasoru(veri, pdf_yol)
+
+    if not os.path.exists(hedef_klasor):
+        os.makedirs(hedef_klasor, exist_ok=True)
+
     if belge_tipi == "fiyat_isteme":
         if fmt == "pdf":
-            return uret_fiyat_isteme_pdf(veri, pdf_yol)
+            return uret_fiyat_isteme_pdf(veri, hedef_klasor)
         elif fmt == "excel":
-            return uret_fiyat_isteme_excel(veri, pdf_yol)
+            return uret_fiyat_isteme_excel(veri, hedef_klasor)
     elif belge_tipi == "yaklasik_maliyet":
         if fmt == "pdf":
-            return uret_yaklasik_maliyet_pdf(veri, pdf_yol)
+            return uret_yaklasik_maliyet_pdf(veri, hedef_klasor)
         else:
-            return uret_yaklasik_maliyet_excel(veri, pdf_yol)
-            
+            return uret_yaklasik_maliyet_excel(veri, hedef_klasor)
+
     elif belge_tipi == "ozel_fiyat_isteme":
         if fmt == "pdf":
-            return uret_ozel_fiyat_isteme_pdf(veri, pdf_yol)
+            return uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor)
         else:
-            return uret_ozel_fiyat_isteme_excel(veri, pdf_yol)
-            
+            return uret_ozel_fiyat_isteme_excel(veri, hedef_klasor)
+
     elif belge_tipi == "piyasa_arastirmasi":
         if fmt == "pdf":
-            return uret_piyasa_arastirmasi_pdf(veri, pdf_yol)
+            return uret_piyasa_arastirmasi_pdf(veri, hedef_klasor)
         else:
-            return uret_piyasa_arastirmasi_excel(veri, pdf_yol)
-            
+            return uret_piyasa_arastirmasi_excel(veri, hedef_klasor)
+
     elif belge_tipi == "muayene_kabul":
         if fmt == "pdf":
-            return uret_muayene_kabul_pdf(veri, pdf_yol)
+            return uret_muayene_kabul_pdf(veri, hedef_klasor)
         else:
-            return uret_muayene_kabul_excel(veri, pdf_yol)
-            
+            return uret_muayene_kabul_excel(veri, hedef_klasor)
+
     return None
 
 
@@ -1656,17 +1739,45 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
     
     tarih = format_date(veri.get("belge_tarihi", ""))
     konu = veri.get("ihale_konusu", "")
-    
-    baslik = veri.get("resmi_baslik", "").replace("\\n", "\n")
-    baslik_satirlari = [s.strip() for s in baslik.split("\n") if s.strip()]
-    idare_adi = " ".join(baslik_satirlari)
-    
-    elements.append(Paragraph("P İ Y A S A   F İ Y A T   A R A Ş T I R M A S I   T U T A N A Ğ I", style_title))
+    komisyon_onaylari = veri.get("komisyon_onaylari", {}) or {}
+
+    idare_adi = _idare_adi_olustur(veri.get("resmi_baslik", ""))
+
+    onay_metni = ""
+    for kom_id in ["ihale_kom_piyasa"]:
+        onay = komisyon_onaylari.get(kom_id, {})
+        if onay:
+            kurum = (onay.get("kurum") or "").strip()
+            sayi = (onay.get("sayi") or "").strip()
+            tarih_onay = (onay.get("tarih") or "").strip()
+            if kurum or sayi or tarih_onay:
+                kurum_metni = _idare_adi_olustur(kurum)
+                
+                kurum_temiz = kurum_metni
+                if kurum_temiz.lower().endswith("müdürlüğü"):
+                    kurum_temiz = kurum_temiz[:-9].strip()
+
+                if kurum and sayi and tarih_onay:
+                    onay_metni = f"{kurum_temiz} Müdürlüğünün {sayi} sayılı ve {tarih_onay} tarihli onayı"
+                elif kurum and sayi:
+                    onay_metni = f"{kurum_temiz} Müdürlüğünün {sayi} sayılı onayı"
+                elif kurum and tarih_onay:
+                    onay_metni = f"{kurum_temiz} Müdürlüğünün {tarih_onay} tarihli onayı"
+                elif sayi and tarih_onay:
+                    onay_metni = f"Müdürlüğünün {sayi} sayılı ve {tarih_onay} tarihli onayı"
+                break
+
+    if not onay_metni:
+        onay_metni = "İdare onayı"
+
+    elements.append(Paragraph("PİYASA FİYAT ARAŞTIRMASI TUTANAĞI", style_title))
     
     firmalar = veri.get("firmalar", ["", "", "", ""])
     firma_vergiler = veri.get("firma_vergiler", ["", "", "", ""])
+    firma_adresleri = veri.get("firma_adresleri", ["", "", "", ""])
     while len(firmalar) < 4: firmalar.append("")
     while len(firma_vergiler) < 4: firma_vergiler.append("")
+    while len(firma_adresleri) < 4: firma_adresleri.append("")
     
     table_data = []
     
@@ -1676,7 +1787,7 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
     row1 = ["Yapılan İş / Mal / Hizmetin Adı, Niteliği", "", "", "", "", konu, "", "", "", "", "", "", ""]
     table_data.append([Paragraph(x, style_normal) if isinstance(x, str) and x else x for x in row1])
     
-    row2 = ["Alım ve Yetkilendirilen Görevlilere ilişkin Onay\nBelgesi Görevlendirme Onayının Tarih ve Nosu", "", "", "", "", tarih, "", "", "", "", "", "", ""]
+    row2 = ["Yetkilendirilen Görevlilere ilişkin Onayın Tarih ve Nosu", "", "", "", "", onay_metni, "", "", "", "", "", "", ""]
     table_data.append([Paragraph(x.replace("\n", "<br/>"), style_normal) if isinstance(x, str) and x else x for x in row2])
     
     # Headers (4 rows: 3, 4, 5, 6)
@@ -1764,15 +1875,16 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
             min_idx = i
             
     uygun_firma = firmalar[min_idx] if min_idx != -1 else ""
+    uygun_adres = firma_adresleri[min_idx] if min_idx != -1 else ""
     uygun_tutar = f"{min_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if min_idx != -1 else ""
     
-    b_row1 = [Paragraph("Satın Alınacak Malın", style_center), "", "", "", "", Paragraph("Teklifi Uygun Görülen Kişi / Firma", style_center), "", "", "", "", "", "", ""]
+    b_row1 = ["", "", "", "", "", Paragraph("Teklifi Uygun Görülen Kişi / Firma", style_center), "", "", "", "", "", "", ""]
     table_data.append(b_row1)
     
-    b_row2 = [Paragraph("Tümünün", style_center), Paragraph("Bu Kişi / Firmadan Alımı Uygun Görülmüştür.", style_center), "", "", "", Paragraph("Adı", style_center), "", Paragraph("Adresi", style_center), "", "", Paragraph("Teklif Ettiği Toplam Fiyat (KDV Hariç)", style_center), "", ""]
+    b_row2 = [Paragraph("Satın Alınacak Malın", style_center), "", "", "", "", Paragraph("Adı", style_center), "", Paragraph("Adresi", style_center), "", "", Paragraph("Teklif Ettiği Toplam Fiyat (KDV Hariç)", style_center), "", ""]
     table_data.append(b_row2)
     
-    b_row3 = ["", "", "", "", "", Paragraph(uygun_firma, style_center), "", "", "", "", Paragraph(uygun_tutar, style_center), "", ""]
+    b_row3 = [Paragraph("Tümünün Bu Kişi / Firmadan Alımı Uygun Görülmüştür.", style_center), "", "", "", "", Paragraph(uygun_firma, style_center), "", Paragraph(uygun_adres, style_center), "", "", Paragraph(uygun_tutar, style_center), "", ""]
     table_data.append(b_row3)
     
     col_widths = [10*mm, 35*mm, 35*mm, 15*mm, 15*mm, 20*mm, 21*mm, 20*mm, 21*mm, 20*mm, 21*mm, 20*mm, 21*mm]
@@ -1821,16 +1933,15 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
         ('SPAN', (0, -4), (4, -4)),
         
         # Bottom Block
-        ('SPAN', (0, -3), (4, -3)), # Satin Alinacak Malin
+        ('SPAN', (0, -3), (4, -3)), # blank lead row for the moved block
         ('SPAN', (5, -3), (12, -3)), # Teklifi uygun gorulen...
-        
-        ('SPAN', (0, -2), (0, -1)), # Tumunun
-        ('SPAN', (1, -2), (4, -1)), # Bu kisi firmadan...
-        
+
+        ('SPAN', (0, -2), (4, -2)), # Satın Alınacak Malın
         ('SPAN', (5, -2), (6, -2)), # Adi
         ('SPAN', (7, -2), (9, -2)), # Adresi
         ('SPAN', (10, -2), (12, -2)), # Teklif Ettigi...
-        
+
+        ('SPAN', (0, -1), (4, -1)), # Tümünün Bu Kişi / Firmadan Alımı Uygun Görülmüştür.
         ('SPAN', (5, -1), (6, -1)), # Adi value
         ('SPAN', (7, -1), (9, -1)), # Adresi value
         ('SPAN', (10, -1), (12, -1)), # Teklif Ettigi value
@@ -1846,7 +1957,7 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
     elements.append(Paragraph(p1, ParagraphStyle('P1', fontName=font_name, fontSize=9, alignment=4, leading=11)))
     elements.append(Spacer(1, 8*mm))
     
-    elements.append(Paragraph("<b>P İ Y A S A   F İ Y A T   A R A Ş T I R M A S I   G Ö R E V L İ S İ / G Ö R E V L İ L E R İ</b>", style_center))
+    elements.append(Paragraph("<b>PİYASA FİYAT ARAŞTIRMASI GÖREVLİSİ / GÖREVLİLERİ</b>", style_center))
     elements.append(Spacer(1, 4*mm))
     
     komisyon_uyeleri = get_komisyon(veri)
@@ -1887,14 +1998,37 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
     
     ws.merge_cells('A1:M1')
-    ws['A1'] = "P İ Y A S A   F İ Y A T   A R A Ş T I R M A S I   T U T A N A Ğ I"
+    ws['A1'] = "PİYASA FİYAT ARAŞTIRMASI TUTANAĞI"
     ws['A1'].font = title_font
     ws['A1'].alignment = center_align
     
     tarih = format_date(veri.get("belge_tarihi", ""))
     konu = veri.get("ihale_konusu", "")
-    baslik = veri.get("resmi_baslik", "").replace("\\n", "\n")
-    idare_adi = " ".join([s.strip() for s in baslik.split("\n") if s.strip()])
+    komisyon_onaylari = veri.get("komisyon_onaylari", {}) or {}
+    idare_adi = _idare_adi_olustur(veri.get("resmi_baslik", ""))
+    onay_metni = "İdare onayı"
+    for kom_id in ["ihale_kom_piyasa"]:
+        onay = komisyon_onaylari.get(kom_id, {})
+        if onay:
+            kurum = (onay.get("kurum") or "").strip()
+            sayi = (onay.get("sayi") or "").strip()
+            tarih_onay = (onay.get("tarih") or "").strip()
+            if kurum or sayi or tarih_onay:
+                kurum_metni = _idare_adi_olustur(kurum)
+                
+                kurum_temiz = kurum_metni
+                if kurum_temiz.lower().endswith("müdürlüğü"):
+                    kurum_temiz = kurum_temiz[:-9].strip()
+
+                if kurum and sayi and tarih_onay:
+                    onay_metni = f"{kurum_temiz} Müdürlüğünün {sayi} sayılı ve {tarih_onay} tarihli onayı"
+                elif kurum and sayi:
+                    onay_metni = f"{kurum_temiz} Müdürlüğünün {sayi} sayılı onayı"
+                elif kurum and tarih_onay:
+                    onay_metni = f"{kurum_temiz} Müdürlüğünün {tarih_onay} tarihli onayı"
+                elif sayi and tarih_onay:
+                    onay_metni = f"Müdürlüğünün {sayi} sayılı ve {tarih_onay} tarihli onayı"
+                break
     
     r = 3
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
@@ -1912,17 +2046,19 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
     r += 1
     
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=5)
-    ws.cell(row=r, column=1, value="Alım ve Yetkilendirilen Görevlilere ilişkin Onay\nBelgesi Görevlendirme Onayının Tarih ve Nosu").font = normal_font
+    ws.cell(row=r, column=1, value="Yetkilendirilen Görevlilere ilişkin Onayın Tarih ve Nosu").font = normal_font
     ws.cell(row=r, column=1).alignment = left_align
     ws.merge_cells(start_row=r, start_column=6, end_row=r, end_column=13)
-    ws.cell(row=r, column=6, value=tarih).font = normal_font
+    ws.cell(row=r, column=6, value=onay_metni).font = normal_font
     for i in range(1, 14): ws.cell(row=r, column=i).border = thin_border
     r += 1
     
     firmalar = veri.get("firmalar", ["", "", "", ""])
     firma_vergiler = veri.get("firma_vergiler", ["", "", "", ""])
+    firma_adresleri = veri.get("firma_adresleri", ["", "", "", ""])
     while len(firmalar) < 4: firmalar.append("")
     while len(firma_vergiler) < 4: firma_vergiler.append("")
+    while len(firma_adresleri) < 4: firma_adresleri.append("")
     
     # Headers Row 1
     ws.merge_cells(start_row=r, start_column=1, end_row=r+3, end_column=1)
@@ -2044,6 +2180,7 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
             min_idx = i
             
     uygun_firma = firmalar[min_idx] if min_idx != -1 else ""
+    uygun_adres = firma_adresleri[min_idx] if min_idx != -1 else ""
     uygun_tutar = min_val if min_idx != -1 else ""
     
     # Row 1
@@ -2073,7 +2210,7 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
     ws.merge_cells(start_row=r, start_column=6, end_row=r, end_column=7)
     ws.cell(row=r, column=6, value=uygun_firma).alignment = center_align
     ws.merge_cells(start_row=r, start_column=8, end_row=r, end_column=10)
-    ws.cell(row=r, column=8, value="").alignment = center_align
+    ws.cell(row=r, column=8, value=uygun_adres).alignment = center_align
     ws.merge_cells(start_row=r, start_column=11, end_row=r, end_column=13)
     ws.cell(row=r, column=11, value=uygun_tutar).alignment = center_align
     if isinstance(uygun_tutar, float): ws.cell(row=r, column=11).number_format = '#,##0.00'
@@ -2091,7 +2228,7 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
     r += 3
     
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
-    ws.cell(row=r, column=1, value="P İ Y A S A   F İ Y A T   A R A Ş T I R M A S I   G Ö R E V L İ S İ / G Ö R E V L İ L E R İ").alignment = center_align
+    ws.cell(row=r, column=1, value="PİYASA FİYAT ARAŞTIRMASI GÖREVLİSİ / GÖREVLİLERİ").alignment = center_align
     ws.cell(row=r, column=1).font = bold_font
     
     r += 2

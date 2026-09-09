@@ -9,5 +9,6 @@ tkcalendar
 openpyxl
 packaging
 PyInstaller
+graphifyy==0.9.56
 pytest
 httpx

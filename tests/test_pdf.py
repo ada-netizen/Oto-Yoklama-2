@@ -87,3 +87,36 @@ def test_toplu_teblig_turkce_okul_adi_ve_personel_bilgilerini_yazar(tmp_path):
     assert "Çağrı Özışık" in metin
     assert "Grup" not in metin
     assert "Branş" not in metin
+
+
+def test_piyasa_fiyat_arastirmasi_tutanağı_adi_ve_onay_cumlesi_dogru_yazilir(tmp_path):
+    from ihale_motoru import uret_piyasa_arastirmasi_pdf
+
+    veri = {
+        "resmi_baslik": "ATATÜRK ORTAOKULU",
+        "ihale_konusu": "Kırtasiye Alımı",
+        "belge_tarihi": "2026-09-09",
+        "komisyon_onaylari": {
+            "ihale_kom_piyasa": {
+                "kurum": "ATATÜRK ORTAOKULU",
+                "sayi": "2026/14",
+                "tarih": "06.09.2026",
+            }
+        },
+        "firmalar": ["A Firma", "B Firma", "C Firma", "D Firma"],
+        "firma_vergiler": ["1234567890", "12345678901", "1234567890", "1234567890"],
+        "firma_adresleri": ["İstanbul", "Ankara", "İzmir", "Bursa"],
+        "kalemler": [{"cins": "Kalem", "miktar": "10", "birim": "Adet", "fiyatlar": [10, 12, 11, 9]}],
+    }
+
+    dosya = uret_piyasa_arastirmasi_pdf(veri, str(tmp_path))
+
+    assert os.path.exists(dosya)
+    metin = PdfReader(dosya).pages[0].extract_text() or ""
+    assert "Atatürk Ortaokulu Müdürlüğü" in metin
+    assert "Yetkilendirilen Görevlilere ilişkin Onayın Tarih ve Nosu" in metin
+    assert "Müdürlüğünün 2026/14 sayılı ve 06.09.2026 tarihli onayı" in metin or "Müdürlüğünün 2026/14 Sayılı ve 06.09.2026 Tarihli onayı" in metin
+    assert "PİYASA FİYAT ARAŞTIRMASI TUTANAĞI" in metin or "P İ Y A S A F İ Y A T A R A Ş T I R M A S I T U T A N A Ğ I" in metin
+    assert "PİYASA FİYAT ARAŞTIRMASI GÖREVLİSİ / GÖREVLİLERİ" in metin or "P İ Y A S A F İ Y A T A R A Ş T I R M A S I G Ö R E V L İ S İ / G Ö R E V L İ L E R İ" in metin
+    assert "Tümünün Bu Kişi / Firmadan Alımı Uygun Görülmüştür." in metin
+    assert "İstanbul" in metin or "Ankara" in metin or "İzmir" in metin or "Bursa" in metin

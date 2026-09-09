@@ -199,8 +199,10 @@ async function belgeUret(belgeTipi, format, tarih) {
         yazisma_kodu: ihaleGeciciVeri.yazisma_kodu,
         firmalar: ihaleGeciciVeri.firmalar,
         firma_vergiler: ihaleGeciciVeri.firmaVergiler,
+        firma_adresleri: ihaleGeciciVeri.firmaAdresleri,
         kalemler: gecerliKalemler,
         komisyon: komisyonVerisi,
+        komisyon_onaylari: ihaleKomisyonOnaylari,
         belge_tarihi: tarih,
         belge_tipi: belgeTipi,
         format: format
@@ -231,6 +233,7 @@ async function belgeUret(belgeTipi, format, tarih) {
 
 
 let ihaleKomisyonSecimleri = JSON.parse(localStorage.getItem('ihaleKomisyonSecimleri') || '{}');
+let ihaleKomisyonOnaylari = JSON.parse(localStorage.getItem('ihaleKomisyonOnaylari') || '{}');
 let ihaleKomisyonHataModu = false;
 
 let ihaleGeciciVeri = {
@@ -240,6 +243,7 @@ let ihaleGeciciVeri = {
     yazisma_kodu: localStorage.getItem("ihale_yazisma_kodu") || "",
     firmalar: ["", "", ""],
     firmaVergiler: ["", "", ""],
+    firmaAdresleri: ["", "", ""],
     kalemler: []
 };
 
@@ -253,6 +257,7 @@ function ihaleTaslaginiYukle() {
         ihaleGeciciVeri = JSON.parse(taslak);
         // Ensure legacy data has newer fields
         if (!ihaleGeciciVeri.firmaVergiler) ihaleGeciciVeri.firmaVergiler = ["", "", ""];
+        if (!ihaleGeciciVeri.firmaAdresleri) ihaleGeciciVeri.firmaAdresleri = ["", "", ""];
         if (!ihaleGeciciVeri.resmi_baslik) ihaleGeciciVeri.resmi_baslik = localStorage.getItem("ihale_resmi_baslik") || "";
         if (!ihaleGeciciVeri.yazisma_kodu) ihaleGeciciVeri.yazisma_kodu = localStorage.getItem("ihale_yazisma_kodu") || "";
     }
@@ -270,13 +275,12 @@ function ihaleSifirla() {
             yazisma_kodu: kayitliKod,
             firmalar: ["", "", ""],
             firmaVergiler: ["", "", ""],
+            firmaAdresleri: ["", "", ""],
             kalemler: []
         };
         ihaleTaslaginiKaydet();
         
-        // Komisyon seçimlerini sıfırla
-        ihaleKomisyonSecimleri = {};
-        localStorage.setItem("ihaleKomisyonSecimleri", JSON.stringify(ihaleKomisyonSecimleri));
+        // Komisyon seçimleri ve onay belgeleri istenildiği kadar saklansın; sadece manuel silme ile temizlensin.
         localStorage.removeItem("ihale_aktif_adim");
         
         // Ekranı başlangıç durumuna döndür
@@ -422,7 +426,7 @@ function ihaleBaslat() {
         </div>
         <div class="accordion-item" id="acc_adim4" style="display: none;">
             <div class="accordion-header" onclick="toggleAcc('adim4')">
-                <div class="acc-title"><i data-lucide="check-square" width="18" height="18"></i> 4. Adım: İhale Onayı</div>
+                <div class="acc-title"><i data-lucide="banknote" width="18" height="18"></i> 4. Adım: Harcama Ekleme</div>
                 <div class="acc-actions">
                     <i data-lucide="check-circle" class="acc-check" id="check_adim4" width="18" height="18" style="display:none; color:#10B981;"></i>
                     <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
@@ -433,7 +437,7 @@ function ihaleBaslat() {
 
         <div class="accordion-item" id="acc_adim5" style="display: none;">
             <div class="accordion-header" onclick="toggleAcc('adim5')">
-                <div class="acc-title"><i data-lucide="banknote" width="18" height="18"></i> 5. Adım: Harcama Ekleme</div>
+                <div class="acc-title"><i data-lucide="check-square" width="18" height="18"></i> 5. Adım: İhale Onayı</div>
                 <div class="acc-actions">
                     <i data-lucide="check-circle" class="acc-check" id="check_adim5" width="18" height="18" style="display:none; color:#10B981;"></i>
                     <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
@@ -691,14 +695,33 @@ function adim3Ileri() {
 function ihaleAdim4Goster() {
     const alan = document.getElementById("acc_adim4_icerik");
     alan.innerHTML = `
-        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
-            <label for="ebys_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">EBYS platformu üzerinden ihale onayı alındı mı?</label>
-            <input type="checkbox" id="ebys_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim4_btn_container').style.display = this.checked ? 'block' : 'none';">
-        </div>
-        <div id="adim4_btn_container" style="display: none; text-align: right;">
-            <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim4Ileri()">
-                <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Harcama Ekleme
-            </button>
+        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
+            <div class="settings-card-body" style="padding: 0;">
+                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Şimdi MYS üzerinden Harcama Ekleme adımlarını gerçekleştirin. Yaklaşık Maliyet şablonu otomatik olarak hazırlanmıştır.</p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px; color: var(--fg-main); width: 50px;">Sıra</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
+                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Şablonu</td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="sablonIndir()"><i data-lucide="download" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim4Ileri()">
+                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: İhale Onayı
+                    </button>
+                </div>
+            </div>
         </div>
     `;
     lucide.createIcons();
@@ -737,33 +760,14 @@ function sablonIndir() {
 function ihaleAdim5Goster() {
     const alan = document.getElementById("acc_adim5_icerik");
     alan.innerHTML = `
-        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
-            <div class="settings-card-body" style="padding: 0;">
-                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Şimdi MYS üzerinden Harcama Ekleme adımlarını gerçekleştirin. Yaklaşık Maliyet şablonu otomatik olarak hazırlanmıştır.</p>
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border);">
-                            <th style="padding: 10px; color: var(--fg-main); width: 50px;">Sıra</th>
-                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
-                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
-                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Şablonu</td>
-                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="sablonIndir()"><i data-lucide="download" width="14" height="14"></i> Excel Üret</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div style="margin-top: 20px; text-align: right;">
-                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim5Ileri()">
-                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Piyasa Fiyat Araştırması
-                    </button>
-                </div>
-            </div>
+        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+            <label for="ebys_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">EBYS platformu üzerinden ihale onayı alındı mı?</label>
+            <input type="checkbox" id="ebys_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim5_btn_container').style.display = this.checked ? 'block' : 'none';">
+        </div>
+        <div id="adim5_btn_container" style="display: none; text-align: right;">
+            <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim5Ileri()">
+                <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Piyasa Fiyat Araştırması
+            </button>
         </div>
     `;
     lucide.createIcons();
@@ -1014,9 +1018,11 @@ function ihaleFirmaTablosunuCiz() {
     if (!govde) return;
     let html = "";
     if(!ihaleGeciciVeri.firmaVergiler) ihaleGeciciVeri.firmaVergiler = ["", "", ""];
+    if(!ihaleGeciciVeri.firmaAdresleri) ihaleGeciciVeri.firmaAdresleri = ["", "", ""];
     
     ihaleGeciciVeri.firmalar.forEach((firmaAdi, idx) => {
         let vNo = ihaleGeciciVeri.firmaVergiler[idx] || "";
+        let adres = ihaleGeciciVeri.firmaAdresleri[idx] || "";
         let title = (idx === 0) ? "1. Kurum/Kişi" : `${idx + 1}. Kurum/Kişi`;
         html += `
             <div style="flex:1; min-width:220px; box-sizing: border-box; display:flex; flex-direction:column; gap:5px; background:var(--bg-input); padding:10px; border-radius:6px; border:1px solid var(--border);">
@@ -1026,6 +1032,7 @@ function ihaleFirmaTablosunuCiz() {
                 </div>
                 <input type="text" class="firma-input" data-index="${idx}" style="box-sizing: border-box; width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; font-size:12px;" placeholder="Kurum/Kişi Adı" value="${firmaAdi}">
                 <input type="text" class="firma-vergi-input" data-index="${idx}" style="box-sizing: border-box; width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; font-size:12px;" placeholder="Vergi No / T.C." value="${vNo}">
+                <input type="text" class="firma-adres-input" data-index="${idx}" style="box-sizing: border-box; width:100%; padding: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; font-size:12px;" placeholder="Adres" value="${adres}">
             </div>
         `;
     });
@@ -1048,6 +1055,13 @@ function ihaleFirmaTablosunuCiz() {
             ihaleTaslaginiKaydet();
         });
     });
+    document.querySelectorAll(".firma-adres-input").forEach(input => {
+        input.addEventListener('change', (e) => {
+            const idx = parseInt(e.target.getAttribute("data-index"));
+            ihaleGeciciVeri.firmaAdresleri[idx] = e.target.value;
+            ihaleTaslaginiKaydet();
+        });
+    });
     
     if (typeof lucide !== 'undefined') lucide.createIcons();
 }
@@ -1055,6 +1069,7 @@ function ihaleFirmaTablosunuCiz() {
 function ihaleFirmaEkle() {
     ihaleGeciciVeri.firmalar.push("");
     ihaleGeciciVeri.firmaVergiler.push("");
+    ihaleGeciciVeri.firmaAdresleri.push("");
     ihaleTaslaginiKaydet();
     ihaleFirmaTablosunuCiz();
     if(document.getElementById("fiyat_giris_modal").style.display === "flex") {
@@ -1065,6 +1080,7 @@ function ihaleFirmaEkle() {
 function ihaleFirmaSil(idx) {
     ihaleGeciciVeri.firmalar.splice(idx, 1);
     ihaleGeciciVeri.firmaVergiler.splice(idx, 1);
+    ihaleGeciciVeri.firmaAdresleri.splice(idx, 1);
     if(ihaleGeciciVeri.kalemler) {
         ihaleGeciciVeri.kalemler.forEach(k => {
             if(k.fiyatlar && k.fiyatlar.length > idx) {
@@ -1147,7 +1163,8 @@ async function ihaleKomisyonModalAc() {
                 }
             }
         });
-        
+
+        ihaleKomisyonOnayBilgileriniGuncelle();
         document.getElementById("ihale_komisyon_modal").style.display = "flex";
     } catch (e) {
         console.error("Modal açılamadı: ", e);
@@ -1259,6 +1276,71 @@ function personelSil(gorevId) {
     localStorage.setItem("ihaleKomisyonSecimleri", JSON.stringify(ihaleKomisyonSecimleri));
 }
 
+function ihaleKomisyonOnayBilgileriniGuncelle() {
+    const gorevIds = [
+        "ihale_kom_yaklasik", 
+        "ihale_kom_piyasa", 
+        "ihale_kom_muayene"
+    ];
+    gorevIds.forEach(id => {
+        const info = document.getElementById("onay_info_" + id);
+        if (!info) return;
+        const onay = ihaleKomisyonOnaylari[id];
+        if (onay && (onay.sayi || onay.tarih || onay.kurum)) {
+            const kurum = onay.kurum ? onay.kurum : "Belge";
+            const sayi = onay.sayi ? onay.sayi : "Sayı yok";
+            const tarih = onay.tarih ? onay.tarih : "Tarih yok";
+            info.innerHTML = `<span style="color: var(--fg-main); font-weight: 600;">${kurum}</span><br><span style="color: var(--fg-sub);">Sayı: ${sayi} • Tarih: ${tarih}</span>`;
+            info.style.color = "var(--fg-main)";
+        } else {
+            info.innerHTML = "Yüklenmedi";
+            info.style.color = "var(--fg-sub)";
+        }
+    });
+}
+
+function ihaleKomisyonOnayYukle(gorevId) {
+    const input = document.getElementById("file_" + gorevId);
+    if (input) input.click();
+}
+
+async function ihaleKomisyonOnayPdfYukle(event, gorevId) {
+    const dosya = event.target.files && event.target.files[0];
+    if (!dosya) return;
+    const formData = new FormData();
+    formData.append("dosya", dosya);
+
+    yuklemeGoster("Onay belgesi okunuyor...");
+    try {
+        const res = await fetch(`${API}/meb-pdf-oku`, { method: 'POST', body: formData });
+        const sonuc = await res.json();
+        if (!sonuc.basarili) {
+            throw new Error(sonuc.mesaj || "PDF okunamadı");
+        }
+
+        ihaleKomisyonOnaylari[gorevId] = {
+            sayi: sonuc.sayi || "",
+            konu: sonuc.konu || "",
+            tarih: sonuc.tarih || "",
+            kurum: sonuc.kurum || "",
+            gecici_pdf_yolu: sonuc.gecici_pdf_yolu || ""
+        };
+        localStorage.setItem("ihaleKomisyonOnaylari", JSON.stringify(ihaleKomisyonOnaylari));
+        ihaleKomisyonOnayBilgileriniGuncelle();
+        bildirimGoster("Onay PDF'i okundu. Metin otomatik eklenecektir.", "basarili");
+    } catch (e) {
+        bildirimGoster("Onay PDF'i okunamadı: " + e.message, "hata");
+    } finally {
+        yuklemeGizle();
+        event.target.value = "";
+    }
+}
+
+function ihaleKomisyonOnaySil(gorevId) {
+    delete ihaleKomisyonOnaylari[gorevId];
+    localStorage.setItem("ihaleKomisyonOnaylari", JSON.stringify(ihaleKomisyonOnaylari));
+    ihaleKomisyonOnayBilgileriniGuncelle();
+}
 
 // Fiyat Giriş Modal Mantığı
 let seciliBelgeFormat = "";
@@ -1284,7 +1366,7 @@ function fiyatGirisTablosunuCiz() {
             <th rowspan="2" style="width: 60px; text-align:center;">Miktar</th>
     `;
     ihaleGeciciVeri.firmalar.forEach((firma, idx) => {
-        let fAd = firma.trim() === "" ? `Firma ${idx+1}` : firma.substring(0,15);
+        let fAd = firma.trim() === "" ? `Firma ${idx+1}` : firma;
         let fVergi = (ihaleGeciciVeri.firmaVergiler && ihaleGeciciVeri.firmaVergiler[idx]) ? ihaleGeciciVeri.firmaVergiler[idx].trim() : "";
         let vergiStr = "";
         if (fVergi.length === 10) {
@@ -1294,7 +1376,7 @@ function fiyatGirisTablosunuCiz() {
         } else if (fVergi.length > 0) {
             vergiStr = `<br><span style="font-size:10px; color:var(--fg-sub);">(${fVergi})</span>`;
         }
-        theadHtml += `<th colspan="2" style="text-align:center; color:#3B82F6;">${fAd}${vergiStr}</th>`;
+        theadHtml += `<th colspan="2" style="text-align:center; color:#3B82F6; white-space:normal; word-break:break-word;">${fAd}${vergiStr}</th>`;
     });
     theadHtml += `
             <th colspan="2" style="text-align:center; color:#10B981;">İdarece Tespit Edilen<br>Yaklaşık Maliyet Hesabı (KDV Hariç)</th>

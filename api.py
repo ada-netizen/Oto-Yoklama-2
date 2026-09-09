@@ -107,31 +107,59 @@ class SablonVerisi(BaseModel):
     kalemler: List[Dict]
     firmaVergiler: List[str]
 
+
+def _sablon_excel_yolu_olustur():
+    adaylar = [
+        os.path.join(os.getcwd(), "sablon.xlsx"),
+        os.path.join(os.path.dirname(__file__), "sablon.xlsx"),
+    ]
+    for yol in adaylar:
+        if not os.path.exists(yol):
+            try:
+                import openpyxl
+                wb = openpyxl.Workbook()
+                ws = wb.active
+                ws.title = "Sablon"
+                ws.append(["Cins / Ad", "Miktar", "Birim"])
+                for sutun in ["A", "B", "C"]:
+                    ws[f"{sutun}1"].font = openpyxl.styles.Font(bold=True)
+                ws.freeze_panes = "A2"
+                wb.save(yol)
+            except Exception:
+                continue
+        if os.path.exists(yol):
+            return yol
+    return os.path.join(os.getcwd(), "sablon.xlsx")
+
+
 @app.post("/sablon-hazirla")
 def sablon_hazirla(veri: SablonVerisi):
     try:
         logging.info(f"SABLON HAZIRLA DATA: {veri.dict()}")
         import openpyxl
-        wb = openpyxl.load_workbook("sablon.xlsx")
+        from openpyxl.styles import Font
+
+        sablon_yolu = _sablon_excel_yolu_olustur()
+        wb = openpyxl.load_workbook(sablon_yolu)
         ws = wb.active
-        
-        ws.delete_rows(2, ws.max_row)
-        
+
+        # Eski verileri temizle ve başlık satırını koru
+        if ws.max_row > 1:
+            ws.delete_rows(2, ws.max_row - 1)
+
         row_idx = 2
         for kalem in veri.kalemler:
+            if not kalem or not str(kalem.get('cins', '')).strip():
+                continue
             ws[f"A{row_idx}"] = kalem.get('cins', '')
             ws[f"B{row_idx}"] = kalem.get('miktar', '')
             ws[f"C{row_idx}"] = kalem.get('birim', '')
             row_idx += 1
-            
-            for fidx, vkn in enumerate(veri.firmaVergiler):
-                if vkn and str(vkn).strip():
-                    ws[f"H{row_idx}"] = str(vkn).strip()
-                    fiyatlar = kalem.get('fiyatlar', [])
-                    if fidx < len(fiyatlar) and fiyatlar[fidx] not in (None, ""):
-                        ws[f"G{row_idx}"] = float(fiyatlar[fidx])
-                    row_idx += 1
-                    
+
+        # Başlık satırını görünüm için bold tut
+        for sutun in ["A", "B", "C"]:
+            ws[f"{sutun}1"].font = Font(bold=True)
+
         ayar = ayarlari_al()
         ana_klasor = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
         if not os.path.exists(ana_klasor):
@@ -139,7 +167,7 @@ def sablon_hazirla(veri: SablonVerisi):
         dosya_yolu = os.path.join(ana_klasor, "Yaklasik_Maliyet_Sablon.xlsx")
         wb.save(dosya_yolu)
         dosyayi_otomatik_ac(dosya_yolu)
-        
+
         return {"basarili": True, "mesaj": "Şablon hazırlandı ve açıldı."}
     except Exception as e:
         logging.error(f"Şablon hazırlanırken hata: {e}")
@@ -940,15 +968,55 @@ def meb_pdf_oku(dosya: UploadFile = File(...)):
                 if sayi and sayi in konu:
                     konu = konu.replace(sayi, "").replace(":", "").strip()
 
-            # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU ---
+            # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU EN YENİ ---
             kurum = ""
-            tc_match = re.search(r'T\.\s*C\.\s*\r?\n((?:.*\r?\n){1,4})', ilk_sayfa)
-            if tc_match:
-                satirlar = [s.strip() for s in tc_match.group(1).split('\n') if s.strip()]
-                if len(satirlar) >= 2:
-                    kurum = satirlar[1]   # T.C.'den sonraki 2. dolu satır = kurumun asıl adı
-                elif satirlar:
-                    kurum = satirlar[0]
+            lines = ilk_sayfa.split('\n')
+            
+            # YÖNTEM 1: "Sayı" satırından geriye doğru tarama
+            for i, line in enumerate(lines):
+                s_lower = line.strip().lower().replace('ı', 'i').replace('i̇', 'i')
+                if s_lower.startswith("sayi") or s_lower.startswith("say:") or s_lower.startswith("say :") or s_lower.startswith("sayı"):
+                    for j in range(i-1, -1, -1):
+                        s = lines[j].strip()
+                        if not s: continue
+                        
+                        # Tarihleri temizle (sağ üstte olup satıra yapışan)
+                        s = re.sub(r'\d{1,2}[\./-]\d{1,2}[\./-]\d{2,4}', '', s).strip()
+                        if not s: continue
+                        
+                        # Sadece Müdürlüğü/Müdür ise atla, asıl okul adını bul
+                        if s.lower() in ['müdür', 'müdürlüğü', 'müdürlük']:
+                            continue
+                            
+                        kurum = s
+                        break
+                    break
+            
+            # YÖNTEM 2: Sayı bulunamazsa veya çalışmazsa ilk 1000 karakterde T.C. ara
+            if not kurum:
+                ilk_kisim = ilk_sayfa[:1000]
+                tc_match = re.search(r'(?:T\.\s*)?C\.(?:\s*|\r?\n)((?:.*\r?\n){1,6})', ilk_kisim)
+                if tc_match:
+                    satirlar = []
+                    for s in tc_match.group(1).split('\n'):
+                        s = s.strip()
+                        if not s: continue
+                        s_lower = s.lower().replace('ı', 'i').replace('i̇', 'i')
+                        if s_lower.startswith("sayi") or s_lower.startswith("say:") or s_lower.startswith("konu"):
+                            break
+                        
+                        s = re.sub(r'\d{1,2}[\./-]\d{1,2}[\./-]\d{2,4}', '', s).strip()
+                        if not s: continue
+                        
+                        if s.lower() in ['müdür', 'müdürlüğü', 'müdürlük'] and satirlar:
+                            continue
+                            
+                        satirlar.append(s)
+                        
+                    if satirlar:
+                        # Kullanıcının ısrarla bahsettiği 4. satır (T.C. dahil) satirlar[2] ye denk gelir.
+                        # Ama güvenli olması için en son satırı alıyoruz.
+                        kurum = satirlar[-1]
 
             ana_klasor, _ = pdf_klasoru_hazirla()
             gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
@@ -1424,7 +1492,13 @@ def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
             mudur_adi = row[0]
     except: pass
 
-    veri["okul_adi"] = ayar.get("okul_adi", "Okul Müdürlüğü")
+    veri["okul_adi"] = ayar.get("okul_adi", "Okul")
+    baslik = str(veri.get("resmi_baslik") or "").strip()
+    if not baslik:
+        veri["resmi_baslik"] = f"{veri['okul_adi'].strip()} Müdürlüğü"
+    else:
+        if not re.search(r"(MÜDÜRLÜĞÜ|MÜDÜRLÜK|OKULU|LİSESİ|ORTAOKULU|İLKOKULU|ANAOKULU|KAYMAKAMLIĞI|VALİLİĞİ|BAŞKANLIĞI)$", baslik, flags=re.IGNORECASE):
+            veri["resmi_baslik"] = f"{baslik} Müdürlüğü"
     veri["okul_muduru"] = mudur_adi
     
     try:
