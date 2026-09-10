@@ -968,55 +968,20 @@ def meb_pdf_oku(dosya: UploadFile = File(...)):
                 if sayi and sayi in konu:
                     konu = konu.replace(sayi, "").replace(":", "").strip()
 
-            # --- ZEKİ KURUM (GELDİĞİ YER) OKUYUCU EN YENİ ---
-            kurum = ""
-            lines = ilk_sayfa.split('\n')
+            # --- KULLANICI TALEBİ: GELDİĞİ YER (KURUM) SİSTEMDEN OTOMATİK ALINACAK ---
+            # PDF'in karmaşık yapısıyla uğraşmak yerine direkt sistemdeki Okul Adı + Müdürlüğü kullanılıyor.
+            ayar = ayarlari_al()
+            okul_adi = ayar.get("okul_adi", "").strip()
             
-            # YÖNTEM 1: "Sayı" satırından geriye doğru tarama
-            for i, line in enumerate(lines):
-                s_lower = line.strip().lower().replace('ı', 'i').replace('i̇', 'i')
-                if s_lower.startswith("sayi") or s_lower.startswith("say:") or s_lower.startswith("say :") or s_lower.startswith("sayı"):
-                    for j in range(i-1, -1, -1):
-                        s = lines[j].strip()
-                        if not s: continue
-                        
-                        # Tarihleri temizle (sağ üstte olup satıra yapışan)
-                        s = re.sub(r'\d{1,2}[\./-]\d{1,2}[\./-]\d{2,4}', '', s).strip()
-                        if not s: continue
-                        
-                        # Sadece Müdürlüğü/Müdür ise atla, asıl okul adını bul
-                        if s.lower() in ['müdür', 'müdürlüğü', 'müdürlük']:
-                            continue
-                            
-                        kurum = s
-                        break
-                    break
-            
-            # YÖNTEM 2: Sayı bulunamazsa veya çalışmazsa ilk 1000 karakterde T.C. ara
-            if not kurum:
-                ilk_kisim = ilk_sayfa[:1000]
-                tc_match = re.search(r'(?:T\.\s*)?C\.(?:\s*|\r?\n)((?:.*\r?\n){1,6})', ilk_kisim)
-                if tc_match:
-                    satirlar = []
-                    for s in tc_match.group(1).split('\n'):
-                        s = s.strip()
-                        if not s: continue
-                        s_lower = s.lower().replace('ı', 'i').replace('i̇', 'i')
-                        if s_lower.startswith("sayi") or s_lower.startswith("say:") or s_lower.startswith("konu"):
-                            break
-                        
-                        s = re.sub(r'\d{1,2}[\./-]\d{1,2}[\./-]\d{2,4}', '', s).strip()
-                        if not s: continue
-                        
-                        if s.lower() in ['müdür', 'müdürlüğü', 'müdürlük'] and satirlar:
-                            continue
-                            
-                        satirlar.append(s)
-                        
-                    if satirlar:
-                        # Kullanıcının ısrarla bahsettiği 4. satır (T.C. dahil) satirlar[2] ye denk gelir.
-                        # Ama güvenli olması için en son satırı alıyoruz.
-                        kurum = satirlar[-1]
+            if okul_adi:
+                okul_lower = okul_adi.lower().replace('ı', 'i').replace('i̇', 'i')
+                # Eğer içinde "müdürlüğü" geçmiyorsa ekle
+                if "müdürlüğü" not in okul_lower and "müdürlük" not in okul_lower:
+                    kurum = f"{okul_adi} Müdürlüğü"
+                else:
+                    kurum = okul_adi
+            else:
+                kurum = "Okul Müdürlüğü"
 
             ana_klasor, _ = pdf_klasoru_hazirla()
             gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
@@ -1500,6 +1465,20 @@ def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
         if not re.search(r"(MÜDÜRLÜĞÜ|MÜDÜRLÜK|OKULU|LİSESİ|ORTAOKULU|İLKOKULU|ANAOKULU|KAYMAKAMLIĞI|VALİLİĞİ|BAŞKANLIĞI)$", baslik, flags=re.IGNORECASE):
             veri["resmi_baslik"] = f"{baslik} Müdürlüğü"
     veri["okul_muduru"] = mudur_adi
+    
+    # Komisyon üyelerinin görevlerini (unvanlarını) veritabanından çekip ekleyelim
+    if "komisyon" in veri and isinstance(veri["komisyon"], dict):
+        for k_key, k_name in list(veri["komisyon"].items()):
+            if k_name and isinstance(k_name, str):
+                try:
+                    db.cursor.execute("SELECT gorev FROM personel WHERE ad_soyad = ?", (k_name,))
+                    row = db.cursor.fetchone()
+                    if row:
+                        veri["komisyon"][f"{k_key}_gorev"] = row[0]
+                    else:
+                        veri["komisyon"][f"{k_key}_gorev"] = "Üye"
+                except:
+                    veri["komisyon"][f"{k_key}_gorev"] = "Üye"
     
     try:
         import ihale_motoru
