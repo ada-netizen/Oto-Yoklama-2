@@ -463,6 +463,7 @@ class TebligBireyselRequest(BaseModel):
     edilen: PersonelModel
     yer: str
     teblig_tarihi: Optional[str] = None
+    teblig_saati: Optional[str] = None
     gecici_pdf_yolu: Optional[str] = None
 
 class TebligTopluRequest(BaseModel):
@@ -766,12 +767,12 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
         for _, row in df.iterrows():
             ad = str(row[ad_sutunu]).strip()
             gorev = "-"
-            if 'GÖREVI' in df.columns: gorev = str(row['GÖREVI']).strip()
-            elif 'GÖREVİ' in df.columns: gorev = str(row['GÖREVİ']).strip()
+            gorev_sutunu = _excel_sutunu_bul(df.columns, ['GÖREVİ', 'GÖREVI', 'GÖREV', 'UNVAN', 'UNVANI', 'ÜNVANI'])
+            if gorev_sutunu: gorev = str(row[gorev_sutunu]).strip()
 
             brans = "-"
-            if 'BRANŞI' in df.columns: brans = str(row['BRANŞI']).strip()
-            elif 'BRANSI' in df.columns: brans = str(row['BRANSI']).strip()
+            brans_sutunu = _excel_sutunu_bul(df.columns, ['BRANŞI', 'BRANSI', 'BRANŞ', 'ALANI', 'ALAN'])
+            if brans_sutunu: brans = str(row[brans_sutunu]).strip()
 
             if not brans or brans.lower() == 'nan': brans = "-"
             if not gorev or gorev.lower() == 'nan': gorev = "-"
@@ -936,13 +937,25 @@ def meb_pdf_oku(dosya: UploadFile = File(...)):
             with open(temp_yol, "rb") as file:
                 ilk_sayfa = PyPDF2.PdfReader(file).pages[0].extract_text()
 
-            tarih_match = re.search(r'\b\d{2}\.\d{2}\.\d{4}\b', ilk_sayfa)
-            tarih = tarih_match.group(0) if tarih_match else ""
+            # --- TARİH BULMA ---
+            tarih = ""
+            tarih_match = re.search(r'(?<!\d)(\d{2}[./-]\d{2}[./-]\d{4})(?!\d)', ilk_sayfa)
+            if tarih_match:
+                tarih = tarih_match.group(1).replace('/', '.').replace('-', '.')
+            else:
+                tarih_match2 = re.search(r'(?<!\d)(\d{1,2}\s+[A-Za-zğüşöçİĞÜŞÖÇ]+\s+\d{4})(?!\d)', ilk_sayfa)
+                if tarih_match2:
+                    tarih = tarih_match2.group(1)
 
-            sayi_match = re.search(r'(E-\d+-\d+\.\d+-\d+)', ilk_sayfa)
-            if not sayi_match:
-                sayi_match = re.search(r'Sayı\s*[:\n]\s*([A-Za-z0-9\-.]+)', ilk_sayfa)
-            sayi = sayi_match.group(1) if sayi_match else ""
+            # --- SAYI BULMA ---
+            sayi_match = re.search(r'Sayı\s*[:]\s*([^\s]+)', ilk_sayfa, re.IGNORECASE)
+            if sayi_match:
+                sayi = sayi_match.group(1)
+                # Bazen satır sonuna yapışık oluyor, "Konu" gibi kelimelerden temizle
+                if "Konu" in sayi:
+                    sayi = sayi.split("Konu")[0].strip()
+            else:
+                sayi = ""
 
             konu = ""
             konu_match = re.search(r'Konu\s*(?::|\n)(.*?)(?=\nİlgi|\nT\.C\.|\nDAĞITIM|\nOkul ve kurumlarda)', ilk_sayfa, re.DOTALL | re.IGNORECASE)
@@ -968,20 +981,42 @@ def meb_pdf_oku(dosya: UploadFile = File(...)):
                 if sayi and sayi in konu:
                     konu = konu.replace(sayi, "").replace(":", "").strip()
 
-            # --- KULLANICI TALEBİ: GELDİĞİ YER (KURUM) SİSTEMDEN OTOMATİK ALINACAK ---
-            # PDF'in karmaşık yapısıyla uğraşmak yerine direkt sistemdeki Okul Adı + Müdürlüğü kullanılıyor.
-            ayar = ayarlari_al()
-            okul_adi = ayar.get("okul_adi", "").strip()
+            # --- YAZI TEBLİĞİ VE İHALE İÇİN GELDİĞİ YER (KURUM) OCR İLE BULMA ---
+            kurum = "Okul Müdürlüğü"
+            satirlar = [s.strip() for s in ilk_sayfa.split('\n') if s.strip()]
             
-            if okul_adi:
-                okul_lower = okul_adi.lower().replace('ı', 'i').replace('i̇', 'i')
-                # Eğer içinde "müdürlüğü" geçmiyorsa ekle
-                if "müdürlüğü" not in okul_lower and "müdürlük" not in okul_lower:
-                    kurum = f"{okul_adi} Müdürlüğü"
-                else:
-                    kurum = okul_adi
-            else:
-                kurum = "Okul Müdürlüğü"
+            for i, satir in enumerate(satirlar):
+                if 'T.C.' in satir:
+                    for j in range(1, 6):
+                        if i + j < len(satirlar):
+                            aday = satirlar[i + j]
+                            # Bitiş şartları
+                            if any(x in aday for x in ['Sayı', 'Konu', 'Tarih', 'İletişim', 'Tel:', 'Adres', 'Kep', 'Bu belge', 'Doğrulama', '1 /', '2 /', '3 /', '4 /']):
+                                break
+                            # Geçerli kurum kelimeleri
+                            if any(x in aday for x in ['Müdürlüğü', 'Müdürlügü', 'Lisesi', 'Okulu', 'Bakanlığı', 'Başkanlığı', 'Kurumu', 'Merkezi', 'Enstitüsü', 'Anaokulu', 'Kaymakamlığı', 'Valiliği']):
+                                kurum = aday
+                    break
+                    
+            # Baş harflerini büyüt
+            def turkce_title(metin):
+                if not metin: return ""
+                return " ".join([k.capitalize() for k in metin.split()])
+            
+            kurum = turkce_title(kurum)
+            
+            if kurum == "Okul Müdürlüğü" or not kurum:
+                kurum = ""
+            
+            if not kurum:
+                for satir in satirlar:
+                    s_lower = satir.replace('I','ı').replace('İ','i').lower()
+                    if s_lower.endswith("ne") or s_lower.endswith("na"):
+                        continue
+                    if "müdürlü" in s_lower or "kaymakamlı" in s_lower or "valili" in s_lower or "bakanlı" in s_lower or "başkanlı" in s_lower:
+                        kurum = satir.replace("lçe", "İlçe").replace("E itim", "Eğitim").replace("Müdürlü ü", "Müdürlüğü").replace("Müdürlüg ü", "Müdürlüğü")
+                        kurum = kurum.strip().title()
+                        break
 
             ana_klasor, _ = pdf_klasoru_hazirla()
             gecici_klasor = os.path.join(ana_klasor, "_gecici_meb_yazilari")
@@ -1025,7 +1060,7 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
             try:
                 islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Bireysel tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
-                motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, yol, yuklenen_pdf)
+                motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, veri.teblig_saati, yol, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
                 islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Bireysel tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:

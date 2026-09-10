@@ -1123,7 +1123,7 @@ async function ihaleKomisyonModalAc() {
     yuklemeGoster("Personel listesi alınıyor...");
     try {
         if (typeof tumPersoneller === 'undefined' || tumPersoneller.length === 0) {
-            const res = await fetch("http://localhost:8000/personeller");
+            const res = await fetch("http://localhost:8000/personeller?t=" + new Date().getTime());
             const responseData = await res.json();
             tumPersoneller = responseData.personeller || [];
         }

@@ -812,7 +812,7 @@ const API = 'http://127.0.0.1:8000';
         // --- 5. YAZI TEBLİĞİ VE AYARLAR ---
                
         function personelleriYukle() {
-            return fetch(`${API}/personeller`).then(res => res.json()).then(veri => {
+            return fetch(`${API}/personeller?t=${new Date().getTime()}`).then(res => res.json()).then(veri => {
                 // Herkes seçili DEĞİL ve manuel olarak da eklenmemiş şekilde (tertemiz) başlar.
                 tumPersoneller = veri.personeller.map(p => ({ ...p, secili: false, manuelEklendi: false }));
                 
@@ -975,8 +975,9 @@ const API = 'http://127.0.0.1:8000';
                 kurum: document.getElementById('t-kurum') ? document.getElementById('t-kurum').value : "",
                 eden: { ad: edenAd, gorev: edenGorev },
                 edilen: { ad: edilenAd, gorev: edilenGorev },
-                yer: document.getElementById('b-yer').value,
+                yer: document.getElementById('b-yer') ? document.getElementById('b-yer').value : "Okul Müdürlüğü",
                 teblig_tarihi: document.getElementById('b-tarih') ? document.getElementById('b-tarih').value : null,
+                teblig_saati: document.getElementById('b-saat') ? document.getElementById('b-saat').value : null,
                 gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : ""
             };
             fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {

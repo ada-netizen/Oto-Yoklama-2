@@ -357,7 +357,7 @@
     </div>
 
     <!-- PERSONEL GRUP YÖNETİM MODALI -->
-    <div id="personel_grup_yonetim_modal" class="modal-overlay" style="z-index: 1100;">
+    <div id="personel_grup_yonetim_modal" class="modal-overlay" style="z-index: 2100;">
         <div class="modal-content"
             style="width: 450px; max-width: 95vw; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 0;">
             <div class="modal-header">
@@ -885,7 +885,7 @@
                                     </div>
                                     <div>
                                         <label
-                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tarih
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebliğ Tarihi
                                             <span style="font-weight: normal; font-size: 10px; opacity: 0.8;">(Boş
                                                 bırakılırsa
                                                 bugün)</span></label>
@@ -894,8 +894,14 @@
                                     </div>
                                     <div>
                                         <label
-                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Yer
-                                            ve Saat</label>
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebliğ Saati
+                                            <span style="font-weight: normal; font-size: 10px; opacity: 0.8;">(Örn: 14:00)</span></label>
+                                        <input type="time" id="b-saat"
+                                            style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;">
+                                    </div>
+                                    <div style="grid-column: 1 / -1;">
+                                        <label
+                                            style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Tebliğ Edildiği Yer</label>
                                         <input type="text" id="b-yer" value="Okul Müdürlüğü"
                                             style="box-sizing: border-box; width: 100%; padding: 10px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s;">
                                     </div>
@@ -1681,8 +1687,8 @@
         </div>
     </div>
 
-    <script src="js/core.js?v=2"></script>
-    <script src="js/personel_teblig.js"></script>
+    <script src="js/core.js?v=3"></script>
+    <script src="js/personel_teblig.js?v=3"></script>
     <script src="js/ihale.js"></script>
     <script>
         lucide.createIcons();

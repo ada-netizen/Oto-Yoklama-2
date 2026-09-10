@@ -330,7 +330,7 @@
                     <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size:11px;">${p.gorev}</td>
                     <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
                         <button class="icon-btn" style="color:var(--tree-sel);" onclick="personelDuzenleBaslat('${p.ad}')" title="Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
-                        <button class="icon-btn" style="color:#EF4444;" onclick="personelSil('${p.ad}')" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
+                        <button class="icon-btn" style="color:#EF4444;" onclick="yonetimPersonelSil('${p.ad}')" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
                     </td>
                 `;
                 govde.appendChild(satir);
@@ -411,7 +411,7 @@
             }
         }
 
-        function personelSil(ad) {
+        function yonetimPersonelSil(ad) {
             if(!confirm(`${ad} adlı personeli silmek istediğinize emin misiniz?`)) return;
             fetch(`${API}/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
                 bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");

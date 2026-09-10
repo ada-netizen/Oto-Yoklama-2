@@ -450,12 +450,10 @@ class PDFYoneticisi:
             c.drawString(250, y_pos, str(satir[2]))
             c.drawString(350, y_pos, str(satir[3]))
             c.drawString(450, y_pos, str(satir[4]))
-            y_pos -= 15
-
         c.save()
         return True, ""
 
-    def bireysel_teblig_ciz(self, kurum, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, teblig_tarihi, kayit_yeri, yuklenen_pdf=None):
+    def bireysel_teblig_ciz(self, kurum, sayi, konu, yazi_tarihi, t_eden, t_edilen, t_yeri, teblig_tarihi, teblig_saati, kayit_yeri, yuklenen_pdf=None):
         from reportlab.lib.pagesizes import A4
         from reportlab.platypus import Table, TableStyle, Paragraph
         from reportlab.lib import colors
@@ -477,6 +475,11 @@ class PDFYoneticisi:
             bugun = teblig_tarihi
         else:
             bugun = datetime.now().strftime("%d/%m/%Y")
+            
+        if teblig_saati:
+            saat_str = f" - {teblig_saati}"
+        else:
+            saat_str = ""
         
         def turkce_title(metin):
             if not metin: return ""
@@ -500,25 +503,24 @@ class PDFYoneticisi:
             c.drawCentredString(genislik / 2, baslangic_y, self.metin_duzelt("TEBLİĞ - TEBELLÜĞ BELGESİ"))
             
             data = [
-                [Paragraph(self.metin_duzelt("TEBLİĞ YAPILACAK<br/>YAZININ TARİHİ VE SAYISI"), style_n), Paragraph(self.metin_duzelt(f"{kurum}'nün {yazi_tarihi} tarih ve {sayi} sayılı yazısı."), style_n)],
+                [Paragraph(self.metin_duzelt("TEBLİĞ YAPILACAK<br/>BELGENİN TARİHİ VE SAYISI"), style_n), Paragraph(self.metin_duzelt(f"{kurum}'nün {yazi_tarihi} tarih ve {sayi} sayılı yazısı."), style_n)],
                 [Paragraph(self.metin_duzelt("YAZININ ÖZÜ"), style_n), Paragraph(self.metin_duzelt(konu), style_n)],
-                [Paragraph(self.metin_duzelt("TEBLİĞ EDİLDİĞİ YER<br/>VE SAAT"), style_n), Paragraph(self.metin_duzelt(f"{t_yeri}"), style_n)],
-                [Paragraph(self.metin_duzelt("&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda bilgileri verilen belgeyi tebliğ aldım."), style_n), ''],
+                [Paragraph(self.metin_duzelt("TEBLİĞ EDİLDİĞİ YER"), style_n), Paragraph(self.metin_duzelt(f"{t_yeri}"), style_n)],
+                [Paragraph(self.metin_duzelt("TEBLİĞ TARİHİ VE SAATİ"), style_n), Paragraph(self.metin_duzelt(f"{bugun}{saat_str}"), style_n)],
                 [[Paragraph(self.metin_duzelt("TEBLİĞ EDEN"), style_cb),
-                  Paragraph(self.metin_duzelt(f"<br/>{bugun}<br/>İmza<br/>{t_eden['ad']}<br/>{t_eden['gorev']}"), style_c)],
+                  Paragraph(self.metin_duzelt(f"<br/><br/>İmza<br/>{t_eden['ad']}<br/>{t_eden['gorev']}"), style_c)],
                  [Paragraph(self.metin_duzelt("TEBELLÜĞ EDEN"), style_cb),
-                  Paragraph(self.metin_duzelt(f"<br/>{bugun}<br/>İmza<br/>{t_edilen['ad']}<br/>{t_edilen['gorev']}"), style_c)]]
+                  Paragraph(self.metin_duzelt(f"<br/><br/>İmza<br/>{t_edilen['ad']}<br/>{t_edilen['gorev']}"), style_c)]]
             ]
             
             col_widths = [genislik * 0.4, genislik * 0.5]
             
             t = Table(data, colWidths=col_widths)
             t.setStyle(TableStyle([
-                ('GRID', (0,0), (-1,2), 1, colors.black),
-                ('BOX', (0,3), (-1,3), 1, colors.black),
-                ('SPAN', (0,3), (1,3)),
+                ('GRID', (0,0), (-1,3), 1, colors.black),
                 ('BOX', (0,4), (-1,4), 1, colors.black),
                 ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+                ('LINEBEFORE', (1,4), (1,4), 1, colors.black),
                 ('BOTTOMPADDING', (0,0), (-1,-1), 8),
                 ('TOPPADDING', (0,0), (-1,-1), 8),
             ]))
