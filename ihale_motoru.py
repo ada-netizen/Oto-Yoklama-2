@@ -73,7 +73,9 @@ def _idare_adi_olustur(baslik=None, okul_adi=None):
         if isinstance(deger, str):
             metin = deger.replace("\\n", "\n").strip()
             if metin:
-                adaylar.append(" ".join(s.strip() for s in metin.split("\n") if s.strip()))
+                satirlar = [s.strip() for s in metin.split("\n") if s.strip()]
+                if satirlar:
+                    adaylar.append(satirlar[-1])
     if not adaylar:
         return "İdare Müdürlüğü"
 
@@ -568,14 +570,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
         
     konu = get_ihale_konu(veri)
     
-    baslik = veri.get("resmi_baslik", "")
-    lines = [L.strip() for L in baslik.split("\n") if L.strip()]
-    if len(lines) >= 3:
-        idare_adi = lines[2]
-    elif lines:
-        idare_adi = lines[-1]
-    else:
-        idare_adi = "Gazi Mustafa Kemal Anadolu Lisesi Müdürlüğü"
+    idare_adi = _idare_adi_olustur(veri.get("resmi_baslik", ""))
     
     table_data = []
     
@@ -808,8 +803,9 @@ def uret_yaklasik_maliyet_excel(veri, hedef_klasor):
     tarih = format_date(veri.get("belge_tarihi", ""))
     konu = veri.get("konu", "K─▒rtasiye Al─▒m─▒")
     
-    ws.cell(row=3, column=1, value="─░darenin Ad─▒").font = normal_font
-    ws.cell(row=3, column=2, value=": Gazi Mustafa Kemal Anadolu Lisesi M├╝d├╝rl├╝─ş├╝").font = normal_font
+    idare_adi = _idare_adi_olustur(veri.get("resmi_baslik", ""))
+    ws.cell(row=3, column=1, value="İdarenin Adı").font = normal_font
+    ws.cell(row=3, column=2, value=f": {idare_adi}").font = normal_font
     ws.merge_cells('B3:E3')
     ws.cell(row=3, column=14, value="─░darece Tespit\nve Takdir Edilen\nYakla┼ş─▒k Maliyet\n(KDV Hari├ğ)").font = normal_font
     ws.cell(row=3, column=14).alignment = center_align
@@ -958,7 +954,7 @@ def uret_yaklasik_maliyet_excel(veri, hedef_klasor):
     
     r += 3
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=15)
-    c_s = ws.cell(row=r, column=1, value="Y A K L A ┼Ş I K   M A L ─░ Y E T ─░   Y A P A N   G ├û R E V L ─░ / G ├û R E V L ─░ L E R")
+    c_s = ws.cell(row=r, column=1, value="Y A K L A Ş I K   M A L İ Y E T İ   Y A P A N   G Ö R E V L İ / G Ö R E V L İ L E R")
     c_s.font = normal_font
     c_s.alignment = center_align
     
@@ -975,7 +971,7 @@ def uret_yaklasik_maliyet_excel(veri, hedef_klasor):
             c_isim.font = normal_font
             c_isim.alignment = center_align
             
-            title = "Ba┼şkan" if idx == 0 else "├£ye"
+            title = "Başkan" if idx == 0 else "Üye"
             c_unvan = ws.cell(row=r+1, column=cols[idx], value=title)
             c_unvan.font = normal_font
             c_unvan.alignment = center_align
@@ -1313,7 +1309,8 @@ def uret_ozel_fiyat_isteme_excel(veri, hedef_klasor):
             c_isim.font = normal_font
             c_isim.alignment = center_align
             
-            c_unvan = ws.cell(row=r+1, column=col_pos, value="Öğretmen")
+            gorev = "Başkan" if idx == 0 else "Üye"
+            c_unvan = ws.cell(row=r+1, column=col_pos, value=gorev)
             c_unvan.font = normal_font
             c_unvan.alignment = center_align
     r += 3
@@ -2013,8 +2010,9 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
     if not komisyon_uyeleri: komisyon_uyeleri = ["", "", ""]
     
     imza_data = [[]]
-    for uye in komisyon_uyeleri:
-        imza_data[0].append(Paragraph(f"{uye}<br/>Öğretmen", style_center))
+    for idx, uye in enumerate(komisyon_uyeleri):
+        gorev = "Başkan" if idx == 0 else "Üye"
+        imza_data[0].append(Paragraph(f"{uye}<br/>{gorev}", style_center))
         
     col_w = 277*mm / max(len(komisyon_uyeleri), 1)
     sig_table = Table(imza_data, colWidths=[col_w] * len(komisyon_uyeleri))
@@ -2288,7 +2286,8 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
     for idx, uye in enumerate(komisyon_uyeleri):
         col = 1 + idx*step
         ws.cell(row=r, column=col, value=uye).alignment = center_align
-        ws.cell(row=r+1, column=col, value="Öğretmen").alignment = center_align
+        gorev = "Başkan" if idx == 0 else "Üye"
+        ws.cell(row=r+1, column=col, value=gorev).alignment = center_align
         
     ws.cell(row=r+4, column=1, value="*Piyasa Fiyat Araştırması yapılacak kişi / firma, yer sayısına ve Piyasa Fiyat Araştırması için görevlendirilecek personelin sayısına ihale yetkilisi karar verebilecektir.").font = Font(name='Arial', size=7)
         
