@@ -12,3 +12,5 @@ PyInstaller
 graphifyy==0.9.56
 pytest
 httpx
+
+xlrd

@@ -74,7 +74,17 @@ def dosyayi_otomatik_ac(dosya_yolu):
     except Exception as e:
         logging.error(f"dosyayi_otomatik_ac hatasi ({dosya_yolu}): {e}")
 
-app = FastAPI(title="Elektronik Okul API V2")
+app = FastAPI(title="Elektronik Okul Sistemi API")
+
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    error_msg = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    logging.error(f"UNHANDLED EXCEPTION in {request.url.path}: {error_msg}")
+    return JSONResponse(status_code=500, content={"basarili": False, "mesaj": f"Beklenmeyen sunucu hatası: {str(exc)}"})
 
 class LogMessage(BaseModel):
     level: str
@@ -219,7 +229,14 @@ async def excel_onizle(dosya: UploadFile = File(...), tur: str = Form("personel"
             except UnicodeDecodeError:
                 df_ham = pd.read_csv(temp_yol, header=None, encoding="cp1254")
         else:
-            df_ham = pd.read_excel(temp_yol, header=None)
+            try:
+                df_ham = pd.read_excel(temp_yol, header=None)
+            except Exception:
+                try:
+                    df_list = pd.read_html(temp_yol, header=None)
+                    df_ham = max(df_list, key=len) if df_list else pd.DataFrame()
+                except Exception:
+                    df_ham = pd.read_csv(temp_yol, header=None, on_bad_lines='skip')
         if df_ham.empty:
             return {"basarili": False, "mesaj": "Dosya boş."}
 
@@ -237,7 +254,14 @@ async def excel_onizle(dosya: UploadFile = File(...), tur: str = Form("personel"
             except UnicodeDecodeError:
                 df = pd.read_csv(temp_yol, header=header_idx, encoding="cp1254")
         else:
-            df = pd.read_excel(temp_yol, header=header_idx)
+            try:
+                df = pd.read_excel(temp_yol, header=header_idx)
+            except Exception:
+                try:
+                    df_list = pd.read_html(temp_yol, header=header_idx)
+                    df = max(df_list, key=len) if df_list else pd.DataFrame()
+                except Exception:
+                    df = pd.read_csv(temp_yol, header=header_idx, on_bad_lines='skip')
         df.columns = [str(sutun).strip() for sutun in df.columns]
 
         hatalar = []
@@ -250,7 +274,8 @@ async def excel_onizle(dosya: UploadFile = File(...), tur: str = Form("personel"
                 if eksik_ad:
                     hatalar.append(f"{eksik_ad} satırda ad-soyad eksik.")
 
-        onizleme = df.fillna("").head(20).astype(str).to_dict(orient="records")
+        onizleme_kayitlar = df.head(20).to_dict(orient="records")
+        onizleme = [{str(k): (str(v) if pd.notna(v) else "") for k, v in row.items()} for row in onizleme_kayitlar]
         return {
             "basarili": True,
             "tur": tur,
@@ -265,7 +290,10 @@ async def excel_onizle(dosya: UploadFile = File(...), tur: str = Form("personel"
         return {"basarili": False, "mesaj": f"Dosya önizlenemedi: {e}"}
     finally:
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 @app.get("/islem-durumu/{job_id}")
 def islem_durumu(job_id: str):
@@ -297,7 +325,10 @@ def ogrenci_isleme_gorevi(temp_yol, job_id):
         islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
     finally:
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 def devamsizlik_isleme_gorevi(temp_yol, job_id):
     try:
@@ -325,7 +356,10 @@ def devamsizlik_isleme_gorevi(temp_yol, job_id):
         islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
     finally:
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 def personel_isleme_gorevi(temp_yol, job_id):
     try:
@@ -338,7 +372,14 @@ def personel_isleme_gorevi(temp_yol, job_id):
             if "AD" in satir_metni and "SOYAD" in satir_metni:
                 header_idx = i
                 break
-        df = pd.read_excel(temp_yol, header=header_idx)
+        try:
+            df = pd.read_excel(temp_yol, header=header_idx)
+        except Exception:
+            try:
+                df_list = pd.read_html(temp_yol, header=header_idx)
+                df = max(df_list, key=len) if df_list else pd.DataFrame()
+            except Exception:
+                df = pd.read_csv(temp_yol, header=header_idx, on_bad_lines='skip')
         df.columns = df.columns.str.strip().str.upper()
         if df.empty:
             islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Excel dosyası boş."}
@@ -362,7 +403,10 @@ def personel_isleme_gorevi(temp_yol, job_id):
         islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
     finally:
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 app.add_middleware(
     CORSMiddleware,
@@ -380,6 +424,11 @@ islem_loglari = []
 
 def islem_logla(seviye, islem, mesaj):
     """Kullanıcıya gösterilebilecek hassas olmayan işlem kaydı oluşturur."""
+    if seviye.lower() == "hata":
+        logging.error(f"İşlem Hatası: {islem} - {mesaj}")
+    else:
+        logging.info(f"İşlem Kaydı: {islem} - {mesaj}")
+        
     kayit = {
         "zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "seviye": seviye,
@@ -491,7 +540,10 @@ def gecici_dosya_olustur(dosya: UploadFile, prefix="temp_"):
         yield temp_yol
     finally:
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 
 _son_ayarlar_mtime = 0
@@ -622,9 +674,12 @@ async def devamsizlik_excel_yukle(background_tasks: BackgroundTasks, dosya: Uplo
         return {"basarili": False, "mesaj": hata}
     job_id = str(uuid.uuid4())
     islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya aliniyor...", "yuzde": 0}
-    temp_yol = f"temp_dev_{job_id}{uzanti}"
-    with open(temp_yol, "wb") as buffer:
-        shutil.copyfileobj(dosya.file, buffer)
+    temp_yol = os.path.join(tempfile.gettempdir(), f"temp_dev_{job_id}{uzanti}")
+    try:
+        with open(temp_yol, "wb") as buffer:
+            shutil.copyfileobj(dosya.file, buffer)
+    except Exception as e:
+        return {"basarili": False, "mesaj": f"Sunucuya kaydedilemedi: {e}"}
     background_tasks.add_task(devamsizlik_isleme_gorevi, temp_yol, job_id)
     return {"basarili": True, "job_id": job_id}
 
@@ -808,7 +863,10 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
         return {"basarili": False, "mesaj": str(e)}
     finally:
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 
 def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id):
@@ -822,7 +880,10 @@ def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id):
     except Exception as e:
         islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e), "yuzde": 100}
         if os.path.exists(temp_yol):
-            os.remove(temp_yol)
+            try:
+                os.remove(temp_yol)
+            except Exception:
+                pass
 
 
 @app.post("/personel-excel-yukle")
@@ -1605,3 +1666,35 @@ def personel_sifirla():
         return {"basarili": True, "mesaj": "Tüm personel silindi."}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import sys
+import os
+
+def resource_path_api(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(os.path.dirname(__file__))
+    return os.path.join(base_path, relative_path)
+
+js_dir = resource_path_api('js')
+if os.path.isdir(js_dir):
+    app.mount('/js', StaticFiles(directory=js_dir), name='js')
+
+sab_dir = resource_path_api('sablonlar')
+if os.path.isdir(sab_dir):
+    app.mount('/sablonlar', StaticFiles(directory=sab_dir), name='sablonlar')
+
+@app.get('/')
+def read_index():
+    return FileResponse(resource_path_api('index.html'))
+
+@app.get('/style.css')
+def read_style():
+    return FileResponse(resource_path_api('style.css'))
+
+@app.get('/lucide.min.js')
+def read_lucide():
+    return FileResponse(resource_path_api('lucide.min.js'))

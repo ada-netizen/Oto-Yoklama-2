@@ -18,6 +18,9 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
+import sys
+sys.stderr = open('crash.log', 'w')
+sys.stdout = open('crash.log', 'a')
 
 # api.py içindeki FastAPI motorumuzu (app) buraya çağırıyoruz
 from api import app
@@ -182,7 +185,7 @@ if __name__ == '__main__':
     # 4. Modern masaüstü penceresini oluştur ve HTML'i içine göm!
     pencere = webview.create_window(
         title='Elektronik Okul Sistemi V2',
-        url=html_yolu,
+        url='http://127.0.0.1:8000/',
         width=kayitli["width"],
         height=kayitli["height"],
         x=kayitli["x"],
