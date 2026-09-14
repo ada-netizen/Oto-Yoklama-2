@@ -104,14 +104,7 @@ import os
 
 @app.get("/olcu-birimleri")
 def olcu_birimleri_getir():
-    try:
-        import pandas as pd
-        df = pd.read_excel('ölçü birimleri.xlsx', header=None)
-        birimler = df[0].dropna().tolist()
-        return {"birimler": birimler or VARSAYILAN_OLCU_BIRIMLERI}
-    except Exception as e:
-        logging.error(f"Ölçü birimleri okunurken hata: {e}")
-        return {"birimler": VARSAYILAN_OLCU_BIRIMLERI}
+    return {"birimler": VARSAYILAN_OLCU_BIRIMLERI}
 
 class SablonVerisi(BaseModel):
     kalemler: List[Dict]
@@ -335,13 +328,13 @@ def devamsizlik_isleme_gorevi(temp_yol, job_id):
         islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabani okunuyor...", "yuzde": 10}
         mevcut_ogrenciler, mevcut_devamsizliklar = db.yukle()
         islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Excel ayristiriliyor...", "yuzde": 40}
-        yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, mevcut_devamsizliklar)
+        yeni_liste, eklenen, hata = ExcelMotoru.devamsizlik_oku(temp_yol, [])
         if hata:
             islem_durumlari[job_id] = {"durum": "hata", "mesaj": hata}
             islem_logla("hata", "Devamsızlık aktarımı", hata)
             return
         if eklenen > 0 and len(yeni_liste) > 0:
-            mevcut_devamsizliklar.extend(yeni_liste)
+            mevcut_devamsizliklar = yeni_liste
             islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 80}
             basarili, hata = db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)
             if not basarili:
@@ -707,20 +700,11 @@ def devamsizlik_sil(d_id: str):
 
 @app.post("/devamsizlik-manuel-ekle")
 def devamsizlik_manuel_ekle(veri: DevamsizlikEkleRequest):
-    ogrenciler, devler = db.yukle()
-    yeni = {
-        "id": str(uuid.uuid4().hex),
-        "no": veri.no,
-        "tarih": veri.tarih,
-        "tur": veri.tur,
-        "gun": veri.gun,
-        "secili": False
-    }
-    devler.append(yeni)
-    basarili, hata = db.kaydet(ogrenciler, devler)
-    if not basarili:
-        return {"basarili": False, "mesaj": f"Devamsızlık kaydedilemedi: {hata}"}
-    return {"basarili": True, "mesaj": "Manuel devamsızlık eklendi."}
+    # PDF için takvimden seçilen geçici tarihlerin kalıcı olmasını tamamen engellemek
+    # adına bu fonksiyon artık veritabanına kayıt YAPMAMAKTADIR.
+    # Tarayıcı önbelleğinde (cache) kalan eski JS kodları bu isteği atsa bile 
+    # artık veritabanına yansımayacaktır.
+    return {"basarili": True, "mesaj": "Manuel devamsızlıklar artık kalıcı kaydedilmiyor."}
 
 
 @app.post("/pdf-veli-formu")
@@ -1121,7 +1105,13 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
             try:
                 islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Bireysel tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
-                motor.bireysel_teblig_ciz(veri.kurum, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, veri.teblig_saati, yol, yuklenen_pdf)
+                
+                # Geldiği yer (kurum) "Müdürlüğü" ile bitmiyorsa ekle
+                kurum_adi = veri.kurum.strip() if veri.kurum else ""
+                if kurum_adi and not kurum_adi.lower().endswith("müdürlüğü"):
+                    kurum_adi += " Müdürlüğü"
+                    
+                motor.bireysel_teblig_ciz(kurum_adi, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, veri.teblig_saati, yol, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
                 islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Bireysel tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:
@@ -1145,7 +1135,10 @@ def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks
     
     yol = os.path.join(teblig_klasoru, f"Toplu_Imza_Sirkusu_{datetime.now().strftime('%d_%m_%Y_%H%M')}.pdf")
     try:
-        kurum = veri.kurum
+        kurum_adi = veri.kurum.strip() if veri.kurum else ""
+        if kurum_adi and not kurum_adi.lower().endswith("müdürlüğü"):
+            kurum_adi += " Müdürlüğü"
+            
         yuklenen_pdf = veri.gecici_pdf_yolu
         personeller_dict = [p.model_dump() for p in veri.personeller]
         job_id = str(uuid.uuid4())
@@ -1155,7 +1148,7 @@ def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks
             try:
                 islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Toplu tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
-                motor.teblig_tebellug_ciz(veri.sayi, veri.konu, veri.tarih, personeller_dict, yol, kurum, yuklenen_pdf)
+                motor.teblig_tebellug_ciz(veri.sayi, veri.konu, veri.tarih, personeller_dict, yol, kurum_adi, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
                 islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Toplu tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:

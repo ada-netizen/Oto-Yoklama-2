@@ -299,9 +299,7 @@ function ihaleSifirla() {
         icerik.style.justifyContent = "center";
         lucide.createIcons();
         
-        document.getElementById("ihale_adim2_alani").style.display = "none";
-        document.getElementById("ihale_adim3_alani").style.display = "none";
-        
+
         bildirimGoster("İhale tamamlandı ve yeni ihale için ekran temizlendi.", "basarili");
     }
 }
@@ -426,7 +424,7 @@ function ihaleBaslat() {
         </div>
         <div class="accordion-item" id="acc_adim4" style="display: none;">
             <div class="accordion-header" onclick="toggleAcc('adim4')">
-                <div class="acc-title"><i data-lucide="banknote" width="18" height="18"></i> 4. Adım: Harcama Ekleme</div>
+                <div class="acc-title"><i data-lucide="check-square" width="18" height="18"></i> 4. Adım: İhale Onayı</div>
                 <div class="acc-actions">
                     <i data-lucide="check-circle" class="acc-check" id="check_adim4" width="18" height="18" style="display:none; color:#10B981;"></i>
                     <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
@@ -437,7 +435,7 @@ function ihaleBaslat() {
 
         <div class="accordion-item" id="acc_adim5" style="display: none;">
             <div class="accordion-header" onclick="toggleAcc('adim5')">
-                <div class="acc-title"><i data-lucide="check-square" width="18" height="18"></i> 5. Adım: İhale Onayı</div>
+                <div class="acc-title"><i data-lucide="banknote" width="18" height="18"></i> 5. Adım: Harcama Ekleme</div>
                 <div class="acc-actions">
                     <i data-lucide="check-circle" class="acc-check" id="check_adim5" width="18" height="18" style="display:none; color:#10B981;"></i>
                     <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
@@ -485,6 +483,16 @@ function ihaleBaslat() {
                 </div>
             </div>
             <div class="accordion-content" id="acc_adim9_icerik"></div>
+        </div>
+        <div class="accordion-item" id="acc_adim10" style="display: none;">
+            <div class="accordion-header" onclick="toggleAcc('adim10')">
+                <div class="acc-title"><i data-lucide="globe" width="18" height="18"></i> 10. Adım: EKAP Giriş</div>
+                <div class="acc-actions">
+                    <i data-lucide="check-circle" class="acc-check" id="check_adim10" width="18" height="18" style="display:none; color:#10B981;"></i>
+                    <i data-lucide="chevron-down" class="acc-arrow" width="18" height="18"></i>
+                </div>
+            </div>
+            <div class="accordion-content" id="acc_adim10_icerik"></div>
         </div>
     `;
     lucide.createIcons();
@@ -695,33 +703,14 @@ function adim3Ileri() {
 function ihaleAdim4Goster() {
     const alan = document.getElementById("acc_adim4_icerik");
     alan.innerHTML = `
-        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
-            <div class="settings-card-body" style="padding: 0;">
-                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Şimdi MYS üzerinden Harcama Ekleme adımlarını gerçekleştirin. Yaklaşık Maliyet şablonu otomatik olarak hazırlanmıştır.</p>
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border);">
-                            <th style="padding: 10px; color: var(--fg-main); width: 50px;">Sıra</th>
-                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
-                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
-                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Şablonu</td>
-                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="sablonIndir()"><i data-lucide="download" width="14" height="14"></i> Excel Üret</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-                <div style="margin-top: 20px; text-align: right;">
-                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim4Ileri()">
-                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: İhale Onayı
-                    </button>
-                </div>
-            </div>
+        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+            <label for="ebys_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">EBYS platformu üzerinden ihale onayı alındı mı?</label>
+            <input type="checkbox" id="ebys_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim4_btn_container').style.display = this.checked ? 'block' : 'none';">
+        </div>
+        <div id="adim4_btn_container" style="display: none; text-align: right;">
+            <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim4Ileri()">
+                <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Harcama Ekleme
+            </button>
         </div>
     `;
     lucide.createIcons();
@@ -760,14 +749,33 @@ function sablonIndir() {
 function ihaleAdim5Goster() {
     const alan = document.getElementById("acc_adim5_icerik");
     alan.innerHTML = `
-        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
-            <label for="ebys_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">EBYS platformu üzerinden ihale onayı alındı mı?</label>
-            <input type="checkbox" id="ebys_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim5_btn_container').style.display = this.checked ? 'block' : 'none';">
-        </div>
-        <div id="adim5_btn_container" style="display: none; text-align: right;">
-            <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim5Ileri()">
-                <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Piyasa Fiyat Araştırması
-            </button>
+        <div class="settings-card" style="flex: 1; border: none; background: transparent; padding: 0;">
+            <div class="settings-card-body" style="padding: 0;">
+                <p style="color: var(--fg-sub); font-size: 13px; margin: 0 0 15px 0;">Şimdi MYS üzerinden Harcama Ekleme adımlarını gerçekleştirin. Yaklaşık Maliyet şablonu otomatik olarak hazırlanmıştır.</p>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border);">
+                            <th style="padding: 10px; color: var(--fg-main); width: 50px;">Sıra</th>
+                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
+                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
+                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Şablonu</td>
+                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="sablonIndir()"><i data-lucide="download" width="14" height="14"></i> Excel Üret</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim5Ileri()">
+                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: Piyasa Fiyat Araştırması
+                    </button>
+                </div>
+            </div>
         </div>
     `;
     lucide.createIcons();
@@ -957,10 +965,51 @@ function ihaleAdim9Goster() {
                         <button class="btn" style="background-color: #10B981; color: white; padding: 8px 15px; font-size: 13px; font-weight: bold;" onclick="belgeUret('mys_yaklasik_maliyet', 'excel', '${bugun}')"><i data-lucide="download" width="16" height="16"></i> Excel Olarak İndir</button>
                     </div>
                 </div>
+                
+                <div style="margin-top: 20px; text-align: right;">
+                    <button class="btn" style="background-color: #3B82F6; color: white; padding: 8px 20px; font-weight: bold;" onclick="adim9Ileri()">
+                        <i data-lucide="arrow-down" width="16" height="16"></i> İleri: EKAP Giriş
+                    </button>
+                </div>
             </div>
         </div>
     `;
     lucide.createIcons();
+}
+
+function adim9Ileri() {
+    document.getElementById("acc_adim9").classList.remove("open");
+    document.getElementById("check_adim9").style.display = "inline-block";
+    
+    document.getElementById("acc_adim10").style.display = "block";
+    ihaleAdim10Goster();
+    document.getElementById("acc_adim10").classList.add("open");
+}
+
+function ihaleAdim10Goster() {
+    const alan = document.getElementById("acc_adim10_icerik");
+    alan.innerHTML = `
+        <div style="padding: 15px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; border: 1px solid #10B981; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+            <label for="ekap_onay_check" style="font-size: 14px; font-weight: 500; cursor: pointer;">EKAP platformu üzerinden ihale girişleri yapıldı mı?</label>
+            <input type="checkbox" id="ekap_onay_check" style="width: 20px; height: 20px; cursor: pointer;" onchange="document.getElementById('adim10_btn_container').style.display = this.checked ? 'block' : 'none';">
+        </div>
+        
+        <div id="adim10_btn_container" style="display: none;">
+            <div style="display: flex; gap: 15px; align-items: center; justify-content: center; padding: 20px; background-color: var(--bg-card); border-radius: 8px; border: 1px solid var(--border);">
+                <i data-lucide="check-circle" width="32" height="32" style="color: #10B981;"></i>
+                <span style="font-size: 16px; font-weight: bold; color: var(--fg-main);">Tebrikler ihaleyi tamamladınız!</span>
+            </div>
+            <div style="margin-top: 20px; text-align: right;">
+                <button class="btn" style="background-color: #EF4444; color: white; padding: 8px 20px; font-weight: bold;" onclick="ihaleSifirla()">
+                    <i data-lucide="check-square" width="16" height="16"></i> İhaleyi Bitir
+                </button>
+            </div>
+        </div>
+    `;
+    lucide.createIcons();
+    
+    // Son adıma gelindiği için kalıcı olarak localStorage kaydedebiliriz
+    localStorage.setItem("ihale_aktif_adim", 10);
 }
 
 function ihaleKalemTablosunuCiz() {

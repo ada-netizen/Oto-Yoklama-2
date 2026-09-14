@@ -109,36 +109,60 @@
         }
 
         // --- 1. TÜMÜNÜ SEÇ/LİSTELE MOTORU ---
+        function dinamikTebligFiltreleriOlustur() {
+            const container = document.getElementById('dinamik_teblig_filtreleri');
+            if (!container) return;
+
+            let html = `
+                <input type="checkbox" id="grp_tumu" class="chip-checkbox" onchange="filtreTumuDegisti()">
+                <label for="grp_tumu" class="chip-label"><i data-lucide="users" width="14" height="14"></i> Tümü</label>
+            `;
+
+            tumPersonelGruplari.forEach((grup, idx) => {
+                const id = `grp_dinamik_${idx}`;
+                html += `
+                    <input type="checkbox" id="${id}" class="chip-checkbox dinamik-grp-checkbox" data-grup="${grup}" onchange="filtreleriHesapla()">
+                    <label for="${id}" class="chip-label"><i data-lucide="shield-check" width="14" height="14"></i> ${grup}</label>
+                `;
+            });
+
+            container.innerHTML = html;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
         function filtreTumuDegisti() {
-            const tumu = document.getElementById('grp_tumu').checked;
-            // Diğer tüm grupları otomatik olarak işaretle
-            if(document.getElementById('grp_idare')) document.getElementById('grp_idare').checked = tumu;
-            if(document.getElementById('grp_ogretmenler')) document.getElementById('grp_ogretmenler').checked = tumu;
-            if(document.getElementById('grp_diger')) document.getElementById('grp_diger').checked = tumu;
+            const tumu = document.getElementById('grp_tumu') ? document.getElementById('grp_tumu').checked : false;
             
-            // Tüm personeli manuelEklendi yap ki listeden silinmesinler
+            const checkboxes = document.querySelectorAll('.dinamik-grp-checkbox');
+            checkboxes.forEach(cb => cb.checked = tumu);
+            
             tumPersoneller.forEach(p => p.secili = tumu);
             personelTablosunuDoldur();
         }
 
         function filtreleriHesapla() {
-            const grp_idare = document.getElementById('grp_idare').checked;
-            const grp_ogr = document.getElementById('grp_ogretmenler').checked;
-            const grp_diger = document.getElementById('grp_diger').checked;
+            const checkboxes = document.querySelectorAll('.dinamik-grp-checkbox');
+            let allChecked = true;
+            
+            const seciliGruplar = new Set();
+            checkboxes.forEach(cb => {
+                if (cb.checked) {
+                    seciliGruplar.add(cb.getAttribute('data-grup'));
+                } else {
+                    allChecked = false;
+                }
+            });
 
-            // Master checkbox kontrolü
             if (document.getElementById('grp_tumu')) 
-                document.getElementById('grp_tumu').checked = (grp_idare && grp_ogr && grp_diger);
+                document.getElementById('grp_tumu').checked = allChecked;
 
             tumPersoneller.forEach(p => {
-                let uyarMi = false;
-                if (grp_idare && p.grup === 'İdare') uyarMi = true;
-                if (grp_ogr && p.grup === 'Öğretmenler') uyarMi = true;
-                if (grp_diger && p.grup === 'Diğer Personel') uyarMi = true;
-
+                let uyarMi = seciliGruplar.has(p.grup);
+                
                 if (uyarMi) p.secili = true;
                 else if (!p.manuelEklendi) p.secili = false;
             });
+
             personelTablosunuDoldur();
         }
 
@@ -166,11 +190,11 @@
                     const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
                     const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
                     govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
-                        <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
-                        <td>${p.grup}</td>
+                        <td><label for="chk_${i}" style="cursor:pointer; display:block;">${p.ad}</label></td>
                         <td>${gorev}</td>
                         <td>${brans}</td>
-                        <td><label for="chk_${i}" style="cursor:pointer; display:block;">${p.ad}</label></td>
+                        <td>${p.grup}</td>
+                        <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
                     </tr>`;
                 });
                 const masterKutu = document.getElementById('chk_master_personel');
@@ -225,7 +249,7 @@
         }
 
         function personelGruplariCiz() {
-            // Çipleri çiz
+            // Çipleri Çiz
             const cipContainer = document.getElementById('personel_filtre_cipleri');
             if (cipContainer) {
                 cipContainer.innerHTML = `<button class="filter-chip ${aktifPersonelFiltresi === 'Tümü' ? 'active' : ''}" onclick="personelFiltreAyarla('Tümü', this)">Tümü</button>`;
@@ -234,13 +258,13 @@
                     cipContainer.innerHTML += `<button class="filter-chip ${isActive}" onclick="personelFiltreAyarla('${grup}', this)">${grup}</button>`;
                 });
             }
-            
-            // Drawer select'i çiz
+
+            // Ayrıca "Personel Ekle/Yönet" ekranındaki Dropdown'ı doldur
             const drawerSelect = document.getElementById('drawer_grup');
             if (drawerSelect) {
                 drawerSelect.innerHTML = tumPersonelGruplari.map(g => `<option value="${g}">${g}</option>`).join('');
             }
-            
+
             // Grup yönetimi modali tablosunu çiz
             const govde = document.getElementById('personel_grup_govde');
             if (govde) {
@@ -248,12 +272,13 @@
                     <tr>
                         <td style="padding: 8px; border-bottom: 1px solid var(--border); color: var(--fg-main);">${g}</td>
                         <td style="padding: 8px; border-bottom: 1px solid var(--border); text-align: right;">
-                            <button class="icon-btn" style="color:#EF4444;" onclick="personelGrubuSil('${g}')" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
+                            <button class="icon-btn" style="color:#EF4444;" onclick="personelGrubuSil('${g.replace(/'/g, "\\'")}')" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
                         </td>
                     </tr>
                 `).join('');
             }
-            
+
+            dinamikTebligFiltreleriOlustur();
             yonetimPersonelTablosunuDoldur();
             if (typeof lucide !== 'undefined') {
                 setTimeout(() => lucide.createIcons(), 50);

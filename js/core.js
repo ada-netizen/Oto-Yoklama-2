@@ -283,7 +283,7 @@ const API = 'http://127.0.0.1:8000';
                     
                     for(let i=0; i<tamGun; i++) {
                         let gTarih = new Date(basTarih); gTarih.setDate(gTarih.getDate() + i);
-                        if (gTarih.getDay() !== 0 && gTarih.getDay() !== 6) devMap[`${gTarih.getMonth()+1}-${gTarih.getDate()}`] = tur;
+                        if (gTarih.getDay() !== 0 && gTarih.getDay() !== 6) devMap[`${gTarih.getFullYear()}-${gTarih.getMonth()+1}-${gTarih.getDate()}`] = tur;
                     }
                     if (gunMiktari <= 1) { if (basTarih.getDay() === 0 || basTarih.getDay() === 6) hsMiktari = gunMiktari; else hiMiktari = gunMiktari; } 
                     else {
@@ -306,14 +306,16 @@ const API = 'http://127.0.0.1:8000';
                     let tr = document.createElement('tr');
                     tr.innerHTML = `<td id="yillik_row_${rowIdx}" style="background-color: var(--border); color: var(--fg-main); font-weight: bold; padding: 4px; border: 1px solid var(--border);">${ayAd}</td>`;
                     
+                    let okulYili_baslangic = calMonth >= 7 ? calYear : calYear - 1;
                     for(let gun=1; gun<=31; gun++) {
-                        let is_valid = true, is_weekend = false; let y_val = ayNo < 8 ? calYear : calYear - 1; let dt = new Date(y_val, ayNo-1, gun);
+                        let y_val = ayNo < 8 ? okulYili_baslangic + 1 : okulYili_baslangic;
+                        let is_valid = true, is_weekend = false; let dt = new Date(y_val, ayNo-1, gun);
                         if (dt.getMonth() + 1 !== ayNo) is_valid = false; else if (dt.getDay() === 0 || dt.getDay() === 6) is_weekend = true;
 
                         let cellBg = karanlikMod ? "#1E293B" : "#F1F5F9"; let cellFg = "var(--fg-main)"; let cellText = ""; let isAbs = false;
                         if (!is_valid || is_weekend) { cellBg = karanlikMod ? "#0B1120" : "#D1D5DB"; } 
                         else {
-                            let devKey = `${ayNo}-${gun}`;
+                            let devKey = `${y_val}-${ayNo}-${gun}`;
                             if (devMap[devKey]) { cellText = devMap[devKey]; isAbs = true; cellBg = rH[cellText] || "#64748B"; cellFg = "#FFFFFF"; }
                         }
 
@@ -434,7 +436,7 @@ const API = 'http://127.0.0.1:8000';
                     bildirimGoster("Hata: " + durum.mesaj, "hata");
                 } else if(durum.durum === 'isleniyor' || durum.durum === 'basladi') {
                     yuklemeGoster(durum.mesaj + " (%" + durum.yuzde + ")");
-                    setTimeout(() => ilerlemeTakipEt(job_id), 500);
+                    setTimeout(() => ilerlemeTakipEt(job_id, tamamlaninca), 500);
                 } else {
                     yuklemeGizle();
                     bildirimGoster("Bilinmeyen bir durum olustu.", "hata");
@@ -763,13 +765,9 @@ const API = 'http://127.0.0.1:8000';
             const kayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili);
             if(kayitlar.length === 0) { bildirimGoster("Önizleme listesinde yazdırılacak kayıt yok!", "hata"); return; }
             
-            const geciciler = kayitlar.filter(d => d.id.startsWith('temp_'));
-            if(geciciler.length > 0) {
-                bildirimGoster("Manuel girdiğiniz kayıtlar veritabanına işleniyor, ardından PDF oluşturulacaktır.", "bilgi");
-                Promise.all(geciciler.map(g => {
-                    return fetch(`${API}/devamsizlik-manuel-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ no: seciliOgrenci.no, tarih: g.tarih, tur: g.tur, gun: g.gun }) });
-                })).then(() => { gercekPdfIstegiAt(kayitlar); verileriYukle(); });
-            } else { gercekPdfIstegiAt(kayitlar); }
+            // Seçilen günlerin doğrudan PDF motoruna gönderilmesi yeterlidir.
+            // Manuel seçimler veritabanına kaydedilmez, işlem sonrası zaten sıfırlanırlar.
+            gercekPdfIstegiAt(kayitlar);
         }
 
         function gercekPdfIstegiAt(kayitlar) {
@@ -1031,4 +1029,38 @@ const API = 'http://127.0.0.1:8000';
                 event.target.value = '';
             }).catch(() => { yuklemeGizle(); bildirimGoster("Bağlantı hatası!", "hata"); });
         }
+        // --- KLAVYE NAVİGASYONU (Öğrenci Listesi İçin) ---
+        document.addEventListener('keydown', function(e) {
+            if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA') return;
+            if (document.querySelector('.modal-overlay[style*="display: flex"]')) return;
+            
+            const izinSekmesi = document.getElementById('sekme_izin');
+            if (!izinSekmesi || !izinSekmesi.classList.contains('aktif')) return;
 
+            const govde = document.getElementById('tree_govde');
+            if (!govde) return;
+
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const satirlar = Array.from(govde.querySelectorAll('tr'));
+                if (satirlar.length === 0) return;
+
+                const secili = govde.querySelector('tr.tr-secili');
+                let hedefIndex = 0;
+
+                if (secili) {
+                    const currentIndex = satirlar.indexOf(secili);
+                    if (e.key === 'ArrowDown') {
+                        hedefIndex = currentIndex < satirlar.length - 1 ? currentIndex + 1 : currentIndex;
+                    } else if (e.key === 'ArrowUp') {
+                        hedefIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+                    }
+                }
+
+                const hedefSatir = satirlar[hedefIndex];
+                if (hedefSatir && hedefSatir !== secili) {
+                    hedefSatir.click();
+                    hedefSatir.scrollIntoView({ block: 'center', behavior: 'auto' });
+                }
+            }
+        });

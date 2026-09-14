@@ -1,5 +1,6 @@
 import os
 import io
+import re
 from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
@@ -283,7 +284,12 @@ class PDFYoneticisi:
         elements.append(Spacer(1, 15))
 
         # 4. PARAGRAF METNİ
-        if not kurum: kurum = "................................"
+        kurum = str(kurum).strip()
+        if not kurum: 
+            kurum = "................................"
+        else:
+            if not re.search(r"(MÜDÜRLÜĞÜ|MÜDÜRLÜK|OKULU|LİSESİ|ORTAOKULU|İLKOKULU|ANAOKULU|KAYMAKAMLIĞI|VALİLİĞİ|BAŞKANLIĞI)$", kurum, flags=re.IGNORECASE):
+                kurum = f"{kurum} Müdürlüğü"
         if not tarih: tarih = "..../..../20.."
         if not sayi: sayi = ".........."
         if not konu: konu = ".............................."
@@ -298,6 +304,9 @@ class PDFYoneticisi:
             Paragraph("İmza", cell_bold),
             Paragraph("İmza Tarihi", cell_bold)
         ]]
+
+        # Alfabetik sıralama (Ad'a göre)
+        personeller = sorted(personeller, key=lambda x: self.turkce_buyuk_harf(x.get('ad', '')))
 
         for i, p in enumerate(personeller):
             data.append([
@@ -460,6 +469,14 @@ class PDFYoneticisi:
         from reportlab.lib.styles import ParagraphStyle
         from datetime import datetime
         import io
+        import re
+        
+        kurum = str(kurum).strip()
+        if not kurum:
+            kurum = "................................"
+        else:
+            if not re.search(r"(MÜDÜRLÜĞÜ|MÜDÜRLÜK|OKULU|LİSESİ|ORTAOKULU|İLKOKULU|ANAOKULU|KAYMAKAMLIĞI|VALİLİĞİ|BAŞKANLIĞI)$", kurum, flags=re.IGNORECASE):
+                kurum = f"{kurum} Müdürlüğü"
         
         try:
             import PyPDF2
