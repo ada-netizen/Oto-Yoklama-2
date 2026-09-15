@@ -27,6 +27,20 @@
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
 
+    <!-- Flatpickr: Tarih Seçici -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+
+    <!-- Chart.js: Grafikler -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <!-- Tippy.js: Tooltip'ler -->
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/dist/tippy.css">
+
     <link rel="stylesheet" href="style.css">
     <script src="lucide.min.js"></script>
 </head>
@@ -64,6 +78,11 @@
                     onclick="modalKapat('raporlar_modal')">Kapat</button>
             </div>
             <div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+                <!-- Chart.js: Devamsizlik Ozeti -->
+                <div style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 15px;">
+                    <div style="font-size: 12px; font-weight: bold; color: var(--fg-sub); margin-bottom: 10px;">📊 Sınıf Bazlı Devamsızlık Özeti</div>
+                    <canvas id="devamsizlik_chart" height="120"></canvas>
+                </div>
 
                 <div
                     style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
@@ -938,7 +957,8 @@
         </div>
     </div>
 
-    <div id="sekme_ayarlar" class="tab-content">
+    
+<div id="sekme_ayarlar" class="tab-content">
         <div class="top-bar">
             <h2 class="top-bar-title"><i data-lucide="settings" width="20" height="20"></i> Sistem Ayarları ve Yönetim
             </h2>
@@ -1798,6 +1818,188 @@
             </div>
         </div>
     </div>
+
+
+<script>
+// ============================================================
+// FLATPICKR - Türkçe Tarih Seçici Başlatma
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+    const flatpickrConfig = {
+        locale: "tr",
+        dateFormat: "d.m.Y",
+        allowInput: true,
+        theme: "dark"
+    };
+
+    // Raporlar modalı tarih inputu
+    const raporTarih = document.getElementById('rapor_tarih_kutu');
+    if (raporTarih) {
+        flatpickr(raporTarih, {
+            ...flatpickrConfig,
+            dateFormat: "d/m/Y",
+            allowInput: true
+        });
+    }
+
+    // İhale modülü tarih inputları
+    const bTarih = document.getElementById('b-tarih');
+    if (bTarih) {
+        flatpickr(bTarih, flatpickrConfig);
+    }
+
+    const tTarih = document.getElementById('t-tarih');
+    if (tTarih) {
+        flatpickr(tTarih, flatpickrConfig);
+    }
+
+    // ============================================================
+    // TIPPY.JS - title="" attribute'larından otomatik tooltip oluştur
+    // ============================================================
+    document.querySelectorAll('[title]').forEach(el => {
+        const titleText = el.getAttribute('title');
+        if (!titleText || titleText === 'Kapat') return; // Kapat başlıklarını atla
+
+        tippy(el, {
+            content: titleText,
+            placement: 'bottom',
+            theme: 'dark-custom',
+            delay: [300, 0],
+            arrow: true,
+            animation: 'shift-away'
+        });
+        el.removeAttribute('title'); // native tooltip'i devre dışı bırak
+    });
+});
+
+// ============================================================
+// CHART.JS - Devamsızlık Grafiği (Raporlar modalı açıldığında)
+// ============================================================
+let devamsizlikChart = null;
+
+function raporlariGorselleEtir() {
+    const canvas = document.getElementById('devamsizlik_chart');
+    if (!canvas) return;
+
+    // Mevcut veriyi tablolardan çek
+    const ogrenciler = window.tumOgrenciler || [];
+    const devamsizliklar = window.tumDevamsizliklar || [];
+
+    // Şube bazlı özet hesapla
+    const subeSayilari = {};
+    devamsizliklar.forEach(d => {
+        const ogr = ogrenciler.find(o => String(o.no) === String(d.no));
+        if (ogr) {
+            const sube = ogr.sube || 'Bilinmiyor';
+            subeSayilari[sube] = (subeSayilari[sube] || 0) + 1;
+        }
+    });
+
+    const subeEtiketleri = Object.keys(subeSayilari).sort();
+    const subeDegerleri = subeEtiketleri.map(s => subeSayilari[s]);
+
+    const colors = subeEtiketleri.map((_, i) => {
+        const palette = ['#38BDF8','#818CF8','#34D399','#F472B6','#FB923C','#A78BFA','#60A5FA','#4ADE80'];
+        return palette[i % palette.length];
+    });
+
+    if (devamsizlikChart) {
+        devamsizlikChart.destroy();
+    }
+
+    if (subeEtiketleri.length === 0) {
+        canvas.parentElement.querySelector('div').textContent = '📊 Henüz devamsızlık verisi yok.';
+        return;
+    }
+
+    devamsizlikChart = new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: subeEtiketleri,
+            datasets: [{
+                label: 'Toplam Devamsızlık (Gün)',
+                data: subeDegerleri,
+                backgroundColor: colors,
+                borderColor: colors,
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => ` ${ctx.parsed.y} gün devamsızlık`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#94A3B8', font: { size: 10 } },
+                    grid: { color: 'rgba(51,65,85,0.4)' }
+                },
+                y: {
+                    ticks: { color: '#94A3B8', font: { size: 10 } },
+                    grid: { color: 'rgba(51,65,85,0.4)' },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+// Raporlar modalı her açıldığında grafiği güncelle
+const _orijinalModalAc = window.modalAc;
+window.modalAc = function(id) {
+    if (_orijinalModalAc) _orijinalModalAc(id);
+    if (id === 'raporlar_modal') {
+        setTimeout(raporlariGorselleEtir, 100);
+    }
+};
+
+// Tippy için koyu tema CSS'i
+const tippyStyle = document.createElement('style');
+tippyStyle.textContent = `
+    .tippy-box[data-theme~='dark-custom'] {
+        background-color: #1E293B;
+        color: #F8FAFC;
+        border: 1px solid rgba(51,65,85,0.8);
+        font-size: 11px;
+        font-family: var(--font-ui, sans-serif);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+        border-radius: 6px;
+        max-width: 240px;
+        text-align: center;
+    }
+    .tippy-box[data-theme~='dark-custom'] .tippy-arrow {
+        color: #1E293B;
+    }
+
+    /* Flatpickr Dark Theme Override */
+    .flatpickr-calendar {
+        background: #1E293B !important;
+        border: 1px solid rgba(51,65,85,0.8) !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        font-family: var(--font-ui, sans-serif) !important;
+    }
+    .flatpickr-day { color: #F8FAFC !important; }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover {
+        background: #38BDF8 !important;
+        border-color: #38BDF8 !important;
+        color: #0F172A !important;
+    }
+    .flatpickr-day:hover { background: rgba(56,189,248,0.15) !important; }
+    .flatpickr-day.flatpickr-disabled { color: #475569 !important; }
+    .flatpickr-months, .flatpickr-weekdays, .flatpickr-month { color: #F8FAFC !important; fill: #F8FAFC !important; }
+    .flatpickr-current-month, .flatpickr-monthDropdown-months { color: #38BDF8 !important; }
+    span.flatpickr-weekday { color: #94A3B8 !important; }
+    .numInputWrapper span.arrowUp:after { border-bottom-color: #F8FAFC !important; }
+    .numInputWrapper span.arrowDown:after { border-top-color: #F8FAFC !important; }
+`;
+document.head.appendChild(tippyStyle);
+</script>
 
 </body>
 

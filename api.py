@@ -113,8 +113,8 @@ class SablonVerisi(BaseModel):
 
 def _sablon_excel_yolu_olustur():
     adaylar = [
-        os.path.join(os.getcwd(), "sablon.xlsx"),
-        os.path.join(os.path.dirname(__file__), "sablon.xlsx"),
+        os.path.join(os.getcwd(), "sablonlar", "sablon.xlsx"),
+        os.path.join(os.path.dirname(__file__), "sablonlar", "sablon.xlsx"),
     ]
     for yol in adaylar:
         if not os.path.exists(yol):
@@ -132,7 +132,7 @@ def _sablon_excel_yolu_olustur():
                 continue
         if os.path.exists(yol):
             return yol
-    return os.path.join(os.getcwd(), "sablon.xlsx")
+    return os.path.join(os.getcwd(), "sablonlar", "sablon.xlsx")
 
 
 @app.post("/sablon-hazirla")
@@ -1484,6 +1484,16 @@ def yedek_geri_yukle(veri: dict):
             return {"basarili": False, "mesaj": f"Mevcut veriler korunamadı: {mevcut_yedek_hatasi}"}
         db.kapat()
         shutil.copy(kaynak_yol, yollar["DB"])
+        
+        # Ayarları da geri yükle
+        zaman_etiketi = dosya_adi.replace("veritabani_yedek_", "").replace(".db", "")
+        ayarlar_kaynak = os.path.join(hedef_klasor, f"ayarlar_yedek_{zaman_etiketi}.json")
+        if os.path.exists(ayarlar_kaynak):
+            shutil.copy(ayarlar_kaynak, yollar["AYARLAR"])
+            # Geri yüklenen ayarları sistemin hemen kullanması için güncelliyoruz
+            global ayarlar
+            ayarlar = SistemMotoru.ayarlari_yukle(yollar["AYARLAR"])
+            
         db.baglan_ve_hazirla()
         islem_logla("uyarı", "Geri yükleme", f"Yedek geri yüklendi: {dosya_adi}")
         return {"basarili": True, "mesaj": "Yedek başarıyla yüklendi. Sayfayı yenileyin."}
@@ -1672,7 +1682,7 @@ def resource_path_api(relative_path):
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
-js_dir = resource_path_api('js')
+js_dir = resource_path_api(os.path.join('frontend', 'js'))
 if os.path.isdir(js_dir):
     app.mount('/js', StaticFiles(directory=js_dir), name='js')
 
@@ -1682,12 +1692,17 @@ if os.path.isdir(sab_dir):
 
 @app.get('/')
 def read_index():
-    return FileResponse(resource_path_api('index.html'))
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+    return FileResponse(resource_path_api(os.path.join('frontend', 'index.html')), headers=headers)
 
 @app.get('/style.css')
 def read_style():
-    return FileResponse(resource_path_api('style.css'))
+    return FileResponse(resource_path_api(os.path.join('frontend', 'style.css')))
 
 @app.get('/lucide.min.js')
 def read_lucide():
-    return FileResponse(resource_path_api('lucide.min.js'))
+    return FileResponse(resource_path_api(os.path.join('frontend', 'lucide.min.js')))

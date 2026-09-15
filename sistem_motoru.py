@@ -59,6 +59,12 @@ class SistemMotoru:
             
             shutil.copy(db_yolu, hedef_dosya)
             
+            # Ayarları da yedekle
+            ayarlar_yolu = os.path.join(os.path.dirname(db_yolu), "yoklama_ayarlar.json")
+            if os.path.exists(ayarlar_yolu):
+                hedef_ayarlar_dosya = os.path.join(hedef_klasor, f"ayarlar_yedek_{zaman}.json")
+                shutil.copy(ayarlar_yolu, hedef_ayarlar_dosya)
+            
             # Yedek aldıktan sonra arkadan çöp toplayıcıyı çalıştır
             SistemMotoru.eski_yedekleri_temizle(ayarlar, varsayilan_yedek_klasoru)
             return True, ""
@@ -108,5 +114,11 @@ class SistemMotoru:
                     mtime = os.path.getmtime(dosya_yolu)
                     if (su_an - datetime.fromtimestamp(mtime)).days > limit_gun:
                         os.remove(dosya_yolu)
+                        # Ayar yedeğini de sil
+                        z_etiket = dosya.replace("veritabani_yedek_", "").replace(".db", "")
+                        a_yol = os.path.join(hedef_klasor, f"ayarlar_yedek_{z_etiket}.json")
+                        if os.path.exists(a_yol):
+                            try: os.remove(a_yol)
+                            except: pass
                 except Exception as e:
                     logging.error(f"eski_yedekleri_temizle dosya silme hatasi {dosya_yolu}: {e}")

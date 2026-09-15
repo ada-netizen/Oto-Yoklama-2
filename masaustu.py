@@ -176,7 +176,7 @@ if __name__ == '__main__':
         return os.path.join(base_path, relative_path)
 
     # 2. Tasarladığımız HTML dosyasının yolunu bul
-    html_yolu = resource_path('index.html')
+    html_yolu = resource_path(os.path.join('frontend', 'index.html'))
 
     # 3. Daha önce kaydedilmiş pencere durumunu yükle
     kayitli = pencere_durumu_yukle()
