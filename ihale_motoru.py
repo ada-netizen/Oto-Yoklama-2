@@ -128,7 +128,7 @@ def get_ihale_klasoru(veri, base_klasor):
 
 def uret_fiyat_isteme_pdf(veri, hedef_klasor):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    dosya_adi = os.path.join(hedef_klasor, f"Fiyat_Isteme_{timestamp}.pdf")
+    dosya_adi = os.path.join(hedef_klasor, "01_Fiyat_Isteme.pdf")
     
     try:
         pdfmetrics.registerFont(TTFont('Arial_TR', r'C:\Windows\Fonts\arial.ttf'))
@@ -146,10 +146,10 @@ def uret_fiyat_isteme_pdf(veri, hedef_klasor):
     )
     
     # Tüm PDF 9 punto
-    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=11)
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=11, wordWrap='CJK')
     style_justify = ParagraphStyle('Justify_TR', fontName=font_name, fontSize=9, alignment=4, leading=11, firstLineIndent=12*mm)
-    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=9, alignment=1, leading=11)
-    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=9, alignment=2, leading=11)
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=9, alignment=1, leading=11, wordWrap='CJK')
+    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=9, alignment=2, leading=11, wordWrap='CJK')
     
     elements = []
     
@@ -188,7 +188,7 @@ def uret_fiyat_isteme_pdf(veri, hedef_klasor):
     # 3. Hitap ve Gövde
     elements.append(Paragraph("Sayın Yetkili", style_center))
     elements.append(Spacer(1, 4*mm))
-    metin = "İdaremizce satın alınması düşünülen aşağıda cinsi, miktarı, özellikleri ve diğer şartları yazılı mal, hizmet ya da yapım işlerinin 4734 Sayılı Kamu İhale Kanunu gereğince, yaklaşık maliyetinin tesbit edilmesinde değerlendirilmek ve KDV hariç olmak üzere piyasada satış fiyatlarının bildirilmesini rica ederim. / ederiz."
+    metin = "4734 Sayılı Kamu İhale Kanunu gereğince Müdürlüğümüzce satın alınması planlanan aşağıda cinsi, miktarı ve özellikleri verilen mal veya hizmete ait yaklaşık maliyet tutarının tespit edilmesi için KDV hariç piyasa satış fiyatlarının bildirilmesini rica ederim/ederiz."
     elements.append(Paragraph(metin, style_justify))
     elements.append(Spacer(1, 8*mm))
     
@@ -232,10 +232,10 @@ def uret_fiyat_isteme_pdf(veri, hedef_klasor):
         except:
             pass
         table_data.append([
-            str(idx+1),
-            k.get("cins", ""),
-            k.get("ozellik", ""),
-            val,
+            Paragraph(str(idx+1), style_center),
+            Paragraph(k.get("cins", ""), style_normal),
+            Paragraph(k.get("ozellik", ""), style_normal),
+            Paragraph(val, style_center),
             "", ""
         ])
         
@@ -245,14 +245,14 @@ def uret_fiyat_isteme_pdf(veri, hedef_klasor):
     
     # Diğer Şartlar Nested Table
     sartlar_data = [
-        [Paragraph("DİĞER ŞARTLAR", ParagraphStyle('S', fontName=font_name, fontSize=9)), ""],
-        [Paragraph("1- Teslim Süresi", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": 1 gün", ParagraphStyle('S', fontName=font_name, fontSize=9))],
-        [Paragraph("2- Teslim Edilecek Parti Miktarı", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": 1", ParagraphStyle('S', fontName=font_name, fontSize=9))],
-        [Paragraph("3- Nakliye ve Sigortanın kime ait olduğu", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": Satıcıya", ParagraphStyle('S', fontName=font_name, fontSize=9))],
-        [Paragraph("4- Diğer Özel Şartlar", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": YOK", ParagraphStyle('S', fontName=font_name, fontSize=9))],
-        [Paragraph("5- Uyulması Gereken Standartlar", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": TSE", ParagraphStyle('S', fontName=font_name, fontSize=9))],
-        [Paragraph("6- Teknik Şartname", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": YOK", ParagraphStyle('S', fontName=font_name, fontSize=9))],
-        [Paragraph("7- Diğer Hususlar", ParagraphStyle('S', fontName=font_name, fontSize=9)), Paragraph(": YOK", ParagraphStyle('S', fontName=font_name, fontSize=9))]
+        [Paragraph("DİĞER ŞARTLAR", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), ""],
+        [Paragraph("1- Teslim Süresi", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": 1 gün", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))],
+        [Paragraph("2- Teslim Edilecek Parti Miktarı", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": 1", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))],
+        [Paragraph("3- Nakliye ve Sigortanın kime ait olduğu", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": Satıcıya", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))],
+        [Paragraph("4- Diğer Özel Şartlar", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": YOK", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))],
+        [Paragraph("5- Uyulması Gereken Standartlar", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": TSE", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))],
+        [Paragraph("6- Teknik Şartname", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": YOK", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))],
+        [Paragraph("7- Diğer Hususlar", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK')), Paragraph(": YOK", ParagraphStyle('S', fontName=font_name, fontSize=9, wordWrap='CJK'))]
     ]
     sartlar_table = Table(sartlar_data, colWidths=[65*mm, 35*mm])
     sartlar_table.setStyle(TableStyle([
@@ -296,14 +296,14 @@ def uret_fiyat_isteme_pdf(veri, hedef_klasor):
     elements.append(t)
     
     elements.append(Spacer(1, 2*mm))
-    elements.append(Paragraph("Not :Yaklaşık Maliyet Hesap Cetveline Eklenecektir. ( 4734 Sayılı Kanun Md.9 )", ParagraphStyle('Not', fontName=font_name, fontSize=9)))
+    elements.append(Paragraph("Not :Yaklaşık Maliyet Hesap Cetveline Eklenecektir. ( 4734 Sayılı Kanun Md.9 )", ParagraphStyle('Not', fontName=font_name, fontSize=9, wordWrap='CJK')))
     
     doc.build(elements)
     return dosya_adi
 
 def uret_fiyat_isteme_excel(veri, hedef_klasor):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    dosya_adi = os.path.join(hedef_klasor, f"Fiyat_Isteme_{timestamp}.xlsx")
+    dosya_adi = os.path.join(hedef_klasor, "01_Fiyat_Isteme.xlsx")
     
     wb = Workbook()
     ws = wb.active
@@ -318,7 +318,7 @@ def uret_fiyat_isteme_excel(veri, hedef_klasor):
     normal_font = Font(name='Arial', size=9)
     center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
     left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
-    top_left_align = Alignment(horizontal='left', vertical='top', wrap_text=True)
+    top_left_align = Alignment(horizontal='justify', vertical='top', wrap_text=True)
     top_center_align = Alignment(horizontal='center', vertical='top', wrap_text=True)
     right_align = Alignment(horizontal='right', vertical='center', wrap_text=True)
     justify_align = Alignment(horizontal='justify', vertical='center', wrap_text=True)
@@ -370,7 +370,7 @@ def uret_fiyat_isteme_excel(veri, hedef_klasor):
     ws[f'A{row_idx}'].alignment = center_align
     row_idx += 1
     
-    metin = "        İdaremizce satın alınması düşünülen aşağıda cinsi, miktarı, özellikleri ve diğer şartları yazılı mal, hizmet ya da yapım işlerinin 4734 Sayılı Kamu İhale Kanunu gereğince, yaklaşık maliyetinin tesbit edilmesinde değerlendirilmek ve KDV hariç olmak üzere piyasada satış fiyatlarının bildirilmesini rica ederim. / ederiz."
+    metin = "4734 Sayılı Kamu İhale Kanunu gereğince Müdürlüğümüzce satın alınması planlanan aşağıda cinsi, miktarı ve özellikleri verilen mal veya hizmete ait yaklaşık maliyet tutarının tespit edilmesi için KDV hariç piyasa satış fiyatlarının bildirilmesini rica ederim/ederiz."
     ws.merge_cells(f'A{row_idx}:F{row_idx+1}')
     ws[f'A{row_idx}'] = metin
     ws[f'A{row_idx}'].font = normal_font
@@ -529,7 +529,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
     from reportlab.lib.units import mm
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    dosya_adi = os.path.join(hedef_klasor, f"Yaklasik_Maliyet_Hesap_Cetveli_{timestamp}.pdf")
+    dosya_adi = os.path.join(hedef_klasor, "02_Yaklasik_Maliyet_Hesap_Cetveli.pdf")
     
     try:
         pdfmetrics.registerFont(TTFont('Arial_TR', r'C:\Windows\Fonts\arial.ttf'))
@@ -546,10 +546,10 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
         bottomMargin=12.5*mm
     )
     
-    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=8, leading=10)
-    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=8, alignment=1, leading=10)
-    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=8, alignment=2, leading=10)
-    style_title = ParagraphStyle('Title_TR', fontName=font_name, fontSize=11, alignment=1, leading=13)
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=8, leading=10, wordWrap='CJK')
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=8, alignment=1, leading=10, wordWrap='CJK')
+    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=8, alignment=2, leading=10, wordWrap='CJK')
+    style_title = ParagraphStyle('Title_TR', fontName=font_name, fontSize=11, alignment=1, leading=13, wordWrap='CJK')
     
     elements = []
     
@@ -732,12 +732,12 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
     
     elements.append(Spacer(1, 4*mm))
     
-    p1 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;İdaremizce ihtiyaç duyulan ve satın alınması düşünülen aşağıda cinsi, özellikleri ve miktarları yazılı malların / hizmetlerin 4734 Sayılı Kamu İhale Kanunu'nun 9'uncu Maddesi gereğince yaklaşık maliyetinin tesbitine esas olmak üzere; ilgili kişi kurum ve firmalardan yaklaşık maliyetinin tesbitine esas olmak üzere, her türlü fiyat araştırması yapılmıştır. Araştırma sonuçları yukarıda tabloda gösterilmiştir."
-    p2 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda açıklandığı üzere, ihaleye çıkılması düşünülen mal / hizmetlerin fiyat araştırması neticesinde; 4734 Sayılı İhale Kanunu'nun 9. Maddesi gereğince yaklaşık maliyetinin KDV hariç yukarıda belirtildiği gibi takdir ve tesbit edilerek iş bu Hesap Cetveli tarafımca / tarafımızca düzenlenerek imza altına alınmıştır."
+    p1 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;İdaremizce ihtiyaç duyulan ve satın alınması düşünülen aşağıda cinsi, özellikleri ve miktarları yazılı malların/hizmetlerin 4734 Sayılı Kamu İhale Kanunu'nun 9'uncu maddesi gereğince yaklaşık maliyetinin tespitine esas olmak üzere; ilgili kişi, kurum ve firmalardan her türlü fiyat araştırması yapılmıştır. Araştırma sonuçları yukarıda tabloda gösterilmiştir."
+    p2 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda açıklandığı üzere, ihaleye çıkılması düşünülen mal/hizmetlerin fiyat araştırması neticesinde; 4734 Sayılı Kamu İhale Kanunu'nun 9. maddesi gereğince yaklaşık maliyeti, KDV hariç yukarıda belirtildiği gibi takdir ve tespit edilerek işbu Hesap Cetveli tarafımızca düzenlenmiş ve imza altına alınmıştır."
     
-    elements.append(Paragraph(p1, style_normal))
+    elements.append(Paragraph(p1, style_justify))
     elements.append(Spacer(1, 2*mm))
-    elements.append(Paragraph(p2, style_normal))
+    elements.append(Paragraph(p2, style_justify))
     elements.append(Spacer(1, 5*mm))
     
     elements.append(Paragraph("YAKLAŞIK MALİYET TESPİTİ YAPAN GÖREVLİLER", style_center))
@@ -776,7 +776,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
 
 def uret_yaklasik_maliyet_excel(veri, hedef_klasor):
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    dosya_adi = os.path.join(hedef_klasor, f"Yaklasik_Maliyet_{timestamp}.xlsx")
+    dosya_adi = os.path.join(hedef_klasor, "02_Yaklasik_Maliyet_Hesap_Cetveli.xlsx")
     
     wb = Workbook()
     ws = wb.active
@@ -939,18 +939,18 @@ def uret_yaklasik_maliyet_excel(veri, hedef_klasor):
         c.alignment = right_align if i==2 else center_align
         
     r += 2
-    p1 = "           ─░daremizce ihtiya├ğ duyulan ve sat─▒n al─▒nmas─▒ d├╝┼ş├╝n├╝len a┼şa─ş─▒da cinsi, ├Âzellikleri ve miktarlar─▒ yaz─▒l─▒ mallar─▒n / hizmetlerin 4734 Say─▒l─▒ Kamu ─░hale Kanunu'nun 9'uncu Maddesi gere─şince yakla┼ş─▒k maliyetinin tesbitine esas olmak ├╝zere; ilgili ki┼şi kurum ve firmalardan yakla┼ş─▒k maliyetinin tesbitine esas olmak ├╝zere, her t├╝rl├╝ fiyat ara┼şt─▒rmas─▒ yap─▒lm─▒┼şt─▒r. Ara┼şt─▒rma sonu├ğlar─▒ yukar─▒da tabloda g├Âsterilmi┼ştir."
+    p1 = "           İdaremizce ihtiyaç duyulan ve satın alınması düşünülen aşağıda cinsi, özellikleri ve miktarları yazılı malların/hizmetlerin 4734 Sayılı Kamu İhale Kanunu'nun 9'uncu maddesi gereğince yaklaşık maliyetinin tespitine esas olmak üzere; ilgili kişi, kurum ve firmalardan her türlü fiyat araştırması yapılmıştır. Araştırma sonuçları yukarıda tabloda gösterilmiştir."
     ws.merge_cells(start_row=r, start_column=1, end_row=r+1, end_column=15)
     c_p1 = ws.cell(row=r, column=1, value=p1)
     c_p1.font = normal_font
-    c_p1.alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+    c_p1.alignment = Alignment(horizontal='justify', vertical='top', wrap_text=True)
     
     r += 2
-    p2 = "          Yukar─▒da a├ğ─▒kland─▒─ş─▒ ├╝zere, ihaleye ├ğ─▒k─▒lmas─▒ d├╝┼ş├╝n├╝len mal / hizmetlerin fiyat ara┼şt─▒rmas─▒ neticesinde; 4734 Say─▒l─▒ ─░hale Kanunu'nun 9. Maddesi gere─şince yakla┼ş─▒k maliyetinin KDV hari├ğ yukar─▒da belirtildi─şi gibi takdir ve tesbit edilerek i┼ş bu Hesap Cetveli taraf─▒mca / taraf─▒m─▒zca d├╝zenlenerek imza alt─▒na al─▒nm─▒┼şt─▒r."
+    p2 = "          Yukarıda açıklandığı üzere, ihaleye çıkılması düşünülen mal/hizmetlerin fiyat araştırması neticesinde; 4734 Sayılı Kamu İhale Kanunu'nun 9. maddesi gereğince yaklaşık maliyeti, KDV hariç yukarıda belirtildiği gibi takdir ve tespit edilerek işbu Hesap Cetveli tarafımızca düzenlenmiş ve imza altına alınmıştır."
     ws.merge_cells(start_row=r, start_column=1, end_row=r+1, end_column=15)
     c_p2 = ws.cell(row=r, column=1, value=p2)
     c_p2.font = normal_font
-    c_p2.alignment = Alignment(horizontal='left', vertical='top', wrap_text=True)
+    c_p2.alignment = Alignment(horizontal='justify', vertical='top', wrap_text=True)
     
     r += 3
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=15)
@@ -1000,7 +1000,7 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     from reportlab.pdfbase.ttfonts import TTFont
     
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    dosya_adi = os.path.join(hedef_klasor, f"Fiyat_Isteme_{timestamp}.pdf")
+    dosya_adi = os.path.join(hedef_klasor, "01_Ozel_Fiyat_Isteme.pdf")
     
     try:
         pdfmetrics.registerFont(TTFont('Arial_TR', r'C:\Windows\Fonts\arial.ttf'))
@@ -1017,14 +1017,14 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
         bottomMargin=15*mm
     )
     
-    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=11)
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=11, wordWrap='CJK')
     style_justify = ParagraphStyle('Justify_TR', fontName=font_name, fontSize=9, alignment=4, leading=11, firstLineIndent=12*mm)
-    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=9, alignment=1, leading=11)
-    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=9, alignment=2, leading=11)
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=9, alignment=1, leading=11, wordWrap='CJK')
+    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=9, alignment=2, leading=11, wordWrap='CJK')
     
-    style_normal_10 = ParagraphStyle('Normal10_TR', fontName=font_name, fontSize=10, leading=12)
-    style_right_10 = ParagraphStyle('Right10_TR', fontName=font_name, fontSize=10, alignment=2, leading=12)
-    style_center_10 = ParagraphStyle('Center10_TR', fontName=font_name, fontSize=10, alignment=1, leading=12)
+    style_normal_10 = ParagraphStyle('Normal10_TR', fontName=font_name, fontSize=10, leading=12, wordWrap='CJK')
+    style_right_10 = ParagraphStyle('Right10_TR', fontName=font_name, fontSize=10, alignment=2, leading=12, wordWrap='CJK')
+    style_center_10 = ParagraphStyle('Center10_TR', fontName=font_name, fontSize=10, alignment=1, leading=12, wordWrap='CJK')
     
     kalemler = veri.get("kalemler", [])
     gecerli_kalemler = [k for k in kalemler if k.get("cins", "").strip()]
@@ -1089,7 +1089,7 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     hitap = "Sayın Yetkili"
     elements.append(Paragraph(hitap, style_center_10))
     elements.append(Spacer(1, 4*mm))
-    metin = "Aşağıda cinsi, özellikleri ve miktarları yazılı mallar / hizmetler 4734 sayılı Kamu İhale Kanunu'nun 22/d Maddesi gereğince Doğrudan Temin Usulüyle satın alınacaktır. İlgilenmeniz halinde KDV hariç teklifinizin bildirilmesini rica ederim / ederiz."
+    metin = "Aşağıda cinsi, özellikleri ve miktarları yazılı mal/hizmetler 4734 sayılı Kamu İhale Kanunu'nun 22/d maddesi gereğince Doğrudan Temin Usulüyle satın alınacaktır. İlgilenmeniz halinde KDV hariç teklifinizin bildirilmesini rica ederim/ederiz."
     elements.append(Paragraph(metin, style_justify))
     elements.append(Spacer(1, 8*mm))
     
@@ -1112,15 +1112,15 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     # 5. Tablo (Font 8, Yeni Kolonlar)
     table_data = []
     # Super Header
-    super_header_style = ParagraphStyle('SuperHeader_TR', fontName=font_name, fontSize=10, alignment=1, leading=12)
+    super_header_style = ParagraphStyle('SuperHeader_TR', fontName=font_name, fontSize=10, alignment=1, leading=12, wordWrap='CJK')
     table_data.append([Paragraph("Satın Alınacak Malın", super_header_style), "", "", "", "", Paragraph("Teklif Edilen KDV Hariç", super_header_style), ""])
     
     # Headers
     headers = ["S.No", "Cinsi", "Özellikleri", "Ölçüsü", "Miktarı", "Birim Fiyatı\n(TL)", "Toplam Fiyatı\n(TL)"]
-    table_data.append([Paragraph(h, ParagraphStyle('TH_TR', fontName=font_name, fontSize=8, alignment=0, leading=10)) for h in headers])
+    table_data.append([Paragraph(h, ParagraphStyle('TH_TR', fontName=font_name, fontSize=8, alignment=0, leading=10, wordWrap='CJK')) for h in headers])
     
-    style_cell = ParagraphStyle('Cell_TR', fontName=font_name, fontSize=8, leading=10, alignment=1)
-    style_cell_left = ParagraphStyle('Cell_Left_TR', fontName=font_name, fontSize=8, leading=10, alignment=0)
+    style_cell = ParagraphStyle('Cell_TR', fontName=font_name, fontSize=8, leading=10, alignment=1, wordWrap='CJK')
+    style_cell_left = ParagraphStyle('Cell_Left_TR', fontName=font_name, fontSize=8, leading=10, alignment=0, wordWrap='CJK')
     for i_k, k in enumerate(gecerli_kalemler):
         val = str(k.get("miktar", ""))
         try:
@@ -1138,7 +1138,7 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
         table_data.append(row_data)
         
     start_bottom = len(table_data)
-    table_data.append([Paragraph("KDV Hariç Teklif Edilen Toplam Fiyat:", ParagraphStyle('TR_R', fontName=font_name, fontSize=8, alignment=2, leading=10)), "", "", "", "", "", ""])
+    table_data.append([Paragraph("KDV Hariç Teklif Edilen Toplam Fiyat:", ParagraphStyle('TR_R', fontName=font_name, fontSize=8, alignment=2, leading=10, wordWrap='CJK')), "", "", "", "", "", ""])
     
     col_widths = [10*mm, 35*mm, 45*mm, 15*mm, 15*mm, 30*mm, 30*mm]
     t = Table(table_data, colWidths=col_widths, repeatRows=2)
@@ -1173,14 +1173,14 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     
     # Sartlar Table (Font 8)
     sartlar_data = [
-        [Paragraph("DİĞER ŞARTLAR", ParagraphStyle('S1', fontName=font_name, fontSize=8, alignment=1)), ""],
-        [Paragraph("1- TESLİM SÜRESİ", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("1 gün", ParagraphStyle('S3', fontName=font_name, fontSize=8))],
-        [Paragraph("2- TESLİM EDİLECEK PARTİ MİKTARI", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("1", ParagraphStyle('S3', fontName=font_name, fontSize=8))],
-        [Paragraph("3- NAKLİYE VE SİGORTANIN KİME AİT OLDUĞU", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("Satıcıya", ParagraphStyle('S3', fontName=font_name, fontSize=8))],
-        [Paragraph("4- DİĞER ÖZEL ŞARTLAR", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("YOK", ParagraphStyle('S3', fontName=font_name, fontSize=8))],
-        [Paragraph("5- UYULMASI GEREKEN STANDARTLAR", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("TSE", ParagraphStyle('S3', fontName=font_name, fontSize=8))],
-        [Paragraph("6- TEKNİK ŞARTNAME", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("YOK", ParagraphStyle('S3', fontName=font_name, fontSize=8))],
-        [Paragraph("7- DİĞER HUSUSLAR", ParagraphStyle('S2', fontName=font_name, fontSize=8)), Paragraph("YOK", ParagraphStyle('S3', fontName=font_name, fontSize=8))]
+        [Paragraph("DİĞER ŞARTLAR", ParagraphStyle('S1', fontName=font_name, fontSize=8, alignment=1, wordWrap='CJK')), ""],
+        [Paragraph("1- TESLİM SÜRESİ", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("1 gün", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))],
+        [Paragraph("2- TESLİM EDİLECEK PARTİ MİKTARI", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("1", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))],
+        [Paragraph("3- NAKLİYE VE SİGORTANIN KİME AİT OLDUĞU", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("Satıcıya", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))],
+        [Paragraph("4- DİĞER ÖZEL ŞARTLAR", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("YOK", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))],
+        [Paragraph("5- UYULMASI GEREKEN STANDARTLAR", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("TSE", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))],
+        [Paragraph("6- TEKNİK ŞARTNAME", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("YOK", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))],
+        [Paragraph("7- DİĞER HUSUSLAR", ParagraphStyle('S2', fontName=font_name, fontSize=8, wordWrap='CJK')), Paragraph("YOK", ParagraphStyle('S3', fontName=font_name, fontSize=8, wordWrap='CJK'))]
     ]
     sartlar_table = Table(sartlar_data, colWidths=[120*mm, 60*mm])
     sartlar_table.setStyle(TableStyle([
@@ -1221,7 +1221,7 @@ def uret_ozel_fiyat_isteme_excel(veri, hedef_klasor):
     from openpyxl.styles import Font, Alignment, Border, Side
     
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    dosya_adi = os.path.join(hedef_klasor, f"Fiyat_Isteme_{timestamp}.xlsx")
+    dosya_adi = os.path.join(hedef_klasor, "01_Ozel_Fiyat_Isteme.xlsx")
     
     wb = Workbook()
     ws = wb.active
@@ -1294,7 +1294,7 @@ def uret_ozel_fiyat_isteme_excel(veri, hedef_klasor):
     c.alignment = center_align
     r += 2
     
-    metin = "Aşağıda cinsi, özellikleri ve miktarları yazılı mallar / hizmetler 4734 sayılı Kamu İhale Kanunu'nun 22/d Maddesi gereğince Doğrudan Temin Usulüyle satın alınacaktır. İlgilenmeniz halinde KDV hariç teklifinizin bildirilmesini rica ederim / ederiz."
+    metin = "Aşağıda cinsi, özellikleri ve miktarları yazılı mal/hizmetler 4734 sayılı Kamu İhale Kanunu'nun 22/d maddesi gereğince Doğrudan Temin Usulüyle satın alınacaktır. İlgilenmeniz halinde KDV hariç teklifinizin bildirilmesini rica ederim/ederiz."
     ws.merge_cells(start_row=r, start_column=1, end_row=r+2, end_column=7)
     c = ws.cell(row=r, column=1, value=metin)
     c.font = normal_font
@@ -1427,7 +1427,7 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
     from reportlab.pdfbase.ttfonts import TTFont
     
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    dosya_adi = os.path.join(hedef_klasor, f"Muayene_Kabul_{timestamp}.pdf")
+    dosya_adi = os.path.join(hedef_klasor, "04_Muayene_Kabul.pdf")
     
     try:
         pdfmetrics.registerFont(TTFont('Arial_TR', r'C:\Windows\Fonts\arial.ttf'))
@@ -1444,10 +1444,10 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
         bottomMargin=15*mm
     )
     
-    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=12, alignment=0)
-    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=9, alignment=1, leading=12)
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=12, alignment=0, wordWrap='CJK')
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=9, alignment=1, leading=12, wordWrap='CJK')
     # Üst başlık ve Muayene Kabul başlığı için aynı font ve boyut (kalın olmayan)
-    style_header = ParagraphStyle('Header_TR', fontName=font_name, fontSize=10, alignment=1, leading=14)
+    style_header = ParagraphStyle('Header_TR', fontName=font_name, fontSize=10, alignment=1, leading=14, wordWrap='CJK')
     
     elements = []
     
@@ -1470,13 +1470,13 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
     
     # Satır 0: Belge Başlığı
     table_data.append([
-        Paragraph("MUAYENE VE KABUL BELGESİ", ParagraphStyle('Title_TR', fontName=font_name, fontSize=10, alignment=1, spaceAfter=5, spaceBefore=5)), 
+        Paragraph("MUAYENE VE KABUL BELGESİ", ParagraphStyle('Title_TR', fontName=font_name, fontSize=10, alignment=1, spaceAfter=5, spaceBefore=5, wordWrap='CJK')), 
         "", "", ""
     ])
     
     # Satır 1: Başlıklar
     table_data.append([
-        Paragraph(x, ParagraphStyle('tb', fontName=font_name, fontSize=9, alignment=1)) for x in ["Sıra\nNo", "Satın Alınacak Malın", "Özellikleri", "Miktarı"]
+        Paragraph(x, ParagraphStyle('tb', fontName=font_name, fontSize=9, alignment=1, wordWrap='CJK')) for x in ["Sıra\nNo", "Satın Alınacak Malın", "Özellikleri", "Miktarı"]
     ])
     
     # Kalemler
@@ -1489,16 +1489,16 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
         miktar_str = f"{miktar} {birim}" if birim else miktar
         table_data.append([
             str(idx+1), 
-            Paragraph(cins, ParagraphStyle('tn', fontName=font_name, fontSize=9)), 
-            Paragraph(ozellik, ParagraphStyle('tn', fontName=font_name, fontSize=9)), 
-            Paragraph(miktar_str, ParagraphStyle('tn', fontName=font_name, fontSize=9, alignment=1))
+            Paragraph(cins, ParagraphStyle('tn', fontName=font_name, fontSize=9, wordWrap='CJK')), 
+            Paragraph(ozellik, ParagraphStyle('tn', fontName=font_name, fontSize=9, wordWrap='CJK')), 
+            Paragraph(miktar_str, ParagraphStyle('tn', fontName=font_name, fontSize=9, alignment=1, wordWrap='CJK'))
         ])
         
     # Alt Metin
     tarih = format_date(veri.get('belge_tarihi', ''))
     text = f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda yazılı malların / malzemelerin / işlerin, yapılan muayene neticesinde dokümanlarda belirtilen niteliklere uygun olduğu tespit edilmiştir. {tarih}"
     table_data.append([
-        Paragraph(text, ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=12, alignment=0)),
+        Paragraph(text, ParagraphStyle('Normal_TR', fontName=font_name, fontSize=9, leading=12, alignment=4)),
         "", "", ""
     ])
     
@@ -1523,7 +1523,7 @@ def uret_muayene_kabul_pdf(veri, hedef_klasor):
     
     komisyon_cell = [
         Spacer(1, 10*mm),
-        Paragraph("MUAYENE VE KABUL GÖREVLİLERİ", ParagraphStyle('kom', fontName=font_name, fontSize=10, alignment=1, spaceBefore=5, spaceAfter=15)),
+        Paragraph("MUAYENE VE KABUL GÖREVLİLERİ", ParagraphStyle('kom', fontName=font_name, fontSize=10, alignment=1, spaceBefore=5, spaceAfter=15, wordWrap='CJK')),
         sig_table
     ]
     
@@ -1582,7 +1582,7 @@ def uret_muayene_kabul_excel(veri, hedef_klasor):
     from openpyxl.styles import Font, Alignment, Border, Side
     
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    dosya_adi = os.path.join(hedef_klasor, f"Muayene_Kabul_{timestamp}.xlsx")
+    dosya_adi = os.path.join(hedef_klasor, "04_Muayene_Kabul.xlsx")
     
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -1746,7 +1746,7 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
     from reportlab.pdfbase.ttfonts import TTFont
     
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    dosya_adi = os.path.join(hedef_klasor, f"Piyasa_Fiyat_Arastirmasi_{timestamp}.pdf")
+    dosya_adi = os.path.join(hedef_klasor, "03_Piyasa_Fiyat_Arastirmasi.pdf")
     
     try:
         pdfmetrics.registerFont(TTFont('Arial_TR', r'C:\Windows\Fonts\arial.ttf'))
@@ -1776,10 +1776,10 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
         bottomMargin=15*mm
     )
     
-    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=8, leading=10)
-    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=8, alignment=1, leading=10)
-    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=8, alignment=2, leading=10)
-    style_title = ParagraphStyle('Title_TR', fontName=font_name, fontSize=11, alignment=1, leading=14, spaceAfter=8)
+    style_normal = ParagraphStyle('Normal_TR', fontName=font_name, fontSize=8, leading=10, wordWrap='CJK')
+    style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=8, alignment=1, leading=10, wordWrap='CJK')
+    style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=8, alignment=2, leading=10, wordWrap='CJK')
+    style_title = ParagraphStyle('Title_TR', fontName=font_name, fontSize=11, alignment=1, leading=14, spaceAfter=8, wordWrap='CJK')
     
     elements = []
     
@@ -1999,7 +1999,7 @@ def uret_piyasa_arastirmasi_pdf(veri, hedef_klasor):
     elements.append(t)
     elements.append(Spacer(1, 4*mm))
     
-    p1 = f"4734 Sayılı Kamu İhale Kanununun 22'nci Maddesi uyarınca Doğrudan Temin Usulüyle yapılacak alımlara ilişkin yapılan piyasa araştırmasında firmalarca / kişilerce teklif edilen fiyatlar tarafımca / tarafımızca değerlendirilerek yukarıda adı ve adresi belirtilen kişi / firmadan alım yapılması uygun görülmüştür. {tarih}"
+    p1 = f"4734 Sayılı Kamu İhale Kanunu'nun 22'nci maddesi uyarınca Doğrudan Temin Usulüyle yapılacak alımlara ilişkin piyasa araştırmasında firmalarca/kişilerce teklif edilen fiyatlar tarafımızca değerlendirilerek yukarıda adı ve adresi belirtilen kişi/firmadan alım yapılması uygun görülmüştür. {tarih}"
     elements.append(Paragraph(p1, ParagraphStyle('P1', fontName=font_name, fontSize=9, alignment=4, leading=11)))
     elements.append(Spacer(1, 8*mm))
     
@@ -2029,7 +2029,7 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
     from openpyxl.styles import Font, Alignment, Border, Side
     
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
-    dosya_adi = os.path.join(hedef_klasor, f"Piyasa_Fiyat_Arastirmasi_{timestamp}.xlsx")
+    dosya_adi = os.path.join(hedef_klasor, "03_Piyasa_Fiyat_Arastirmasi.xlsx")
     
     wb = Workbook()
     ws = wb.active
@@ -2270,8 +2270,8 @@ def uret_piyasa_arastirmasi_excel(veri, hedef_klasor):
             
     r += 2
     ws.merge_cells(start_row=r, start_column=1, end_row=r+1, end_column=13)
-    p1 = f"4734 Sayılı Kamu İhale Kanununun 22'nci Maddesi uyarınca Doğrudan Temin Usulüyle yapılacak alımlara ilişkin yapılan piyasa araştırmasında firmalarca / kişilerce teklif edilen fiyatlar tarafımca / tarafımızca değerlendirilerek yukarıda adı ve adresi belirtilen kişi / firmadan alım yapılması uygun görülmüştür. {tarih}"
-    ws.cell(row=r, column=1, value=p1).alignment = left_align
+    p1 = f"4734 Sayılı Kamu İhale Kanunu'nun 22'nci maddesi uyarınca Doğrudan Temin Usulüyle yapılacak alımlara ilişkin piyasa araştırmasında firmalarca/kişilerce teklif edilen fiyatlar tarafımızca değerlendirilerek yukarıda adı ve adresi belirtilen kişi/firmadan alım yapılması uygun görülmüştür. {tarih}"
+    ws.cell(row=r, column=1, value=p1).alignment = Alignment(horizontal='justify', vertical='top', wrap_text=True)
     r += 3
     
     ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=13)
