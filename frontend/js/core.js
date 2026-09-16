@@ -265,7 +265,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 geciciDevamsizliklar.forEach(gd => { if (String(gd.no) === String(no)) tumKayitlar.push(gd); });
 
                 tumKayitlar.forEach(dev => {
-                    let tur = dev.tur.toUpperCase(); let gunMiktari = parseFloat(dev.gun) || 0.0; let tamGun = gunMiktari >= 1 ? parseInt(gunMiktari) : 1;
+                    let tur = dev.tur.toLocaleUpperCase('tr-TR'); let gunMiktari = parseFloat(dev.gun) || 0.0; let tamGun = gunMiktari >= 1 ? parseInt(gunMiktari) : 1;
                     let parts = dev.tarih.split('/'); if(parts.length !== 3) return;
                     let basTarih = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
                     let hiMiktari = 0.0, hsMiktari = 0.0;
@@ -373,7 +373,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                       .replace(/şube/ig, '')
                       .replace(/sube/ig, '')
                       .replace(/[\.\s]/g, '')
-                      .toUpperCase();
+                      .toLocaleUpperCase('tr-TR');
         }
         
         function sirala(sutun) {
@@ -439,7 +439,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         function filtreTemizle() { document.getElementById('ent_arama').value = ""; document.getElementById('combo_arama_sube').value = "Tümü"; tabloyuDoldur(); }
 
         function tabloyuDoldur() {
-            const arama = document.getElementById('ent_arama') ? document.getElementById('ent_arama').value.toUpperCase() : "";
+            const arama = document.getElementById('ent_arama') ? document.getElementById('ent_arama').value.toLocaleUpperCase('tr-TR') : "";
             const subeFiltre = document.getElementById('combo_arama_sube') ? document.getElementById('combo_arama_sube').value : "Tümü";
             const govde = document.getElementById('tree_govde'); if(!govde) return;
             govde.innerHTML = ""; basliklariGuncelle();
@@ -449,7 +449,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 return { ...ogr, temizSube: temizSube, ozsz: Math.round((ogr.ozursuz || 0)*10)/10, ozrl: Math.round((ogr.ozurlu || 0)*10)/10 };
             }).filter(ogr => {
                 if (subeFiltre !== "Tümü" && ogr.temizSube !== subeFiltre) return false;
-                if (arama && arama !== "NUMARA VEYA AD SOYAD" && !ogr.ad_soyad.toUpperCase().includes(arama) && !ogr.no.includes(arama)) return false;
+                if (arama && arama !== "NUMARA VEYA AD SOYAD" && !ogr.ad_soyad.toLocaleUpperCase('tr-TR').includes(arama) && !ogr.no.includes(arama)) return false;
                 return true;
             });
 
@@ -470,12 +470,12 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 if (ogr.ozsz >= 10) { tr.style.backgroundColor = "#FEE2E2"; tr.style.color = "#991B1B"; }
                 tr.onclick = function() {
                     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
-                    tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.ozsz, ogr.ozrl);
+                    tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.temizSube, ogr.ozsz, ogr.ozrl);
                 };
                 tr.ondblclick = function() { yillikListeAc(ogr.no, ogr.ad_soyad); };
                 tr.oncontextmenu = function(e) {
                     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
-                    tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.ozsz, ogr.ozrl); sagTikMenuAc(e, ogr.no, ogr.ad_soyad);
+                    tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.temizSube, ogr.ozsz, ogr.ozrl); sagTikMenuAc(e, ogr.no, ogr.ad_soyad);
                 };
                 // Taşan yazıları ... olarak göstermek için CSS eklendi
                 // Taşan yazıları ... olarak göstermek için CSS eklendi ve BOLD etiketleri silindi
@@ -484,8 +484,8 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             });
         }
 
-        function ogrenciSec(no, ad, ozsz, ozrl) {
-            seciliOgrenci = { no: no, ad: ad, ozsz: parseFloat(ozsz || 0), ozrl: parseFloat(ozrl || 0) };
+        function ogrenciSec(no, ad, sube, ozsz, ozrl) {
+            seciliOgrenci = { no: no, ad: ad, sube: sube, ozsz: parseFloat(ozsz || 0), ozrl: parseFloat(ozrl || 0) };
             document.getElementById('sag_bos_uyari').style.display = 'none'; 
             document.getElementById('sag_dolu_icerik').style.display = 'flex';
             
@@ -525,7 +525,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 if (haftaninGunu === 0 || haftaninGunu === 6) continue; 
                 let tarihStr = `${i.toString().padStart(2, '0')}/${(calMonth+1).toString().padStart(2, '0')}/${calYear}`;
                 
-                let hedefKayitlar = tumKayitlar.filter(k => k.tarih === tarihStr && ['D', 'ÖY', 'SY'].includes(k.tur.toUpperCase()));
+                let hedefKayitlar = tumKayitlar.filter(k => k.tarih === tarihStr && ['D', 'ÖY', 'SY'].includes(k.tur.toLocaleUpperCase('tr-TR')));
                 let kayit = hedefKayitlar.length > 0 ? (hedefKayitlar.find(k => k.secili) || hedefKayitlar[hedefKayitlar.length - 1]) : null;
                 
                 let borderStyle = 'border: 1px solid var(--border);'; 
@@ -535,7 +535,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 let icerik = '<div></div>'; 
                 
                 if (kayit) {
-                    let tur = kayit.tur.toUpperCase();
+                    let tur = kayit.tur.toLocaleUpperCase('tr-TR');
                     // YENİ: Kırmızı rengi artık JS değil CSS (temaDegistir'deki değişkenler) yönetiyor!
                     bgStyle = 'background-color: var(--dev-bg);'; 
                     fgStyle = 'var(--dev-fg)';
@@ -547,7 +547,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
 
         function hucreTikla(tarihStr) {
-            let kalici = seciliDevamsizliklar.find(d => d.tarih === tarihStr && ['D', 'ÖY', 'SY'].includes(d.tur.toUpperCase()));
+            let kalici = seciliDevamsizliklar.find(d => d.tarih === tarihStr && ['D', 'ÖY', 'SY'].includes(d.tur.toLocaleUpperCase('tr-TR')));
             if (kalici) { kalici.secili = !kalici.secili; takvimiCiz(); onizlemeGuncelle(); return; }
 
             let gecici = geciciDevamsizliklar.find(d => d.tarih === tarihStr);
@@ -625,7 +625,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             const parseTarih = (str) => { let p = str.split('/'); return p.length === 3 ? new Date(p[2], p[1]-1, p[0]) : null; };
 
             seciliDevamsizliklar.forEach(d => {
-                if(!['D', 'ÖY', 'SY'].includes(d.tur.toUpperCase())) return;
+                if(!['D', 'ÖY', 'SY'].includes(d.tur.toLocaleUpperCase('tr-TR'))) return;
                 if(mod === 'tumu') d.secili = true;
                 else if(mod === 'bu_ay') {
                     let strAy = (calMonth+1).toString().padStart(2, '0'); let strYil = calYear.toString();
@@ -720,7 +720,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             
             let eklenen = 0;
             seciliDevamsizliklar.forEach(d => {
-                if(!['D', 'ÖY', 'SY'].includes(d.tur.toUpperCase())) return;
+                if(!['D', 'ÖY', 'SY'].includes(d.tur.toLocaleUpperCase('tr-TR'))) return;
                 let kDate = parseTarihStr(d.tarih); 
                 if(kDate && kDate >= ozelBas && kDate <= ozelBit) { d.secili = true; eklenen++; }
             });
@@ -761,7 +761,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
         function gercekPdfIstegiAt(kayitlar) {
             let ad = seciliOgrenci.ad;
-            const sube = document.querySelector('.tr-secili td')?.innerText || "Bilinmiyor";
+            const sube = seciliOgrenci.sube || "Bilinmiyor";
             
             let ozsuz_str = "0";
             let ozu_str = "0";

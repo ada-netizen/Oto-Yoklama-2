@@ -80,10 +80,10 @@ function filtreTumuDegisti() {
             const govde = document.getElementById('personel-govde');
             if(!govde) return;
             const araKutu = document.getElementById('personel_ara');
-            const arama = araKutu ? araKutu.value.toUpperCase() : "";
+            const arama = araKutu ? araKutu.value.toLocaleUpperCase('tr-TR') : "";
 
             const gosterilecekler = tumPersoneller.filter(p => {
-                const aramaUygun = arama === "" || p.ad.toUpperCase().includes(arama) || p.gorev.toUpperCase().includes(arama) || p.brans.toUpperCase().includes(arama) || p.grup.toUpperCase().includes(arama);
+                const aramaUygun = arama === "" || p.ad.toLocaleUpperCase('tr-TR').includes(arama) || p.gorev.toLocaleUpperCase('tr-TR').includes(arama) || p.brans.toLocaleUpperCase('tr-TR').includes(arama) || p.grup.toLocaleUpperCase('tr-TR').includes(arama);
                 return p.secili || (arama !== "" && aramaUygun);
             });
 
@@ -224,14 +224,14 @@ function filtreTumuDegisti() {
         }
 
         function yonetimPersonelTablosunuDoldur() {
-            const filtreText = document.getElementById('personel_arama').value.toUpperCase();
+            const filtreText = document.getElementById('personel_arama').value.toLocaleUpperCase('tr-TR');
             const govde = document.getElementById('personel_govde');
             if(!govde) return;
             govde.innerHTML = '';
             
             [...tumPersoneller].sort((a,b) => a.ad.localeCompare(b.ad)).forEach(p => {
                 // Metin araması
-                if(filtreText && !p.ad.toUpperCase().includes(filtreText)) return;
+                if(filtreText && !p.ad.toLocaleUpperCase('tr-TR').includes(filtreText)) return;
                 
                 // Çip Filtresi
                 if (aktifPersonelFiltresi !== 'Tümü' && p.grup !== aktifPersonelFiltresi) {
@@ -332,6 +332,7 @@ function filtreTumuDegisti() {
                     bildirimGoster("Sisteme Hoş Geldiniz! Önce Ayarlar menüsünden PDF kayıt yerini seçiniz.", "bilgi");
                     fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ilk_kullanim: false }) });
                 } else if (!v.ayarlar.meb_logosu) {
+                if (v.ayarlar.son_gorulen_versiyon !== MEVCUT_VERSIYON) { setTimeout(() => { if(window.yeniliklerModalAc) window.yeniliklerModalAc(); fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ son_gorulen_versiyon: MEVCUT_VERSIYON }) }); }, 1500); }
                     setTimeout(() => bildirimGoster("MEB Logosu bulunamadı! Ayarlar'dan yükleyin.", "hata"), 3000);
                 }
             });
@@ -358,7 +359,7 @@ function filtreTumuDegisti() {
                 const govde = document.getElementById('ayar_log_govde');
                 if(!govde) return;
                 govde.style.display = 'block';
-                govde.textContent = v.loglar.length ? v.loglar.map(l => `[${l.zaman}] ${l.seviye.toUpperCase()} | ${l.islem}: ${l.mesaj}`).join('\n') : 'Henüz işlem kaydı yok.';
+                govde.textContent = v.loglar.length ? v.loglar.map(l => `[${l.zaman}] ${l.seviye.toLocaleUpperCase('tr-TR')} | ${l.islem}: ${l.mesaj}`).join('\n') : 'Henüz işlem kaydı yok.';
             }).catch(() => bildirimGoster('Loglar okunamadı.', 'hata'));
         }
 

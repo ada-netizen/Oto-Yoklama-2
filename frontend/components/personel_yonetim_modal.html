@@ -66,11 +66,11 @@ document.addEventListener('alpine:init', () => {
         },
         
         get gosterilecekPersoneller() {
-            let filterText = this.arama.toUpperCase();
+            let filterText = this.arama.toLocaleUpperCase('tr-TR');
             let arr = [...(window.tumPersoneller || [])].sort((a,b) => a.ad.localeCompare(b.ad));
             
             return arr.filter(p => {
-                if(filterText && !p.ad.toUpperCase().includes(filterText)) return false;
+                if(filterText && !p.ad.toLocaleUpperCase('tr-TR').includes(filterText)) return false;
                 if(this.aktifFiltre !== 'Tümü' && p.grup !== this.aktifFiltre) return false;
                 return true;
             });

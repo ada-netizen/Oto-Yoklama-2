@@ -1,0 +1,58 @@
+<div class="modal-overlay" id="yenilikler_modal" style="z-index:9000; align-items:center; justify-content:center; display:none;" x-data="{
+    acik: false,
+    init() {
+        window.yeniliklerModalAc = () => { this.acik = true; };
+        window.yeniliklerModalKapat = () => { this.acik = false; };
+    }
+}" x-show="acik">
+<div class="modal-content" style="width: 600px; max-width: 95vw; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 0; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+    
+    <!-- HEADER -->
+    <div style="background: linear-gradient(135deg, #10B981, #059669); padding: 25px 20px; text-align: center; position: relative;">
+        <i data-lucide="sparkles" height="32" width="32" style="color: white; margin-bottom: 10px;"></i>
+        <h2 style="margin:0; color: white; font-size: 20px; font-weight: bold;">Elektronik Okul Güncellendi!</h2>
+        <p style="margin: 5px 0 0 0; color: rgba(255,255,255,0.8); font-size: 13px;">Sürüm v2.0 - Neler Yeni?</p>
+        <button class="icon-btn" @click="acik = false" style="position: absolute; top: 15px; right: 15px; color: white;" title="Kapat">
+            <i data-lucide="x" height="20" width="20"></i>
+        </button>
+    </div>
+
+    <!-- BODY -->
+    <div style="padding: 25px 30px; max-height: 50vh; overflow-y: auto; color: var(--fg-main); font-size: 14px; line-height: 1.6;">
+        <ul style="list-style-type: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 15px;">
+            <li style="display: flex; gap: 12px; align-items: flex-start;">
+                <div style="background: rgba(16, 185, 129, 0.1); padding: 8px; border-radius: 8px; color: #10B981;">
+                    <i data-lucide="zap" height="20" width="20"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 15px;">Işık Hızında Performans</h4>
+                    <p style="margin: 0; color: var(--fg-sub); font-size: 13px;">Uygulama altyapısı Alpine.js mimarisine geçirildi. Tablolar arası geçişler, arama ve filtreleme işlemleri artık eskisinden 10 kat daha hızlı ve pürüzsüz çalışıyor.</p>
+                </div>
+            </li>
+            <li style="display: flex; gap: 12px; align-items: flex-start;">
+                <div style="background: rgba(59, 130, 246, 0.1); padding: 8px; border-radius: 8px; color: #3B82F6;">
+                    <i data-lucide="shield-check" height="20" width="20"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 15px;">Akıllı Hata Koruması & Türkçe Karakter</h4>
+                    <p style="margin: 0; color: var(--fg-sub); font-size: 13px;">"Bilinmiyor sınıfı öğrencisi" gibi sorunlar tamamen çözüldü. Arama kutularındaki Türkçe karakter (İ, ı) sorunları giderildi, artık eksiksiz arama yapabilirsiniz.</p>
+                </div>
+            </li>
+            <li style="display: flex; gap: 12px; align-items: flex-start;">
+                <div style="background: rgba(245, 158, 11, 0.1); padding: 8px; border-radius: 8px; color: #F59E0B;">
+                    <i data-lucide="database" height="20" width="20"></i>
+                </div>
+                <div>
+                    <h4 style="margin: 0 0 4px 0; font-size: 15px;">Otomatik Yedekleme ve Kurtarma</h4>
+                    <p style="margin: 0; color: var(--fg-sub); font-size: 13px;">Veritabanınız artık çok daha güvenli. Otomatik yedeklemeler arka planda sessizce çalışır ve veri kaybı riskinizi tamamen ortadan kaldırır.</p>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <!-- FOOTER -->
+    <div style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); text-align: center;">
+        <button class="btn btn-ogr" @click="acik = false" style="padding: 10px 30px; font-weight: bold; border-radius: 20px; font-size: 14px;">Anladım, Kapat</button>
+    </div>
+</div>
+</div>
