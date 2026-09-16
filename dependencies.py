@@ -48,3 +48,5 @@ def update_job(job_id, durum, mesaj, tamamlanan=None, hata=None):
 def get_job(job_id):
     return GLOBAL_ISLEMLER.get(job_id, None)
 
+
+islem_durumlari = GLOBAL_ISLEMLER
