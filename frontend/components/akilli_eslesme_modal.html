@@ -1,24 +1,22 @@
-<div class="modal-overlay" id="akilli_eslesme_modal">
+<div class="modal-overlay" id="akilli_eslesme_modal" x-data="akilliEslesmeComponent()">
 <div class="modal-content" style="width: 600px; padding: 0; background-color: var(--bg-main);">
 <div class="modal-header">
-<h2 style="margin:0; color: #8B5CF6; font-size: 16px;"><i data-lucide="brain" height="16" width="16"></i> Akıllı Personel Eşleştirme</h2>
+<h2 style="margin:0; color: #8B5CF6; font-size: 16px;"><i data-lucide="brain" height="16" width="16"></i> Akıllı Personel Eşleştirme (Alpine.js)</h2>
 <button class="btn btn-kirmizi" onclick="modalKapat('akilli_eslesme_modal')" style="padding: 5px 15px;">Kapat</button>
 </div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
 <div style="font-size: 11px; color: var(--fg-sub); line-height: 1.5;">
-                    MEB yazılarının konusunda girdiğiniz kelime geçerse, seçtiğiniz <b>Kişi, Grup, Görev veya Branş</b>
-                    listeye otomatik eklenir. <br/>
-<i>Örn: Tür'ü Branş, Hedef'i Matematik seçip kelimeye "DYK" yazarsanız, DYK kurs yazısı geldiğinde
-                        tüm matematikçiler seçilir.</i>
+                    MEB yazılarının konusunda girdiğiniz kelime geçerse, seçtiğiniz <b>Kişi, Grup, Görev veya Branş</b> listeye otomatik eklenir. <br/>
+<i>Örn: Tür'ü Branş, Hedef'i Matematik seçip kelimeye "DYK" yazarsanız, DYK kurs yazısı geldiğinde tüm matematikçiler seçilir.</i>
 </div>
 <div style="display: flex; gap: 8px; align-items: flex-end; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
 <div style="flex: 2;">
 <span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Anahtar Kelime:</span>
-<input id="ae_kelime" placeholder="Örn: DYK, Gezi vb." style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);" type="text"/>
+<input x-model="yeniKelime" placeholder="Örn: DYK, Gezi vb." style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);" type="text"/>
 </div>
 <div style="flex: 1;">
 <span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Eşleşme Türü:</span>
-<select id="ae_tur" onchange="aeTurDegisti()" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+<select x-model="yeniTur" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
 <option value="kisi">Kişi Seç</option>
 <option value="grup">Grup Seç</option>
 <option value="gorev">Görev Seç</option>
@@ -27,13 +25,89 @@
 </div>
 <div style="flex: 2;">
 <span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Hedef:</span>
-<select id="ae_hedef" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></select>
+<select x-model="yeniHedef" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+    <template x-for="sec in secenekler">
+        <option :value="sec" x-text="sec"></option>
+    </template>
+</select>
 </div>
-<button class="btn btn-dev" onclick="akilliEslesmeEkle()" style="padding: 6px 15px; height: 30px;"><i data-lucide="plus" height="16" width="16"></i> Ekle</button>
+<button class="btn btn-dev" @click="ekle()" style="padding: 6px 15px; height: 30px;"><i data-lucide="plus" height="16" width="16"></i> Ekle</button>
 </div>
 <div class="tree-card" style="height: 200px; border: 1px solid var(--border); overflow-y: auto;">
-<div id="ae_liste"></div>
+    <div x-show="kurallar.length === 0" style="padding:15px; text-align:center; color:var(--fg-sub); font-size:11px;">
+        Henüz kural eklenmemiş.
+    </div>
+    <template x-for="(kural, index) in kurallar" :key="index">
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border); font-size:11px; color: var(--fg-main);">
+            <div>
+                <strong style="color: #8B5CF6;">Kelime:</strong> <span x-text="kural.kelime"></span> <br> 
+                <strong style="color:var(--tree-sel);" x-text="turIsmi(kural.tur) + ':'"></strong> <span x-text="kural.hedef || kural.personel"></span>
+            </div>
+            <button class="btn btn-kirmizi" style="padding:4px 10px; font-size:9px;" @click="sil(index)">Sil</button>
+        </div>
+    </template>
 </div>
 </div>
 </div>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('akilliEslesmeComponent', () => ({
+        yeniKelime: '',
+        yeniTur: 'kisi',
+        yeniHedef: '',
+        
+        get secenekler() {
+            if (!window.tumPersoneller) return [];
+            let tur = this.yeniTur;
+            let list = [];
+            if(tur === 'kisi') {
+                list = window.tumPersoneller.map(p => p.ad).sort();
+            } else if(tur === 'grup') {
+                list = window.tumPersonelGruplari || ['İdare', 'Öğretmenler', 'Diğer Personel'];
+            } else if(tur === 'gorev') {
+                list = [...new Set(window.tumPersoneller.map(p => p.gorev))].filter(g => g && g !== "-").sort();
+            } else if(tur === 'brans') {
+                list = [...new Set(window.tumPersoneller.map(p => p.brans))].filter(b => b && b !== "-").sort();
+            }
+            if(list.length > 0 && !list.includes(this.yeniHedef)) this.yeniHedef = list[0];
+            return list;
+        },
+        
+        get kurallar() {
+            if(!window.sistemAyarlari) return [];
+            return window.sistemAyarlari.oto_eslesmeler || [];
+        },
+        
+        turIsmi(tur) {
+            return { 'kisi': 'Kişi', 'grup': 'Grup', 'gorev': 'Görev', 'brans': 'Branş' }[tur] || 'Kişi';
+        },
+        
+        ekle() {
+            let kelime = this.yeniKelime.trim();
+            if(!kelime || !this.yeniHedef) {
+                bildirimGoster("Lütfen alanları tam doldurun!", "hata");
+                return;
+            }
+            if(!window.sistemAyarlari.oto_eslesmeler) window.sistemAyarlari.oto_eslesmeler = [];
+            window.sistemAyarlari.oto_eslesmeler.push({ kelime: kelime, tur: this.yeniTur, hedef: this.yeniHedef });
+            
+            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(window.sistemAyarlari) })
+            .then(r => r.json()).then(v => {
+                bildirimGoster("Kural başarıyla eklendi!", "bilgi");
+                this.yeniKelime = '';
+            });
+        },
+        
+        sil(index) {
+            if(!confirm("Kuralı silmek istediğinize emin misiniz?")) return;
+            window.sistemAyarlari.oto_eslesmeler.splice(index, 1);
+            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(window.sistemAyarlari) })
+            .then(r => r.json()).then(v => {
+                bildirimGoster("Kural silindi!", "bilgi");
+            });
+        }
+    }));
+});
+</script>

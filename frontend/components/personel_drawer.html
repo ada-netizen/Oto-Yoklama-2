@@ -1,33 +1,99 @@
-<div class="drawer-overlay" id="personel_drawer" onclick="if(event.target === this) personelDrawerKapat()">
-<div class="drawer-panel" onclick="event.stopPropagation()">
+<div class="drawer-overlay" id="personel_drawer" :class="{ 'open': acik }" x-data="personelDrawerComponent()" @click="if($event.target === $el) acik = false" style="z-index: 2200;">
+<div class="drawer-panel" @click.stop>
 <div class="drawer-header">
-<h3 id="drawer_baslik" style="margin:0; color:var(--tree-sel);">Yeni Personel Ekle</h3>
-<button class="icon-btn" onclick="personelDrawerKapat()" style="color:var(--fg-sub);"><i data-lucide="x" height="16" width="16"></i></button>
+<h3 x-text="baslik" style="margin:0; color:var(--tree-sel);"></h3>
+<button class="icon-btn" @click="acik = false" style="color:var(--fg-sub);"><i data-lucide="x" height="16" width="16"></i></button>
 </div>
 <div class="drawer-body">
-<input id="drawer_eski_ad" type="hidden"/>
 <div style="display:flex; flex-direction:column; gap:5px;">
 <label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Ad Soyad</label>
-<input id="drawer_ad" placeholder="Örn: Ahmet Yılmaz" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
+<input id="drawer_ad_alpine" x-model="ad" placeholder="Örn: Ahmet Yılmaz" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
 </div>
 <div style="display:flex; flex-direction:column; gap:5px;">
 <label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Branşı</label>
-<input id="drawer_brans" placeholder="Örn: Matematik" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
+<input x-model="brans" placeholder="Örn: Matematik" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
 </div>
 <div style="display:flex; flex-direction:column; gap:5px;">
 <label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Görevi</label>
-<input id="drawer_gorev" placeholder="Örn: Sınıf Öğretmeni" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
+<input x-model="gorev" placeholder="Örn: Sınıf Öğretmeni" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
 </div>
 <div style="display:flex; flex-direction:column; gap:5px;">
 <label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Personel Grubu</label>
-<select id="drawer_grup" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;">
-<!-- Dinamik doldurulacak -->
+<select x-model="grup" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;">
+    <template x-for="g in gruplar" :key="g">
+        <option :value="g" x-text="g"></option>
+    </template>
 </select>
 </div>
 </div>
 <div class="drawer-footer">
-<button class="btn btn-temizle" onclick="personelDrawerKapat()" style="padding:8px 15px;">İptal</button>
-<button class="btn btn-ogr" onclick="personelDrawerKaydet()" style="padding:8px 15px;"><i data-lucide="save" height="16" width="16"></i> Kaydet</button>
+<button class="btn btn-temizle" @click="acik = false" style="padding:8px 15px;">İptal</button>
+<button class="btn btn-ogr" @click="kaydet()" style="padding:8px 15px;"><i data-lucide="save" height="16" width="16"></i> Kaydet</button>
 </div>
 </div>
 </div>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('personelDrawerComponent', () => ({
+        acik: false,
+        baslik: 'Yeni Personel Ekle',
+        eskiAd: '',
+        ad: '',
+        brans: '',
+        gorev: '',
+        grup: '',
+        
+        get gruplar() {
+            return window.tumPersonelGruplari || [];
+        },
+        
+        init() {
+            window.personelDrawerAc = () => {
+                this.baslik = 'Yeni Personel Ekle';
+                this.eskiAd = ''; this.ad = ''; this.brans = ''; this.gorev = '';
+                if(this.gruplar.length > 0) this.grup = this.gruplar[0];
+                this.acik = true;
+                setTimeout(() => { let el = document.getElementById('drawer_ad_alpine'); if(el) el.focus(); }, 100);
+            };
+            
+            window.personelDuzenleBaslat = (pAd) => {
+                const p = (window.tumPersoneller || []).find(x => x.ad === pAd);
+                if(!p) return;
+                this.baslik = 'Personeli Düzenle';
+                this.eskiAd = p.ad; this.ad = p.ad; this.brans = p.brans; this.gorev = p.gorev; this.grup = p.grup;
+                this.acik = true;
+                setTimeout(() => { let el = document.getElementById('drawer_ad_alpine'); if(el) el.focus(); }, 100);
+            };
+            
+            window.personelDrawerKapat = () => { this.acik = false; };
+        },
+        
+        kaydet() {
+            const trimmedAd = this.ad.trim();
+            if(!trimmedAd) return bildirimGoster("Ad Soyad boş bırakılamaz!", "hata");
+            
+            const veri = { ad: trimmedAd, gorev: this.gorev.trim(), brans: this.brans.trim(), grup: this.grup };
+            
+            if (this.eskiAd) {
+                fetch(`${API}/personel-guncelle/${encodeURIComponent(this.eskiAd)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
+                .then(r => r.json()).then(v => {
+                    bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
+                    if(v.basarili) {
+                        this.acik = false;
+                        if(window.personelleriYukle) window.personelleriYukle().then(() => { if(window.yonetimPersonelTablosunuDoldur) window.yonetimPersonelTablosunuDoldur(); });
+                    }
+                });
+            } else {
+                fetch(`${API}/personel-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) })
+                .then(r => r.json()).then(v => {
+                    bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
+                    if(v.basarili) {
+                        this.acik = false;
+                        if(window.personelleriYukle) window.personelleriYukle().then(() => { if(window.yonetimPersonelTablosunuDoldur) window.yonetimPersonelTablosunuDoldur(); });
+                    }
+                });
+            }
+        }
+    }));
+});
+</script>

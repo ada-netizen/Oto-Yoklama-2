@@ -61,20 +61,9 @@ const API = 'http://127.0.0.1:8000';
         let siralamaSutun = 'ad_soyad'; let siralamaYon = 1; 
 
         // --- 1. ARAYÜZ VE MODAL YÖNETİMİ ---
-        function modalAc(id) { 
-            document.getElementById(id).style.display = 'flex'; 
-            if(id === 'raporlar_modal') {
-                const subeler = [...new Set(ogrenciListesi.map(o => sinifFormatla(o.sube)))];
-                subeler.sort((a, b) => (parseInt(a)||99) - (parseInt(b)||99));
-                const raporKutu = document.getElementById('rapor_sube_kutu');
-                if(raporKutu) {
-                    raporKutu.innerHTML = '<option>Seç</option>';
-                    subeler.forEach(s => raporKutu.innerHTML += `<option>${s}</option>`);
-                }
-            }
-        }
-        
-        function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
+        function modalAc(id) { document.getElementById(id).style.display = 'flex'; }
+
+function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
         
         function temaDegistir(forceState = null) {

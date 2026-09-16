@@ -1,16 +1,44 @@
-<div class="modal-overlay" id="personel_havuz_modal" style="z-index:3000;">
+<div class="modal-overlay" id="personel_havuz_modal" style="z-index:3000;" x-data="personelHavuzComponent()">
 <div class="modal-content" style="width: 400px; padding: 0; background-color: var(--bg-main);">
 <div class="modal-header">
 <h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
-<i data-lucide="user-plus" height="18" width="18"></i> Personel Seç
+<i data-lucide="user-plus" height="18" width="18"></i> Personel Seç (Alpine.js)
                 </h2>
 <button class="btn btn-kirmizi" onclick="modalKapat('personel_havuz_modal')" style="padding: 5px 15px;">Kapat</button>
 </div>
 <div style="padding: 15px; border-bottom: 1px solid var(--border);">
-<input id="personel_arama_input" onkeyup="personelAra()" placeholder="Personel Ara..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input); color:var(--fg-main); outline:none;" type="text"/>
+<input id="personel_arama_input" x-model="arama" placeholder="Personel Ara..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input); color:var(--fg-main); outline:none;" type="text"/>
 </div>
 <div id="personel_havuz_liste" style="padding: 10px 15px; max-height: 50vh; overflow-y: auto; display:flex; flex-direction:column; gap:5px;">
-<!-- Personeller buraya JS ile yüklenecek -->
+    <div x-show="filtrelenmis.length === 0" style="padding:10px; color:var(--fg-sub); text-align:center;">Personel bulunamadı.</div>
+    <template x-for="p in filtrelenmis" :key="p.ad">
+        <div class="personel-havuz-satir" @click="sec(p.ad)" style="cursor:pointer; padding:8px; border-radius:4px;">
+            <span style="font-weight:600;" x-text="p.ad"></span>
+            <span x-show="zatenSeciliMi(p.ad)" style="font-size:11px; color:#F59E0B; margin-left:5px;">(Görevli)</span>
+        </div>
+    </template>
 </div>
 </div>
 </div>
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('personelHavuzComponent', () => ({
+        arama: '',
+        
+        get filtrelenmis() {
+            let ara = this.arama.toLocaleLowerCase('tr-TR');
+            return (window.tumPersoneller || []).filter(p => p.ad.toLocaleLowerCase('tr-TR').includes(ara));
+        },
+        
+        zatenSeciliMi(ad) {
+            if(!window.ihaleKomisyonSecimleri) return false;
+            return Object.values(window.ihaleKomisyonSecimleri).includes(ad);
+        },
+        
+        sec(ad) {
+            if(window.personelAta) window.personelAta(ad);
+            this.arama = ''; // Reset search after select
+        }
+    }));
+});
+</script>

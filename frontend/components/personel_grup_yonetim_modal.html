@@ -1,18 +1,53 @@
-<div class="modal-overlay" id="personel_grup_yonetim_modal" style="z-index: 2100;">
+<div class="modal-overlay" id="personel_grup_yonetim_modal" style="z-index: 2100;" x-data="{
+    yeniAd: '',
+    get gruplar() { return window.tumPersonelGruplari || []; },
+    
+    ekle() {
+        let ad = this.yeniAd.trim();
+        if (!ad) return;
+        if (window.tumPersonelGruplari.includes(ad)) {
+            bildirimGoster('Bu grup zaten mevcut!', 'hata');
+            return;
+        }
+        window.tumPersonelGruplari.push(ad);
+        personelGrubuKaydet().then(() => {
+            personelGruplariCiz();
+            bildirimGoster('Grup eklendi', 'bilgi');
+        });
+        this.yeniAd = '';
+    },
+    
+    sil(grup) {
+        if(!confirm(`'${grup}' grubunu silmek istediğinize emin misiniz?`)) return;
+        window.tumPersonelGruplari = window.tumPersonelGruplari.filter(g => g !== grup);
+        if(window.aktifPersonelFiltresi === grup) window.aktifPersonelFiltresi = 'Tümü';
+        personelGrubuKaydet().then(() => personelGruplariCiz());
+    }
+}">
 <div class="modal-content" style="width: 450px; max-width: 95vw; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 0;">
 <div class="modal-header">
-<h3 style="margin:0; color: var(--tree-sel); font-size: 15px;"><i data-lucide="users" height="16" width="16"></i> Personel Gruplarını Yönet</h3>
+<h3 style="margin:0; color: var(--tree-sel); font-size: 15px;"><i data-lucide="users" height="16" width="16"></i> Personel Gruplarını Yönet (Alpine.js)</h3>
 <button class="icon-btn" onclick="modalKapat('personel_grup_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
 </div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
 <div style="display: flex; gap: 10px;">
-<input id="yeni_grup_adi" placeholder="Yeni Grup Adı (Örn: Temizlik Görevlileri)" style="flex:1; padding: 8px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;" type="text"/>
-<button class="btn btn-ogr" onclick="yeniPersonelGrubuEkle()" style="padding: 8px 15px;">Ekle</button>
+<input x-model="yeniAd" @keydown.enter="ekle()" placeholder="Yeni Grup Adı (Örn: Temizlik Görevlileri)" style="flex:1; padding: 8px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;" type="text"/>
+<button class="btn btn-ogr" @click="ekle()" style="padding: 8px 15px;">Ekle</button>
 </div>
 <div style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
 <table style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left;">
-<tbody id="personel_grup_govde" style="background-color: var(--bg-card);">
-<!-- Dinamik Doldurulacak -->
+<tbody style="background-color: var(--bg-card);">
+    <template x-for="grup in gruplar" :key="grup">
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid var(--border);" x-text="grup"></td>
+            <td style="padding: 10px; border-bottom: 1px solid var(--border); text-align: right;">
+                <button class="btn btn-kirmizi" @click="sil(grup)" style="padding: 4px 8px; font-size: 11px;">Sil</button>
+            </td>
+        </tr>
+    </template>
+    <tr x-show="gruplar.length === 0">
+        <td colspan="2" style="padding: 10px; text-align: center; color: var(--fg-sub);">Grup bulunamadı.</td>
+    </tr>
 </tbody>
 </table>
 </div>

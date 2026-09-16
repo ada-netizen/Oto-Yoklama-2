@@ -26,111 +26,20 @@
         function personelYonetimAc() { modalAc('personel_yonetim_modal'); yonetimPersonelTablosunuDoldur(); }
 
         // --- <i data-lucide="brain" width="16" height="16"></i> GELİŞMİŞ AKILLI EŞLEŞTİRME MOTORU ---
-        function aeTurDegisti() {
-            const tur = document.getElementById('ae_tur').value;
-            const secici = document.getElementById('ae_hedef');
-            if(!secici) return;
-            secici.innerHTML = '';
-            
-            let secenekler = [];
-            if(tur === 'kisi') {
-                secenekler = [...tumPersoneller].map(p => p.ad).sort();
-            } else if(tur === 'grup') {
-                secenekler = ['İdare', 'Öğretmenler', 'Diğer Personel'];
-            } else if(tur === 'gorev') {
-                secenekler = [...new Set(tumPersoneller.map(p => p.gorev))].filter(g => g !== "-").sort();
-            } else if(tur === 'brans') {
-                secenekler = [...new Set(tumPersoneller.map(p => p.brans))].filter(b => b !== "-").sort();
-            }
-            secenekler.forEach(s => secici.innerHTML += `<option value="${s.replace(/"/g, '&quot;')}">${s}</option>`);
-        }
+        function akilliEslesmeModalAc() { if(tumPersoneller.length === 0) personelleriYukle().then(() => modalAc('akilli_eslesme_modal')); else modalAc('akilli_eslesme_modal'); }
 
-        function akilliEslesmeModalAc() {
-            if(!sistemAyarlari.oto_eslesmeler) sistemAyarlari.oto_eslesmeler = [];
-            
-            // Eğer personeller henüz yüklenmediyse, önce yükleyip sonra pencereyi açar
-            if(tumPersoneller.length === 0) {
-                personelleriYukle().then(() => {
-                    aeTurDegisti(); 
-                    akilliEslesmeCiz();
-                    modalAc('akilli_eslesme_modal');
-                });
-                return;
-            }
-            
-            aeTurDegisti(); 
-            akilliEslesmeCiz();
-            modalAc('akilli_eslesme_modal');
-        }
+function dinamikTebligFiltreleriOlustur() {
+    const kapsayici = document.getElementById('dinamik_teblig_filtreleri');
+    if (!kapsayici) return;
+    let html = '<label class="chip-checkbox-wrapper" title="Tüm grupları seç/bırak"><input type="checkbox" id="grp_tumu" class="chip-checkbox" onchange="filtreTumuDegisti()"><span class="chip-label">Tümü</span></label>';
+    tumPersonelGruplari.forEach(grup => {
+        let sid = grup.replace(/[^a-zA-Z0-9]/g, '_');
+        html += `<label class="chip-checkbox-wrapper"><input type="checkbox" id="grp_${sid}" class="chip-checkbox dinamik-grp-checkbox" data-grup="${grup}" onchange="filtreleriHesapla()"><span class="chip-label">${grup}</span></label>`;
+    });
+    kapsayici.innerHTML = html;
+}
 
-        function akilliEslesmeEkle() {
-            const kelime = document.getElementById('ae_kelime').value.trim();
-            const tur = document.getElementById('ae_tur').value;
-            const hedef = document.getElementById('ae_hedef').value;
-            if(!kelime || !hedef) return bildirimGoster("Lütfen alanları tam doldurun!", "hata");
-            
-            if(!sistemAyarlari.oto_eslesmeler) sistemAyarlari.oto_eslesmeler = [];
-            sistemAyarlari.oto_eslesmeler.push({ kelime: kelime, tur: tur, hedef: hedef });
-            
-            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) })
-            .then(r => r.json()).then(v => {
-                bildirimGoster("Kural başarıyla eklendi!", "bilgi");
-                document.getElementById('ae_kelime').value = '';
-                akilliEslesmeCiz();
-            });
-        }
-
-        function akilliEslesmeCiz() {
-            const liste = document.getElementById('ae_liste');
-            if(!liste) return;
-            liste.innerHTML = '';
-            if(!sistemAyarlari.oto_eslesmeler || sistemAyarlari.oto_eslesmeler.length === 0) {
-                liste.innerHTML = '<div style="padding:15px; text-align:center; color:var(--fg-sub); font-size:11px;">Henüz kural eklenmemiş.</div>';
-                return;
-            }
-            const turIsimleri = { 'kisi': 'Kişi', 'grup': 'Grup', 'gorev': 'Görev', 'brans': 'Branş' };
-            
-            sistemAyarlari.oto_eslesmeler.forEach((kural, i) => {
-                let gTur = kural.tur ? turIsimleri[kural.tur] : 'Kişi';
-                let gHedef = kural.hedef || kural.personel;
-                
-                liste.innerHTML += `<div style="display:flex; justify-content:space-between; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border); font-size:11px; color: var(--fg-main);">
-                    <div><strong style="color: #8B5CF6;">Kelime:</strong> ${kural.kelime} <br> <strong style="color:var(--tree-sel);">${gTur}:</strong> ${gHedef}</div>
-                    <button class="btn btn-kirmizi" style="padding:4px 10px; font-size:9px;" onclick="akilliEslesmeSil(${i})">Sil</button>
-                </div>`;
-            });
-        }
-
-        function akilliEslesmeSil(index) {
-            if(!confirm("Kuralı silmek istediğinize emin misiniz?")) return;
-            sistemAyarlari.oto_eslesmeler.splice(index, 1);
-            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) })
-            .then(r => r.json()).then(v => { bildirimGoster("Kural silindi!", "bilgi"); akilliEslesmeCiz(); });
-        }
-
-        // --- 1. TÜMÜNÜ SEÇ/LİSTELE MOTORU ---
-        function dinamikTebligFiltreleriOlustur() {
-            const container = document.getElementById('dinamik_teblig_filtreleri');
-            if (!container) return;
-
-            let html = `
-                <input type="checkbox" id="grp_tumu" class="chip-checkbox" onchange="filtreTumuDegisti()">
-                <label for="grp_tumu" class="chip-label"><i data-lucide="users" width="14" height="14"></i> Tümü</label>
-            `;
-
-            tumPersonelGruplari.forEach((grup, idx) => {
-                const id = `grp_dinamik_${idx}`;
-                html += `
-                    <input type="checkbox" id="${id}" class="chip-checkbox dinamik-grp-checkbox" data-grup="${grup}" onchange="filtreleriHesapla()">
-                    <label for="${id}" class="chip-label"><i data-lucide="shield-check" width="14" height="14"></i> ${grup}</label>
-                `;
-            });
-
-            container.innerHTML = html;
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        }
-
-        function filtreTumuDegisti() {
+function filtreTumuDegisti() {
             const tumu = document.getElementById('grp_tumu') ? document.getElementById('grp_tumu').checked : false;
             
             const checkboxes = document.querySelectorAll('.dinamik-grp-checkbox');
@@ -249,7 +158,7 @@
         }
 
         function personelGruplariCiz() {
-            // Çipleri Çiz
+            // Çipleri çiz
             const cipContainer = document.getElementById('personel_filtre_cipleri');
             if (cipContainer) {
                 cipContainer.innerHTML = `<button class="filter-chip ${aktifPersonelFiltresi === 'Tümü' ? 'active' : ''}" onclick="personelFiltreAyarla('Tümü', this)">Tümü</button>`;
@@ -257,25 +166,6 @@
                     const isActive = aktifPersonelFiltresi === grup ? 'active' : '';
                     cipContainer.innerHTML += `<button class="filter-chip ${isActive}" onclick="personelFiltreAyarla('${grup}', this)">${grup}</button>`;
                 });
-            }
-
-            // Ayrıca "Personel Ekle/Yönet" ekranındaki Dropdown'ı doldur
-            const drawerSelect = document.getElementById('drawer_grup');
-            if (drawerSelect) {
-                drawerSelect.innerHTML = tumPersonelGruplari.map(g => `<option value="${g}">${g}</option>`).join('');
-            }
-
-            // Grup yönetimi modali tablosunu çiz
-            const govde = document.getElementById('personel_grup_govde');
-            if (govde) {
-                govde.innerHTML = tumPersonelGruplari.map(g => `
-                    <tr>
-                        <td style="padding: 8px; border-bottom: 1px solid var(--border); color: var(--fg-main);">${g}</td>
-                        <td style="padding: 8px; border-bottom: 1px solid var(--border); text-align: right;">
-                            <button class="icon-btn" style="color:#EF4444;" onclick="personelGrubuSil('${g.replace(/'/g, "\\'")}')" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
-                        </td>
-                    </tr>
-                `).join('');
             }
 
             dinamikTebligFiltreleriOlustur();
@@ -367,81 +257,6 @@
             if (typeof lucide !== 'undefined') {
                 setTimeout(() => lucide.createIcons(), 50);
             }
-        }
-        
-        function personelDrawerAc() {
-            document.getElementById('drawer_baslik').innerText = 'Yeni Personel Ekle';
-            document.getElementById('drawer_eski_ad').value = '';
-            document.getElementById('drawer_ad').value = '';
-            document.getElementById('drawer_brans').value = '';
-            document.getElementById('drawer_gorev').value = '';
-            if(tumPersonelGruplari.length > 0) document.getElementById('drawer_grup').value = tumPersonelGruplari[0];
-            document.getElementById('personel_drawer').classList.add('open');
-            document.getElementById('drawer_ad').focus();
-        }
-
-        function personelDrawerKapat() {
-            document.getElementById('personel_drawer').classList.remove('open');
-        }
-        
-        function personelDuzenleBaslat(ad) {
-            const p = tumPersoneller.find(x => x.ad === ad);
-            if(!p) return;
-            document.getElementById('drawer_baslik').innerText = 'Personeli Düzenle';
-            document.getElementById('drawer_eski_ad').value = p.ad;
-            document.getElementById('drawer_ad').value = p.ad;
-            document.getElementById('drawer_brans').value = p.brans;
-            document.getElementById('drawer_gorev').value = p.gorev;
-            document.getElementById('drawer_grup').value = p.grup;
-            document.getElementById('personel_drawer').classList.add('open');
-            document.getElementById('drawer_ad').focus();
-        }
-
-        function personelDrawerKaydet() {
-            const ad = document.getElementById('drawer_ad').value.trim();
-            if(!ad) return bildirimGoster("Ad Soyad boş bırakılamaz!", "hata");
-            
-            const veri = { 
-                ad: ad, 
-                gorev: document.getElementById('drawer_gorev').value.trim(), 
-                brans: document.getElementById('drawer_brans').value.trim(), 
-                grup: document.getElementById('drawer_grup').value 
-            };
-            
-            const eskiAd = document.getElementById('drawer_eski_ad').value;
-            
-            if (eskiAd) {
-                // Güncelleme
-                fetch(`${API}/personel-guncelle/${encodeURIComponent(eskiAd)}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
-                    bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
-                    if(v.basarili) {
-                        personelDrawerKapat();
-                        personelleriYukle().then(() => {
-                            yonetimPersonelTablosunuDoldur();
-                            if (document.getElementById('teblig_modal').style.display === 'flex') {
-                                tebligModalAc(aktifOgrenciNo);
-                            }
-                        });
-                    }
-                });
-            } else {
-                // Ekleme
-                fetch(`${API}/personel-ekle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
-                    bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
-                    if(v.basarili) { 
-                        personelDrawerKapat(); 
-                        personelleriYukle().then(() => yonetimPersonelTablosunuDoldur()); 
-                    }
-                });
-            }
-        }
-
-        function yonetimPersonelSil(ad) {
-            if(!confirm(`${ad} adlı personeli silmek istediğinize emin misiniz?`)) return;
-            fetch(`${API}/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
-                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
-                personelleriYukle().then(() => yonetimPersonelTablosunuDoldur());
-            });
         }
         
         function personelPdfIndir() {

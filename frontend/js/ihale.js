@@ -1249,37 +1249,8 @@ let secimIcinGorevId = null;
 
 function personelSecimEkraniAc(gorevId) {
     secimIcinGorevId = gorevId;
-    document.getElementById("personel_arama_input").value = "";
-    personelHavuzunuCiz(tumPersoneller);
-    document.getElementById("personel_havuz_modal").style.display = "flex";
-    document.getElementById("personel_arama_input").focus();
-}
-
-function personelHavuzunuCiz(liste) {
-    const div = document.getElementById("personel_havuz_liste");
-    if (!liste || liste.length === 0) {
-        div.innerHTML = "<div style='padding:10px; color:var(--fg-sub); text-align:center;'>Personel bulunamadı.</div>";
-        return;
-    }
-    
-    let html = "";
-    liste.forEach(p => {
-        let adEscaped = p.ad.replace(/'/g, "\\'");
-        let zatenSeciliMi = Object.values(ihaleKomisyonSecimleri).includes(p.ad);
-        let extraInfo = zatenSeciliMi ? "<span style='font-size:11px; color:#F59E0B;'>(Görevli)</span>" : "";
-        
-        html += "<div class='personel-havuz-satir' onclick='personelAta(\"" + adEscaped + "\")'>" +
-            "<span style='font-weight:600;'>" + p.ad + "</span>" +
-            extraInfo +
-        "</div>";
-    });
-    div.innerHTML = html;
-}
-
-function personelAra() {
-    const aranan = document.getElementById("personel_arama_input").value.toLocaleLowerCase('tr-TR');
-    const filtrelenmis = tumPersoneller.filter(p => p.ad.toLocaleLowerCase('tr-TR').includes(aranan));
-    personelHavuzunuCiz(filtrelenmis);
+    document.getElementById('personel_havuz_modal').style.display = 'flex';
+    setTimeout(() => { let el = document.getElementById('personel_arama_input'); if (el) el.focus(); }, 100);
 }
 
 function personelAta(ad) {
