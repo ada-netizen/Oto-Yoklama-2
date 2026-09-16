@@ -6,6 +6,9 @@ from dependencies import yollar, db
 from sistem_motoru import SistemMotoru
 from models import *
 
+MAX_IMPORT_SIZE = 25 * 1024 * 1024
+ALLOWED_IMPORT_EXTENSIONS = {".xlsx", ".xls", ".csv"}
+
 def dosyayi_otomatik_ac(dosya_yolu):
     """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
     try:

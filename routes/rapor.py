@@ -13,6 +13,7 @@ import logging
 from araclar import VeriAraclari
 from dependencies import db, yollar, ayarlar, islem_logla, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari
 from utils import *
+from utils import _rapor_verisi_hazirla
 
 router = APIRouter()
 
