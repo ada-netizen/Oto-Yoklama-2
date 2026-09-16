@@ -1,0 +1,33 @@
+<div class="drawer-overlay" id="personel_drawer" onclick="if(event.target === this) personelDrawerKapat()">
+<div class="drawer-panel" onclick="event.stopPropagation()">
+<div class="drawer-header">
+<h3 id="drawer_baslik" style="margin:0; color:var(--tree-sel);">Yeni Personel Ekle</h3>
+<button class="icon-btn" onclick="personelDrawerKapat()" style="color:var(--fg-sub);"><i data-lucide="x" height="16" width="16"></i></button>
+</div>
+<div class="drawer-body">
+<input id="drawer_eski_ad" type="hidden"/>
+<div style="display:flex; flex-direction:column; gap:5px;">
+<label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Ad Soyad</label>
+<input id="drawer_ad" placeholder="Örn: Ahmet Yılmaz" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
+</div>
+<div style="display:flex; flex-direction:column; gap:5px;">
+<label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Branşı</label>
+<input id="drawer_brans" placeholder="Örn: Matematik" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
+</div>
+<div style="display:flex; flex-direction:column; gap:5px;">
+<label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Görevi</label>
+<input id="drawer_gorev" placeholder="Örn: Sınıf Öğretmeni" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;" type="text"/>
+</div>
+<div style="display:flex; flex-direction:column; gap:5px;">
+<label style="color:var(--fg-sub); font-size:12px; font-weight:bold;">Personel Grubu</label>
+<select id="drawer_grup" style="padding:10px; background:var(--bg-card); color:var(--fg-main); border:1px solid var(--border); border-radius:4px; outline:none;">
+<!-- Dinamik doldurulacak -->
+</select>
+</div>
+</div>
+<div class="drawer-footer">
+<button class="btn btn-temizle" onclick="personelDrawerKapat()" style="padding:8px 15px;">İptal</button>
+<button class="btn btn-ogr" onclick="personelDrawerKaydet()" style="padding:8px 15px;"><i data-lucide="save" height="16" width="16"></i> Kaydet</button>
+</div>
+</div>
+</div>

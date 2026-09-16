@@ -1,0 +1,51 @@
+<div class="modal-overlay" id="personel_yonetim_modal">
+<div class="modal-content" style="width: 850px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main);">
+<div class="modal-header">
+<h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
+<i data-lucide="users" height="16" width="16"></i> Personel Yönetimi
+                </h2>
+<div style="display: flex; gap: 8px; align-items: center;">
+<button class="btn btn-kirmizi" onclick="personelPdfIndir()" style="padding: 5px 12px; display:flex; align-items:center; gap:5px;"><i data-lucide="file-text" height="16" width="16"></i> PDF</button>
+<button class="btn btn-ogr" onclick="personelExcelIndir()" style="padding: 5px 12px; display:flex; align-items:center; gap:5px;"><i data-lucide="bar-chart" height="16" width="16"></i>
+                        Excel</button>
+<button class="icon-btn" onclick="modalKapat('personel_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
+</div>
+</div>
+<div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+<div style="position: relative;">
+<span style="position: absolute; left: 8px; top: 6px; font-size: 12px; color: var(--fg-sub);"><i data-lucide="search" height="14" width="14"></i></span>
+<input id="personel_arama" onkeyup="personelTablosunuDoldur()" placeholder="Personel Ara..." style="padding: 6px 6px 6px 26px; width: 200px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;" type="text"/>
+</div>
+<div id="personel_filtre_cipleri" style="display: flex; gap: 6px;">
+<!-- Dinamik doldurulacak -->
+</div>
+</div>
+<div style="display: flex; gap: 10px;">
+<button class="btn btn-dev" onclick="personelGrupYonetimiAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="users" height="16" width="16"></i> Grupları
+                        Yönet</button>
+<button class="btn btn-ogr" onclick="personelDrawerAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="plus" height="16" width="16"></i> Yeni
+                        Personel</button>
+</div>
+</div>
+<div class="tree-card" style="margin: 0 20px 20px 20px; flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-card); border-radius: 6px;">
+<table id="personel_tablosu" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+<thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
+<tr>
+<th style="width: 40%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">
+                                Ad Soyad</th>
+<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">
+                                Branşı</th>
+<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">
+                                Görevi</th>
+<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">
+                                İşlemler</th>
+</tr>
+</thead>
+<tbody id="personel_govde">
+<!-- JavaScript ile doldurulacak -->
+</tbody>
+</table>
+</div>
+</div>
+</div>

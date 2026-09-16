@@ -1,0 +1,34 @@
+<div class="modal-overlay" id="fiyat_giris_modal" style="z-index:4000; align-items:center; justify-content:center; display:none;">
+<div class="modal-content" style="width: 95%; max-width: 1200px; max-height: 90vh; padding: 0; background-color: var(--bg-main); display: flex; flex-direction: column;">
+<div class="modal-header">
+<h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
+<i data-lucide="calculator" height="18" width="18"></i> Yaklaşık Maliyet Fiyat Girişi
+                </h2>
+<button class="btn btn-kirmizi" onclick="modalKapat('fiyat_giris_modal')" style="padding: 5px 15px;">İptal</button>
+</div>
+<div style="padding: 15px 20px; overflow-y: auto; flex: 1;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+<span style="font-weight:bold; color:var(--fg-main);"><i data-lucide="building" height="16" width="16"></i> İhaleye Katılan Kurum/Kişiler</span>
+<button class="btn btn-dev" onclick="ihaleFirmaEkle()" style="padding: 4px 10px; font-size: 11px;"><i data-lucide="plus" height="14" width="14"></i> Kurum Ekle</button>
+</div>
+<div id="ihale_firmalar_govde" style="display:flex; gap:10px; padding-bottom:15px; flex-wrap: wrap; border-bottom: 1px solid var(--border); margin-bottom: 15px;">
+</div>
+<p style="color: var(--fg-sub); font-size: 13px; margin-top:0; margin-bottom: 15px;">Firmaların verdiği
+                    Birim Fiyatları giriniz. Toplamlar ve ortalama Yaklaşık Maliyet otomatik hesaplanacaktır.</p>
+<div style="overflow-x: auto;">
+<table class="inline-edit-table" id="fiyat_giris_tablosu" style="width: 100%; font-size: 11px;">
+<thead id="fiyat_giris_thead">
+</thead>
+<tbody id="fiyat_giris_tbody">
+</tbody>
+<tfoot id="fiyat_giris_tfoot" style="background-color: var(--bg-card); font-weight: bold;">
+</tfoot>
+</table>
+</div>
+</div>
+<div style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); text-align: right; display:flex; justify-content:flex-end; gap:10px;">
+<button class="btn btn-dev" onclick="fiyatGirisTamamla()" style="padding: 10px 20px; font-weight:bold; border-radius:6px; background-color:#10B981;"><i data-lucide="check-circle" height="16" width="16"></i> Onayla ve
+                    Üret</button>
+</div>
+</div>
+</div>

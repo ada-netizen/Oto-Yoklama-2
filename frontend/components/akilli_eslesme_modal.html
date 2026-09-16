@@ -1,0 +1,39 @@
+<div class="modal-overlay" id="akilli_eslesme_modal">
+<div class="modal-content" style="width: 600px; padding: 0; background-color: var(--bg-main);">
+<div class="modal-header">
+<h2 style="margin:0; color: #8B5CF6; font-size: 16px;"><i data-lucide="brain" height="16" width="16"></i> Akıllı Personel Eşleştirme</h2>
+<button class="btn btn-kirmizi" onclick="modalKapat('akilli_eslesme_modal')" style="padding: 5px 15px;">Kapat</button>
+</div>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
+<div style="font-size: 11px; color: var(--fg-sub); line-height: 1.5;">
+                    MEB yazılarının konusunda girdiğiniz kelime geçerse, seçtiğiniz <b>Kişi, Grup, Görev veya Branş</b>
+                    listeye otomatik eklenir. <br/>
+<i>Örn: Tür'ü Branş, Hedef'i Matematik seçip kelimeye "DYK" yazarsanız, DYK kurs yazısı geldiğinde
+                        tüm matematikçiler seçilir.</i>
+</div>
+<div style="display: flex; gap: 8px; align-items: flex-end; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<div style="flex: 2;">
+<span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Anahtar Kelime:</span>
+<input id="ae_kelime" placeholder="Örn: DYK, Gezi vb." style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);" type="text"/>
+</div>
+<div style="flex: 1;">
+<span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Eşleşme Türü:</span>
+<select id="ae_tur" onchange="aeTurDegisti()" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+<option value="kisi">Kişi Seç</option>
+<option value="grup">Grup Seç</option>
+<option value="gorev">Görev Seç</option>
+<option value="brans">Branş Seç</option>
+</select>
+</div>
+<div style="flex: 2;">
+<span style="font-size: 10px; font-weight: bold; color: var(--fg-main);">Hedef:</span>
+<select id="ae_hedef" style="width:100%; padding:6px; margin-top:4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);"></select>
+</div>
+<button class="btn btn-dev" onclick="akilliEslesmeEkle()" style="padding: 6px 15px; height: 30px;"><i data-lucide="plus" height="16" width="16"></i> Ekle</button>
+</div>
+<div class="tree-card" style="height: 200px; border: 1px solid var(--border); overflow-y: auto;">
+<div id="ae_liste"></div>
+</div>
+</div>
+</div>
+</div>

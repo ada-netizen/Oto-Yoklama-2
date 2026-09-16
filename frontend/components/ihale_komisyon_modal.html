@@ -1,0 +1,132 @@
+<div class="modal-overlay" id="ihale_komisyon_modal">
+<div class="modal-content" style="width: 950px; padding: 0; background-color: var(--bg-main);">
+<div class="modal-header">
+<h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
+<i data-lucide="users" height="18" width="18"></i> İhale Komisyon Üyeleri
+                </h2>
+<button class="btn btn-kirmizi" onclick="modalKapat('ihale_komisyon_modal')" style="padding: 5px 15px;">İptal</button>
+</div>
+<div style="padding: 20px; max-height: 75vh; overflow-y: auto; display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+<!-- Komisyon 1 -->
+<div class="settings-card komisyon-karti" style="border-top: 3px solid #3B82F6;">
+<div class="settings-card-header"><i data-lucide="calculator" height="16" width="16"></i> Yaklaşık
+                        Maliyet Komisyonu</div>
+<div class="settings-card-body" style="padding:0 15px 15px 15px;">
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+<div style="flex:1; font-weight:600; font-size:13px; color: #3B82F6; "><i data-lucide="crown" height="14" style="margin-right:4px; vertical-align:middle;" width="14"></i> 1. Üye (Başkan)</div>
+<div id="text_ihale_kom_yaklasik_1" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_yaklasik_1" onclick="personelSecimEkraniAc('ihale_kom_yaklasik_1')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_yaklasik_1" onclick="personelSil('ihale_kom_yaklasik_1')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-top:10px;">
+<div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">2. Üye</div>
+<div id="text_ihale_kom_yaklasik_2" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_yaklasik_2" onclick="personelSecimEkraniAc('ihale_kom_yaklasik_2')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_yaklasik_2" onclick="personelSil('ihale_kom_yaklasik_2')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-top:10px;">
+<div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">3. Üye</div>
+<div id="text_ihale_kom_yaklasik_3" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_yaklasik_3" onclick="personelSecimEkraniAc('ihale_kom_yaklasik_3')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_yaklasik_3" onclick="personelSil('ihale_kom_yaklasik_3')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding: 15px 0 10px; border-top: 1px dashed var(--border); margin-top: 10px;">
+<span style="font-size: 12px; font-weight:600; color: var(--fg-main);">Komisyon Onay Belgesi</span>
+<div style="display:flex; gap:6px; align-items:center;">
+<button class="btn" onclick="ihaleKomisyonOnayYukle('ihale_kom_yaklasik')" style="background:#2563EB; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; min-width: 92px; white-space: nowrap;">Onay Yükle</button>
+<input accept="application/pdf" id="file_ihale_kom_yaklasik" onchange="ihaleKomisyonOnayPdfYukle(event, 'ihale_kom_yaklasik')" style="display:none" type="file"/>
+</div>
+</div>
+<div id="onay_info_ihale_kom_yaklasik" style="padding: 6px 0 0 0; font-size: 11px; color: var(--fg-sub);">Yüklenmedi</div>
+</div>
+</div>
+<!-- Komisyon 2 -->
+<div class="settings-card komisyon-karti" style="border-top: 3px solid #10B981;">
+<div class="settings-card-header"><i data-lucide="search" height="16" width="16"></i> Piyasa Fiyat
+                        Komisyonu</div>
+<div class="settings-card-body" style="padding:0 15px 15px 15px;">
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+<div style="flex:1; font-weight:600; font-size:13px; color: #10B981; "><i data-lucide="crown" height="14" style="margin-right:4px; vertical-align:middle;" width="14"></i> 1. Üye (Başkan)</div>
+<div id="text_ihale_kom_piyasa_1" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_piyasa_1" onclick="personelSecimEkraniAc('ihale_kom_piyasa_1')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_piyasa_1" onclick="personelSil('ihale_kom_piyasa_1')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-top: 10px;">
+<div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">2. Üye</div>
+<div id="text_ihale_kom_piyasa_2" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_piyasa_2" onclick="personelSecimEkraniAc('ihale_kom_piyasa_2')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_piyasa_2" onclick="personelSil('ihale_kom_piyasa_2')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-top: 10px;">
+<div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">3. Üye</div>
+<div id="text_ihale_kom_piyasa_3" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_piyasa_3" onclick="personelSecimEkraniAc('ihale_kom_piyasa_3')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_piyasa_3" onclick="personelSil('ihale_kom_piyasa_3')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding: 15px 0 10px; border-top: 1px dashed var(--border); margin-top: 10px;">
+<span style="font-size: 12px; font-weight:600; color: var(--fg-main);">Komisyon Onay Belgesi</span>
+<div style="display:flex; gap:6px; align-items:center;">
+<button class="btn" onclick="ihaleKomisyonOnayYukle('ihale_kom_piyasa')" style="background:#2563EB; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; min-width: 92px; white-space: nowrap;">Onay Yükle</button>
+<input accept="application/pdf" id="file_ihale_kom_piyasa" onchange="ihaleKomisyonOnayPdfYukle(event, 'ihale_kom_piyasa')" style="display:none" type="file"/>
+</div>
+</div>
+<div id="onay_info_ihale_kom_piyasa" style="padding: 6px 0 0 0; font-size: 11px; color: var(--fg-sub);">Yüklenmedi</div>
+</div>
+</div>
+<!-- Komisyon 3 -->
+<div class="settings-card komisyon-karti" style="border-top: 3px solid #F59E0B;">
+<div class="settings-card-header"><i data-lucide="check-square" height="16" width="16"></i> Muayene
+                        Kabul Komisyonu</div>
+<div class="settings-card-body" style="padding:0 15px 15px 15px;">
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0;">
+<div style="flex:1; font-weight:600; font-size:13px; color: #F59E0B; "><i data-lucide="crown" height="14" style="margin-right:4px; vertical-align:middle;" width="14"></i> 1. Üye (Başkan)</div>
+<div id="text_ihale_kom_muayene_1" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_muayene_1" onclick="personelSecimEkraniAc('ihale_kom_muayene_1')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_muayene_1" onclick="personelSil('ihale_kom_muayene_1')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-top:10px;">
+<div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">2. Üye</div>
+<div id="text_ihale_kom_muayene_2" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_muayene_2" onclick="personelSecimEkraniAc('ihale_kom_muayene_2')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_muayene_2" onclick="personelSil('ihale_kom_muayene_2')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; align-items:center; border-bottom: 1px solid var(--border); padding: 10px 0; margin-top:10px;">
+<div style="flex:1; font-weight:600; font-size:13px; color: var(--fg-main); ">3. Üye</div>
+<div id="text_ihale_kom_muayene_3" style="flex:1; font-style:italic; color: var(--fg-sub); font-size:13px;">Seçilmedi</div>
+<div style="display:flex; justify-content:flex-end; gap:6px; flex-wrap:wrap;">
+<button class="btn" id="btn_sec_ihale_kom_muayene_3" onclick="personelSecimEkraniAc('ihale_kom_muayene_3')" style="background:#10B981; color:#fff; border:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-weight:bold; font-size:12px;">Seç</button>
+<button class="btn btn-kirmizi" id="btn_sil_ihale_kom_muayene_3" onclick="personelSil('ihale_kom_muayene_3')" style="display:none; padding:4px 10px; border-radius:4px; cursor:pointer; font-size:12px;"><i data-lucide="trash" height="14" width="14"></i> Sil</button>
+</div>
+</div>
+<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding: 15px 0 10px; border-top: 1px dashed var(--border); margin-top: 10px;">
+<span style="font-size: 12px; font-weight:600; color: var(--fg-main);">Komisyon Onay Belgesi</span>
+<div style="display:flex; gap:6px; align-items:center;">
+<button class="btn" onclick="ihaleKomisyonOnayYukle('ihale_kom_muayene')" style="background:#2563EB; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px; min-width: 92px; white-space: nowrap;">Onay Yükle</button>
+<input accept="application/pdf" id="file_ihale_kom_muayene" onchange="ihaleKomisyonOnayPdfYukle(event, 'ihale_kom_muayene')" style="display:none" type="file"/>
+</div>
+</div>
+<div id="onay_info_ihale_kom_muayene" style="padding: 6px 0 0 0; font-size: 11px; color: var(--fg-sub);">Yüklenmedi</div>
+</div>
+</div>
+</div>
+<div style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); text-align: right;">
+<button class="btn btn-dev" onclick="ihaleKomisyonKaydet()" style="padding: 10px 20px; font-weight:bold; border-radius:6px;">Kaydet ve Kapat</button>
+</div>
+</div>
+</div>

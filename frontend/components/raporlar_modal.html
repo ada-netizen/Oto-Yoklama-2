@@ -1,0 +1,82 @@
+<div class="modal-overlay" id="raporlar_modal">
+<div class="modal-content" style="width: 700px; padding: 0; background-color: var(--bg-main);">
+<div class="modal-header">
+<h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Raporlar</h2>
+<button class="btn btn-kirmizi" onclick="modalKapat('raporlar_modal')" style="padding: 5px 15px;">Kapat</button>
+</div>
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+<!-- Chart.js: Devamsizlik Ozeti -->
+<div style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 15px;">
+<div style="font-size: 12px; font-weight: bold; color: var(--fg-sub); margin-bottom: 10px;">📊 Sınıf Bazlı Devamsızlık Özeti</div>
+<canvas height="120" id="devamsizlik_chart"></canvas>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Sınırını Aşanlar
+                        (10+ Gün)</span>
+<div style="display:flex; gap:5px;">
+<button class="btn btn-ogr" onclick="raporAl('ozursuz','excel')" style="padding: 6px 15px;">Excel</button>
+<button class="btn btn-kirmizi" onclick="raporAl('ozursuz','pdf')" style="padding: 6px 15px;">PDF</button>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Sınıf Bazlı Devamsızlık
+                        Eşik Raporu</span>
+<div style="display:flex; gap:5px;">
+<button class="btn btn-ogr" onclick="esikRaporuAl('excel')" style="padding: 6px 15px;">Excel</button>
+<button class="btn btn-kirmizi" onclick="esikRaporuAl('pdf')" style="padding: 6px 15px;">PDF</button>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürlü Sınırını Aşanlar
+                        (20+ Gün)</span>
+<div style="display:flex; gap:5px;">
+<button class="btn btn-ogr" onclick="raporAl('ozurlu','excel')" style="padding: 6px 15px;">Excel</button>
+<button class="btn btn-kirmizi" onclick="raporAl('ozurlu','pdf')" style="padding: 6px 15px;">PDF</button>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz
+                            Devamsızlığı</span>
+<select id="rapor_gun_kutu" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;">
+<option value="">Seç</option>
+<option value="5">5 Gün</option>
+<option value="6">6 Gün</option>
+<option value="7">7 Gün</option>
+<option value="8">8 Gün</option>
+<option value="9">9 Gün</option>
+</select>
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">ve Üstü Olanlar</span>
+</div>
+<div style="display:flex; gap:5px;">
+<button class="btn btn-ogr" onclick="raporAl('gun_siniri','excel', document.getElementById('rapor_gun_kutu').value)" style="padding: 6px 15px;">Excel</button>
+<button class="btn btn-kirmizi" onclick="raporAl('gun_siniri','pdf', document.getElementById('rapor_gun_kutu').value)" style="padding: 6px 15px;">PDF</button>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<select id="rapor_sube_kutu" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;">
+<option value="">Seç</option>
+</select>
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Şubesi Özürsüz
+                            Devamsızlık Listesi</span>
+</div>
+<div style="display:flex; gap:5px;">
+<button class="btn btn-ogr" onclick="raporAl('sube_bazli','excel', document.getElementById('rapor_sube_kutu').value)" style="padding: 6px 15px;">Excel</button>
+<button class="btn btn-kirmizi" onclick="raporAl('sube_bazli','pdf', document.getElementById('rapor_sube_kutu').value)" style="padding: 6px 15px;">PDF</button>
+</div>
+</div>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<input id="rapor_tarih_kutu" placeholder="GG/AA/YYYY" style="width: 90px; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;" type="text"/>
+<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Tarihinde Özürsüz
+                            Devamsızlık Yapanlar</span>
+</div>
+<div style="display:flex; gap:5px;">
+<button class="btn btn-ogr" onclick="raporAl('tarih_bazli','excel', document.getElementById('rapor_tarih_kutu').value)" style="padding: 6px 15px;">Excel</button>
+<button class="btn btn-kirmizi" onclick="raporAl('tarih_bazli','pdf', document.getElementById('rapor_tarih_kutu').value)" style="padding: 6px 15px;">PDF</button>
+</div>
+</div>
+</div>
+</div>
+</div>

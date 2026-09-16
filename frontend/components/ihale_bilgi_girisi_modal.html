@@ -1,0 +1,25 @@
+<div class="modal-overlay" id="ihale_bilgi_girisi_modal" style="z-index:4000; align-items:center; justify-content:center; display:none;">
+<div class="modal-content" style="width: 95%; max-width: 500px; padding: 0; background-color: var(--bg-main); display: flex; flex-direction: column;">
+<div class="modal-header">
+<h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
+<i data-lucide="info" height="18" width="18"></i> İhale Bilgi Girişi
+                </h2>
+<button class="btn btn-kirmizi" onclick="modalKapat('ihale_bilgi_girisi_modal')" style="padding: 5px 15px;">Kapat</button>
+</div>
+<div style="padding: 15px 20px; overflow-y: auto;">
+<div style="margin-bottom: 15px;">
+<label style="font-size: 12px; font-weight: bold; color: var(--fg-main); margin-bottom: 5px; display: block;">Resmi
+                        Yazı Başlığı</label>
+<textarea id="ihale_resmi_yazi_basligi" placeholder="Örn: T.C.\nBİNGÖL VALİLİĞİ\nOkul Müdürlüğü" rows="3" style="width: 100%; padding: 8px; background: var(--bg-input); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; resize: vertical;"></textarea>
+</div>
+<div style="margin-bottom: 15px;">
+<label style="font-size: 12px; font-weight: bold; color: var(--fg-main); margin-bottom: 5px; display: block;">Yazışma
+                        Kod Numarası</label>
+<input id="ihale_yazisma_kod" placeholder="Örn: 12345678-903.02.01" style="width: 100%; padding: 8px; background: var(--bg-input); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;" type="text"/>
+</div>
+</div>
+<div style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); text-align: right;">
+<button class="btn btn-dev" onclick="ihaleBilgiGirisiKaydet()" style="padding: 10px 20px; font-weight:bold; border-radius:6px; background-color:#10B981;"><i data-lucide="save" height="16" width="16"></i> Kaydet</button>
+</div>
+</div>
+</div>

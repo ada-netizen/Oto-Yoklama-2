@@ -1671,7 +1671,9 @@ def personel_sifirla():
         return {"basarili": False, "mesaj": str(e)}
 
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
 import sys
 import os
 
@@ -1682,22 +1684,30 @@ def resource_path_api(relative_path):
         base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
+
+# Jinja2 Templates
+templates = Jinja2Templates(directory=resource_path_api('frontend'))
 js_dir = resource_path_api(os.path.join('frontend', 'js'))
 if os.path.isdir(js_dir):
+    
+assets_dir = resource_path_api(os.path.join('frontend', 'assets'))
+if os.path.isdir(assets_dir):
+    app.mount('/assets', StaticFiles(directory=assets_dir), name='assets')
+
     app.mount('/js', StaticFiles(directory=js_dir), name='js')
 
 sab_dir = resource_path_api('sablonlar')
 if os.path.isdir(sab_dir):
     app.mount('/sablonlar', StaticFiles(directory=sab_dir), name='sablonlar')
 
-@app.get('/')
-def read_index():
+@app.get('/', response_class=HTMLResponse)
+async def read_index(request: Request):
     headers = {
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
         "Expires": "0",
     }
-    return FileResponse(resource_path_api(os.path.join('frontend', 'index.html')), headers=headers)
+    return templates.TemplateResponse("index.html", {"request": request}, headers=headers)
 
 @app.get('/style.css')
 def read_style():

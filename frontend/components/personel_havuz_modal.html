@@ -1,0 +1,16 @@
+<div class="modal-overlay" id="personel_havuz_modal" style="z-index:3000;">
+<div class="modal-content" style="width: 400px; padding: 0; background-color: var(--bg-main);">
+<div class="modal-header">
+<h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
+<i data-lucide="user-plus" height="18" width="18"></i> Personel Seç
+                </h2>
+<button class="btn btn-kirmizi" onclick="modalKapat('personel_havuz_modal')" style="padding: 5px 15px;">Kapat</button>
+</div>
+<div style="padding: 15px; border-bottom: 1px solid var(--border);">
+<input id="personel_arama_input" onkeyup="personelAra()" placeholder="Personel Ara..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px; background:var(--bg-input); color:var(--fg-main); outline:none;" type="text"/>
+</div>
+<div id="personel_havuz_liste" style="padding: 10px 15px; max-height: 50vh; overflow-y: auto; display:flex; flex-direction:column; gap:5px;">
+<!-- Personeller buraya JS ile yüklenecek -->
+</div>
+</div>
+</div>
