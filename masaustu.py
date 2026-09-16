@@ -137,7 +137,7 @@ if __name__ == '__main__':
         import sys
         root = tk.Tk()
         root.withdraw()
-        messagebox.showwarning("Zaten Çalışıyor", "Oto Yoklama programı zaten arka planda veya başka bir pencerede çalışıyor.\n\nLütfen açık olan pencereyi kullanın veya görev yöneticisinden kapatıp tekrar deneyin.")
+        messagebox.showwarning("Zaten Çalışıyor", "Elektronik Okul V2.0 programı zaten arka planda veya başka bir pencerede çalışıyor.\n\nLütfen açık olan pencereyi kullanın veya görev yöneticisinden kapatıp tekrar deneyin.")
         root.destroy()
         sys.exit(0)
     else:

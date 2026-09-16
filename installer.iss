@@ -1,17 +1,17 @@
-#define MyAppName "Oto Yoklama"
+#define MyAppName "Elektronik Okul V2.0"
 #define MyAppVersion "1.1"
-#define MyAppPublisher "Oto Yoklama"
-#define MyAppExeName "Oto_Yoklama.exe"
+#define MyAppPublisher "Elektronik Okul"
+#define MyAppExeName "Elektronik Okul V2.0.exe"
 
 [Setup]
 AppId={{A7E7A1C2-8A1B-4B5D-9E3E-OTOYOKLAMA2026}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-DefaultDirName={localappdata}\Programs\Oto Yoklama
+DefaultDirName={localappdata}\Programs\Elektronik Okul V2.0
 DefaultGroupName={#MyAppName}
 OutputDir=installer
-OutputBaseFilename=Oto_Yoklama_Setup_{#MyAppVersion}
+OutputBaseFilename=Elektronik_Okul_V2.0_Setup_{#MyAppVersion}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

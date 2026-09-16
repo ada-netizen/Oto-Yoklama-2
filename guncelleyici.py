@@ -32,7 +32,7 @@ def guncelleme_paketi_indir(manifest_url, hedef_klasor=None):
     url = manifest["installer_url"]
     beklenen_hash = manifest["sha256"].lower()
     klasor = hedef_klasor or tempfile.gettempdir()
-    hedef = os.path.join(klasor, "Oto_Yoklama_guncelleme.exe")
+    hedef = os.path.join(klasor, "Elektronik_Okul_V2.0_guncelleme.exe")
     urllib.request.urlretrieve(url, hedef)
     if sha256_hesapla(hedef) != beklenen_hash:
         os.remove(hedef)
