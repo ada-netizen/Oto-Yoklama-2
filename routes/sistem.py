@@ -11,7 +11,7 @@ from excel_motoru import ExcelMotoru
 from pdf_motoru import PDFYoneticisi
 import logging
 from araclar import VeriAraclari
-from dependencies import db, yollar, ayarlar, islem_logla, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari
+from dependencies import db, yollar, ayarlar, islem_logla, islem_loglari, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari
 from utils import *
 
 router = APIRouter()
@@ -62,6 +62,17 @@ def devamsizlik_isleme_gorevi(temp_yol, job_id):
             islem_logla("hata", "Devamsızlık aktarımı", hata)
             return
         if eklenen > 0 and len(yeni_liste) > 0:
+            # Eşleşme kontrolü (Hiçbir öğrenci eşleşmiyorsa uyar)
+            yuklenen_nolari = {str(d.get("no", "")).strip() for d in yeni_liste if str(d.get("no", "")).strip()}
+            mevcut_nolari = {str(o.get("no", "")).strip() for o in mevcut_ogrenciler if str(o.get("no", "")).strip()}
+            
+            if yuklenen_nolari and mevcut_nolari and len(yuklenen_nolari.intersection(mevcut_nolari)) == 0:
+                islem_durumlari[job_id] = {
+                    "durum": "hata", 
+                    "mesaj": "DİKKAT: Yüklenen devamsızlık listesindeki hiçbir öğrenci numarası, sistemde kayıtlı öğrencilerle eşleşmiyor! Lütfen doğru dosyayı yüklediğinizden veya öğrenci listesinin güncel olduğundan emin olun."
+                }
+                return
+
             mevcut_devamsizliklar = yeni_liste
             islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 80}
             basarili, hata = db.kaydet(mevcut_ogrenciler, mevcut_devamsizliklar)

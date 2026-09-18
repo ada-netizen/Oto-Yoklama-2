@@ -122,3 +122,50 @@ def ogrencileri_sifirla():
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
+
+class OgrenciRequest(BaseModel):
+    no: str
+    ad_soyad: str
+    sube: str
+    eski_no: Optional[str] = None
+
+@router.post("/ogrenci-ekle-guncelle")
+def ogrenci_ekle_guncelle(ogr: OgrenciRequest):
+    try:
+        ogrenciler, devler = db.yukle()
+        
+        # Check if we are updating an existing student
+        hedef_no = (ogr.eski_no if ogr.eski_no else ogr.no).strip()
+        
+        # If adding a new student or changing number, check if the NEW number already exists
+        if (not ogr.eski_no or ogr.eski_no != ogr.no) and any(str(o['no']).strip() == str(ogr.no).strip() for o in ogrenciler):
+            return {"basarili": False, "mesaj": f"{ogr.no} numarali ogrenci zaten kayitli!"}
+            
+        bulundu = False
+        for o in ogrenciler:
+            if str(o['no']).strip() == hedef_no:
+                o['no'] = ogr.no.strip()
+                o['ad_soyad'] = ogr.ad_soyad.upper().strip()
+                o['sube'] = ogr.sube.strip().upper()
+                bulundu = True
+                break
+                
+        if not bulundu:
+            ogrenciler.append({
+                "no": ogr.no.strip(),
+                "ad_soyad": ogr.ad_soyad.upper().strip(),
+                "sube": ogr.sube.strip().upper()
+            })
+            
+        # Update devamsizliklar if student number changed
+        if ogr.eski_no and ogr.eski_no != ogr.no:
+            for d in devler:
+                if str(d.get('no', '')).strip() == hedef_no:
+                    d['no'] = ogr.no.strip()
+                    
+        basarili, hata = db.kaydet(ogrenciler, devler)
+        if not basarili: return {"basarili": False, "mesaj": hata}
+        return {"basarili": True, "mesaj": "Ogrenci basariyla kaydedildi!"}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
