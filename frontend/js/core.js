@@ -733,6 +733,8 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         function verileriYukle() {
             fetch(`${API}/ogrenciler`).then(res => res.json()).then(veri => {
                 ogrenciListesi = veri.ogrenciler || [];
+                window.ogrenciListesi = ogrenciListesi; // Modal için global scope
+                document.dispatchEvent(new CustomEvent('ogrenciler-guncellendi')); // Alpine'ı tetikle
                 let temizSubeler = [...new Set(ogrenciListesi.map(o => sinifFormatla(o.sube)))];
                 temizSubeler.sort((a, b) => (parseInt(a)||99) - (parseInt(b)||99));
                 const combo = document.getElementById('combo_arama_sube');
@@ -1067,3 +1069,6 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 }
             }
         });
+
+window.verileriYukle = verileriYukle;
+

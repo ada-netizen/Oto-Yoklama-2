@@ -23,7 +23,10 @@
             }).catch(err => { bildirimGoster(err.message || "Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); }).finally(() => yuklemeGizle());
         }
 
-        function personelYonetimAc() { modalAc('personel_yonetim_modal'); yonetimPersonelTablosunuDoldur(); }
+        function personelYonetimAc() { 
+            modalAc('personel_yonetim_modal'); 
+            // yonetimPersonelTablosunuDoldur() iptal edildi (artık Alpine.js kullanılıyor)
+        }
         function ogrenciYonetimAc() { modalAc('ogrenci_yonetim_modal'); if(window.verileriYukle) window.verileriYukle(); }
 
         // --- <i data-lucide="brain" width="16" height="16"></i> GELİŞMİŞ AKILLI EŞLEŞTİRME MOTORU ---

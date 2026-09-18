@@ -1,4 +1,4 @@
-import webview
+﻿import webview
 import threading
 import multiprocessing
 import uvicorn
@@ -170,9 +170,10 @@ if __name__ == '__main__':
     son_durum["maximized"] = kayitli["maximized"]
 
     # 4. Modern masaüstü penceresini oluştur ve HTML'i içine göm!
+    import time
     pencere = webview.create_window(
         title='Elektronik Okul Sistemi V2',
-        url='http://127.0.0.1:8000/',
+        url=f'http://127.0.0.1:8000/?t={int(time.time())}',
         width=kayitli["width"],
         height=kayitli["height"],
         x=kayitli["x"],

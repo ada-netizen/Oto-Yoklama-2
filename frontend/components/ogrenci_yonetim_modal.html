@@ -1,9 +1,9 @@
-<div class="modal-overlay" id="ogrenci_yonetim_modal" x-data="ogrenciYonetimComponent()">
+<div class="modal-overlay" id="ogrenci_yonetim_modal" x-data="ogrenciYonetimComponent()" @ogrenciler-guncellendi.window="arama = arama; /* re-trigger reactivity */">
 <div class="modal-content" style="width: 850px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main);">
 <div class="modal-header">
 <h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
-<i data-lucide="graduation-cap" height="16" width="16"></i> Ögrenci Yönetimi
-                </h2>
+<i data-lucide="graduation-cap" height="16" width="16"></i> Ã–ÄŸrenci YÃ¶netimi
+</h2>
 <div style="display: flex; gap: 8px; align-items: center;">
 <button class="icon-btn" onclick="modalKapat('ogrenci_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
 </div>
@@ -12,11 +12,11 @@
 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
 <div style="position: relative;">
 <span style="position: absolute; left: 8px; top: 6px; font-size: 12px; color: var(--fg-sub);"><i data-lucide="search" height="14" width="14"></i></span>
-<input x-model="arama" placeholder="Ögrenci Ara (Ad veya No)..." style="padding: 6px 6px 6px 26px; width: 250px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;" type="text"/>
+<input x-model="arama" placeholder="Ã–ÄŸrenci Ara (Ad veya No)..." style="padding: 6px 6px 6px 26px; width: 250px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;" type="text"/>
 </div>
 <div style="display: flex; gap: 6px;">
     <select x-model="aktifFiltre" style="padding: 6px 12px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;">
-        <option value="Tümü">Tümü (Sýnýflar)</option>
+        <option value="TÃ¼mÃ¼">TÃ¼mÃ¼ (SÄ±nÄ±flar)</option>
         <template x-for="sube in subeler" :key="sube">
             <option :value="sube" x-text="sube"></option>
         </template>
@@ -24,13 +24,13 @@
 </div>
 </div>
 <div style="display: flex; gap: 10px;">
-<button class="btn btn-ogr" @click="yeniEkle()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="user-plus" height="16" width="16"></i> Yeni Ögrenci</button>
+<button class="btn btn-ogr" @click="yeniEkle()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="user-plus" height="16" width="16"></i> Yeni Ã–ÄŸrenci</button>
 </div>
 </div>
 
 <!-- Duzenleme / Ekleme Formu -->
 <div x-show="formAcik" style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
-    <h3 style="margin-top:0; color: var(--fg-main); font-size: 14px;" x-text="duzenlenenOgrenci.eski_no ? 'Ögrenciyi Düzenle' : 'Yeni Ögrenci Ekle'"></h3>
+    <h3 style="margin-top:0; color: var(--fg-main); font-size: 14px;" x-text="duzenlenenOgrenci.eski_no ? 'Ã–ÄŸrenciyi DÃ¼zenle' : 'Yeni Ã–ÄŸrenci Ekle'"></h3>
     <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
         <div style="display: flex; flex-direction: column; gap: 5px;">
             <label style="font-size: 11px; color: var(--fg-sub);">Okul No</label>
@@ -41,12 +41,12 @@
             <input type="text" x-model="duzenlenenOgrenci.ad_soyad" class="input-modern" style="width: 250px;">
         </div>
         <div style="display: flex; flex-direction: column; gap: 5px;">
-            <label style="font-size: 11px; color: var(--fg-sub);">Sýnýfý</label>
+            <label style="font-size: 11px; color: var(--fg-sub);">SÄ±nÄ±fÄ±</label>
             <input type="text" x-model="duzenlenenOgrenci.sube" class="input-modern" style="width: 100px;">
         </div>
         <div style="display: flex; gap: 8px;">
             <button class="btn btn-dev" @click="kaydet()" style="padding: 6px 15px;"><i data-lucide="check" height="14" width="14"></i> Kaydet</button>
-            <button class="btn" @click="formAcik = false" style="padding: 6px 15px;">Ýptal</button>
+            <button class="btn" @click="formAcik = false" style="padding: 6px 15px;">Ä°ptal</button>
         </div>
     </div>
 </div>
@@ -57,8 +57,8 @@
 <tr>
 <th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">No</th>
 <th style="width: 50%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Ad Soyad</th>
-<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Sýnýfý</th>
-<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">Ýþlemler</th>
+<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">SÄ±nÄ±fÄ±</th>
+<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">Ä°ÅŸlemler</th>
 </tr>
 </thead>
 <tbody>
@@ -68,7 +68,7 @@
             <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight:bold;" x-text="ogr.ad_soyad"></td>
             <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);" x-text="ogr.sube"></td>
             <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
-                <button class="icon-btn" style="color:var(--tree-sel);" @click="duzenle(ogr)" title="Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
+                <button class="icon-btn" style="color:var(--tree-sel);" @click="duzenle(ogr)" title="DÃ¼zenle"><i data-lucide="edit" width="16" height="16"></i></button>
                 <button class="icon-btn" style="color:#EF4444;" @click="sil(ogr.no, ogr.ad_soyad)" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
             </td>
         </tr>
@@ -82,12 +82,19 @@
 document.addEventListener("alpine:init", () => {
     Alpine.data("ogrenciYonetimComponent", () => ({
         arama: "",
-        aktifFiltre: "Tümü",
+        aktifFiltre: "TÃ¼mÃ¼",
         formAcik: false,
         duzenlenenOgrenci: { no: "", ad_soyad: "", sube: "", eski_no: "" },
+        ogrenciler: window.ogrenciListesi || [],
+
+        init() {
+            window.addEventListener("ogrenciler-guncellendi", () => {
+                this.ogrenciler = window.ogrenciListesi || [];
+            });
+        },
         
         get subeler() {
-            let sList = [...new Set((window.ogrenciListesi || []).map(o => String(o.sube).trim()))];
+            let sList = [...new Set(this.ogrenciler.map(o => String(o.sube).trim()))];
             return sList.sort((a, b) => {
                 let pa = parseInt(a); let pb = parseInt(b);
                 if (!isNaN(pa) && !isNaN(pb)) return pa - pb;
@@ -97,7 +104,7 @@ document.addEventListener("alpine:init", () => {
         
         get gosterilecekOgrenciler() {
             let filterText = this.arama.toLocaleUpperCase("tr-TR");
-            let arr = [...(window.ogrenciListesi || [])].sort((a,b) => {
+            let arr = [...this.ogrenciler].sort((a,b) => {
                 let p1 = parseInt(a.sube)||99, p2 = parseInt(b.sube)||99;
                 if(p1 !== p2) return p1 - p2;
                 return a.ad_soyad.localeCompare(b.ad_soyad);
@@ -105,7 +112,7 @@ document.addEventListener("alpine:init", () => {
             
             return arr.filter(o => {
                 if(filterText && !o.ad_soyad.toLocaleUpperCase("tr-TR").includes(filterText) && !String(o.no).includes(filterText)) return false;
-                if(this.aktifFiltre !== "Tümü" && String(o.sube).trim() !== this.aktifFiltre) return false;
+                if(this.aktifFiltre !== "TÃ¼mÃ¼" && String(o.sube).trim() !== this.aktifFiltre) return false;
                 return true;
             });
         },
@@ -122,10 +129,10 @@ document.addEventListener("alpine:init", () => {
         
         kaydet() {
             if(!this.duzenlenenOgrenci.no || !this.duzenlenenOgrenci.ad_soyad || !this.duzenlenenOgrenci.sube) {
-                if(window.bildirimGoster) window.bildirimGoster("Lütfen tüm alanlarý doldurun.", "hata");
+                if(window.bildirimGoster) window.bildirimGoster("LÃ¼tfen tÃ¼m alanlarÄ± doldurun.", "hata");
                 return;
             }
-            fetch(`${window.API}/ogrenci-ekle-guncelle`, { 
+            fetch(`${window.API || ''}/ogrenci-ekle-guncelle`, { 
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(this.duzenlenenOgrenci)
@@ -144,13 +151,12 @@ document.addEventListener("alpine:init", () => {
         },
         
         sil(no, ad) {
-            if (!confirm(`${no} numaralý ${ad} adlý ögrenciyi (ve tüm devamsýzlýklarýný) silmek istediðinize emin misiniz?`)) return;
-            fetch(`${window.API}/ogrenci-sil/${encodeURIComponent(no)}`, { method: "DELETE" })
+            if (!confirm(`${no} numaralÄ± ${ad} adlÄ± Ã¶ÄŸrenciyi (ve tÃ¼m devamsÄ±zlÄ±klarÄ±nÄ±) silmek istediÄŸinize emin misiniz?`)) return;
+            fetch(`${window.API || ''}/ogrenci-sil/${encodeURIComponent(no)}`, { method: "DELETE" })
             .then(r => r.json())
             .then(v => {
                 if(window.bildirimGoster) window.bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
                 if (v.basarili) {
-                    if(window.ogrenciListesi) window.ogrenciListesi = window.ogrenciListesi.filter(o => o.no !== no);
                     if(window.verileriYukle) window.verileriYukle();
                 }
             })
@@ -161,5 +167,3 @@ document.addEventListener("alpine:init", () => {
     }));
 });
 </script>
-
-
