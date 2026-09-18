@@ -405,7 +405,7 @@ function filtreTumuDegisti() {
         }
 
         // --- OTOMATİK GÜNCELLEME KONTROLÜ (GitHub) ---
-        const MEVCUT_VERSIYON = "v2.1";
+        const MEVCUT_VERSIYON = "v2.0";
         function surumKarsilastir(a, b) {
             const parcalaraAyir = surum => String(surum).trim().toLowerCase().replace(/^v/, '').split('.').map(Number);
             const sol = parcalaraAyir(a); const sag = parcalaraAyir(b);
