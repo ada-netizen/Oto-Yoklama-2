@@ -405,7 +405,7 @@ function filtreTumuDegisti() {
         }
 
         // --- OTOMATİK GÜNCELLEME KONTROLÜ (GitHub) ---
-        const MEVCUT_VERSIYON = "v2.0";
+        const MEVCUT_VERSIYON = "v2.1";
         function surumKarsilastir(a, b) {
             const parcalaraAyir = surum => String(surum).trim().toLowerCase().replace(/^v/, '').split('.').map(Number);
             const sol = parcalaraAyir(a); const sag = parcalaraAyir(b);
@@ -417,13 +417,13 @@ function filtreTumuDegisti() {
         }
 
         function guncellemeKontrolEt() {
-            fetch("https://raw.githubusercontent.com/ada-netizen/Yoklama-Otomasyonu/refs/heads/main/versiyon.txt", { cache: "no-store" })
+            fetch("https://raw.githubusercontent.com/ada-netizen/Oto-Yoklama-2/refs/heads/main/versiyon.txt", { cache: "no-store" })
                 .then(r => r.ok ? r.text() : Promise.reject())
                 .then(metin => {
                     const enYeni = metin.trim();
                     if (surumKarsilastir(enYeni, MEVCUT_VERSIYON) > 0) {
                         if (confirm(`Programın yeni bir sürümü bulundu!\n\nSizin Sürümünüz: ${MEVCUT_VERSIYON}\nYeni Sürüm: ${enYeni}\n\nYeni sürümü indirmek ister misiniz?`)) {
-                            window.open("https://github.com/ada-netizen/yoklama_otomasyonu/releases/latest", "_blank");
+                            window.open("https://github.com/ada-netizen/Oto-Yoklama-2/releases/latest", "_blank");
                         }
                     }
                 })

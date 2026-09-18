@@ -42,19 +42,24 @@ def guncelleme_paketi_indir(manifest_url, hedef_klasor=None):
 class GuncellemeMotoru:
     @staticmethod
     def kontrol_et(mevcut_versiyon):
-        versiyon_url = "https://raw.githubusercontent.com/ada-netizen/Yoklama-Otomasyonu/refs/heads/main/versiyon.txt"
-        manifest_url = "https://raw.githubusercontent.com/ada-netizen/Yoklama-Otomasyonu/refs/heads/main/update_manifest.json"
-        indirme_linki = "https://github.com/ada-netizen/yoklama_otomasyonu/releases/latest"
+        versiyon_url = "https://raw.githubusercontent.com/ada-netizen/Oto-Yoklama-2/refs/heads/main/versiyon.txt"
+        manifest_url = "https://raw.githubusercontent.com/ada-netizen/Oto-Yoklama-2/refs/heads/main/update_manifest.json"
+        indirme_linki = "https://github.com/ada-netizen/Oto-Yoklama-2/releases/latest"
 
         def islem():
             try:
+                import ssl
+                ctx = ssl.create_default_context()
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+
                 # İnternete bağlanıp en güncel sürüm numarasını çeker
                 req = urllib.request.Request(manifest_url, headers={'Cache-Control': 'no-cache'})
                 try:
-                    with urllib.request.urlopen(req, timeout=3) as response:
+                    with urllib.request.urlopen(req, timeout=3, context=ctx) as response:
                         manifest = json.loads(response.read().decode('utf-8'))
                 except (OSError, json.JSONDecodeError):
-                    with urllib.request.urlopen(versiyon_url, timeout=3) as response:
+                    with urllib.request.urlopen(versiyon_url, timeout=3, context=ctx) as response:
                         manifest = {"version": response.read().decode('utf-8').strip()}
                 en_yeni_versiyon = manifest["version"]
 
