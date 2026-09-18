@@ -1,7 +1,7 @@
 import PyInstaller.__main__
 PyInstaller.__main__.run([
     'masaustu.py',
-    '--name=Elektronik Okul V2.0',
+    '--name=Elektronik Okul',
     '--windowed',
     '--onedir',
     '--icon=frontend/logo.ico',

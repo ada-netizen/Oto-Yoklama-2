@@ -1,7 +1,7 @@
-#define MyAppName "Elektronik Okul V2.0"
+#define MyAppName "Elektronik Okul"
 #define MyAppVersion "2.0"
 #define MyAppPublisher "Elektronik Okul"
-#define MyAppExeName "Elektronik Okul V2.0.exe"
+#define MyAppExeName "Elektronik Okul.exe"
 
 [Setup]
 AppId={{A7E7A1C2-8A1B-4B5D-9E3E-OTOYOKLAMA2026}
@@ -19,8 +19,8 @@ PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64
 
 [Files]
-Source: "dist\Elektronik Okul V2.0\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\Elektronik Okul V2.0\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\Elektronik Okul\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\Elektronik Okul\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
