@@ -19,6 +19,15 @@
             }).catch(e => console.error("Could not log error", e));
             return false;
         };
+
+        window.addEventListener('unhandledrejection', function(event) {
+            const errorMsg = "Promise Rejection: " + (event.reason ? event.reason.toString() : "Unknown");
+            fetch("http://127.0.0.1:8000/log-error", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ level: "error", message: errorMsg })
+            }).catch(e => console.error("Could not log error", e));
+        });
     </script>
 <!-- Toastify CSS & JS -->
 <link href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css" rel="stylesheet" type="text/css"/>
@@ -88,6 +97,7 @@
 <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()" title="E-Okul'dan alınan devamsızlık Excel dosyasını yükleyin"><i data-lucide="download-cloud" height="16" width="16"></i> Devamsızlık Yükle</button>
 <button class="btn btn-rapor" onclick="modalAc('raporlar_modal')" title="Devamsızlık sınırlarına göre öğrenci raporları oluşturun"><i data-lucide="file-text" height="16" width="16"></i>
                     Raporlar</button>
+<button class="btn btn-rapor" onclick="izinDilekcesiSablonuOlustur()" title="Boş izin dilekçesi şablonu (PDF) oluştur" style="background-color: #0284c7; color: white;"><i data-lucide="file-template" height="16" width="16"></i> İzin Dilekçesi Şablonu</button>
 </div>
 </div>
 <div class="paned-window" style="display: flex; flex: 1; gap: 15px; overflow: hidden; margin-top: 10px;">
@@ -913,9 +923,9 @@
  <!-- /sag_panel_ana -->
  <!-- /ana-kapsayici -->
 {% include 'components/ihale_komisyon_modal.html' %}
-<script src="js/core.js?v=6"></script>
-<script src="js/personel_teblig.js?v=3"></script>
-<script src="js/ihale.js?v=5"></script>
+<script src="js/core.js?v=9"></script>
+<script src="js/personel_teblig.js?v=6"></script>
+<script src="js/ihale.js?v=9"></script>
 <script>
         lucide.createIcons();
     </script>
@@ -923,8 +933,8 @@
 {% include 'components/fiyat_giris_modal.html' %}
 <!-- İHALE BİLGİ GİRİŞİ MODALI -->
 {% include 'components/ihale_bilgi_girisi_modal.html' %}
-<script>
 {% include 'components/yenilikler_modal.html' %}
+<script>
 // ============================================================
 // FLATPICKR - Türkçe Tarih Seçici Başlatma
 // ============================================================

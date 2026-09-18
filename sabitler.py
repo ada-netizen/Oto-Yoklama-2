@@ -1,5 +1,5 @@
 # --- SİSTEM SABİTLERİ ---
-MEVCUT_VERSIYON = "v1.1"
+MEVCUT_VERSIYON = "v2.0"
 UI_FONT = "Segoe UI"
 
 # --- TEMA RENKLERİ ---

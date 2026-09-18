@@ -1,5 +1,5 @@
 #define MyAppName "Elektronik Okul V2.0"
-#define MyAppVersion "1.1"
+#define MyAppVersion "2.0"
 #define MyAppPublisher "Elektronik Okul"
 #define MyAppExeName "Elektronik Okul V2.0.exe"
 
@@ -11,7 +11,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\Elektronik Okul V2.0
 DefaultGroupName={#MyAppName}
 OutputDir=installer
-OutputBaseFilename=Elektronik_Okul_V2.0_Setup_{#MyAppVersion}
+OutputBaseFilename=Elektronik_Okul_V2.0_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -19,7 +19,8 @@ PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64
 
 [Files]
-Source: "dist\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\Elektronik Okul V2.0\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\Elektronik Okul V2.0\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, File, UploadFile, BackgroundTasks, Form, Body, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -155,7 +155,8 @@ def ayarlar_getir():
 
 
 @router.post("/ayarlar-kaydet")
-def ayarlar_kaydet(yeni: dict):
+async def ayarlar_kaydet(request: Request):
+    yeni = await request.json()
     ayar = ayarlari_al()
     ayar.update(yeni)
     SistemMotoru.ayarlari_kaydet(yollar["AYARLAR"], ayar)
@@ -199,7 +200,8 @@ def yedekler_listele():
 
 
 @router.post("/yedek-geri-yukle")
-def yedek_geri_yukle(veri: dict):
+async def yedek_geri_yukle(request: Request):
+    veri = await request.json()
     ayar = ayarlari_al()
     hedef_klasor = ayar.get("yedek_kayit_klasoru", yollar["YEDEK"])
     dosya_adi = veri.get("dosya", "")

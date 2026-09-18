@@ -22,10 +22,16 @@ import sys
 sys.stderr = open('crash.log', 'w')
 sys.stdout = open('crash.log', 'a')
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 # api.py içindeki FastAPI motorumuzu (app) buraya çağırıyoruz
 from api import app
 from sistem_motoru import SistemMotoru
-from sabitler import MEVCUT_VERSIYON
 
 yollar = SistemMotoru.klasorleri_ve_yollari_hazirla()
 PENCERE_DOSYASI = os.path.join(yollar["ANA"], "pencere_durumu.json")
@@ -134,7 +140,6 @@ if __name__ == '__main__':
     if port_dinleniyor_mu("127.0.0.1", 8000) and api_zaten_calisiyor_mu():
         import tkinter as tk
         from tkinter import messagebox
-        import sys
         root = tk.Tk()
         root.withdraw()
         messagebox.showwarning("Zaten Çalışıyor", "Elektronik Okul V2.0 programı zaten arka planda veya başka bir pencerede çalışıyor.\n\nLütfen açık olan pencereyi kullanın veya görev yöneticisinden kapatıp tekrar deneyin.")
@@ -153,30 +158,12 @@ if __name__ == '__main__':
 
     try:
         from guncelleyici import GuncellemeMotoru
-        import sys
-        def resource_path_versiyon(relative_path):
-            try:
-                base_path = sys._MEIPASS
-            except Exception:
-                base_path = os.path.abspath(".")
-            return os.path.join(base_path, relative_path)
             
-        with open(resource_path_versiyon("versiyon.txt"), "r", encoding="utf-8") as vf:
+        with open(resource_path("versiyon.txt"), "r", encoding="utf-8") as vf:
             mevcut_versiyon = vf.read().strip()
         GuncellemeMotoru.kontrol_et(mevcut_versiyon)
     except Exception as e:
         logging.error(f"Guncelleme motoru baslatilamadi: {e}")
-
-    import sys
-    def resource_path(relative_path):
-        try:
-            base_path = sys._MEIPASS
-        except Exception:
-            base_path = os.path.abspath(".")
-        return os.path.join(base_path, relative_path)
-
-    # 2. Tasarladığımız HTML dosyasının yolunu bul
-    html_yolu = resource_path(os.path.join('frontend', 'index.html'))
 
     # 3. Daha önce kaydedilmiş pencere durumunu yükle
     kayitli = pencere_durumu_yukle()

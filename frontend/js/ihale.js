@@ -49,7 +49,8 @@ function ihaleTablosunuCiz() {
 }
 
 async function ihaleExcelYukle(event) {
-    const dosya = event.target.files[0];
+    const inputEl = event.target;
+    const dosya = inputEl.files[0];
     if (!dosya) return;
     
     yuklemeGoster("İhale Exceli Okunuyor...");
@@ -74,7 +75,7 @@ async function ihaleExcelYukle(event) {
         bildirimGoster("Sunucuya bağlanılamadı.", "hata");
     } finally {
         yuklemeGizle();
-        event.target.value = "";
+        if (inputEl) inputEl.value = "";
     }
 }
 
@@ -141,8 +142,8 @@ function ihaleAdim3Goster() {
                                 <input type="date" id="tarih_fiyat_isteme" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', getVal('tarih_fiyat_isteme'))"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', getVal('tarih_fiyat_isteme'))"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -171,6 +172,12 @@ function ihaleAdim3Geri() {
     document.getElementById("ihale_icerik").children[0].style.display = "block";
     document.getElementById("ihale_adim2_alani").style.display = "flex";
     document.getElementById("ihale_adim3_alani").style.display = "none";
+}
+
+// Güvenli getElementById.value - null olursa "" döner (Promise Rejection önler)
+function getVal(id) {
+    const el = document.getElementById(id);
+    return el ? el.value : "";
 }
 
 async function belgeUret(belgeTipi, format, tarih) {
@@ -221,7 +228,8 @@ async function belgeUret(belgeTipi, format, tarih) {
         if (sonuc.basarili) {
             bildirimGoster(sonuc.mesaj, "basarili");
         } else {
-            bildirimGoster("Hata: " + sonuc.mesaj, "hata");
+            let hataMesaji = sonuc.mesaj || (sonuc.detail ? JSON.stringify(sonuc.detail) : "Bilinmeyen Sunucu Hatası");
+            bildirimGoster("Hata: " + hataMesaji, "hata");
         }
     } catch (e) {
         bildirimGoster("Sunucuya bağlanılamadı.", "hata");
@@ -256,6 +264,8 @@ function ihaleTaslaginiYukle() {
     if (taslak) {
         ihaleGeciciVeri = JSON.parse(taslak);
         // Ensure legacy data has newer fields
+        if (!ihaleGeciciVeri.kalemler) ihaleGeciciVeri.kalemler = [];
+        if (!ihaleGeciciVeri.firmalar) ihaleGeciciVeri.firmalar = ["", "", ""];
         if (!ihaleGeciciVeri.firmaVergiler) ihaleGeciciVeri.firmaVergiler = ["", "", ""];
         if (!ihaleGeciciVeri.firmaAdresleri) ihaleGeciciVeri.firmaAdresleri = ["", "", ""];
         if (!ihaleGeciciVeri.resmi_baslik) ihaleGeciciVeri.resmi_baslik = localStorage.getItem("ihale_resmi_baslik") || "";
@@ -318,26 +328,11 @@ window.addEventListener('click', function(e) {
         if (match) localStorage.setItem("ihale_aktif_adim", parseInt(match[1]) + 1);
     }
 });
-function ihaleBilgiGirisiModalAc() {
-    document.getElementById('ihale_resmi_yazi_basligi').value = ihaleGeciciVeri.resmi_baslik || localStorage.getItem("ihale_resmi_baslik") || "";
-    document.getElementById('ihale_yazisma_kod').value = ihaleGeciciVeri.yazisma_kodu || localStorage.getItem("ihale_yazisma_kodu") || "";
-    modalAc('ihale_bilgi_girisi_modal');
-}
 
-function ihaleBilgiGirisiKaydet() {
-    const baslik = document.getElementById('ihale_resmi_yazi_basligi').value;
-    const kod = document.getElementById('ihale_yazisma_kod').value;
-    
-    ihaleGeciciVeri.resmi_baslik = baslik;
-    ihaleGeciciVeri.yazisma_kodu = kod;
-    
-    localStorage.setItem("ihale_resmi_baslik", baslik);
-    localStorage.setItem("ihale_yazisma_kodu", kod);
-    
-    ihaleTaslaginiKaydet(); // AUTO SAVE
-    
-    modalKapat('ihale_bilgi_girisi_modal');
-    bildirimGoster("Bilgiler kaydedildi.", "basari");
+function ihaleBilgiGirisiModalAc() {
+    if(window.ihaleBilgiGirisModalAc) {
+        window.ihaleBilgiGirisModalAc();
+    }
 }
 
 function ihaleBaslat() {
@@ -664,8 +659,8 @@ function ihaleBelgeUretimEkraniGoster() {
                                 <input type="date" id="tarih_fiyat_isteme" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', document.getElementById('tarih_fiyat_isteme').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', getVal('tarih_fiyat_isteme'))"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', getVal('tarih_fiyat_isteme'))"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -731,14 +726,17 @@ function sablonIndir() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             kalemler: ihaleGeciciVeri.kalemler,
-            firmaVergiler: ihaleGeciciVeri.firmaVergiler
+            firmalar: ihaleGeciciVeri.firmalar,
+            firmaVergiler: ihaleGeciciVeri.firmaVergiler,
+            firmaAdresleri: ihaleGeciciVeri.firmaAdresleri
         })
     }).then(r => r.json()).then(v => {
         yuklemeGizle();
         if(v.basarili) {
             bildirimGoster(v.mesaj, "bilgi");
         } else {
-            bildirimGoster("Hata: " + v.mesaj, "hata");
+            let hataMesaji = v.mesaj || (v.detail ? JSON.stringify(v.detail) : "Bilinmeyen Sunucu Hatası (422)");
+            bildirimGoster("Hata: " + hataMesaji, "hata");
         }
     }).catch(e => {
         yuklemeGizle();
@@ -814,8 +812,8 @@ function ihaleAdim6Goster() {
                                 <input type="date" id="tarih_ozel_fiyat" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('ozel_fiyat_isteme', 'pdf', document.getElementById('tarih_ozel_fiyat').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('ozel_fiyat_isteme', 'excel', document.getElementById('tarih_ozel_fiyat').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('ozel_fiyat_isteme', 'pdf', getVal('tarih_ozel_fiyat'))"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('ozel_fiyat_isteme', 'excel', getVal('tarih_ozel_fiyat'))"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -899,8 +897,8 @@ function ihaleAdim8Goster() {
                                 <input type="date" id="tarih_muayene_kabul" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
                             </td>
                             <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('muayene_kabul', 'pdf', document.getElementById('tarih_muayene_kabul').value)"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('muayene_kabul', 'excel', document.getElementById('tarih_muayene_kabul').value)"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
+                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('muayene_kabul', 'pdf', getVal('tarih_muayene_kabul'))"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
+                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('muayene_kabul', 'excel', getVal('tarih_muayene_kabul'))"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
                             </td>
                         </tr>
                     </tbody>
@@ -1352,7 +1350,7 @@ async function ihaleKomisyonOnayPdfYukle(event, gorevId) {
         bildirimGoster("Onay PDF'i okunamadı: " + e.message, "hata");
     } finally {
         yuklemeGizle();
-        event.target.value = "";
+        if(event && event.target) event.target.value = "";
     }
 }
 
@@ -1580,3 +1578,4 @@ function yardimIcerikGoster(id, btnElement) {
         btnElement.classList.add('active');
     }
 }
+

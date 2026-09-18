@@ -95,13 +95,12 @@ def log_frontend_error(log: LogMessage):
         logging.info(f"Frontend Log: {log.message}")
     return {"status": "ok"}
 
-import uuid
-import shutil
-import os
 
 class SablonVerisi(BaseModel):
     kalemler: List[Dict]
-    firmaVergiler: List[str]
+    firmaVergiler: List[str] = []
+    firmalar: List[str] = []
+    firmaAdresleri: List[str] = []
 
 
 islem_durumlari = {}
@@ -252,9 +251,7 @@ threading.Thread(target=_zamanlanmis_yedek_dongusu, daemon=True).start()
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
-from fastapi import Request
 import sys
-import os
 
 def resource_path_api(relative_path):
     try:

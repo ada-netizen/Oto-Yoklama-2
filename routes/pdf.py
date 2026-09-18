@@ -57,6 +57,36 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
         return {"basarili": False, "mesaj": str(e)}
 
 
+@router.post("/pdf-izin-sablon")
+def pdf_izin_sablonu_olustur(background_tasks: BackgroundTasks):
+    ana_klasor, ayar = pdf_klasoru_hazirla()
+    izin_klasoru = os.path.join(ana_klasor, "İzin Dilekçeleri")
+    if not os.path.exists(izin_klasoru):
+        os.makedirs(izin_klasoru)
+
+    zaman_damgasi = datetime.now().strftime("%d-%m-%Y_%H%M%S")
+    kayit_yeri = os.path.join(izin_klasoru, f"Izin_Dilekcesi_Sablonu_{zaman_damgasi}.pdf")
+    try:
+        job_id = str(uuid.uuid4())
+        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Şablon PDF hazırlığı başlatıldı...", "yuzde": 0}
+
+        def gorev_sablon_olustur():
+            try:
+                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Şablon PDF oluşturuluyor...", "yuzde": 50}
+                motor = PDFYoneticisi(ayar)
+                motor.izin_sablonu_ciz(kayit_yeri)
+                dosyayi_otomatik_ac(kayit_yeri)
+                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Şablon PDF oluşturuldu.", "yuzde": 100, "yol": kayit_yeri}
+            except Exception as e:
+                logging.error(f"Şablon formu cizim hatasi: {e}")
+                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Şablon oluşturulamadı: {e}", "yuzde": 100}
+
+        background_tasks.add_task(gorev_sablon_olustur)
+        return {"basarili": True, "mesaj": "Şablon işlemi başlatıldı.", "job_id": job_id, "yol": kayit_yeri}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+
 @router.post("/meb-pdf-oku")
 def meb_pdf_oku(dosya: UploadFile = File(...)):
 

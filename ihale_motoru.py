@@ -550,6 +550,7 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
     style_center = ParagraphStyle('Center_TR', fontName=font_name, fontSize=8, alignment=1, leading=10, wordWrap='CJK')
     style_right = ParagraphStyle('Right_TR', fontName=font_name, fontSize=8, alignment=2, leading=10, wordWrap='CJK')
     style_title = ParagraphStyle('Title_TR', fontName=font_name, fontSize=11, alignment=1, leading=13, wordWrap='CJK')
+    style_justify = ParagraphStyle('Justify_TR', fontName=font_name, fontSize=8, alignment=4, leading=10, wordWrap='CJK')
     
     elements = []
     
@@ -732,12 +733,15 @@ def uret_yaklasik_maliyet_pdf(veri, hedef_klasor):
     
     elements.append(Spacer(1, 4*mm))
     
-    p1 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;İdaremizce ihtiyaç duyulan ve satın alınması düşünülen aşağıda cinsi, özellikleri ve miktarları yazılı malların/hizmetlerin 4734 Sayılı Kamu İhale Kanunu'nun 9'uncu maddesi gereğince yaklaşık maliyetinin tespitine esas olmak üzere; ilgili kişi, kurum ve firmalardan her türlü fiyat araştırması yapılmıştır. Araştırma sonuçları yukarıda tabloda gösterilmiştir."
-    p2 = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Yukarıda açıklandığı üzere, ihaleye çıkılması düşünülen mal/hizmetlerin fiyat araştırması neticesinde; 4734 Sayılı Kamu İhale Kanunu'nun 9. maddesi gereğince yaklaşık maliyeti, KDV hariç yukarıda belirtildiği gibi takdir ve tespit edilerek işbu Hesap Cetveli tarafımızca düzenlenmiş ve imza altına alınmıştır."
+    p1 = "İdaremizce ihtiyaç duyulan ve satın alınması düşünülen aşağıda cinsi, özellikleri ve miktarları yazılı malların/hizmetlerin 4734 Sayılı Kamu İhale Kanunu'nun 9'uncu maddesi gereğince yaklaşık maliyetinin tespitine esas olmak üzere; ilgili kişi, kurum ve firmalardan her türlü fiyat araştırması yapılmıştır. Araştırma sonuçları yukarıda tabloda gösterilmiştir."
+    p2 = "Yukarıda açıklandığı üzere, ihaleye çıkılması düşünülen mal/hizmetlerin fiyat araştırması neticesinde; 4734 Sayılı Kamu İhale Kanunu'nun 9. maddesi gereğince yaklaşık maliyeti, KDV hariç yukarıda belirtildiği gibi takdir ve tespit edilerek işbu Hesap Cetveli tarafımızca düzenlenmiş ve imza altına alınmıştır."
     
-    elements.append(Paragraph(p1, style_justify))
+    # Kendi stilimizi oluşturup firstLineIndent veriyoruz
+    style_justify_indent = ParagraphStyle('JustifyIndent', fontName=font_name, fontSize=8, alignment=4, leading=10, firstLineIndent=10*mm)
+    
+    elements.append(Paragraph(p1, style_justify_indent))
     elements.append(Spacer(1, 2*mm))
-    elements.append(Paragraph(p2, style_justify))
+    elements.append(Paragraph(p2, style_justify_indent))
     elements.append(Spacer(1, 5*mm))
     
     elements.append(Paragraph("YAKLAŞIK MALİYET TESPİTİ YAPAN GÖREVLİLER", style_center))

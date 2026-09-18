@@ -12,7 +12,6 @@ ALLOWED_IMPORT_EXTENSIONS = {".xlsx", ".xls", ".csv"}
 def dosyayi_otomatik_ac(dosya_yolu):
     """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
     try:
-        import platform, subprocess
         if platform.system() == 'Windows':
             norm_yol = os.path.normpath(dosya_yolu)
             os.startfile(norm_yol)
@@ -24,27 +23,49 @@ def dosyayi_otomatik_ac(dosya_yolu):
         logging.error(f"dosyayi_otomatik_ac hatasi ({dosya_yolu}): {e}")
 
 def _sablon_excel_yolu_olustur():
-    adaylar = [
-        os.path.join(os.getcwd(), "sablonlar", "sablon.xlsx"),
-        os.path.join(os.path.dirname(__file__), "sablonlar", "sablon.xlsx"),
-    ]
-    for yol in adaylar:
-        if not os.path.exists(yol):
-            try:
-                import openpyxl
-                wb = openpyxl.Workbook()
-                ws = wb.active
-                ws.title = "Sablon"
-                ws.append(["Cins / Ad", "Miktar", "Birim"])
-                for sutun in ["A", "B", "C"]:
-                    ws[f"{sutun}1"].font = openpyxl.styles.Font(bold=True)
-                ws.freeze_panes = "A2"
-                wb.save(yol)
-            except Exception:
-                continue
-        if os.path.exists(yol):
-            return yol
-    return os.path.join(os.getcwd(), "sablonlar", "sablon.xlsx")
+    hedef_yol = os.path.join(os.path.dirname(__file__), "sablonlar", "sablon.xlsx")
+
+    if not os.path.exists(hedef_yol):
+        try:
+            import openpyxl
+            from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
+            os.makedirs(os.path.dirname(hedef_yol), exist_ok=True)
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Sablon"
+
+            # MYS uyumlu başlık satırı
+            basliklar = [
+                "Ürün Adı", "Miktar", "Ölçü Birimi",
+                "Ürün No", "Model", "Marka",
+                "Birim Tutar", "Firma VKN/TCKN"
+            ]
+            thin = Side(style="thin")
+            border = Border(left=thin, right=thin, top=thin, bottom=thin)
+            fill  = PatternFill("solid", fgColor="DDEEFF")
+
+            for col_idx, baslik in enumerate(basliklar, start=1):
+                cell = ws.cell(row=1, column=col_idx, value=baslik)
+                cell.font      = Font(name="Calibri", bold=True, size=10)
+                cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+                cell.border    = border
+                cell.fill      = fill
+
+            # Sütun genişlikleri
+            genislikler = [40, 10, 15, 15, 15, 15, 18, 20]
+            for i, g in enumerate(genislikler, start=1):
+                ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = g
+
+            ws.row_dimensions[1].height = 25
+            ws.freeze_panes = "A2"
+            wb.save(hedef_yol)
+            logging.info(f"MYS uyumlu şablon oluşturuldu: {hedef_yol}")
+        except Exception as e:
+            logging.error(f"Şablon oluşturulamadı: {e}")
+
+    return hedef_yol if os.path.exists(hedef_yol) else None
+
 
 
 def excel_yukleme_dogrula(dosya):
@@ -116,9 +137,6 @@ ayarlar_cache = None
 def ayarlari_al():
     """Ayarları sadece dosya degistiginde okur (Cache)."""
     global ayarlar_cache, _son_ayarlar_mtime
-    from sistem_motoru import SistemMotoru
-    import os
-    from dependencies import yollar
     try:
         mtime = os.path.getmtime(yollar["AYARLAR"])
     except OSError:

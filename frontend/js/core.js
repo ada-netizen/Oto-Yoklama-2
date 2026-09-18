@@ -409,7 +409,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                             yuklemeGizle();
                             bildirimGoster("Hata: " + v.mesaj, "hata");
                         }
-                        event.target.value = '';
+                        if(event && event.target) event.target.value = '';
                     }).catch(err => { yuklemeGizle(); bildirimGoster(err.message || "Baglanti hatasi! Sunucuyu kontrol edin.", "hata"); });
         }
 
@@ -749,6 +749,20 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             });
         }
         
+        function izinDilekcesiSablonuOlustur() {
+            fetch(`${API}/pdf-izin-sablon`, { method: 'POST' })
+            .then(res => res.json()).then(sonuc => {
+                if(sonuc.basarili && sonuc.job_id) {
+                    ilerlemeTakipEt(sonuc.job_id);
+                } else {
+                    bildirimGoster(sonuc.mesaj || "Şablon oluşturulamadı", "hata");
+                }
+            }).catch(err => {
+                console.error(err);
+                bildirimGoster("Sunucu bağlantı hatası!", "hata");
+            });
+        }
+
         function pdfCiktisiAl() {
             if(!seciliOgrenci) return;
             const kayitlar = [...seciliDevamsizliklar, ...geciciDevamsizliklar].filter(d => d.secili);
@@ -1015,7 +1029,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 } else {
                     bildirimGoster("Hata: " + v.mesaj, "hata");
                 }
-                event.target.value = '';
+                if(event && event.target) event.target.value = '';
             }).catch(() => { yuklemeGizle(); bildirimGoster("Bağlantı hatası!", "hata"); });
         }
         // --- KLAVYE NAVİGASYONU (Öğrenci Listesi İçin) ---

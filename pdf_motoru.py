@@ -226,6 +226,153 @@ class PDFYoneticisi:
         with open(kayit_yeri, "wb") as hedef:
             yazici.write(hedef)
         return True, ""
+
+    def izin_sablonu_ciz(self, kayit_yeri):
+        """A5 Boyutunda Boş İzin Dilekçesi Şablonu Çizer"""
+        genislik, yukseklik = 419.53, 595.27 # A5 Boyutu
+        pdf_bellek = io.BytesIO()
+        c = canvas.Canvas(pdf_bellek, pagesize=(genislik, yukseklik))
+        
+        orta_y = yukseklik - 42.5  
+        logo_y = orta_y - 20
+        
+        meb_logo_yolu = self.ayarlar.get("meb_logosu", "")
+        if meb_logo_yolu and os.path.exists(meb_logo_yolu):
+            c.drawImage(meb_logo_yolu, 25, logo_y, width=40, height=40, preserveAspectRatio=True, mask='auto')
+            
+        okul_logo_yolu = self.ayarlar.get("okul_logosu", "")
+        if okul_logo_yolu and os.path.exists(okul_logo_yolu):
+            c.drawImage(okul_logo_yolu, genislik - 65, logo_y, width=40, height=40, preserveAspectRatio=True, mask='auto')
+
+        style_baslik = ParagraphStyle(name='CenterTitle', fontName=self.font_bold, fontSize=10, alignment=TA_CENTER, leading=14)
+        okul_adi_metni = self.ayarlar.get("okul_adi", "Okul Adı")
+        okul_basligi = self.turkce_buyuk_harf(self.metin_duzelt(okul_adi_metni)) + " MÜDÜRLÜĞÜNE"
+        form_basligi = self.turkce_buyuk_harf("Devamsızlık Bilgilendirme Formu")
+        c.setFont(self.font_bold, 12)
+        c.drawCentredString(genislik / 2, orta_y - 4, form_basligi)
+
+        c.setLineWidth(1)
+        c.line(25, yukseklik - 85, genislik - 25, yukseklik - 85)
+        
+        okul_baslik_para = Paragraph(okul_basligi, style_baslik)
+        okul_baslik_genisligi = genislik - 50
+        _, okul_baslik_yuksekligi = okul_baslik_para.wrap(okul_baslik_genisligi, 40)
+        okul_baslik_merkezi = yukseklik - 105
+        okul_baslik_para.drawOn(
+            c,
+            25,
+            okul_baslik_merkezi - (okul_baslik_yuksekligi / 2)
+        )
+        
+        style_metin = ParagraphStyle(name='JustifyIndent', fontName=self.font, fontSize=10, alignment=TA_JUSTIFY, firstLineIndent=1.25 * cm, leading=14)
+        metin_p1 = "Velisi bulunduğum ......... numaralı, ......... sınıfı öğrencisi ....................................... aşağıda belirtilen tarihlerde bilgim dahilinde okula devam etmemiştir/etmeyecektir."
+        
+        p1 = Paragraph(self.metin_duzelt(metin_p1), style_metin)
+        p1_genislik, p1_yukseklik = p1.wrapOn(c, genislik - 50, yukseklik) 
+        cizgi_y = yukseklik - 85
+        okul_baslik_ustu = okul_baslik_merkezi + (okul_baslik_yuksekligi / 2)
+        okul_baslik_alti = okul_baslik_merkezi - (okul_baslik_yuksekligi / 2)
+        cizgi_okul_boslugu = cizgi_y - okul_baslik_ustu
+        p1_ustu = okul_baslik_alti - cizgi_okul_boslugu
+        y_p1 = p1_ustu - p1_yukseklik
+        p1.drawOn(c, 25, y_p1)
+
+        p2 = Paragraph(self.metin_duzelt("Gereğini bilgilerinize arz ederim."), style_metin)
+        p2_genislik, p2_yukseklik = p2.wrapOn(c, genislik - 50, yukseklik)
+        y_p2 = y_p1 - p2_yukseklik - 10
+        p2.drawOn(c, 25, y_p2) 
+
+        tablo_sol = 40
+        tablo_sag = genislik - 40
+        sutun_genisligi = (tablo_sag - tablo_sol) / 3
+        sutun_merkezleri = [
+            tablo_sol + sutun_genisligi * 0.5,
+            tablo_sol + sutun_genisligi * 1.5,
+            tablo_sol + sutun_genisligi * 2.5,
+        ]
+
+        def tablo_basligi_ciz(y):
+            c.setFont(self.font_bold, 10)
+            c.drawCentredString(sutun_merkezleri[0], y, "Tarih")
+            c.drawCentredString(sutun_merkezleri[1], y, self.metin_duzelt("Tür"))
+            c.drawCentredString(sutun_merkezleri[2], y, self.metin_duzelt("Süre"))
+            c.line(tablo_sol, y - 5, tablo_sag, y - 5)
+
+        def alt_blok_ciz():
+            c.setLineWidth(0.5)
+            kutu_x_sol = 25
+            kutu_x_sag = genislik - 25
+            kutu_y_alt = 35
+            kutu_y_ust = 110
+            orta_x = genislik / 2
+
+            c.rect(kutu_x_sol, kutu_y_alt, kutu_x_sag - kutu_x_sol, kutu_y_ust - kutu_y_alt)
+            c.line(orta_x, kutu_y_alt, orta_x, kutu_y_ust)
+            satir_yukseklik = (kutu_y_ust - kutu_y_alt) / 3
+            c.line(kutu_x_sol, kutu_y_alt + satir_yukseklik, orta_x, kutu_y_alt + satir_yukseklik)
+            c.line(kutu_x_sol, kutu_y_alt + 2 * satir_yukseklik, orta_x, kutu_y_alt + 2 * satir_yukseklik)
+
+            def sol_metin_ciz(c_obj, x, y, label):
+                c_obj.setFont(self.font, 9)
+                c_obj.drawString(x, y, self.metin_duzelt(label))
+
+            y_satir3 = kutu_y_alt + (satir_yukseklik * 2.5) - 3
+            y_satir2 = kutu_y_alt + (satir_yukseklik * 1.5) - 3
+            y_satir1 = kutu_y_alt + (satir_yukseklik * 0.5) - 3
+            sol_icerik_x = kutu_x_sol + 10
+            sol_metin_ciz(c, sol_icerik_x, y_satir3, "Özürsüz Devamsızlık: ......... Gün")
+            sol_metin_ciz(c, sol_icerik_x, y_satir2, "Özürlü Devamsızlık: ......... Gün")
+            sol_metin_ciz(c, sol_icerik_x, y_satir1, "Toplam Devamsızlık: ......... Gün")
+
+            c.setFont(self.font, 9)
+            sag_icerik_x = orta_x + 10
+            noktalar = "." * 40
+            nokta_genislik = c.stringWidth(noktalar, self.font, 9)
+            y_tarih = kutu_y_ust - 15
+            y_ad = kutu_y_ust - 35
+            y_veli = kutu_y_ust - 50
+            y_imza = kutu_y_alt + 10
+            x_label = sag_icerik_x
+            x_colon = x_label + 45
+            x_value = kutu_x_sag - nokta_genislik - 10
+            merkez_x_nokta = x_value + (nokta_genislik / 2)
+            c.drawCentredString(merkez_x_nokta, y_tarih, "Tarih: ..../..../20...")
+            c.drawString(x_label, y_ad, "Ad Soyad")
+            c.drawString(x_colon, y_ad, ":")
+            c.drawString(x_value, y_ad, noktalar)
+            c.drawCentredString(merkez_x_nokta, y_veli, "Velisi")
+            c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
+            c.drawString(x_colon, y_imza, ":")
+            c.drawString(x_value, y_imza, noktalar)
+            c.setFont(self.font, 8)
+            c.drawString(kutu_x_sol, kutu_y_alt - 15, self.metin_duzelt(
+                "Not: Toplam devamsızlık süresi 10 gün özürsüz, 20 gün özürlü olmak üzere 30 gün ile sınırlıdır."
+            ))
+
+        y_pozisyon = y_p2 - 25
+        tablo_basligi_ciz(y_pozisyon)
+        y_pozisyon -= 20
+        c.setFont(self.font, 10)
+        
+        # 5 adet boş satır çiz
+        for i in range(5):
+            c.drawCentredString(sutun_merkezleri[0], y_pozisyon, ".......................")
+            c.drawCentredString(sutun_merkezleri[1], y_pozisyon, ".......................")
+            c.drawCentredString(sutun_merkezleri[2], y_pozisyon, "................")
+            y_pozisyon -= 15
+
+        c.line(tablo_sol, y_pozisyon + 10, tablo_sag, y_pozisyon + 10)
+        alt_blok_ciz()
+
+        c.save()
+        pdf_bellek.seek(0)
+        okuyucu = PdfReader(pdf_bellek)
+        yazici = PdfWriter()
+        yazici.add_page(okuyucu.pages[0])
+
+        with open(kayit_yeri, "wb") as hedef:
+            yazici.write(hedef)
+        return True, ""
     
     # --- TOPLU İMZA SİRKÜSÜ (A4 LİSTE) ÇİZİM MOTORU ---
     def teblig_tebellug_ciz(self, sayi, konu, tarih, personeller, kayit_yeri, kurum="", yuklenen_pdf=""):

@@ -1,8 +1,8 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks, Body, Request
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
-import os, json, re, tempfile, shutil, uuid
+import os, json, re, tempfile, shutil, uuid, platform
 import pandas as pd
 from datetime import datetime, timedelta
 from veritabani import VeritabaniYoneticisi
@@ -13,9 +13,16 @@ import logging
 from araclar import VeriAraclari
 from dependencies import db, yollar, ayarlar, islem_logla, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari
 from utils import *
-from utils import _excel_sutunu_bul
+from utils import _excel_sutunu_bul, _sablon_excel_yolu_olustur
+from typing import Dict
 
 router = APIRouter()
+
+class SablonVerisi(BaseModel):
+    kalemler: List[Dict]
+    firmaVergiler: List[str] = []
+    firmalar: List[str] = []
+    firmaAdresleri: List[str] = []
 
 VARSAYILAN_OLCU_BIRIMLERI = [
     "ADET_BIRIM",
@@ -50,42 +57,74 @@ def olcu_birimleri_getir():
 @router.post("/sablon-hazirla")
 def sablon_hazirla(veri: SablonVerisi):
     try:
-        logging.info(f"SABLON HAZIRLA DATA: {veri.dict()}")
-        import openpyxl
-        from openpyxl.styles import Font
+        logging.info(f"SABLON HAZIRLA: {len(veri.kalemler)} kalem, {len(veri.firmalar)} firma")
+        import openpyxl, shutil as _shutil
 
+        # Şablon dosyasını bul
         sablon_yolu = _sablon_excel_yolu_olustur()
-        wb = openpyxl.load_workbook(sablon_yolu)
+        if not sablon_yolu:
+            return {"basarili": False, "mesaj": "Şablon dosyası (sablonlar/sablon.xlsx) bulunamadı."}
+
+        # Hedef dosyayı şablondan kopyala (açık olsa bile farklı isim)
+        ayar = ayarlari_al()
+        ana_klasor = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
+        os.makedirs(ana_klasor, exist_ok=True)
+        zaman_damgasi = datetime.now().strftime("%Y%m%d_%H%M%S")
+        dosya_yolu = os.path.join(ana_klasor, f"Yaklasik_Maliyet_Sablon_{zaman_damgasi}.xlsx")
+        _shutil.copy2(sablon_yolu, dosya_yolu)
+
+        # Kopyayı aç ve doldur
+        wb = openpyxl.load_workbook(dosya_yolu)
         ws = wb.active
 
-        # Eski verileri temizle ve başlık satırını koru
+        # Başlık satırını koru, 2. satırdan itibaren temizle
         if ws.max_row > 1:
             ws.delete_rows(2, ws.max_row - 1)
 
-        row_idx = 2
-        for kalem in veri.kalemler:
-            if not kalem or not str(kalem.get('cins', '')).strip():
-                continue
-            ws[f"A{row_idx}"] = kalem.get('cins', '')
-            ws[f"B{row_idx}"] = kalem.get('miktar', '')
-            ws[f"C{row_idx}"] = kalem.get('birim', '')
-            row_idx += 1
+        # Firma ve fiyat verilerini hazırla
+        firmalar     = veri.firmalar     or []
+        vergiler     = veri.firmaVergiler or []
+        gecerli_kalemler = [k for k in veri.kalemler if str(k.get('cins', '')).strip()]
 
-        # Başlık satırını görünüm için bold tut
-        for sutun in ["A", "B", "C"]:
-            ws[f"{sutun}1"].font = Font(bold=True)
+        row = 2
+        for kalem in gecerli_kalemler:
+            cins   = kalem.get('cins', '')
+            miktar = kalem.get('miktar', '')
+            birim  = kalem.get('birim', '')
+            fiyatlar = kalem.get('fiyatlar', [])
 
-        ayar = ayarlari_al()
-        ana_klasor = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
-        if not os.path.exists(ana_klasor):
-            os.makedirs(ana_klasor)
-        dosya_yolu = os.path.join(ana_klasor, "Yaklasik_Maliyet_Sablon.xlsx")
+            # Kalem ana satırı: A=Ürün Adı, B=Miktar, C=Ölçü Birimi
+            ws.cell(row=row, column=1, value=cins)
+            try:
+                ws.cell(row=row, column=2, value=float(miktar) if miktar else None)
+            except Exception:
+                ws.cell(row=row, column=2, value=miktar)
+            ws.cell(row=row, column=3, value=birim)
+            row += 1
+
+            # Her firma için alt satır: D=ÜrünNo(boş), E=Model(boş), F=Marka(boş), G=Birim Tutar, H=Firma VKN/TCKN
+            for fi, firma_adi in enumerate(firmalar):
+                if not str(firma_adi).strip():
+                    continue
+                vergi = vergiler[fi] if fi < len(vergiler) else ""
+                bf = ""
+                if fi < len(fiyatlar) and fiyatlar[fi] not in ("", None):
+                    try:
+                        bf = float(fiyatlar[fi])
+                    except Exception:
+                        bf = fiyatlar[fi]
+                ws.cell(row=row, column=4, value=None)   # Ürün No
+                ws.cell(row=row, column=5, value=None)   # Model
+                ws.cell(row=row, column=6, value=None)   # Marka
+                ws.cell(row=row, column=7, value=bf)     # Birim Tutar
+                ws.cell(row=row, column=8, value=vergi)  # Firma VKN/TCKN
+                row += 1
+
         wb.save(dosya_yolu)
         dosyayi_otomatik_ac(dosya_yolu)
-
-        return {"basarili": True, "mesaj": "Şablon hazırlandı ve açıldı."}
+        return {"basarili": True, "mesaj": f"Şablon hazırlandı ve açıldı."}
     except Exception as e:
-        logging.error(f"Şablon hazırlanırken hata: {e}")
+        logging.error(f"Şablon hazırlanırken hata: {e}", exc_info=True)
         return {"basarili": False, "mesaj": str(e)}
 
 @router.post("/excel-onizle")
@@ -190,7 +229,8 @@ async def ihale_excel_oku(dosya: UploadFile = File(...)):
         return {"basarili": False, "mesaj": str(e)}
 
 @router.post("/ihale-tekli-belge")
-def ihale_tekli_belge(veri: dict, background_tasks: BackgroundTasks):
+async def ihale_tekli_belge(request: Request, background_tasks: BackgroundTasks = None):
+    veri = await request.json()
     ayar = ayarlari_al()
     pdf_yol = ayar.get("pdf_kayit_klasoru", yollar["PDF"])
     

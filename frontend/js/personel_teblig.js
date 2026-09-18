@@ -19,7 +19,7 @@
                 } else {
                     bildirimGoster(v.mesaj, "hata");
                 }
-                event.target.value = '';
+                if(event && event.target) event.target.value = '';
             }).catch(err => { bildirimGoster(err.message || "Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); }).finally(() => yuklemeGizle());
         }
 
@@ -290,7 +290,7 @@ function filtreTumuDegisti() {
                     const etiket = tur === 'meb' ? 'ayar_meb_logo_ad' : 'ayar_okul_logo_ad';
                     document.getElementById(etiket).innerText = dosya.name;
                 }
-                event.target.value = '';
+                if(event && event.target) event.target.value = '';
             });
         }
 
@@ -405,7 +405,7 @@ function filtreTumuDegisti() {
         }
 
         // --- OTOMATİK GÜNCELLEME KONTROLÜ (GitHub) ---
-        const MEVCUT_VERSIYON = "v1.1";
+        const MEVCUT_VERSIYON = "v2.0";
         function surumKarsilastir(a, b) {
             const parcalaraAyir = surum => String(surum).trim().toLowerCase().replace(/^v/, '').split('.').map(Number);
             const sol = parcalaraAyir(a); const sag = parcalaraAyir(b);
