@@ -280,3 +280,53 @@ def veritabani_sifirla():
     islem_logla("uyarı", "Veritabanı sıfırlama", "Tüm veritabanı sıfırlandı.")
     return {"basarili": True, "mesaj": "Tüm veritabanı başarıyla sıfırlandı."}
 
+
+class GeriBildirim(BaseModel):
+    isim: Optional[str] = ""
+    eposta: Optional[str] = ""
+    tur: str
+    mesaj: str
+
+# Kendi e-postanıza mesaj gelmesi için formspree.io veya web3forms.com üzerinden aldığınız API URL'sini buraya yapıştırın.
+# Örnek Formspree: "https://formspree.io/f/xbjnq..."
+# Örnek Web3Forms: "https://api.web3forms.com/submit" (Ayrıca subject veya access_key göndermek gerekir)
+GERI_BILDIRIM_URL = "https://formspree.io/f/mqpapdkd" 
+
+@router.post("/geri-bildirim")
+def geri_bildirim_gonder(veri: GeriBildirim):
+    if not GERI_BILDIRIM_URL:
+        # Eğer henüz URL girilmediyse, mesajı log dosyasına yazıp başarıyla iletilmiş gibi yapalım (Prototip testi için)
+        import logging
+        logging.info(f"YENİ GERİ BİLDİRİM ({veri.tur}):\nKimden: {veri.isim} ({veri.eposta})\nMesaj: {veri.mesaj}")
+        return {"basarili": True, "mesaj": "Sistem test modunda olduğu için mesajınız başarıyla yerel kayıtlara alındı."}
+    
+    # Gerçek gönderim
+    import urllib.request
+    import json
+    
+    payload = {
+        "İsim_Kurum": veri.isim,
+        "Eposta": veri.eposta,
+        "Mesaj_Türü": veri.tur,
+        "Mesaj": veri.mesaj
+    }
+    
+    try:
+        import ssl
+        import logging
+        ctx = ssl.create_default_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        
+        req = urllib.request.Request(
+            GERI_BILDIRIM_URL,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json', 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'}
+        )
+        with urllib.request.urlopen(req, timeout=10, context=ctx) as response:
+            logging.info("Geri bildirim basariyla gonderildi.")
+            return {"basarili": True, "mesaj": "Mesajınız başarıyla iletildi."}
+    except Exception as e:
+        import logging
+        logging.error(f"Geri bildirim gonderim hatasi: {str(e)}")
+        return {"basarili": False, "mesaj": f"Mesaj gönderilirken hata oluştu (Lütfen app.log dosyasını kontrol edin)"}

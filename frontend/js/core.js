@@ -23,7 +23,8 @@ const API = 'http://127.0.0.1:8000';
                 escapeMarkup: false,
                 gravity: "top", 
                 position: "center", 
-                stopOnFocus: true, 
+                stopOnFocus: true,
+                close: true, 
                 style: {
                     background: bgColor,
                     borderRadius: "8px",
@@ -1072,3 +1073,46 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
 window.verileriYukle = verileriYukle;
 
+
+// GERİ BİLDİRİM GÖNDERİMİ
+function geriBildirimGonder() {
+    const isim = document.getElementById('gb_isim').value.trim();
+    const eposta = document.getElementById('gb_eposta').value.trim();
+    const tur = document.getElementById('gb_tur').value;
+    const mesaj = document.getElementById('gb_mesaj').value.trim();
+
+    if (!mesaj) {
+        return bildirimGoster("Lütfen mesaj içeriğini doldurunuz!", "hata");
+    }
+
+    const buton = document.getElementById("gb_gonder_btn");
+    const eskiMetin = buton.innerHTML;
+    buton.innerHTML = '<i data-lucide="loader" class="spin"></i> Gönderiliyor...';
+    buton.disabled = true;
+
+    fetch(`${API}/geri-bildirim`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isim, eposta, tur, mesaj })
+    })
+    .then(r => r.json())
+    .then(v => {
+        buton.innerHTML = eskiMetin;
+        buton.disabled = false;
+        
+        if(v.basarili) {
+            bildirimGoster("Mesajınız başarıyla iletildi. Teşekkür ederiz!", "bilgi");
+            document.getElementById('gb_mesaj').value = '';
+            
+        } else {
+            bildirimGoster(v.mesaj || "Gönderim sırasında bir hata oluştu.", "hata");
+        }
+        lucide.createIcons();
+    })
+    .catch(err => {
+        buton.innerHTML = eskiMetin;
+        buton.disabled = false;
+        bildirimGoster("Bağlantı hatası: " + err, "hata");
+        lucide.createIcons();
+    });
+}
