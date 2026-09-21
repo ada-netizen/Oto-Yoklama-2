@@ -1,8 +1,8 @@
-import os, logging, tempfile, re, shutil, uuid
+import os, logging, tempfile, re, shutil, uuid, json
 import platform, subprocess
 from datetime import datetime, timedelta
 import pandas as pd
-from dependencies import yollar, db
+from dependencies import yollar, db, islem_loglari
 from sistem_motoru import SistemMotoru
 from models import *
 

@@ -3,6 +3,12 @@ import threading
 import multiprocessing
 import uvicorn
 import os
+import ctypes
+try:
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID('adanetizen.otoyoklama.v2')
+except Exception:
+    pass
+
 import time
 import json
 import socket

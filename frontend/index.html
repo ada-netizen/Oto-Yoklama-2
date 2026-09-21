@@ -503,15 +503,6 @@
 </div>
 <div class="settings-list-item">
 <div class="settings-item-info">
-<span class="settings-item-name">Öğrenci Ekle/Çıkar</span>
-<span class="settings-item-desc">Sistemdeki öğrencileri (nakil vs.) manuel yönetin.</span>
-</div>
-<div class="settings-item-action">
-<button class="btn btn-ayarlar" onclick="ogrenciYonetimAc()"><i data-lucide="user-cog" height="14" width="14"></i> Yönet</button>
-</div>
-</div>
-<div class="settings-list-item">
-<div class="settings-item-info">
 <span class="settings-item-name" style="color: #EF4444;">Öğrencileri Sil</span>
 <span class="settings-item-desc">Sadece öğrencileri ve devamsızlıkları siler.</span>
 </div>
@@ -557,6 +548,31 @@
 </div>
 </div>
 </div>
+<!-- ÖĞRENCİ YÖNETİMİ -->
+<div class="settings-section">
+    <h3 class="settings-section-title"><i data-lucide="graduation-cap" height="16" width="16"></i> Öğrenci Yönetimi</h3>
+    <div class="settings-list-card">
+        <div class="settings-list-item">
+            <div class="settings-item-info">
+                <span class="settings-item-name">Öğrenci Ekle/Çıkar</span>
+                <span class="settings-item-desc">Sistemdeki öğrencileri (nakil vs.) manuel yönetin.</span>
+            </div>
+            <div class="settings-item-action">
+                <button class="btn btn-ayarlar" onclick="ogrenciYonetimAc()"><i data-lucide="user-cog" height="14" width="14"></i> Yönet</button>
+            </div>
+        </div>
+        <div class="settings-list-item">
+            <div class="settings-item-info">
+                <span class="settings-item-name" style="color: #EF4444;">Öğrencileri Sil</span>
+                <span class="settings-item-desc">Tüm öğrenci ve devamsızlık kayıtlarını sıfırlar.</span>
+            </div>
+            <div class="settings-item-action">
+                <button class="btn btn-kirmizi" onclick="ogrencileriSifirla()"><i data-lucide="user-x" height="14" width="14"></i> Öğrencileri Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- SİSTEM YÖNETİMİ -->
 <div class="settings-section">
 <h3 class="settings-section-title"><i data-lucide="server-crash" height="16" width="16"></i> Sistem
                         Yönetimi</h3>
@@ -933,8 +949,8 @@
  <!-- /sag_panel_ana -->
  <!-- /ana-kapsayici -->
 {% include 'components/ihale_komisyon_modal.html' %}
-<script src="js/core.js?v=10"></script>
-<script src="js/personel_teblig.js?v=8"></script>
+<script src="js/core.js?v=9"></script>
+<script src="js/personel_teblig.js?v=9"></script>
 <script src="js/ihale.js?v=9"></script>
 <script>
         lucide.createIcons();

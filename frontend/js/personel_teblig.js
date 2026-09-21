@@ -227,42 +227,8 @@ function filtreTumuDegisti() {
             yonetimPersonelTablosunuDoldur();
         }
 
-        function yonetimPersonelTablosunuDoldur() {
-            const filtreText = document.getElementById('personel_arama').value.toLocaleUpperCase('tr-TR');
-            const govde = document.getElementById('personel_govde');
-            if(!govde) return;
-            govde.innerHTML = '';
-            
-            [...tumPersoneller].sort((a,b) => a.ad.localeCompare(b.ad)).forEach(p => {
-                // Metin araması
-                if(filtreText && !p.ad.toLocaleUpperCase('tr-TR').includes(filtreText)) return;
-                
-                // Çip Filtresi
-                if (aktifPersonelFiltresi !== 'Tümü' && p.grup !== aktifPersonelFiltresi) {
-                    return;
-                }
-                
-                const satir = document.createElement('tr');
-                satir.innerHTML = `
-                    <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight:bold;">${p.ad}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);">${p.brans}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size:11px;">${p.gorev}</td>
-                    <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
-                        <button class="icon-btn" style="color:var(--tree-sel);" onclick="personelDuzenleBaslat('${p.ad}')" title="Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
-                        <button class="icon-btn" style="color:#EF4444;" onclick="yonetimPersonelSil('${p.ad}')" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
-                    </td>
-                `;
-                govde.appendChild(satir);
-            });
-            
-            if (tumPersoneller.length === 0 || govde.innerHTML === '') {
-                govde.innerHTML = '<tr><td colspan="5" style="padding:30px; text-align:center; color:var(--fg-sub);">Personel bulunamadı.</td></tr>';
-            }
-            if (typeof lucide !== 'undefined') {
-                setTimeout(() => lucide.createIcons(), 50);
-            }
-        }
-        
+        function yonetimPersonelTablosunuDoldur() { }
+
         function personelPdfIndir() {
             fetch(`${API}/personel-pdf-indir`).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
