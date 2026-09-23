@@ -65,66 +65,7 @@
 <hr style="border-color: var(--border); margin: 2px 0;"/>
 <div class="context-menu-item" onclick="yillikListeAc(sagTikOgrNo, sagTikOgrAd)" style="color: #10B981;"><i data-lucide="calendar" height="16" width="16"></i> Devamsızlık Göster</div>
 </div>
-<div class="tab-content" id="sekme_iletisim">
-    <div class="top-bar">
-        <h2 class="top-bar-title"><i data-lucide="message-square" height="20" width="20"></i> İletişim ve Geri Bildirim</h2>
-    </div>
-    <div class="settings-container-scroll">
-        <div class="settings-main-wrapper" style="max-width: 800px; margin: 0 auto; padding-top: 20px;">
-            <div class="settings-section">
-                <h3 class="settings-section-title"><i data-lucide="mail" height="16" width="16"></i> Geliştiriciye Mesaj Gönder</h3>
-                <div class="settings-list-card">
-                    <div class="settings-list-item">
-                        <div class="settings-item-info">
-                            <span class="settings-item-name">Adınız / Kurumunuz</span>
-                            <span class="settings-item-desc">İsteğe bağlı (Örn: Ahmet Yılmaz)</span>
-                        </div>
-                        <div class="settings-item-action" style="flex: 2;">
-                            <input type="text" id="gb_isim" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                        </div>
-                    </div>
-                    <div class="settings-list-item">
-                        <div class="settings-item-info">
-                            <span class="settings-item-name">İletişim E-Postası</span>
-                            <span class="settings-item-desc">Size geri dönebilmemiz için (İsteğe bağlı)</span>
-                        </div>
-                        <div class="settings-item-action" style="flex: 2;">
-                            <input type="email" id="gb_eposta" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                        </div>
-                    </div>
-                    <div class="settings-list-item">
-                        <div class="settings-item-info">
-                            <span class="settings-item-name">Mesaj Türü</span>
-                            <span class="settings-item-desc">Geri bildiriminizin türü nedir?</span>
-                        </div>
-                        <div class="settings-item-action" style="flex: 2;">
-                            <select id="gb_tur" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                                <option value="Hata Bildirimi">Hata Bildirimi (Program Çöktü/Çalışmıyor)</option>
-                                <option value="Öneri / İstek">Öneri / Yeni Özellik İsteği</option>
-                                <option value="Soru">Soru / Yardım Talebi</option>
-                                <option value="Diğer">Diğer</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="settings-list-item" style="align-items: flex-start;">
-                        <div class="settings-item-info">
-                            <span class="settings-item-name">Mesaj İçeriği</span>
-                            <span class="settings-item-desc">Lütfen detaylıca açıklayın...</span>
-                        </div>
-                        <div class="settings-item-action" style="flex: 2;">
-                            <textarea id="gb_mesaj" rows="5" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; resize: vertical;"></textarea>
-                        </div>
-                    </div>
-                    <div class="settings-list-item" style="border-bottom: none; justify-content: flex-end;">
-                        <button id="gb_gonder_btn" class="btn" style="background-color: #10B981; color: white; padding: 10px 20px; font-weight: bold;" onclick="geriBildirimGonder()">
-                            <i data-lucide="send" width="16" height="16"></i> Gönder
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
 
     {% include 'components/raporlar_modal.html' %}
 {% include 'components/akilli_eslesme_modal.html' %}
@@ -641,14 +582,14 @@
                     
                     <!-- Otomatik Yedekleme Ayarları (Yan Yana) -->
                     <div style="display: flex; gap: 10px; width: 100%; border-bottom: 1px solid var(--border); padding-bottom: 10px; flex-wrap: wrap;">
-                        <div class="settings-list-item" style="flex: 1; border-bottom: none; min-width: 250px;">
+                        <div class="settings-list-item vertical-action" style="flex: 1; border-bottom: none; min-width: 200px; padding: 15px 24px;">
                             <div class="settings-item-info"><span class="settings-item-name">Oto. Yedek Saati</span></div>
-                            <div class="settings-item-action"><input id="ayar_yedek_saati" type="time"/></div>
+                            <div class="settings-item-action" style="width: 100%;"><input id="ayar_yedek_saati" type="time" style="width: 100%; min-width: unset; box-sizing: border-box;"/></div>
                         </div>
-                        <div class="settings-list-item" style="flex: 1; border-bottom: none; min-width: 250px;">
+                        <div class="settings-list-item vertical-action" style="flex: 1; border-bottom: none; min-width: 200px; padding: 15px 24px;">
                             <div class="settings-item-info"><span class="settings-item-name">Yedek Sıklığı</span></div>
-                            <div class="settings-item-action">
-                                <select id="ayar_yedek_sikligi" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
+                            <div class="settings-item-action" style="width: 100%;">
+                                <select id="ayar_yedek_sikligi" style="width: 100%; min-width: unset; box-sizing: border-box;" onchange="document.getElementById('ayar_yedek_gun_sayisi_satir').style.display = this.value === 'Özel Gün' ? 'flex' : 'none'">
                                     <option>Her Gün</option>
                                     <option>Haftada 1</option>
                                     <option>Ayda 1</option>
@@ -663,7 +604,7 @@
                             <span class="settings-item-name" style="padding-left:15px; border-left: 2px solid var(--tree-sel);">Özel Gün Sayısı</span>
                         </div>
                         <div class="settings-item-action" style="display:flex; align-items:center; gap:8px;">
-                            <input id="ayar_yedek_gun_sayisi" min="1" style="width: 70px;" type="number" value="3"/>
+                            <input id="ayar_yedek_gun_sayisi" min="1" style="width: 70px; min-width: unset;" type="number" value="3"/>
                             <span style="font-size:12px; color:var(--fg-sub);">gün</span>
                         </div>
                     </div>
@@ -1178,5 +1119,65 @@ tippyStyle.textContent = `
 `;
 document.head.appendChild(tippyStyle);
 </script>
+<div class="tab-content" id="sekme_iletisim">
+    <div class="top-bar">
+        <h2 class="top-bar-title"><i data-lucide="message-square" height="20" width="20"></i> İletişim ve Geri Bildirim</h2>
+    </div>
+    <div class="settings-container-scroll">
+        <div class="settings-main-wrapper" style="max-width: 800px; margin: 0 auto; padding-top: 20px;">
+            <div class="settings-section">
+                <h3 class="settings-section-title"><i data-lucide="mail" height="16" width="16"></i> Geliştiriciye Mesaj Gönder</h3>
+                <div class="settings-list-card">
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">Adınız / Kurumunuz</span>
+                            <span class="settings-item-desc">İsteğe bağlı (Örn: Ahmet Yılmaz)</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <input type="text" id="gb_isim" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">İletişim E-Postası</span>
+                            <span class="settings-item-desc">Size geri dönebilmemiz için (İsteğe bağlı)</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <input type="email" id="gb_eposta" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">Mesaj Türü</span>
+                            <span class="settings-item-desc">Geri bildiriminizin türü nedir?</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <select id="gb_tur" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                                <option value="Hata Bildirimi">Hata Bildirimi (Program Çöktü/Çalışmıyor)</option>
+                                <option value="Öneri / İstek">Öneri / Yeni Özellik İsteği</option>
+                                <option value="Soru">Soru / Yardım Talebi</option>
+                                <option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-list-item" style="align-items: flex-start;">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">Mesaj İçeriği</span>
+                            <span class="settings-item-desc">Lütfen detaylıca açıklayın...</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <textarea id="gb_mesaj" rows="5" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+                    <div class="settings-list-item" style="border-bottom: none; justify-content: flex-end;">
+                        <button id="gb_gonder_btn" class="btn" style="background-color: #10B981; color: white; padding: 10px 20px; font-weight: bold;" onclick="geriBildirimGonder()">
+                            <i data-lucide="send" width="16" height="16"></i> Gönder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
