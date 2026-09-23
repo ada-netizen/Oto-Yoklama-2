@@ -1,5 +1,5 @@
 #define MyAppName "Elektronik Okul"
-#define MyAppVersion "2.2"
+#define MyAppVersion "2.3"
 #define MyAppPublisher "Elektronik Okul"
 #define MyAppExeName "Elektronik Okul.exe"
 
@@ -11,7 +11,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\Elektronik Okul
 DefaultGroupName={#MyAppName}
 OutputDir=installer
-OutputBaseFilename=Elektronik_Okul_V2.2_Setup
+OutputBaseFilename=Elektronik_Okul_V2.3_Setup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern

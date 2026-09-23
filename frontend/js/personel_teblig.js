@@ -1,26 +1,18 @@
         // --- PERSONEL YÖNETİMİ ---
         function personelExcelYukle(event) {
             const dosya = event.target.files[0]; if (!dosya) return;
-            const onizlemeFormu = new FormData(); onizlemeFormu.append("dosya", dosya); onizlemeFormu.append("tur", "personel");
-            yuklemeGoster("Personel dosyası doğrulanıyor ve önizleme hazırlanıyor...");
-            fetch(`${API}/excel-onizle`, { method: 'POST', body: onizlemeFormu }).then(r => r.json()).then(onizleme => {
-                if(!onizleme.basarili) throw new Error(onizleme.mesaj);
-                const baslik = onizleme.sutunlar.join(' | ');
-                const satirlar = onizleme.onizleme.slice(0, 5).map(satir => Object.values(satir).join(' | ')).join('\n');
-                const hataMetni = onizleme.hatalar.length ? `\n\nUyarılar:\n${onizleme.hatalar.join('\n')}` : '';
-                if(!confirm(`${onizleme.toplam_satir} personel satırı bulundu.\n\n${baslik}\n${satirlar}${hataMetni}\n\nListeyi aktarmaya devam edilsin mi?`)) return null;
-                const formData = new FormData(); formData.append("dosya", dosya);
-                yuklemeGoster("Personel listesi işleniyor...");
-                return fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData });
-            }).then(r => r ? r.json() : null).then(v => {
-                if(!v) return;
+            const formData = new FormData(); formData.append("dosya", dosya);
+            yuklemeGoster("Personel listesi işleniyor...");
+            fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
                 if(v.basarili && v.job_id) {
                     ilerlemeTakipEt(v.job_id, personelleriYukle);
                 } else {
                     bildirimGoster(v.mesaj, "hata");
                 }
                 if(event && event.target) event.target.value = '';
-            }).catch(err => { bildirimGoster(err.message || "Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); }).finally(() => yuklemeGizle());
+            }).catch(err => { 
+                bildirimGoster(err.message || "Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); 
+            }).finally(() => yuklemeGizle());
         }
 
         function personelYonetimAc() { 

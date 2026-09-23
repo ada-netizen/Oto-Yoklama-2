@@ -387,31 +387,20 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
                 function dosyaYukle(endpoint, event) {
             const dosya = event.target.files[0]; if (!dosya) return;
-                    const tur = endpoint.includes('ogrenci') ? 'ogrenci' : 'devamsizlik';
-                    const onizlemeFormu = new FormData();
-                    onizlemeFormu.append("dosya", dosya);
-                    onizlemeFormu.append("tur", tur);
-                    yuklemeGoster("Dosya doğrulanıyor ve önizleme hazırlanıyor...");
-                    fetch(`${API}/excel-onizle`, { method: 'POST', body: onizlemeFormu }).then(r => r.json()).then(onizleme => {
-                        if(!onizleme.basarili) throw new Error(onizleme.mesaj);
-                        const baslik = onizleme.sutunlar.join(' | ');
-                        const satirlar = onizleme.onizleme.slice(0, 5).map(satir => Object.values(satir).join(' | ')).join('\n');
-                        const hataMetni = onizleme.hatalar.length ? `\n\nUyarılar:\n${onizleme.hatalar.join('\n')}` : '';
-                        const onay = confirm(`${onizleme.toplam_satir} satır bulundu.\n\n${baslik}\n${satirlar}${hataMetni}\n\nAktarıma devam edilsin mi?`);
-                        if(!onay) { yuklemeGizle(); return null; }
-                        const formData = new FormData(); formData.append("dosya", dosya);
-                        yuklemeGoster("Excel dosyasi sisteme aktariliyor...");
-                        return fetch(`${API}/${endpoint}`, { method: 'POST', body: formData });
-                    }).then(r => r ? r.json() : null).then(v => {
-                        if(!v) return;
-                        if(v.basarili && v.job_id) {
-                            ilerlemeTakipEt(v.job_id);
-                        } else {
-                            yuklemeGizle();
-                            bildirimGoster("Hata: " + v.mesaj, "hata");
-                        }
-                        if(event && event.target) event.target.value = '';
-                    }).catch(err => { yuklemeGizle(); bildirimGoster(err.message || "Baglanti hatasi! Sunucuyu kontrol edin.", "hata"); });
+            const formData = new FormData(); formData.append("dosya", dosya);
+            yuklemeGoster("Excel dosyasi sisteme aktariliyor...");
+            fetch(`${API}/${endpoint}`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
+                if(v.basarili && v.job_id) {
+                    ilerlemeTakipEt(v.job_id);
+                } else {
+                    yuklemeGizle();
+                    bildirimGoster("Hata: " + v.mesaj, "hata");
+                }
+                if(event && event.target) event.target.value = '';
+            }).catch(err => { 
+                yuklemeGizle(); 
+                bildirimGoster(err.message || "Baglanti hatasi! Sunucuyu kontrol edin.", "hata"); 
+            });
         }
 
         function ilerlemeTakipEt(job_id, tamamlaninca) {
