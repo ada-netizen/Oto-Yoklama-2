@@ -409,6 +409,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                     yuklemeGizle();
                     bildirimGoster(durum.mesaj, "bilgi");
                     verileriYukle();
+                    gecKalanBildirimiGoster();
                     if(tamamlaninca) tamamlaninca();
                 } else if(durum.durum === 'hata') {
                     yuklemeGizle();
@@ -1105,3 +1106,13 @@ function geriBildirimGonder() {
         lucide.createIcons();
     });
 }
+
+        function gecKalanBildirimiGoster() {
+            fetch(`${API}/gec-bugun-sayisi`).then(r => r.json()).then(data => {
+                if(data.basarili && data.sayi > 0) {
+                    setTimeout(() => {
+                        bildirimGoster(`Bugün ${data.sayi} öğrenci geç yazıldı. Listeyi görmek için <u style="cursor:pointer;" onclick="gecKalanlariIndir()">tıklayın</u>`, 'bilgi');
+                    }, 2000);
+                }
+            }).catch(e => console.error(e));
+        }

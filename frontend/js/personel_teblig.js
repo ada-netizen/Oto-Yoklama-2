@@ -408,13 +408,7 @@ function filtreTumuDegisti() {
             verileriYukle();
             ayarlariYukle();
             
-            fetch(`${API}/gec-bugun-sayisi`).then(r => r.json()).then(data => {
-                if(data.basarili && data.sayi > 0) {
-                    setTimeout(() => {
-                        bildirimGoster(`Bugün ${data.sayi} öğrenci geç yazıldı. Listeyi görmek için <u style="cursor:pointer;" onclick="gecKalanlariIndir()">tıklayın</u>`, 'bilgi');
-                    }, 2000);
-                }
-            });
+            gecKalanBildirimiGoster();
             ayarlariGetirPersonelGruplariIcin();
             resizerAktifEt('resizer1', 'sol_panel_ana', 'sag_panel_ana');
             resizerAktifEt('resizer2', 'takvim_alani_ana', 'onizleme_alani_ana');
