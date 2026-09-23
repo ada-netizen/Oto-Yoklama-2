@@ -154,6 +154,8 @@ function filtreTumuDegisti() {
         }
 
         function personelGruplariCiz() {
+            window.tumPersonelGruplari = tumPersonelGruplari;
+            window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
             // Çipleri çiz
             const cipContainer = document.getElementById('personel_filtre_cipleri');
             if (cipContainer) {

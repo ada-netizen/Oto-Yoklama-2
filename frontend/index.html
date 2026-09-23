@@ -10,8 +10,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
 <script>
         window.onerror = function (msg, url, lineNo, columnNo, error) {
+            // "Script error." mesaji farkli kaynaktan gelen CDN scriptlerinden kaynaklanir,
+            // bu uygulama icin anlamli bir hata degildir, sessizce atla.
+            if (msg === 'Script error.' || msg === 'Script error') return false;
             const errorMsg = "JS Error: " + msg + " at " + url + " Line: " + lineNo + " Col: " + columnNo;
-            alert(errorMsg);
+            console.error(errorMsg);
             fetch("http://127.0.0.1:8000/log-error", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -43,9 +46,9 @@
 <script src="https://unpkg.com/@popperjs/core@2"></script>
 <script src="https://unpkg.com/tippy.js@6"></script>
 <link href="https://unpkg.com/tippy.js@6/dist/tippy.css" rel="stylesheet"/>
-<link href="style.css?v={{ ts }}" rel="stylesheet"/>
+<link href="style.css" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script src="lucide.min.js?v={{ ts }}"></script>
+<script src="lucide.min.js"></script>
 </head>
 <body>
 <div class="toast-container" id="toast_container"></div>
@@ -928,9 +931,9 @@
  <!-- /sag_panel_ana -->
  <!-- /ana-kapsayici -->
 {% include 'components/ihale_komisyon_modal.html' %}
-<script src="js/core.js?v={{ ts }}"></script>
-<script src="js/personel_teblig.js?v={{ ts }}"></script>
-<script src="js/ihale.js?v={{ ts }}"></script>
+<script src="js/core.js"></script>
+<script src="js/personel_teblig.js"></script>
+<script src="js/ihale.js"></script>
 <script>
         lucide.createIcons();
     </script>

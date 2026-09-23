@@ -283,6 +283,7 @@ async def read_index(request: Request):
         "Expires": "0",
     }
     return templates.TemplateResponse(request=request, name="index.html", context={"ts": int(time.time())}, headers=headers)
+    return templates.TemplateResponse(request=request, name="index.html", context={}, headers=headers)
 
 @app.get('/style.css')
 def read_style():

@@ -809,6 +809,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             return fetch(`${API}/personeller?t=${new Date().getTime()}`).then(res => res.json()).then(veri => {
                 // Herkes seçili DEĞİL ve manuel olarak da eklenmemiş şekilde (tertemiz) başlar.
                 tumPersoneller = veri.personeller.map(p => ({ ...p, secili: false, manuelEklendi: false }));
+                window.tumPersoneller = tumPersoneller;
                 
                 const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
                 if(cbEden && cbEdilen) {
