@@ -88,6 +88,7 @@ class GuncellemeMotoru:
                             else:
                                 paket, _ = guncelleme_paketi_indir(manifest_url)
                                 subprocess.Popen([paket])
+                                os._exit(0) # Programi hemen kapat, boylece installer dosyalari uzerine yazabilsin
                         root.destroy()
             except (OSError, InvalidVersion, KeyError, TypeError, ValueError, json.JSONDecodeError):
                 # Manifest yayınlanana kadar güncelleme kontrolü sessizce atlanır.

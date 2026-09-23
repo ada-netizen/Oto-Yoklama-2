@@ -1,8 +1,8 @@
-﻿<div class="modal-overlay" id="personel_yonetim_modal" x-data="personelYonetimComponent()">
+<div class="modal-overlay" id="personel_yonetim_modal" x-data="personelYonetimComponent()">
 <div class="modal-content" style="width: 850px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main);">
 <div class="modal-header">
 <h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
-<i data-lucide="users" height="16" width="16"></i> Personel YÃ¶netimi (Alpine.js)
+<i data-lucide="users" height="16" width="16"></i> Personel Yönetimi (Alpine.js)
                 </h2>
 <div style="display: flex; gap: 8px; align-items: center;">
 <button class="btn btn-kirmizi" onclick="personelPdfIndir()" style="padding: 5px 12px; display:flex; align-items:center; gap:5px;"><i data-lucide="file-text" height="16" width="16"></i> PDF</button>
@@ -17,14 +17,14 @@
 <input x-model="arama" placeholder="Personel Ara..." style="padding: 6px 6px 6px 26px; width: 200px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;" type="text"/>
 </div>
 <div id="personel_filtre_cipleri" style="display: flex; gap: 6px;">
-    <button class="filter-chip" :class="{'active': aktifFiltre === 'TÃ¼mÃ¼'}" @click="aktifFiltre = 'TÃ¼mÃ¼'">TÃ¼mÃ¼</button>
+    <button class="filter-chip" :class="{'active': aktifFiltre === 'Tümü'}" @click="aktifFiltre = 'Tümü'">Tümü</button>
     <template x-for="grup in gruplar" :key="grup">
         <button class="filter-chip" :class="{'active': aktifFiltre === grup}" @click="aktifFiltre = grup" x-text="grup"></button>
     </template>
 </div>
 </div>
 <div style="display: flex; gap: 10px;">
-<button class="btn btn-dev" onclick="personelGrupYonetimiAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="users" height="16" width="16"></i> GruplarÄ± YÃ¶net</button>
+<button class="btn btn-dev" onclick="personelGrupYonetimiAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="users" height="16" width="16"></i> Grupları Yönet</button>
 <button class="btn btn-ogr" onclick="personelDrawerAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="plus" height="16" width="16"></i> Yeni Personel</button>
 </div>
 </div>
@@ -33,9 +33,9 @@
 <thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
 <tr>
 <th style="width: 40%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Ad Soyad</th>
-<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">BranÅŸÄ±</th>
-<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">GÃ¶revi</th>
-<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">Ä°ÅŸlemler</th>
+<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Branşı</th>
+<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Görevi</th>
+<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">İşlemler</th>
 </tr>
 </thead>
 <tbody id="personel_govde">
@@ -45,7 +45,7 @@
             <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);" x-text="p.brans"></td>
             <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size:11px;" x-text="p.gorev"></td>
             <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
-                <button class="icon-btn" style="color:var(--tree-sel);" @click="duzenle(p.ad)" title="DÃ¼zenle"><i data-lucide="edit" width="16" height="16"></i></button>
+                <button class="icon-btn" style="color:var(--tree-sel);" @click="duzenle(p.ad)" title="Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
                 <button class="icon-btn" style="color:#EF4444;" @click="sil(p.ad)" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
             </td>
         </tr>
@@ -59,19 +59,29 @@
 document.addEventListener('alpine:init', () => {
     Alpine.data('personelYonetimComponent', () => ({
         arama: '',
-        aktifFiltre: 'TÃ¼mÃ¼',
+        aktifFiltre: 'Tümü',
+        personeller: window.tumPersoneller || [],
+        gruplarVerisi: window.tumPersonelGruplari || [],
+        
+        init() {
+            window.addEventListener('personeller-guncellendi', () => {
+                this.arama = this.arama;
+                this.personeller = window.tumPersoneller || [];
+                this.gruplarVerisi = window.tumPersonelGruplari || [];
+            });
+        },
         
         get gruplar() {
-            return window.tumPersonelGruplari || [];
+            return this.gruplarVerisi;
         },
         
         get gosterilecekPersoneller() {
             let filterText = this.arama.toLocaleUpperCase('tr-TR');
-            let arr = [...(window.tumPersoneller || [])].sort((a,b) => a.ad.localeCompare(b.ad));
+            let arr = [...this.personeller].sort((a,b) => a.ad.localeCompare(b.ad));
             
             return arr.filter(p => {
                 if(filterText && !p.ad.toLocaleUpperCase('tr-TR').includes(filterText)) return false;
-                if(this.aktifFiltre !== 'TÃ¼mÃ¼' && p.grup !== this.aktifFiltre) return false;
+                if(this.aktifFiltre !== 'Tümü' && p.grup !== this.aktifFiltre) return false;
                 return true;
             });
         },
@@ -81,7 +91,7 @@ document.addEventListener('alpine:init', () => {
         },
         
         sil(ad) {
-            if (!confirm(ad + ' adlÄ± personeli silmek istediÄŸinize emin misiniz?')) return;
+            if (!confirm(ad + ' adlı personeli silmek istediğinize emin misiniz?')) return;
             fetch(`${window.API}/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' })
             .then(r => r.json())
             .then(v => {
@@ -97,7 +107,7 @@ document.addEventListener('alpine:init', () => {
                 }
             })
             .catch(e => {
-                if(window.bildirimGoster) window.bildirimGoster("Hata oluÅŸtu: " + e, "hata");
+                if(window.bildirimGoster) window.bildirimGoster("Hata oluştu: " + e, "hata");
             });
         }
     }));

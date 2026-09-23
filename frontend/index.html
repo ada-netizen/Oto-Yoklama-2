@@ -43,9 +43,9 @@
 <script src="https://unpkg.com/@popperjs/core@2"></script>
 <script src="https://unpkg.com/tippy.js@6"></script>
 <link href="https://unpkg.com/tippy.js@6/dist/tippy.css" rel="stylesheet"/>
-<link href="style.css" rel="stylesheet"/>
+<link href="style.css?v={{ ts }}" rel="stylesheet"/>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-<script src="lucide.min.js"></script>
+<script src="lucide.min.js?v={{ ts }}"></script>
 </head>
 <body>
 <div class="toast-container" id="toast_container"></div>
@@ -928,9 +928,9 @@
  <!-- /sag_panel_ana -->
  <!-- /ana-kapsayici -->
 {% include 'components/ihale_komisyon_modal.html' %}
-<script src="js/core.js?v=18"></script>
-<script src="js/personel_teblig.js?v=18"></script>
-<script src="js/ihale.js?v=15"></script>
+<script src="js/core.js?v={{ ts }}"></script>
+<script src="js/personel_teblig.js?v={{ ts }}"></script>
+<script src="js/ihale.js?v={{ ts }}"></script>
 <script>
         lucide.createIcons();
     </script>

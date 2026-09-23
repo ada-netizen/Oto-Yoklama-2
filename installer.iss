@@ -17,6 +17,7 @@ SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64
+CloseApplications=yes
 
 [Files]
 Source: "dist\Elektronik Okul\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
