@@ -7,15 +7,19 @@ import os
 import subprocess
 import tempfile
 from tkinter import messagebox
-from packaging.version import InvalidVersion, Version
 from sistem_motoru import SistemMotoru
 
 
 def surum_parse(surum):
-    """v1.9 ve v1.10 gibi sürümleri doğru sırada karşılaştırır."""
-    temiz_surum = str(surum).strip().lower().removeprefix("v")
-    return Version(temiz_surum)
-
+    """v1.9, v1.10, v2.3.1.1 gibi surumleri dogru sirada karsilastirir.
+    packaging.version yerine tuple karsilastirmasi kullanilir;
+    boylece 4+ parcali versiyonlar da sorunsuz calisir.
+    """
+    temiz = str(surum).strip().lower().removeprefix("v")
+    try:
+        return tuple(int(x) for x in temiz.split("."))
+    except ValueError:
+        return (0,)
 
 def sha256_hesapla(dosya_yolu):
     ozet = hashlib.sha256()
@@ -90,7 +94,7 @@ class GuncellemeMotoru:
                                 subprocess.Popen([paket])
                                 os._exit(0) # Programi hemen kapat, boylece installer dosyalari uzerine yazabilsin
                         root.destroy()
-            except (OSError, InvalidVersion, KeyError, TypeError, ValueError, json.JSONDecodeError):
+            except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError):
                 # Manifest yayınlanana kadar güncelleme kontrolü sessizce atlanır.
                 pass
 

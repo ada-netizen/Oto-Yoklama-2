@@ -93,7 +93,7 @@ class PDFYoneticisi:
 
         p2 = Paragraph(self.metin_duzelt("Gereğini bilgilerinize arz ederim."), style_metin)
         p2_genislik, p2_yukseklik = p2.wrapOn(c, genislik - 50, yukseklik)
-        y_p2 = y_p1 - p2_yukseklik - 10
+        y_p2 = y_p1 - p2_yukseklik
         p2.drawOn(c, 25, y_p2) 
 
         # --- 3. DEVAMSIZLIK TABLOSU ---
@@ -161,7 +161,7 @@ class PDFYoneticisi:
             c.drawString(x_label, y_ad, "Ad Soyad")
             c.drawString(x_colon, y_ad, ":")
             c.drawString(x_value, y_ad, noktalar)
-            c.drawCentredString(merkez_x_nokta, y_veli, "Velisi")
+            c.drawCentredString(merkez_x_nokta, y_veli, "Veli")
             c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
             c.drawString(x_colon, y_imza, ":")
             c.drawString(x_value, y_imza, noktalar)
@@ -279,7 +279,7 @@ class PDFYoneticisi:
 
         p2 = Paragraph(self.metin_duzelt("Gereğini bilgilerinize arz ederim."), style_metin)
         p2_genislik, p2_yukseklik = p2.wrapOn(c, genislik - 50, yukseklik)
-        y_p2 = y_p1 - p2_yukseklik - 10
+        y_p2 = y_p1 - p2_yukseklik
         p2.drawOn(c, 25, y_p2) 
 
         tablo_sol = 40
@@ -344,10 +344,12 @@ class PDFYoneticisi:
             c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
             c.drawString(x_colon, y_imza, ":")
             c.drawString(x_value, y_imza, noktalar)
+            # Not: kutunun hemen altinda iki satir olarak yazilir
             c.setFont(self.font, 8)
-            c.drawString(kutu_x_sol, kutu_y_alt - 15, self.metin_duzelt(
-                "Not: Toplam devamsızlık süresi 10 gün özürsüz, 20 gün özürlü olmak üzere 30 gün ile sınırlıdır."
-            ))
+            not_satir1 = self.metin_duzelt("Not: Toplam devamsızlık süresi 10 gün özürsüz, 20 gün özürlü olmak üzere 30 gün ile sınırlıdır.")
+            not_satir2 = self.metin_duzelt("Her 5 geç devamsızlık yarım gün özürsüz devamsızlık olarak toplam devamsızlığa eklenir.")
+            c.drawString(kutu_x_sol, kutu_y_alt - 12, not_satir1)
+            c.drawString(kutu_x_sol, kutu_y_alt - 22, not_satir2)
 
         y_pozisyon = y_p2 - 25
         tablo_basligi_ciz(y_pozisyon)
