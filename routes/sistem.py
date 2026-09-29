@@ -18,16 +18,20 @@ router = APIRouter()
 
 @router.get("/versiyon")
 def versiyon_getir():
+    import sys, os, logging
+    from pathlib import Path
     try:
-        import sys
-        base_path = sys._MEIPASS
+        base_path = Path(sys._MEIPASS)
     except Exception:
-        base_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+        base_path = Path(__file__).resolve().parent.parent
     try:
-        v_path = os.path.join(base_path, 'versiyon.txt')
-        with open(v_path, 'r', encoding='utf-8') as f:
-            return {"versiyon": f.read().strip()}
+        v_path = base_path / "versiyon.txt"
+        with open(v_path, "r", encoding="utf-8") as f:
+            v = f.read().strip()
+            if not v: raise ValueError("versiyon.txt bos")
+            return {"versiyon": v}
     except Exception as e:
+        logging.error(f"versiyon.txt okunamadi. Hata: {e}")
         return {"versiyon": "v2.0"}
 
 @router.get("/islem-durumu/{job_id}")

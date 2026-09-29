@@ -29,9 +29,23 @@ Oto-Yoklama, okullar ve eğitim kurumları için tasarlanmış modern, hızlı v
 ## 🛠 Kurulum ve Kullanım
 
 ### Normal Kullanıcılar İçin (Önerilen)
-Artık terminal ile uğraşmanıza gerek yok! 
-1. Projenin `dist` klasörü içindeki `Oto_Yoklama.exe` dosyasını çalıştırın.
-2. Program otomatik olarak arka planda kendi sunucusunu başlatacak ve modern masaüstü uygulamasını karşınıza getirecektir. (USB belleğe atıp istediğiniz bilgisayarda kullanabilirsiniz).
+Artık terminal ile uğraşmanıza gerek yok!
+1. GitHub Releases sayfasından en güncel `Elektronik_Okul_Vx.x_Setup.exe` kurulum dosyasını indirin.
+2. Kurulum dosyasını çalıştırın.
+3. Program otomatik olarak arka planda kendi sunucusunu başlatacak ve modern masaüstü uygulamasını karşınıza getirecektir.
+
+> [!NOTE]
+> **Windows Guvenlik Uyarisi Hakkinda**
+>
+> Kurulum sirasinda Windows SmartScreen mavi bir uyari ekrani gosterebilir:
+> *"Windows bilgisayarinizi korudu — Tanimadigim uygulama..."*
+>
+> Bu uyari, kurulum dosyasinin henuz dijital imzasi (Code Signing Certificate) bulunmadigi icin cikmaktadir. Program tamamen guvenlidir.
+>
+> **Cozum:**
+> 1. **"Daha fazla bilgi"** linkine tiklayin
+> 2. Ardindan **"Yine de calistir"** butonuna basin
+> 3. Kurulum normal sekilde devam edecektir
 
 ### Geliştiriciler İçin (Kaynak Koddan Çalıştırma)
 1. Python 3.8 veya üzeri yüklü olmalıdır.
