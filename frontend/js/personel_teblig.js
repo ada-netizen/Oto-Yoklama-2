@@ -296,7 +296,19 @@ function filtreTumuDegisti() {
                     bildirimGoster("Sisteme Hoş Geldiniz! Önce Ayarlar menüsünden PDF kayıt yerini seçiniz.", "bilgi");
                     fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ilk_kullanim: false }) });
                 } else if (!v.ayarlar.meb_logosu) {
-                if (v.ayarlar.son_gorulen_versiyon !== MEVCUT_VERSIYON) { setTimeout(() => { if(window.yeniliklerModalAc) window.yeniliklerModalAc(); fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ son_gorulen_versiyon: MEVCUT_VERSIYON }) }); }, 1500); }
+                fetch(`${API}/versiyon`).then(res => res.json()).then(versiyonData => {
+                    const GUNCEL = versiyonData.versiyon;
+                    if (v.ayarlar.son_gorulen_versiyon !== GUNCEL) {
+                        setTimeout(() => {
+                            if(window.yeniliklerModalAc) window.yeniliklerModalAc();
+                            fetch(`${API}/ayarlar-kaydet`, { 
+                                method: 'POST', 
+                                headers: { 'Content-Type': 'application/json' }, 
+                                body: JSON.stringify({ son_gorulen_versiyon: GUNCEL }) 
+                            });
+                        }, 1500);
+                    }
+                }).catch(err => console.error('Versiyon alinamadi', err));
                     setTimeout(() => bildirimGoster("MEB Logosu bulunamadı! Ayarlar'dan yükleyin.", "hata"), 3000);
                 }
             });
@@ -368,32 +380,6 @@ function filtreTumuDegisti() {
             if(splash) { splash.classList.add('gizli'); setTimeout(() => splash.style.display = 'none', 450); }
         }
 
-        // --- OTOMATİK GÜNCELLEME KONTROLÜ (GitHub) ---
-        const MEVCUT_VERSIYON = "v2.0";
-        function surumKarsilastir(a, b) {
-            const parcalaraAyir = surum => String(surum).trim().toLowerCase().replace(/^v/, '').split('.').map(Number);
-            const sol = parcalaraAyir(a); const sag = parcalaraAyir(b);
-            for(let i = 0; i < Math.max(sol.length, sag.length); i++) {
-                const solDeger = sol[i] || 0; const sagDeger = sag[i] || 0;
-                if(solDeger !== sagDeger) return solDeger - sagDeger;
-            }
-            return 0;
-        }
-
-        function guncellemeKontrolEt() {
-            fetch("https://raw.githubusercontent.com/ada-netizen/Oto-Yoklama-2/refs/heads/main/versiyon.txt", { cache: "no-store" })
-                .then(r => r.ok ? r.text() : Promise.reject())
-                .then(metin => {
-                    const enYeni = metin.trim();
-                    if (surumKarsilastir(enYeni, MEVCUT_VERSIYON) > 0) {
-                        if (confirm(`Programın yeni bir sürümü bulundu!\n\nSizin Sürümünüz: ${MEVCUT_VERSIYON}\nYeni Sürüm: ${enYeni}\n\nYeni sürümü indirmek ister misiniz?`)) {
-                            window.open("https://github.com/ada-netizen/Oto-Yoklama-2/releases/latest", "_blank");
-                        }
-                    }
-                })
-                .catch(() => { /* İnternet yoksa veya erişilemezse sessizce devam eder */ });
-        }
-
         function gecKalanlariIndir() {
             fetch(`${API}/rapor-gec-bugun`)
                 .then(res => res.json())
@@ -416,7 +402,7 @@ function filtreTumuDegisti() {
             resizerAktifEt('resizer2', 'takvim_alani_ana', 'onizleme_alani_ana');
             tabloSutunBoyutlandirma();
             setTimeout(splashKapat, 1500);
-            setTimeout(guncellemeKontrolEt, 2000);
+            
             
             
             if (typeof lucide !== 'undefined') {

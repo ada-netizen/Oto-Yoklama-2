@@ -202,12 +202,18 @@ def api_sunucusunu_baslat(bekleme_suresi: float = 10.0) -> None:
 
 
 def guncelleme_motoru_baslat() -> None:
-    """Versiyon dosyasını okuyarak güncelleme kontrolünü tetikler."""
+    """Versiyon dosyasini okuyarak guncelleme kontrolunu tetikler."""
     try:
         from guncelleyici import GuncellemeMotoru
-        with open(resource_path("versiyon.txt"), "r", encoding="utf-8") as vf:
-            mevcut_versiyon = vf.read().strip()
-        GuncellemeMotoru.kontrol_et(mevcut_versiyon)
+        v_path = resource_path("versiyon.txt")
+        logging.info(f"Versiyon dosyasi araniyor: {v_path}")
+        if os.path.exists(v_path):
+            with open(v_path, "r", encoding="utf-8") as vf:
+                mevcut_versiyon = vf.read().strip()
+            logging.info(f"Okunan mevcut versiyon: {mevcut_versiyon}")
+            GuncellemeMotoru.kontrol_et(mevcut_versiyon)
+        else:
+            logging.error(f"versiyon.txt BULUNAMADI! Yol: {v_path}")
     except Exception as e:
         logging.error(f"Guncelleme motoru baslatilamadi: {e}")
 
