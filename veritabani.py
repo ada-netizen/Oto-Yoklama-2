@@ -23,6 +23,7 @@ class VeritabaniYoneticisi:
         except sqlite3.OperationalError:
             pass
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS uretilen_evraklar (id INTEGER PRIMARY KEY AUTOINCREMENT, tur TEXT, personel_ad TEXT, brans TEXT, tarih TEXT)")
         conn.commit()
         if not bellek_veritabani:
             conn.close()
@@ -82,6 +83,7 @@ class VeritabaniYoneticisi:
         # Tüm tabloları temizler
         self.cursor.execute("DELETE FROM ogrenciler")
         self.cursor.execute("DELETE FROM devamsizliklar")
+        self.cursor.execute("DELETE FROM uretilen_evraklar")
         self.conn.commit()
 
     def kapat(self):

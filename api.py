@@ -64,13 +64,14 @@ logging.basicConfig(
 
 app = FastAPI(title="Elektronik Okul Sistemi API")
 
-from routes import ogrenci, personel, ihale, pdf, rapor, sistem
+from routes import ogrenci, personel, ihale, pdf, rapor, sistem, dashboard
 app.include_router(ogrenci.router)
 app.include_router(personel.router)
 app.include_router(ihale.router)
 app.include_router(pdf.router)
 app.include_router(rapor.router)
 app.include_router(sistem.router)
+app.include_router(dashboard.router)
 
 
 from fastapi import Request

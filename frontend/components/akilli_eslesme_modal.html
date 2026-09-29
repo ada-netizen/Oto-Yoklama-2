@@ -57,8 +57,16 @@ document.addEventListener('alpine:init', () => {
         yeniKelime: '',
         yeniTur: 'kisi',
         yeniHedef: '',
+        personellerGunce: 0,
+        
+        init() {
+            window.addEventListener('personeller-guncellendi', () => {
+                this.personellerGunce++;
+            });
+        },
         
         get secenekler() {
+            this.personellerGunce; // Alpine'i tetiklemek icin bagimlilik
             if (!window.tumPersoneller) return [];
             let tur = this.yeniTur;
             let list = [];
@@ -76,6 +84,7 @@ document.addEventListener('alpine:init', () => {
         },
         
         get kurallar() {
+            this.personellerGunce;
             if(!window.sistemAyarlari) return [];
             return window.sistemAyarlari.oto_eslesmeler || [];
         },
@@ -85,19 +94,25 @@ document.addEventListener('alpine:init', () => {
         },
         
         ekle() {
-            let kelime = this.yeniKelime.trim();
-            if(!kelime || !this.yeniHedef) {
-                bildirimGoster("Lütfen alanları tam doldurun!", "hata");
-                return;
+            try {
+                let kelime = this.yeniKelime.trim();
+                if(!kelime || !this.yeniHedef) {
+                    bildirimGoster("Lütfen alanları tam doldurun!", "hata");
+                    return;
+                }
+                if(!window.sistemAyarlari) window.sistemAyarlari = {};
+                if(!window.sistemAyarlari.oto_eslesmeler) window.sistemAyarlari.oto_eslesmeler = [];
+                window.sistemAyarlari.oto_eslesmeler.push({ kelime: kelime, tur: this.yeniTur, hedef: this.yeniHedef });
+                
+                fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(window.sistemAyarlari) })
+                .then(r => r.json()).then(v => {
+                    bildirimGoster("Kural başarıyla eklendi!", "bilgi");
+                    this.yeniKelime = '';
+                    this.personellerGunce++;
+                }).catch(e => bildirimGoster('Kaydetme hatası: ' + e, 'hata'));
+            } catch (err) {
+                bildirimGoster('Sistem hatası: ' + err, 'hata');
             }
-            if(!window.sistemAyarlari.oto_eslesmeler) window.sistemAyarlari.oto_eslesmeler = [];
-            window.sistemAyarlari.oto_eslesmeler.push({ kelime: kelime, tur: this.yeniTur, hedef: this.yeniHedef });
-            
-            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(window.sistemAyarlari) })
-            .then(r => r.json()).then(v => {
-                bildirimGoster("Kural başarıyla eklendi!", "bilgi");
-                this.yeniKelime = '';
-            });
         },
         
         sil(index) {
@@ -106,6 +121,7 @@ document.addEventListener('alpine:init', () => {
             fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(window.sistemAyarlari) })
             .then(r => r.json()).then(v => {
                 bildirimGoster("Kural silindi!", "bilgi");
+                this.personellerGunce++;
             });
         }
     }));

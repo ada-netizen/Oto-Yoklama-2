@@ -277,6 +277,7 @@ function filtreTumuDegisti() {
         function ayarlariYukle() {
             fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
                 sistemAyarlari = v.ayarlar;
+                window.sistemAyarlari = v.ayarlar;
                 if(document.getElementById('ayar_pdf_yol')) document.getElementById('ayar_pdf_yol').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;
                 if(document.getElementById('ayar_yedek_yol')) document.getElementById('ayar_yedek_yol').value = v.ayarlar.yedek_kayit_klasoru || v.yollar.YEDEK;
                 if(document.getElementById('ayar-pdf')) document.getElementById('ayar-pdf').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;

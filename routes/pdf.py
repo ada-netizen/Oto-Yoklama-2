@@ -226,6 +226,7 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
                     
                 motor.bireysel_teblig_ciz(kurum_adi, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, veri.teblig_saati, yol, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
+                evrak_kaydet("Yazı Tebliği", veri.edilen.ad, veri.edilen.brans)
                 islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Bireysel tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:
                 logging.error(f"Bireysel teblig cizim hatasi: {e}")
@@ -263,6 +264,8 @@ def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks
                 motor = PDFYoneticisi(ayar)
                 motor.teblig_tebellug_ciz(veri.sayi, veri.konu, veri.tarih, personeller_dict, yol, kurum_adi, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
+                for p in veri.personeller:
+                    evrak_kaydet("Yazı Tebliği", p.ad, p.brans)
                 islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Toplu tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
             except Exception as e:
                 logging.error(f"Toplu teblig cizim hatasi: {e}")
