@@ -241,3 +241,13 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
     return veri, None
 
 
+
+def evrak_kaydet(tur, personel_ad, brans):
+    try:
+        from dependencies import db
+        from datetime import datetime
+        db.cursor.execute("INSERT INTO uretilen_evraklar (tur, personel_ad, brans, tarih) VALUES (?, ?, ?, ?)", (tur, personel_ad, brans, datetime.now().isoformat()))
+        db.conn.commit()
+    except Exception as e:
+        import logging
+        logging.error(f"Evrak loglanamadi: {e}")
