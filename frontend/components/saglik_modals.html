@@ -1,0 +1,91 @@
+<!-- Rapor Ekle Modal -->
+<div id="modal_saglik_ekle" class="modal-overlay">
+    <div class="modal-content" style="max-width: 550px; padding: 0; background: var(--bg-card);">
+        <div class="modal-header" style="background: linear-gradient(to right, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05)); border-bottom: 1px solid var(--border);">
+            <h2 style="color: #10B981;"><i data-lucide="activity" height="22" width="22"></i> Yeni Sağlık Raporu Ekle</h2>
+            <button class="icon-btn" onclick="saglikModalKapat()" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="18" width="18"></i></button>
+        </div>
+        <div style="padding: 25px;">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; font-size: 13px; color: var(--fg-sub); margin-bottom: 5px; display: block;"><i data-lucide="user" height="14" width="14" style="vertical-align: middle;"></i> Personel Seçimi</label>
+                <select id="saglik_personel_sec" class="form-control" style="width: 100%; height: 42px; font-size: 14px; background: var(--bg-card); color: var(--fg-main);">
+                    <option value="">-- Listeden Personel Seçin --</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; font-size: 13px; color: var(--fg-sub); margin-bottom: 5px; display: block;"><i data-lucide="calendar" height="14" width="14" style="vertical-align: middle;"></i> Rapor Tarih Aralığı <span id="lbl_saglik_gun" style="color: var(--tree-sel); font-weight: bold; margin-left: 5px;">(1 Gün)</span></label>
+                <input type="text" id="saglik_tarih_range" class="form-control" placeholder="Başlangıç ve Bitiş Tarihi Seçin" style="width: 100%; box-sizing: border-box; height: 42px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                <input type="hidden" id="saglik_gun" value="1">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="font-weight: 600; font-size: 13px; color: var(--fg-sub); margin-bottom: 5px; display: block;"><i data-lucide="file-text" height="14" width="14" style="vertical-align: middle;"></i> Açıklama / Hastane Notu</label>
+                <input type="text" id="saglik_aciklama" class="form-control" placeholder="Örn: Devlet Hastanesi - Grip / Dahiliye Polikliniği" style="width: 100%; box-sizing: border-box; height: 42px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+            </div>
+            
+            <div style="text-align: right; border-top: 1px solid var(--border); padding-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn" onclick="saglikModalKapat()" style="background-color: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); padding: 10px 20px;"><i data-lucide="x" height="16" width="16"></i> İptal</button>
+                <button class="btn" onclick="saglikKaydet()" style="background-color: var(--tree-sel); color: white; padding: 10px 20px; font-weight: bold;"><i data-lucide="check" height="16" width="16"></i> Kaydet ve Ekle</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Geçmiş Raporlar Detay Modal -->
+<div id="modal_saglik_detay" class="modal-overlay">
+    <div class="modal-content" style="max-width: 600px; padding: 0; background: var(--bg-card); color: var(--fg-main);">
+        <div class="modal-header" style="background: linear-gradient(to right, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05)); border-bottom: 1px solid var(--border);">
+            <h2 style="color: var(--fg-main);"><i data-lucide="list" height="20" width="20"></i> <span id="detay_personel_ad"></span> - Geçmiş Raporlar</h2>
+            <button class="icon-btn" onclick="document.getElementById('modal_saglik_detay').style.display='none'" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
+        </div>
+        <div style="padding: 20px;">
+
+            <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                <table class="data-table" style="width: 100%; font-size: 14px;">
+                    <thead>
+                        <tr>
+                            <th>Başlangıç</th>
+                            <th>Bitiş</th>
+                            <th>Gün</th>
+                            <th>Açıklama</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody_saglik_detay">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rapor Düzenle Modal -->
+<div id="modal_saglik_duzenle" class="modal-overlay">
+    <div class="modal-content" style="max-width: 550px; padding: 0; background: var(--bg-card);">
+        <div class="modal-header" style="background: linear-gradient(to right, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05)); border-bottom: 1px solid var(--border);">
+            <h2 style="color: #38bdf8;"><i data-lucide="edit" height="22" width="22"></i> Sağlık Raporunu Düzenle</h2>
+            <button class="icon-btn" onclick="document.getElementById('modal_saglik_duzenle').style.display='none'" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="18" width="18"></i></button>
+        </div>
+        <div style="padding: 25px;">
+            <input type="hidden" id="duzenle_rapor_id">
+            <input type="hidden" id="duzenle_personel_ad">
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="font-weight: 600; font-size: 13px; color: var(--fg-sub); margin-bottom: 5px; display: block;"><i data-lucide="calendar" height="14" width="14" style="vertical-align: middle;"></i> Rapor Tarih Aralığı <span id="lbl_duzenle_gun" style="color: #38bdf8; font-weight: bold; margin-left: 5px;">(1 Gün)</span></label>
+                <input type="text" id="duzenle_tarih_range" class="form-control" style="width: 100%; box-sizing: border-box; height: 42px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                <input type="hidden" id="duzenle_gun" value="1">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 25px;">
+                <label style="font-weight: 600; font-size: 13px; color: var(--fg-sub); margin-bottom: 5px; display: block;"><i data-lucide="file-text" height="14" width="14" style="vertical-align: middle;"></i> Açıklama / Hastane Notu</label>
+                <input type="text" id="duzenle_aciklama" class="form-control" style="width: 100%; box-sizing: border-box; height: 42px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+            </div>
+            
+            <div style="text-align: right; border-top: 1px solid var(--border); padding-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button class="btn" onclick="document.getElementById('modal_saglik_duzenle').style.display='none'" style="background-color: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); padding: 10px 20px;"><i data-lucide="x" height="16" width="16"></i> İptal</button>
+                <button class="btn" onclick="saglikGuncelle()" style="background-color: #38bdf8; color: white; padding: 10px 20px; font-weight: bold;"><i data-lucide="save" height="16" width="16"></i> Değişiklikleri Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>

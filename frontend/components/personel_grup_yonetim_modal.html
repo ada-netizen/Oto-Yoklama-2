@@ -1,11 +1,17 @@
 <div class="modal-overlay" id="personel_grup_yonetim_modal" style="z-index: 2100;" x-data="{
     yeniAd: '',
-    get gruplar() { return window.tumPersonelGruplari || []; },
+    gruplar: [...(window.tumPersonelGruplari || [])],
     
+    init() {
+        window.addEventListener('personeller-guncellendi', () => {
+            this.gruplar = [...(window.tumPersonelGruplari || [])];
+        });
+    },
+
     ekle() {
         let ad = this.yeniAd.trim();
         if (!ad) return;
-        if (window.tumPersonelGruplari.includes(ad)) {
+        if (this.gruplar.includes(ad)) {
             bildirimGoster('Bu grup zaten mevcut!', 'hata');
             return;
         }

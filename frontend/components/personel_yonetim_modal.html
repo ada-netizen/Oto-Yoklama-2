@@ -60,17 +60,26 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('personelYonetimComponent', () => ({
         arama: '',
         aktifFiltre: 'Tümü',
-        personeller: window.tumPersoneller || [],
-        gruplarVerisi: window.tumPersonelGruplari || [],
+        personeller: [...(window.tumPersoneller || [])],
+        gruplarVerisi: [...(window.tumPersonelGruplari || [])],
         
         init() {
             window.addEventListener('personeller-guncellendi', () => {
-                this.arama = this.arama;
-                this.personeller = window.tumPersoneller || [];
-                this.gruplarVerisi = window.tumPersonelGruplari || [];
+                this.personeller = [...(window.tumPersoneller || [])];
+                this.gruplarVerisi = [...(window.tumPersonelGruplari || [])];
+                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+            });
+            // Also listen for Alpine re-evaluation when active filter changes to redraw icons
+            this.$watch('aktifFiltre', () => {
+                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+            });
+            this.$watch('arama', () => {
+                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
             });
             if (this.personeller.length === 0 && typeof personelleriYukle === 'function') {
                 personelleriYukle();
+            } else {
+                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
             }
         },
         
@@ -95,7 +104,7 @@ document.addEventListener('alpine:init', () => {
         
         sil(ad) {
             if (!confirm(ad + ' adlı personeli silmek istediğinize emin misiniz?')) return;
-            fetch(`${window.API}/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' })
+            fetch(`http://127.0.0.1:8000/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' })
             .then(r => r.json())
             .then(v => {
                 if(window.bildirimGoster) window.bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");

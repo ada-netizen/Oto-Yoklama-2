@@ -43,11 +43,13 @@ document.addEventListener('alpine:init', () => {
         gorev: '',
         grup: '',
         
-        get gruplar() {
-            return window.tumPersonelGruplari || [];
-        },
+        gruplar: [...(window.tumPersonelGruplari || [])],
         
         init() {
+            window.addEventListener('personeller-guncellendi', () => {
+                this.gruplar = [...(window.tumPersonelGruplari || [])];
+            });
+
             window.personelDrawerAc = () => {
                 this.baslik = 'Yeni Personel Ekle';
                 this.eskiAd = ''; this.ad = ''; this.brans = ''; this.gorev = '';

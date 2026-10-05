@@ -17,8 +17,10 @@
         body { font-family: var(--font-ui); background-color: var(--bg-main); color: var(--fg-main); margin: 0; padding: 5px; height: 100vh; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden; }
         
         /* --- TKINTER NOTEBOOK (SEKMELER) SİMÜLASYONU --- */
-        .notebook-header { display: flex; background-color: var(--bg-main); border-bottom: 1px solid var(--border); margin-bottom: 5px; }
-        .tab-btn { background-color: var(--bg-main); color: var(--fg-sub); border: 1px solid transparent; border-bottom: none; padding: 8px 15px; cursor: pointer; font-family: var(--font-ui); font-size: 13px; margin-right: 2px; border-radius: 4px 4px 0 0; }
+        .notebook-header { display: flex; background-color: var(--bg-main); border-bottom: 1px solid var(--border); margin-bottom: 5px; overflow-x: auto; }
+        .notebook-header::-webkit-scrollbar { height: 4px; }
+        .notebook-header::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .tab-btn { background-color: var(--bg-main); color: var(--fg-sub); border: 1px solid transparent; border-bottom: none; padding: 8px 15px; cursor: pointer; font-family: var(--font-ui); font-size: 13px; margin-right: 2px; border-radius: 4px 4px 0 0; white-space: nowrap; flex-shrink: 0; }
         .tab-btn.aktif { background-color: var(--bg-card); color: var(--fg-main); border-color: var(--border); border-bottom: 1px solid var(--bg-card); margin-bottom: -1px; }
         
         .tab-content { display: none; background-color: var(--bg-main); flex: 1; min-height: 0; padding: 20px; flex-direction: column; overflow: hidden; }
@@ -408,3 +410,9 @@
 
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 15px 20px; background-color: var(--bg-card); }
 .modal-header h2 { margin: 0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:10px; }
+
+
+/* Sağlık Tablosu Özelleştirmeleri */
+#tbody_saglik tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); }
+#tbody_saglik tr { border-bottom: 1px solid var(--border); transition: background-color 0.2s; }
+#tbody_saglik tr:hover { background-color: rgba(56, 189, 248, 0.05); }

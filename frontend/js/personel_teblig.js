@@ -148,26 +148,15 @@ function filtreTumuDegisti() {
         function ayarlariGetirPersonelGruplariIcin() {
             fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
                 let ayar = v.ayarlar || {};
-                tumPersonelGruplari = ayar.personel_gruplari || ['İdare', 'Öğretmenler', 'Diğer Personel'];
+                window.tumPersonelGruplari = ayar.personel_gruplari || ['İdare', 'Öğretmenler', 'Diğer Personel'];
                 personelGruplariCiz();
             });
         }
 
         function personelGruplariCiz() {
-            window.tumPersonelGruplari = tumPersonelGruplari;
+            tumPersonelGruplari = window.tumPersonelGruplari || tumPersonelGruplari;
             window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
-            // Çipleri çiz
-            const cipContainer = document.getElementById('personel_filtre_cipleri');
-            if (cipContainer) {
-                cipContainer.innerHTML = `<button class="filter-chip ${aktifPersonelFiltresi === 'Tümü' ? 'active' : ''}" onclick="personelFiltreAyarla('Tümü', this)">Tümü</button>`;
-                tumPersonelGruplari.forEach(grup => {
-                    const isActive = aktifPersonelFiltresi === grup ? 'active' : '';
-                    cipContainer.innerHTML += `<button class="filter-chip ${isActive}" onclick="personelFiltreAyarla('${grup}', this)">${grup}</button>`;
-                });
-            }
-
             dinamikTebligFiltreleriOlustur();
-            yonetimPersonelTablosunuDoldur();
             if (typeof lucide !== 'undefined') {
                 setTimeout(() => lucide.createIcons(), 50);
             }
@@ -206,7 +195,7 @@ function filtreTumuDegisti() {
         function personelGrubuKaydet() {
             return fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
                 let ayar = v.ayarlar || {};
-                ayar.personel_gruplari = tumPersonelGruplari;
+                ayar.personel_gruplari = window.tumPersonelGruplari || [];
                 return fetch(`${API}/ayarlar-kaydet`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(ayar)

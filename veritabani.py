@@ -17,6 +17,8 @@ class VeritabaniYoneticisi:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_no ON ogrenciler (no)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
         cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS saglik_raporlari (id INTEGER PRIMARY KEY AUTOINCREMENT, personel_ad TEXT, baslangic_tarihi TEXT, bitis_tarihi TEXT, gun_sayisi INTEGER, aciklama TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS personel_rapor_kesinti (personel_ad TEXT PRIMARY KEY, onceden_kesilen_gun INTEGER)")
         
         try:
             cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT")

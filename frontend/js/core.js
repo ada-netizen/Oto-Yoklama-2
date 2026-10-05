@@ -808,23 +808,27 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                
         function personelleriYukle() {
             return fetch(`${API}/personeller?t=${new Date().getTime()}`).then(res => res.json()).then(veri => {
-                // Herkes seçili DEĞİL ve manuel olarak da eklenmemiş şekilde (tertemiz) başlar.
-                tumPersoneller = veri.personeller.map(p => ({ ...p, secili: false, manuelEklendi: false }));
-                window.tumPersoneller = tumPersoneller;
-                
-                const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
-                if(cbEden && cbEdilen) {
-                    cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>';
-                    cbEdilen.innerHTML = '<option value="">-- Personel Seçin --</option>';
-                    tumPersoneller.forEach(p => {
-                        cbEdilen.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
-                        if(p.grup === 'İdare' || p.gorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
-                    });
+                try {
+                    tumPersoneller = veri.personeller.map(p => ({ ...p, secili: false, manuelEklendi: false }));
+                    window.tumPersoneller = tumPersoneller;
+                    
+                    const cbEden = document.getElementById('b-eden'); const cbEdilen = document.getElementById('b-edilen');
+                    if(cbEden && cbEdilen) {
+                        cbEden.innerHTML = '<option value="">-- İdareci Seçin --</option>';
+                        cbEdilen.innerHTML = '<option value="">-- Personel Seçin --</option>';
+                        tumPersoneller.forEach(p => {
+                            cbEdilen.innerHTML += `<option value="${p.ad}">${p.ad}</option>`;
+                            let pGorev = p.gorev || '';
+                            if(p.grup === 'İdare' || pGorev.includes('MÜDÜR')) { cbEden.innerHTML += `<option value="${p.ad}">${p.ad}</option>`; }
+                        });
+                    }
+                    personelFiltrePanelDoldur(); 
+                    if (typeof personelTablosunuDoldur === 'function') personelTablosunuDoldur(); 
+                    if (typeof yonetimPersonelTablosunuDoldur === 'function') yonetimPersonelTablosunuDoldur();
+                } catch(e) { console.error('personelleriYukle hatasi:', e); }
+                finally {
+                    window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
                 }
-                personelFiltrePanelDoldur(); 
-                if (typeof personelTablosunuDoldur === 'function') personelTablosunuDoldur(); 
-                if (typeof yonetimPersonelTablosunuDoldur === 'function') yonetimPersonelTablosunuDoldur();
-                window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
             });
         }
 
@@ -833,18 +837,20 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             const bransPanel = document.getElementById('personel_brans_panel');
             if(!gorevPanel || !bransPanel) return;
 
-            let gorevler = [...new Set(tumPersoneller.map(p => p.gorev))].filter(g => g !== "-").sort();
-            let branslar = [...new Set(tumPersoneller.map(p => p.brans))].filter(b => b !== "-").sort();
+            let gorevler = [...new Set(tumPersoneller.map(p => p.gorev))].filter(g => g && g !== "-").sort();
+            let branslar = [...new Set(tumPersoneller.map(p => p.brans))].filter(b => b && b !== "-").sort();
 
             let gHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluUygula('gorev')"><i data-lucide="refresh-cw" width="16" height="16"></i> Listedekilerin Hepsini Ekle/Çıkar</div>`;
             gorevler.forEach((g, i) => {
-                gHtml += `<label class="personel-filtre-item" style="display:flex; gap:5px; width:100%;"><input type="checkbox" onchange="filtreleriHesapla()" data-deger="${g.replace(/"/g, '&quot;')}"> <span>${g}</span></label>`;
+                let gSafe = String(g).replace(/"/g, '&quot;');
+                gHtml += `<label class="personel-filtre-item" style="display:flex; gap:5px; width:100%;"><input type="checkbox" onchange="filtreleriHesapla()" data-deger="${gSafe}"> <span>${g}</span></label>`;
             });
             gorevPanel.innerHTML = gHtml;
 
             let bHtml = `<div class="personel-filtre-item personel-filtre-toplu" onclick="personelFiltreTopluUygula('brans')"><i data-lucide="refresh-cw" width="16" height="16"></i> Listedekilerin Hepsini Ekle/Çıkar</div>`;
             branslar.forEach((b, i) => {
-                bHtml += `<label class="personel-filtre-item" style="display:flex; gap:5px; width:100%;"><input type="checkbox" onchange="filtreleriHesapla()" data-deger="${b.replace(/"/g, '&quot;')}"> <span>${b}</span></label>`;
+                let bSafe = String(b).replace(/"/g, '&quot;');
+                bHtml += `<label class="personel-filtre-item" style="display:flex; gap:5px; width:100%;"><input type="checkbox" onchange="filtreleriHesapla()" data-deger="${bSafe}"> <span>${b}</span></label>`;
             });
             bransPanel.innerHTML = bHtml;
         }
