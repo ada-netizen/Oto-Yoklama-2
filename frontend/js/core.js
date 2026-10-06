@@ -82,7 +82,8 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             if (!karanlikMod) {
                 // Gündüz Moduna Geçiş
                 root.style.setProperty('--bg-main', '#F1F5F9'); 
-                root.style.setProperty('--bg-card', '#FFFFFF'); 
+                root.style.setProperty('--bg-card', '#FFFFFF');
+                root.style.setProperty('--bg-card-solid', '#FFFFFF'); 
                 root.style.setProperty('--fg-main', '#0F172A'); 
                 root.style.setProperty('--fg-sub', '#475569'); 
                 root.style.setProperty('--border', '#CBD5E1');
@@ -93,7 +94,8 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             } else {
                 // Gece Moduna Geçiş
                 root.style.setProperty('--bg-main', '#0F172A'); 
-                root.style.setProperty('--bg-card', '#1E293B'); 
+                root.style.setProperty('--bg-card', '#1E293B');
+                root.style.setProperty('--bg-card-solid', '#1E293B'); 
                 root.style.setProperty('--fg-main', '#F8FAFC'); 
                 root.style.setProperty('--fg-sub', '#94A3B8'); 
                 root.style.setProperty('--border', '#334155');

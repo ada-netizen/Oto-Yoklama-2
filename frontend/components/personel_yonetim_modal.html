@@ -67,21 +67,31 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('personeller-guncellendi', () => {
                 this.personeller = [...(window.tumPersoneller || [])];
                 this.gruplarVerisi = [...(window.tumPersonelGruplari || [])];
-                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+                this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             });
-            // Also listen for Alpine re-evaluation when active filter changes to redraw icons
             this.$watch('aktifFiltre', () => {
-                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+                this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             });
             this.$watch('arama', () => {
-                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+                this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             });
+            
+            if (!window.tumPersonelGruplari) {
+                fetch(`${window.API || 'http://127.0.0.1:8000'}/ayarlar-getir`).then(r => r.json()).then(v => {
+                    let ayar = v.ayarlar || {};
+                    window.tumPersonelGruplari = ayar.personel_gruplari || ['İdare', 'Öğretmenler', 'Diğer Personel'];
+                    this.gruplarVerisi = [...window.tumPersonelGruplari];
+                    window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
+                }).catch(e => console.error(e));
+            }
+
             if (this.personeller.length === 0 && typeof personelleriYukle === 'function') {
                 personelleriYukle();
             } else {
-                setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+                this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             }
         },
+        
         
         get gruplar() {
             return this.gruplarVerisi;

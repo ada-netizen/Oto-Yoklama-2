@@ -1,6 +1,6 @@
 let charts = {};
 
-function renderChart(canvasId, type, label, labels, data, colors, isDual = false, data2 = null, label2 = null, color2 = null) {
+function renderChart(canvasId, type, label, labels, data, colors, isDual = false, data2 = null, label2 = null, color2 = null, isStacked = false) {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
     
@@ -11,12 +11,11 @@ function renderChart(canvasId, type, label, labels, data, colors, isDual = false
     let datasets = [{
         label: label,
         data: data,
-        backgroundColor: colors || ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e'],
+        backgroundColor: type === 'line' ? 'rgba(59, 130, 246, 0.1)' : (colors || ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e']),
         borderColor: type === 'line' ? (colors ? colors[0] : '#3b82f6') : 'transparent',
         borderWidth: type === 'line' ? 2 : 0,
         tension: 0.4,
-        fill: type === 'line' ? true : false,
-        backgroundColor: type === 'line' ? 'rgba(59, 130, 246, 0.1)' : (colors || ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e'])
+        fill: type === 'line' ? true : false
     }];
 
     if(isDual && data2) {
@@ -24,10 +23,10 @@ function renderChart(canvasId, type, label, labels, data, colors, isDual = false
             label: label2,
             data: data2,
             borderColor: color2 || '#f59e0b',
-            backgroundColor: 'rgba(245, 158, 11, 0.1)',
-            borderWidth: 2,
+            backgroundColor: type === 'bar' ? (color2 || '#f59e0b') : 'rgba(245, 158, 11, 0.1)',
+            borderWidth: type === 'line' ? 2 : 0,
             tension: 0.4,
-            fill: true
+            fill: type === 'line' ? true : false
         });
     }
     
@@ -47,8 +46,8 @@ function renderChart(canvasId, type, label, labels, data, colors, isDual = false
                 }
             },
             scales: (type === 'pie' || type === 'doughnut' || type === 'radar') ? {} : {
-                x: { ticks: { color: 'gray', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
-                y: { ticks: { color: 'gray', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+                x: { stacked: isStacked, ticks: { color: 'gray', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+                y: { stacked: isStacked, ticks: { color: 'gray', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
             }
         }
     });
@@ -80,20 +79,21 @@ function dashboardYukle() {
         const gunData = data.haftanin_gunleri.map(d => d.toplam);
         renderChart('chart_gunluk', 'bar', 'Toplam Devamsızlık', gunLabels, gunData, ['#f59e0b', '#f59e0b', '#f59e0b', '#f59e0b', '#f59e0b']);
 
-        // 3. Sube Devamsizlik
-        const subeLabels = data.sube_dev.map(d => d.sube);
-        const subeData = data.sube_dev.map(d => d.toplam);
-        renderChart('chart_sube', 'bar', 'Toplam Gün', subeLabels, subeData, ['#10b981']);
+        // 3. Sube Ortalamalar (Stacked)
+        const subeLabels = data.sube_ortalamalar.map(d => d.sube);
+        const subeOzurlu = data.sube_ortalamalar.map(d => d.ozurlu_ort);
+        const subeOzursuz = data.sube_ortalamalar.map(d => d.ozursuz_ort);
+        renderChart('chart_sube', 'bar', 'Özürlü', subeLabels, subeOzurlu, ['#10b981'], true, subeOzursuz, 'Özürsüz', '#ef4444', true);
         
         // 4. Tur Devamsizlik
         const turLabels = data.tur_dev.map(d => d.tur);
         const turData = data.tur_dev.map(d => d.toplam);
         renderChart('chart_tur', 'doughnut', 'Gün', turLabels, turData, ['#8b5cf6', '#06b6d4', '#f43f5e', '#3b82f6', '#10b981']);
         
-        // 5. Evrak Branslar
-        const bransLabels = data.evrak_branslar.map(d => d.brans);
-        const bransData = data.evrak_branslar.map(d => d.toplam);
-        renderChart('chart_evrak', 'pie', 'Evrak Sayısı', bransLabels, bransData);
+        // 5. Özürlü vs Özürsüz
+        const ozLabels = ['Özürlü', 'Özürsüz'];
+        const ozData = [data.ozurlu_vs_ozursuz.ozurlu, data.ozurlu_vs_ozursuz.ozursuz];
+        renderChart('chart_ozurlu_oran', 'pie', 'Devamsızlık', ozLabels, ozData, ['#10b981', '#ef4444']);
         
         // 6. Riskli Ogrenciler
         const tbodyRiskli = document.getElementById('tbody_riskli');
@@ -119,16 +119,7 @@ function dashboardYukle() {
             `).join('');
         }
 
-        // 8. Personel Top 5
-        const tbodyPersonel = document.getElementById('tbody_personel');
-        if(tbodyPersonel) {
-            tbodyPersonel.innerHTML = data.personel_top.map(o => `
-                <tr>
-                    <td>${o.ad}</td>
-                    <td><span class="badge" style="background: #dbeafe; color: #1d4ed8;">${o.toplam} Belge</span></td>
-                </tr>
-            `).join('');
-        }
+
     });
 }
 

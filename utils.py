@@ -5,6 +5,7 @@ import pandas as pd
 from dependencies import yollar, db, islem_loglari
 from sistem_motoru import SistemMotoru
 from models import *
+from araclar import VeriAraclari
 
 MAX_IMPORT_SIZE = 25 * 1024 * 1024
 ALLOWED_IMPORT_EXTENSIONS = {".xlsx", ".xls", ".csv"}

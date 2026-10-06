@@ -45,6 +45,7 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
                 islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "PDF oluşturuluyor...", "yuzde": 50}
                 motor = PDFYoneticisi(ayar)
                 motor.veli_formu_ciz(veri.no, veri.ad, veri.sube, kayitlar_islenmis, kayit_yeri, veri.ozurlu_str, veri.ozursuz_str)
+                evrak_kaydet("Devamsızlık Mektubu", veri.ad, veri.sube)
                 dosyayi_otomatik_ac(kayit_yeri)
                 islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "PDF oluşturuldu.", "yuzde": 100, "yol": kayit_yeri}
             except Exception as e:

@@ -416,3 +416,5 @@
 #tbody_saglik tr:nth-child(even) { background-color: rgba(0, 0, 0, 0.02); }
 #tbody_saglik tr { border-bottom: 1px solid var(--border); transition: background-color 0.2s; }
 #tbody_saglik tr:hover { background-color: rgba(56, 189, 248, 0.05); }
+
+.kesinti-input:focus { border: none !important; box-shadow: none !important; background: transparent !important; }

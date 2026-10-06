@@ -55,7 +55,7 @@ function saglikTablosunuCiz() {
             ${aylarHtml}
             <td style="border-left: 2px solid var(--border); text-align: center; font-size: 14px;"><strong>${p.toplam}</strong></td>
             <td style="text-align: center; font-size: 14px;">
-                <input type="text" inputmode="numeric" pattern="[0-9]*" style="width: 40px; height: 28px; text-align: center; padding: 0; font-weight: bold; background: transparent; border: none; outline: none; color: inherit; font-size: 14px;" 
+                <input type="text" inputmode="numeric" pattern="[0-9]*" onwheel="return false;" class="kesinti-input" style="width: 40px; height: 28px; text-align: center; padding: 0; font-weight: bold; background: transparent !important; border: none !important; outline: none !important; box-shadow: none !important; color: inherit; font-size: 14px;" 
                        value="${p.onceden_kesilen}" 
                        onchange="manuelKesintiKaydet('${p.personel_ad}', this.value)"
                        onkeypress="return event.charCode >= 48 && event.charCode <= 57">

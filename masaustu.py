@@ -226,7 +226,7 @@ def zaten_calisiyor_uyar() -> None:
     root.withdraw()
     messagebox.showwarning(
         "Zaten Çalışıyor",
-        "Elektronik Okul V2.0 programı zaten arka planda veya başka bir pencerede çalışıyor.\n\n"
+        "Elektronik Okul programı zaten arka planda veya başka bir pencerede çalışıyor.\n\n"
         "Lütfen açık olan pencereyi kullanın veya görev yöneticisinden kapatıp tekrar deneyin."
     )
     root.destroy()

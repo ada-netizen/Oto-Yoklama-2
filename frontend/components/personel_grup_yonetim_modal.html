@@ -15,6 +15,7 @@
             bildirimGoster('Bu grup zaten mevcut!', 'hata');
             return;
         }
+        if (!window.tumPersonelGruplari) window.tumPersonelGruplari = [];
         window.tumPersonelGruplari.push(ad);
         personelGrubuKaydet().then(() => {
             personelGruplariCiz();

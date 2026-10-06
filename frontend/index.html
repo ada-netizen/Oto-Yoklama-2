@@ -90,6 +90,7 @@
 <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')"><i data-lucide="pen-tool" height="16" width="16"></i> Yazı Tebliği</button>
 <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ihale')"><i data-lucide="briefcase" height="16" width="16"></i> İhale Yönetimi</button>
 <button class="tab-btn" onclick="sekmeAc(event, 'sekme_dashboard'); dashboardYukle();"><i data-lucide="bar-chart-2" height="16" width="16"></i> İstatistikler</button>
+<button class="tab-btn" onclick="sekmeAc(event, 'sekme_saglik'); saglikYukle();"><i data-lucide="heart" height="16" width="16"></i> Sağlık İzinleri</button>
 <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')"><i data-lucide="settings" height="16" width="16"></i> Ayarlar ve Yedekleme</button>
 <button class="tab-btn" onclick="sekmeAc(event, 'sekme_yardim')"><i data-lucide="lightbulb" height="16" width="16"></i> Yardım</button>
   <button class="tab-btn" onclick="sekmeAc(event, 'sekme_iletisim')"><i data-lucide="message-square" height="16" width="16"></i> İletişim</button>
@@ -515,40 +516,86 @@
             <div style="flex:1; position: relative;"><canvas id="chart_tur"></canvas></div>
         </div>
         <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="bar-chart" style="color: #10b981;"></i> <h3>Şubelere Göre Yoğunluk</h3></div>
+            <div class="dash-card-header"><i data-lucide="bar-chart" style="color: #10b981;"></i> <h3>Sınıf Başına Düşen Ortalama</h3></div>
             <div style="flex:1; position: relative;"><canvas id="chart_sube"></canvas></div>
         </div>
         <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="users" style="color: #06b6d4;"></i> <h3>Evrak Giden Branşlar</h3></div>
-            <div style="flex:1; position: relative;"><canvas id="chart_evrak"></canvas></div>
+            <div class="dash-card-header"><i data-lucide="pie-chart" style="color: #06b6d4;"></i> <h3>Özürlü / Özürsüz Oranı</h3></div>
+              <div style="flex:1; position: relative;"><canvas id="chart_ozurlu_oran"></canvas></div>
         </div>
     </div>
 
     <!-- TABLES (ROW 3) -->
     <div class="dash-grid">
         <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="user-x" style="color: #ef4444;"></i> <h3 style="color: #ef4444;">Riskli: En Çok G (Geç) Kalanlar</h3></div>
+            <div class="dash-card-header"><i data-lucide="user-x" style="color: #ef4444;"></i> <h3 style="color: #ef4444;">Riskli: En Çok G (Geç) Kalanlar (Adet)</h3></div>
             <table class="modern-table">
-                <thead><tr><th>Öğrenci</th><th>Şube</th><th>Gün</th></tr></thead>
-                <tbody id="tbody_g_riskli"></tbody>
+                <thead><tr><th>Öğrenci</th><th>Şube</th><th>Adet</th></tr></thead>
+                  <tbody id="tbody_g_riskli"></tbody>
             </table>
         </div>
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="user-minus" style="color: #f59e0b;"></i> <h3>En Çok Devamsızlık Yapan 5</h3></div>
+        <div class="dash-card span-2">
+              <div class="dash-card-header"><i data-lucide="user-minus" style="color: #f59e0b;"></i> <h3>En Çok Devamsızlık Yapan 5</h3></div>
             <table class="modern-table">
                 <thead><tr><th>Öğrenci</th><th>Şube</th><th>Toplam</th></tr></thead>
                 <tbody id="tbody_riskli"></tbody>
             </table>
         </div>
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="briefcase" style="color: #3b82f6;"></i> <h3>En Çok Görevlendirilen 5 Personel</h3></div>
-            <table class="modern-table">
-                <thead><tr><th>Personel</th><th>Evrak Sayısı</th></tr></thead>
-                <tbody id="tbody_personel"></tbody>
-            </table>
-        </div>
+        
     </div>
 </div>
+
+<!-- SAĞLIK İZİNLERİ SEKMESİ -->
+<div class="tab-content" id="sekme_saglik" style="overflow-y: auto; background-color: var(--bg-main); padding: 20px;">
+    <div class="top-bar" style="margin-bottom: 20px;">
+        <h2 class="top-bar-title"><i data-lucide="heart" height="20" width="20"></i> Personel Sağlık İzinleri (<span id="saglik_yil"></span> Yılı)</h2>
+        <button class="btn" style="background-color: var(--tree-sel); color: white; padding: 10px 20px;" onclick="saglikModalAc()"><i data-lucide="plus" height="16" width="16"></i> Yeni Rapor Ekle</button>
+    </div>
+    
+    <!-- YENİ: Özet Kartları -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px;">
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow-sm);">
+            <div style="background: rgba(56, 189, 248, 0.2); color: var(--tree-sel); padding: 12px; border-radius: 10px;"><i data-lucide="users" height="24" width="24"></i></div>
+            <div><div style="font-size: 12px; color: var(--fg-sub); font-weight: 600;">Raporlu Personel</div><div id="stat_raporlu_kisi" style="font-size: 24px; font-weight: bold; color: var(--fg-main);">0</div></div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow-sm);">
+            <div style="background: rgba(16, 185, 129, 0.2); color: #10B981; padding: 12px; border-radius: 10px;"><i data-lucide="calendar" height="24" width="24"></i></div>
+            <div><div style="font-size: 12px; color: var(--fg-sub); font-weight: 600;">Toplam Rapor Günü</div><div id="stat_toplam_gun" style="font-size: 24px; font-weight: bold; color: var(--fg-main);">0</div></div>
+        </div>
+        <div style="background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow-sm);">
+            <div style="background: rgba(239, 68, 68, 0.2); color: #EF4444; padding: 12px; border-radius: 10px;"><i data-lucide="alert-triangle" height="24" width="24"></i></div>
+            <div><div style="font-size: 12px; color: var(--fg-sub); font-weight: 600;">Sınırı Aşan Personel</div><div id="stat_siniri_asan" style="font-size: 24px; font-weight: bold; color: var(--fg-main);">0</div></div>
+        </div>
+    </div>
+
+    <div class="tree-card">
+        <table class="data-table" id="table_saglik" style="width: 100%; min-width: 1200px; border-collapse: collapse;">
+            <thead>
+                <tr>
+                    <th style="position: sticky; left: 0; background: var(--bg-main); z-index: 2; padding: 12px; border-bottom: 1px solid var(--border);">Personel Adı</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Oca</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Şub</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Mar</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Nis</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">May</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Haz</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Tem</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Ağu</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Eyl</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Eki</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Kas</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Ara</th>
+                    <th style="border-left: 2px solid var(--border); padding: 12px; border-bottom: 1px solid var(--border);">Toplam</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Önceden Kesilmiş</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">Kesilecek Gün</th>
+                    <th style="padding: 12px; border-bottom: 1px solid var(--border);">İşlemler</th>
+                </tr>
+            </thead>
+            <tbody id="tbody_saglik"></tbody>
+        </table>
+    </div>
+</div>
+
 <div class="tab-content" id="sekme_ayarlar">
     <div class="top-bar">
         <h2 class="top-bar-title"><i data-lucide="settings" height="20" width="20"></i> Sistem Ayarları ve Yönetim</h2>
@@ -1036,9 +1083,10 @@
  <!-- /ana-kapsayici -->
 {% include 'components/ihale_komisyon_modal.html' %}
 <script src="js/core.js"></script>
-<script src="js/dashboard.js"></script>
+<script src="js/dashboard.js?v=5"></script>
 <script src="js/personel_teblig.js"></script>
 <script src="js/ihale.js"></script>
+<script src="js/saglik.js"></script>
 <script>
         lucide.createIcons();
     </script>
@@ -1047,6 +1095,7 @@
 <!-- İHALE BİLGİ GİRİŞİ MODALI -->
 {% include 'components/ihale_bilgi_girisi_modal.html' %}
 {% include 'components/yenilikler_modal.html' %}
+{% include 'components/saglik_modals.html' %}
 <script>
 // ============================================================
 // FLATPICKR - Türkçe Tarih Seçici Başlatma
