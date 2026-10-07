@@ -182,3 +182,32 @@ def get_istatistikler():
         import traceback
         traceback.print_exc()
         return {"hata": str(e)}
+
+@router.get("/kritik-ogrenciler")
+def kritik_ogrenciler_getir():
+    conn = baglanti_al()
+    c = conn.cursor()
+    try:
+        c.execute('''
+            SELECT sinif, no, ad_soyad, devamsizlik_ozursuz, devamsizlik_ozurlu,
+                   (devamsizlik_ozursuz + devamsizlik_ozurlu) as toplam
+            FROM ogrenciler
+            WHERE (devamsizlik_ozursuz + devamsizlik_ozurlu) >= 10
+            ORDER BY toplam DESC
+        ''')
+        kayitlar = c.fetchall()
+        liste = []
+        for k in kayitlar:
+            liste.append({
+                "sinif": k["sinif"],
+                "no": k["no"],
+                "ad_soyad": k["ad_soyad"],
+                "ozursuz": k["devamsizlik_ozursuz"],
+                "ozurlu": k["devamsizlik_ozurlu"],
+                "toplam": k["toplam"]
+            })
+        return {"basarili": True, "veri": liste}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+    finally:
+        conn.close()

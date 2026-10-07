@@ -1,0 +1,1 @@
+{'basarili': True, 'ad_soyad': 'ALÝ YILMAZ', 'gun_sayisi': 2, 'baslangic': '2026-10-05', 'bitis': '2026-10-07'}

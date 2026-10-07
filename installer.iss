@@ -1,5 +1,5 @@
 #define MyAppName "Elektronik Okul"
-#define MyAppVersion "2.3.0"
+#define MyAppVersion "2.3.1"
 #define MyAppPublisher "Elektronik Okul"
 #define MyAppExeName "Elektronik Okul.exe"
 

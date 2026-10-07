@@ -122,3 +122,49 @@ def saglik_duzenle(id: int, veri: SaglikRaporuRequest):
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
+
+import io
+import PyPDF2
+from fastapi import File, UploadFile, HTTPException
+
+@router.post("/pdf-oku")
+async def saglik_pdf_oku(dosya: UploadFile = File(...)):
+    try:
+        content = await dosya.read()
+        pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+            
+        import re
+        
+        # Regex ile bilgileri çekelim
+        ad_soyad_match = re.search(r'G\s*\.\s*S\s*:\s*([\w\sÇÖŞİĞÜçöşiğü]+?)(?=\s+Tarih|\n|$)', text, re.IGNORECASE)
+        ad_soyad = ad_soyad_match.group(1).strip() if ad_soyad_match else ""
+        
+        sure_match = re.search(r'Süresi\s*:\s*(\d+)', text, re.IGNORECASE)
+        gun_sayisi = int(sure_match.group(1)) if sure_match else 0
+        
+        baslangic_match = re.search(r'Başlama\s+Tarihi\s*:\s*(\d{1,2}\.\d{1,2}\.\d{4})', text, re.IGNORECASE)
+        baslangic = ""
+        if baslangic_match:
+            b_parts = baslangic_match.group(1).split('.')
+            if len(b_parts) == 3:
+                baslangic = f"{b_parts[2]}-{b_parts[1].zfill(2)}-{b_parts[0].zfill(2)}"
+                
+        bitis_match = re.search(r'Göreve\s+Başlama\s+Tarihi\s*:\s*(\d{1,2}\.\d{1,2}\.\d{4})', text, re.IGNORECASE)
+        bitis = ""
+        if bitis_match:
+            bt_parts = bitis_match.group(1).split('.')
+            if len(bt_parts) == 3:
+                bitis = f"{bt_parts[2]}-{bt_parts[1].zfill(2)}-{bt_parts[0].zfill(2)}"
+        
+        return {
+            "basarili": True,
+            "ad_soyad": ad_soyad,
+            "gun_sayisi": gun_sayisi,
+            "baslangic": baslangic,
+            "bitis": bitis
+        }
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
