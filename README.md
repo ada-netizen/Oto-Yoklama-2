@@ -8,7 +8,7 @@ Oto-Yoklama, okullar ve eğitim kurumları için tasarlanmış modern, hızlı v
 - **Otomatik Güncelleme Sistemi (Auto-Updater):** GitHub üzerinden yeni bir sürüm çıktığında sistem bunu otomatik tespit eder ve size tek tıklamayla indirme seçeneği sunar.
 - **Akıllı MEB Devamsızlık Hesaplama Motoru:** Öğrencinin "Özürlü", "Özürsüz", "Faaliyet" ve "Geç (5 geç = 0.5 gün)" kayıtlarını MEB mantığıyla kusursuz hesaplar.
 - **Dinamik Veli Bilgilendirme PDF'leri:** Çıktı alınan devamsızlık mektuplarının sol alt köşesinde anlık olarak güncellenmiş toplam Özürlü ve Özürsüz gün sayıları otomatik olarak kalın fontla yer alır.
-- **Yapay Zeka (MCP) Entegrasyonu:** Geliştiriciler için proje kök dizinine entegre edilmiş SQLite, Puppeteer ve PDF MCP sunucuları ile LLM ajanlarının projeye anında müdahale edebileceği modüler bir altyapı oluşturulmuştur.
+- **Yapay Zeka (MCP & Skill) Entegrasyonu:** SQLite (`okul_veritabani.db`), Git, Web-Fetch, MarkItDown (PDF analizi), Playwright (E2E UI test) ve GitHub MCP sunucuları ile; MEB hesaplama denetimi (`pytest-runner`), Inno Setup paketleme (`pyinstaller-desktop-packager`), Excel şema onarma (`excel-schema-validator`), SQLite concurrency koruması ve UI/UX tasarım yetenekleri (.agents/skills) projeye entegre edilmiştir.
 
 ## 🎯 Temel Özellikler
 

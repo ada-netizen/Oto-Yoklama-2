@@ -112,7 +112,12 @@ def ayarlar_getir():
 
 @router.post("/ayarlar-kaydet")
 async def ayarlar_kaydet(request: Request):
-    yeni = await request.json()
+    try:
+        yeni = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Geçersiz JSON verisi.")
+    if not isinstance(yeni, dict):
+        raise HTTPException(status_code=400, detail="Ayar verisi sözlük formatında olmalıdır.")
     ayar = ayarlari_al()
     ayar.update(yeni)
     SistemMotoru.ayarlari_kaydet(yollar["AYARLAR"], ayar)
