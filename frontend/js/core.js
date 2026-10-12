@@ -402,7 +402,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 root.style.setProperty('--dev-bg', '#FEE2E2'); 
                 root.style.setProperty('--dev-fg', '#991B1B'); 
                 
-                if(btnTema) { btnTema.classList.remove('dark'); btnTema.classList.add('light'); }
+                document.querySelectorAll('.tema-switch').forEach(el => { el.classList.remove('dark'); el.classList.add('light'); });
                 localStorage.setItem('temaPref', 'gunduz');
             } else {
                 // Gece Moduna Geçiş (Derin Slate, Göz Yormayan)
@@ -414,7 +414,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 root.style.setProperty('--fg-sub', '#94A3B8'); 
                 root.style.setProperty('--border', 'rgba(51, 65, 85, 0.65)');
                 root.style.setProperty('--border-hover', '#475569');
-                root.style.setProperty('--tree-sel', '#38BDF8');
+                root.style.setProperty('--tree-sel', '#38BDF8'); 
                 
                 // Devamsızlık Renkleri (Gece Modu)
                 root.style.setProperty('--dev-ozursuz-bg', '#7F1D1D'); 
@@ -428,7 +428,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 root.style.setProperty('--dev-bg', '#7F1D1D'); 
                 root.style.setProperty('--dev-fg', '#FEF2F2'); 
                 
-                if(btnTema) { btnTema.classList.remove('light'); btnTema.classList.add('dark'); }
+                document.querySelectorAll('.tema-switch').forEach(el => { el.classList.remove('light'); el.classList.add('dark'); });
                 localStorage.setItem('temaPref', 'gece');
             }
             
@@ -587,8 +587,12 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             yillikHucreler = []; 
             
             fetch(`${API}/ogrenci-detay/${no}`).then(r => r.json()).then(veri => {
-                const thead = document.getElementById('yillik_thead'); const tbody = document.getElementById('yillik_tbody'); const ozetAlani = document.getElementById('yillik_ozet_alani');
+                const thead = document.getElementById('yillik_thead');
+                const tbody = document.getElementById('yillik_tbody');
+                const ozetAlani = document.getElementById('yillik_ozet_alani');
+                const rozetlerAlani = document.getElementById('yillik_rozetler_alani');
                 thead.innerHTML = ""; tbody.innerHTML = ""; ozetAlani.innerHTML = "";
+                if (rozetlerAlani) rozetlerAlani.innerHTML = "";
                 
                 let theadHtml = `<tr><th style="background-color: #1E3A8A; color: white; padding: 6px; border: 1px solid var(--border);">Aylar</th>`;
                 for(let i=1; i<=31; i++) { theadHtml += `<th id="yillik_col_${i}" style="background-color: #1E3A8A; color: white; padding: 4px; border: 1px solid var(--border); width: 25px;">${i}</th>`; }
@@ -598,6 +602,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 const rH = { "D": "#DC2626", "ÖY": "#EF4444", "SY": "#F87171", "G": "#EA580C", "İ": "#EAB308", "I": "#EAB308", "S": "#F59E0B", "R": "#D97706", "M": "#92400E", "N": "#3B82F6", "F": "#6366F1", "SV": "#8B5CF6" };
 
                 let devMap = {}; let detayOzursuz = {}; let detayOzurlu = {}; let detayDiger = {}; let hsOzursuz = {}; let hsOzurlu = {}; let hsDiger = {}; let ozszNet = 0.0; let ozrlNet = 0.0; let digerNet = 0.0; let gSayisi = 0;
+                let pztCumaSayisi = 0; let haftaIciSayisi = 0;
                 const tumKayitlar = [...veri.devamsizliklar];
                 geciciDevamsizliklar.forEach(gd => { if (String(gd.no) === String(no)) tumKayitlar.push(gd); });
 
@@ -609,7 +614,12 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                     
                     for(let i=0; i<tamGun; i++) {
                         let gTarih = new Date(basTarih); gTarih.setDate(gTarih.getDate() + i);
-                        if (gTarih.getDay() !== 0 && gTarih.getDay() !== 6) devMap[`${gTarih.getFullYear()}-${gTarih.getMonth()+1}-${gTarih.getDate()}`] = tur;
+                        let day = gTarih.getDay();
+                        if (day !== 0 && day !== 6) {
+                            devMap[`${gTarih.getFullYear()}-${gTarih.getMonth()+1}-${gTarih.getDate()}`] = tur;
+                            haftaIciSayisi++;
+                            if (day === 1 || day === 5) pztCumaSayisi++;
+                        }
                     }
                     if (gunMiktari <= 1) { if (basTarih.getDay() === 0 || basTarih.getDay() === 6) hsMiktari = gunMiktari; else hiMiktari = gunMiktari; } 
                     else {
@@ -626,6 +636,68 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 });
 
                 if (gSayisi > 0) { let g = Math.floor(gSayisi / 5) * 0.5; detayOzursuz[`G (${gSayisi})`] = g; ozszNet += g; }
+
+                const ogrKayit = (window.ogrenciListesi || []).find(o => String(o.no) === String(no));
+                const ogrSube = ogrKayit ? ogrKayit.sube : (veri.sube || '');
+                seciliOgrenci = { no: no, ad: ad, sube: ogrSube, ozsz: ozszNet, ozrl: ozrlNet, toplam: toplamNet };
+
+                // --- ÇEŞİTLENDİRİLMİŞ AKILLI ROZETLER OLUŞTURUCU ---
+                if (rozetlerAlani) {
+                    let rozetlerHtml = '';
+
+                    // 1. YASAL RİSK ROZETİ
+                    if (ozszNet >= 10.0) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap kritik">🚨 Sınıf Tekrarı Riski: 10G+ Aşıldı (${ozszNet} Gün)</span>`;
+                    } else if (ozszNet >= 8.5) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap ramak">⚠️ Kritik Eşik: 10G Ramak Kala (${ozszNet} Gün)</span>`;
+                    } else if (ozszNet >= 4.5 && ozszNet <= 5.0) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap mektup">📬 5G Veli Mektubu Sınırı (${ozszNet} Gün)</span>`;
+                    } else if (toplamNet >= 25.0) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap toplam">⏳ 25G+ Toplam Devamsızlık Riski (${toplamNet} / 30 Gün)</span>`;
+                    } else {
+                        rozetlerHtml += `<span class="yillik-rozet-hap guvenli">✅ Yasal Durumu Güvenli (${ozszNet} Gün / 10 Gün)</span>`;
+                    }
+
+                    // 2. KALAN YASAL HAKLAR
+                    const kalanOzsz = Math.round(Math.max(0, 10.0 - ozszNet) * 10) / 10;
+                    const kalanToplam = Math.round(Math.max(0, 30.0 - toplamNet) * 10) / 10;
+                    rozetlerHtml += `<span class="yillik-rozet-hap bilgi">🟢 Kalan Özürsüz Hak: ${kalanOzsz} Gün</span>`;
+                    rozetlerHtml += `<span class="yillik-rozet-hap bilgi">🛡️ Kalan Toplam Hak: ${kalanToplam} Gün (30G)</span>`;
+
+                    // 3. MEB 5 GEÇ KALMA KURALI ROZETİ
+                    if (gSayisi > 0) {
+                        const gEtkisi = Math.floor(gSayisi / 5) * 0.5;
+                        const gKalan = 5 - (gSayisi % 5);
+                        let aciklama = gEtkisi > 0 ? ` (${gEtkisi}G Özürsüze Eklendi)` : ` (Sıradaki 0.5G için ${gKalan} geç kaldı)`;
+                        rozetlerHtml += `<span class="yillik-rozet-hap gec">⏱️ ${gSayisi} Kez Geç Kaldı${aciklama}</span>`;
+                    } else {
+                        rozetlerHtml += `<span class="yillik-rozet-hap guvenli">✨ Hiç Geç Kalma Yok (Dakik)</span>`;
+                    }
+
+                    // 4. HAFTASONU BİRLEŞTİRME VE EĞİLİM ROZETİ
+                    if (haftaIciSayisi >= 3 && (pztCumaSayisi / haftaIciSayisi) >= 0.40) {
+                        const yuzde = Math.round((pztCumaSayisi / haftaIciSayisi) * 100);
+                        rozetlerHtml += `<span class="yillik-rozet-hap aliskanlik">🗓️ Hafta Sonu Birleştirme Eğilimi (Pzt/Cuma: %${yuzde})</span>`;
+                    }
+
+                    // 5. DEVAMSIZLIK AĞIRLIĞI VE ÖRNEK KATILIM
+                    if (ozszNet === 0 && ozrlNet === 0 && gSayisi === 0) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap kusursuz">🌟 Kusursuz Katılım (Sıfır Gün Kayıp)</span>`;
+                    } else if (ozrlNet > ozszNet * 2 && ozrlNet > 0) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap bilgi">🏥 Sağlık / Rapor Ağırlıklı (${ozrlNet}G)</span>`;
+                    } else if (ozszNet > ozrlNet * 2 && ozszNet > 0) {
+                        rozetlerHtml += `<span class="yillik-rozet-hap kritik">⚠️ İzinsiz / Özürsüz Ağırlıklı (${ozszNet}G)</span>`;
+                    }
+
+                    rozetlerHtml = `<div style="width: 100%; font-size: 11.5px; font-weight: 700; color: var(--fg-sub); display: flex; align-items: center; gap: 6px; margin-bottom: 2px;">
+                        <i data-lucide="award" height="13" width="13" style="color: #F59E0B;"></i> Pedagojik & Yasal Devamsızlık Karnesi Analizi:
+                    </div>` + rozetlerHtml;
+
+                    rozetlerAlani.innerHTML = rozetlerHtml;
+                    if (window.lucide && typeof lucide.createIcons === 'function') {
+                        lucide.createIcons();
+                    }
+                }
 
                 for(let rowIdx=1; rowIdx<=10; rowIdx++) {
                     let ayAd = aylarList[rowIdx-1]; let ayNo = ayNolar[rowIdx-1];
@@ -720,7 +792,20 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
         function basliklariGuncelle() {
             const basliklar = { 'temizSube': 'Sınıf', 'no': 'No', 'ad_soyad': 'Ad Soyad', 'ozsz': 'Özürsüz', 'ozrl': 'Özürlü' };
-            for(let key in basliklar) { let el = document.getElementById('span_' + key); if(el) el.innerText = basliklar[key] + (siralamaSutun === key ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕'); }
+            for(let key in basliklar) {
+                let el = document.getElementById('span_' + key);
+                if(el) {
+                    el.innerText = basliklar[key] + (siralamaSutun === key ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕');
+                    el.style.whiteSpace = 'nowrap';
+                    el.style.overflow = 'visible';
+                    el.style.textOverflow = 'clip';
+                    const parentTh = el.closest('th');
+                    if (parentTh) {
+                        parentTh.style.textAlign = 'left';
+                        parentTh.style.padding = '6px 4px';
+                    }
+                }
+            }
         }
                 function dosyaYukle(endpoint, event) {
             const dosya = event.target.files[0]; if (!dosya) return;
@@ -786,26 +871,18 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             });
         }
 
-        // --- DİNAMİK HIZLI EŞİK ÇİPLERİ FİLTRE MOTORU ---
+        // --- DİNAMİK HIZLI EŞİK / ROZET AÇILIR FİLTRE MOTORU (SABİT 380PX DROPDOWN) ---
         let aktifEsikFiltresi = 'tumu';
 
-        function esikFiltrele(tur, btnElement) {
-            aktifEsikFiltresi = tur;
-            document.querySelectorAll('.esik-cip').forEach(b => b.classList.remove('aktif'));
-            if(btnElement) {
-                btnElement.classList.add('aktif');
-            } else {
-                const mapId = {
-                    'tumu': 'chip_esik_tumu',
-                    'ramakkala_10': 'chip_esik_ramak',
-                    'asanlar_10': 'chip_esik_asan',
-                    'mektup_5': 'chip_esik_mektup',
-                    'toplam_25': 'chip_esik_toplam'
-                };
-                const hedefBtn = document.getElementById(mapId[tur]);
-                if(hedefBtn) hedefBtn.classList.add('aktif');
-            }
+        function esikSelectFiltrele(tur) {
+            aktifEsikFiltresi = tur || 'tumu';
+            const combo = document.getElementById('combo_esik_filtre');
+            if (combo && combo.value !== aktifEsikFiltresi) combo.value = aktifEsikFiltresi;
             tabloyuDoldur();
+        }
+
+        function esikFiltrele(tur, btnElement) {
+            esikSelectFiltrele(tur);
         }
 
         function esikSayilariniGuncelle() {
@@ -814,6 +891,8 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             let sayiAsan = 0;
             let sayiMektup = 0;
             let sayiToplam = 0;
+            let sayiKusursuz = 0;
+            let sayiRaporlu = 0;
 
             ogrenciListesi.forEach(ogr => {
                 const ozsz = Math.round((ogr.ozursuz || 0) * 10) / 10;
@@ -822,32 +901,40 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
                 if (ozsz >= 8.5 && ozsz < 10.0) sayiRamak++;
                 if (ozsz >= 10.0) sayiAsan++;
-                if (ozsz >= 4.5 && ozsz < 5.0) sayiMektup++;
+                if (ozsz >= 4.5 && ozsz <= 5.0) sayiMektup++;
                 if (toplam >= 25.0) sayiToplam++;
+                if (ozsz === 0 && ozrl === 0) sayiKusursuz++;
+                if (ozrl > 0) sayiRaporlu++;
             });
 
-            const bTumu = document.getElementById('badge_esik_tumu');
-            const bRamak = document.getElementById('badge_esik_ramakkala');
-            const bAsan = document.getElementById('badge_esik_asanlar');
-            const bMektup = document.getElementById('badge_esik_mektup');
-            const bToplam = document.getElementById('badge_esik_toplam');
-
-            if (bTumu) bTumu.innerText = sayiTumu;
-            if (bRamak) bRamak.innerText = sayiRamak;
-            if (bAsan) bAsan.innerText = sayiAsan;
-            if (bMektup) bMektup.innerText = sayiMektup;
-            if (bToplam) bToplam.innerText = sayiToplam;
+            const combo = document.getElementById('combo_esik_filtre');
+            if (combo) {
+                const optMap = {
+                    'tumu': `🔵 Tümü (${sayiTumu} Öğrenci)`,
+                    'ramakkala_10': `🚨 10G Ramak Kala (${sayiRamak} Öğrenci)`,
+                    'asanlar_10': `⛔ 10G+ Aşanlar (${sayiAsan} Öğrenci)`,
+                    'mektup_5': `📬 5G 1. Veli Mektubu (${sayiMektup} Öğrenci)`,
+                    'toplam_25': `⏳ 25G+ Toplam Risk (${sayiToplam} Öğrenci)`,
+                    'kusursuz_0': `🌟 Kusursuz (0 Gün) (${sayiKusursuz} Öğrenci)`,
+                    'raporlu_ozrl': `🏥 Sağlık / Raporlu (${sayiRaporlu} Öğrenci)`
+                };
+                for (let i = 0; i < combo.options.length; i++) {
+                    const val = combo.options[i].value;
+                    if (optMap[val]) {
+                        combo.options[i].text = optMap[val];
+                    }
+                }
+            }
         }
 
         function filtreTemizle() {
             const ent = document.getElementById('ent_arama');
-            if(ent) ent.value = "";
-            const combo = document.getElementById('combo_arama_sube');
-            if(combo) combo.value = "Tümü";
+            if (ent) ent.value = "";
+            const comboSube = document.getElementById('combo_arama_sube');
+            if (comboSube) comboSube.value = "Tümü";
             aktifEsikFiltresi = 'tumu';
-            document.querySelectorAll('.esik-cip').forEach(b => b.classList.remove('aktif'));
-            const bTumu = document.getElementById('chip_esik_tumu');
-            if(bTumu) bTumu.classList.add('aktif');
+            const comboEsik = document.getElementById('combo_esik_filtre');
+            if (comboEsik) comboEsik.value = 'tumu';
             tabloyuDoldur();
         }
 
@@ -870,9 +957,13 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 } else if (aktifEsikFiltresi === 'asanlar_10') {
                     if (!(ogr.ozsz >= 10.0)) return false;
                 } else if (aktifEsikFiltresi === 'mektup_5') {
-                    if (!(ogr.ozsz >= 4.5 && ogr.ozsz < 5.0)) return false;
+                    if (!(ogr.ozsz >= 4.5 && ogr.ozsz <= 5.0)) return false;
                 } else if (aktifEsikFiltresi === 'toplam_25') {
                     if (!((ogr.ozsz + ogr.ozrl) >= 25.0)) return false;
+                } else if (aktifEsikFiltresi === 'kusursuz_0') {
+                    if (!(ogr.ozsz === 0 && ogr.ozrl === 0)) return false;
+                } else if (aktifEsikFiltresi === 'raporlu_ozrl') {
+                    if (!(ogr.ozrl > 0)) return false;
                 }
 
                 return true;
@@ -903,7 +994,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
                     tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.temizSube, ogr.ozsz, ogr.ozrl); sagTikMenuAc(e, ogr.no, ogr.ad_soyad);
                 };
-                tr.innerHTML = `<td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.temizSube}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.no}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ad_soyad}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ozszStr}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ozrl} Gün</td>`;
+                tr.innerHTML = `<td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.temizSube}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.no}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ad_soyad}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ozszStr}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ozrl} Gün</td>`;
                 fragment.appendChild(tr);
             });
             govde.appendChild(fragment);
@@ -920,58 +1011,6 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             document.getElementById('sag_bos_uyari').style.display = 'none'; 
             document.getElementById('sag_dolu_icerik').style.display = 'flex';
             
-            // 1. Öğrenci Künye Kartı Alanlarını Güncelle
-            let lblAd = document.getElementById('lbl_secili_ogrenci');
-            if(lblAd) lblAd.innerText = `${ad}`;
-            
-            let lblSube = document.getElementById('lbl_ogr_sube_bilgi');
-            if(lblSube) lblSube.innerHTML = `<i data-lucide="layers" height="12" width="12"></i> Sınıf: <strong>${sube}</strong>`;
-
-            let lblNo = document.getElementById('lbl_ogr_no_bilgi');
-            if(lblNo) lblNo.innerHTML = `<i data-lucide="hash" height="12" width="12"></i> No: <strong>${no}</strong>`;
-
-            let lblOzszGun = document.getElementById('lbl_ozursuz_gun');
-            if(lblOzszGun) lblOzszGun.innerText = `${fOzsz} Gün`;
-
-            let lblOzrlGun = document.getElementById('lbl_ozurlu_gun');
-            if(lblOzrlGun) lblOzrlGun.innerText = `${fOzrl} Gün`;
-
-            let lblToplamGun = document.getElementById('lbl_toplam_gun');
-            if(lblToplamGun) lblToplamGun.innerText = `${toplam} Gün`;
-
-            let badgeRisk = document.getElementById('badge_risk_durumu');
-            let kutuOzsz = document.getElementById('kutu_ozursuz_sayac');
-            let kutuToplam = document.getElementById('kutu_toplam_sayac');
-
-            if(badgeRisk) {
-                if (fOzsz >= 10.0) {
-                    badgeRisk.innerText = "🚨 10G+ Aşıldı (Kritik)";
-                    badgeRisk.className = "status-pill ozursuz";
-                    if(kutuOzsz) kutuOzsz.className = "ogr-sayac-kutusu kritik";
-                } else if (fOzsz >= 8.5) {
-                    badgeRisk.innerText = "⚠️ 10G Ramak Kala";
-                    badgeRisk.className = "status-pill gec";
-                    if(kutuOzsz) kutuOzsz.className = "ogr-sayac-kutusu uyari";
-                } else if (toplam >= 25.0) {
-                    badgeRisk.innerText = "⏳ 25G+ Toplam Risk";
-                    badgeRisk.className = "status-pill ozurlu";
-                    if(kutuToplam) kutuToplam.className = "ogr-sayac-kutusu uyari";
-                } else {
-                    badgeRisk.innerText = "✅ Durumu Güvenli";
-                    badgeRisk.className = "status-pill faaliyet";
-                    if(kutuOzsz) kutuOzsz.className = "ogr-sayac-kutusu guvenli";
-                }
-            }
-
-            let lblOzet = document.getElementById('lbl_ozet');
-            if(lblOzet) {
-                lblOzet.innerText = `Özürsüz: ${fOzsz} | Özürlü: ${fOzrl}`;
-                lblOzet.style.color = fOzsz >= 10 ? '#DC2626' : 'var(--fg-sub)';
-            }
-
-            if (window.lucide && typeof lucide.createIcons === 'function') {
-                lucide.createIcons();
-            }
 
             // Devamsızlıkları veritabanından çek ve takvim ile önizlemeyi doldur
             fetch(`${API}/ogrenci-detay/${no}`).then(res => res.json()).then(veri => {

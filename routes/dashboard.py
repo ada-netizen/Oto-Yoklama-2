@@ -17,81 +17,50 @@ def kisa_sube(sube_adi):
 @router.get("/istatistikler")
 def get_istatistikler():
     try:
-        # Tumu
-        db.cursor.execute("SELECT no, sube, ad_soyad FROM ogrenciler")
-        tum_ogrenciler = db.cursor.fetchall()
-        toplam_ogrenci = len(tum_ogrenciler)
-        
+        from araclar import VeriAraclari
+        ogrenci_listesi, devamsizlik_listesi = db.yukle()
+        toplam_ogrenci = len(ogrenci_listesi)
+
+        gruplu_dev = defaultdict(list)
+        for d in devamsizlik_listesi:
+            gruplu_dev[str(d.get('no', '')).strip()].append(d)
+
+        ogrenci_ozursuz = {}
+        ogrenci_ozurlu = {}
+        ogrenci_toplam = {}
+        ogrenci_sube_map = {}
+        ogrenci_ad_map = {}
         sube_counts = defaultdict(int)
-        for row in tum_ogrenciler:
-            sube_counts[row[1]] += 1
 
-        db.cursor.execute("SELECT no, tarih, tur, gun FROM devamsizliklar")
-        dev_ham = db.cursor.fetchall()
+        for ogr in ogrenci_listesi:
+            no_key = str(ogr.get('no', '')).strip()
+            sube = ogr.get('sube', '')
+            ad = ogr.get('ad_soyad', '')
+            ogrenci_sube_map[no_key] = sube
+            ogrenci_ad_map[no_key] = ad
+            sube_counts[sube] += 1
 
-        # Iskeleler
+            ozsz, ozrl = VeriAraclari.hesapla_devamsizlik(no_key, gruplu_dev.get(no_key, []), [])
+            ozsz = round(ozsz, 1)
+            ozrl = round(ozrl, 1)
+            topt = round(ozsz + ozrl, 1)
+
+            ogrenci_ozursuz[no_key] = ozsz
+            ogrenci_ozurlu[no_key] = ozrl
+            ogrenci_toplam[no_key] = topt
+
         sube_dev = defaultdict(float)
-        tur_dev = defaultdict(float)
-        aylik_dev = defaultdict(float)
-        gunluk_dev = defaultdict(float)
-        ogrenci_toplam = defaultdict(float)
-        ogrenci_ozursuz = defaultdict(float)
-        ogrenci_g = defaultdict(int)  # Changed to int for counting occurrences
-
-        aylar = {"01":"Oca", "02":"Şub", "03":"Mar", "04":"Nis", "05":"May", "06":"Haz", "07":"Tem", "08":"Ağu", "09":"Eyl", "10":"Eki", "11":"Kas", "12":"Ara"}
-        hafta_gunleri = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
-
-        ozursuz_turler = ["G", "Y", "ÖZÜRSÜZ"]
-
-        for r in dev_ham:
-            no, tarih, tur, gun = r
-            try:
-                g_val = float(gun)
-            except:
-                continue
-
-            tur_dev[tur] += g_val
-            ogrenci_toplam[no] += g_val
-            if tur.upper() in ozursuz_turler or tur.upper() == 'G':
-                ogrenci_ozursuz[no] += g_val
-            
-            if tur.upper() == 'G':
-                ogrenci_g[no] += 1  # Count occurrences instead of sum
-
-            # Tarih parcalama
-            parts = str(tarih).split('/')
-            if len(parts) == 3:
-                # Aylik
-                ay_num = parts[1].zfill(2)
-                ay_ad = aylar.get(ay_num, ay_num)
-                aylik_dev[ay_ad] += g_val
-                
-                # Gunluk (Haftanin Gunu)
-                try:
-                    dt = datetime.datetime(int(parts[2]), int(parts[1]), int(parts[0]))
-                    gun_adi = hafta_gunleri[dt.weekday()]
-                    gunluk_dev[gun_adi] += g_val
-                except: pass
-
-        # Sube bazli
-        ogrenci_sube_map = {r[0]: r[1] for r in tum_ogrenciler}
-        ogrenci_ad_map = {r[0]: r[2] for r in tum_ogrenciler}
-
-        for no, g_val in ogrenci_toplam.items():
-            sube = ogrenci_sube_map.get(no, "Bilinmeyen")
-            sube_dev[sube] += g_val
-
-        # Sube Ortalamalari
         sube_ozursuz = defaultdict(float)
-        for no, g_val in ogrenci_ozursuz.items():
-            sube = ogrenci_sube_map.get(no, "Bilinmeyen")
-            sube_ozursuz[sube] += g_val
+        for no_key, topt in ogrenci_toplam.items():
+            sube = ogrenci_sube_map.get(no_key, "Bilinmeyen")
+            sube_dev[sube] += topt
+            sube_ozursuz[sube] += ogrenci_ozursuz.get(no_key, 0.0)
 
         sube_ort_list = []
         for sube, toplam in sube_dev.items():
             count = sube_counts.get(sube, 0)
             if count > 0:
-                ozursuz_toplam = sube_ozursuz.get(sube, 0)
+                ozursuz_toplam = sube_ozursuz.get(sube, 0.0)
                 ozurlu_toplam = toplam - ozursuz_toplam
                 
                 ort_ozursuz = round(ozursuz_toplam / count, 2)
@@ -113,19 +82,22 @@ def get_istatistikler():
 
         sube_ort_list = sorted(sube_ort_list, key=sube_sort_key)
 
-        # Ozurlu / Ozursuz
-        ozursuz_toplam = sum(ogrenci_ozursuz.values())
-        ozurlu_toplam = sum(ogrenci_toplam.values()) - ozursuz_toplam
+        # Özürlü / Özürsüz genel toplamları
+        ozursuz_genel = round(sum(ogrenci_ozursuz.values()), 1)
+        ozurlu_genel = round(sum(ogrenci_ozurlu.values()), 1)
 
         # KPI'lar
-        kpi_ozursuz_10 = sum(1 for v in ogrenci_ozursuz.values() if v >= 10)
-        kpi_toplam_30 = sum(1 for v in ogrenci_toplam.values() if v >= 30)
-        kpi_sifir = toplam_ogrenci - len(ogrenci_toplam)
+        kpi_ozursuz_10 = sum(1 for v in ogrenci_ozursuz.values() if v >= 10.0)
+        kpi_toplam_30 = sum(1 for v in ogrenci_toplam.values() if v >= 30.0)
+        kpi_sifir = sum(1 for v in ogrenci_toplam.values() if v == 0.0)
 
         # Evraklar
         db.cursor.execute("SELECT tarih FROM uretilen_evraklar")
         evrak_ham = db.cursor.fetchall()
         kpi_evrak = len(evrak_ham)
+
+        aylar = {"01":"Oca", "02":"Şub", "03":"Mar", "04":"Nis", "05":"May", "06":"Haz", "07":"Tem", "08":"Ağu", "09":"Eyl", "10":"Eki", "11":"Kas", "12":"Ara"}
+        hafta_gunleri = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 
         evrak_aylik = defaultdict(int)
         for r in evrak_ham:
@@ -136,6 +108,36 @@ def get_istatistikler():
                     ay_ad = aylar.get(f"{dt.month:02d}", str(dt.month))
                     evrak_aylik[ay_ad] += 1
             except: pass
+
+        tur_dev = defaultdict(float)
+        aylik_dev = defaultdict(float)
+        gunluk_dev = defaultdict(float)
+        ogrenci_g = defaultdict(int)
+
+        for d in devamsizlik_listesi:
+            no = str(d.get('no', '')).strip()
+            tarih = d.get('tarih', '')
+            tur = str(d.get('tur', '')).upper()
+            try:
+                g_val = float(VeriAraclari.temiz_sure(d.get('gun', 0)))
+            except:
+                continue
+
+            tur_dev[tur] += g_val
+            if tur == 'G':
+                ogrenci_g[no] += 1
+
+            parts = str(tarih).replace('.', '/').replace('-', '/').split('/')
+            if len(parts) == 3:
+                ay_num = parts[1].zfill(2)
+                ay_ad = aylar.get(ay_num, ay_num)
+                aylik_dev[ay_ad] += g_val
+                try:
+                    dt = datetime.datetime(int(parts[2]), int(parts[1]), int(parts[0]))
+                    gun_adi = hafta_gunleri[dt.weekday()]
+                    gunluk_dev[gun_adi] += g_val
+                except:
+                    pass
 
         # Riskli listeler
         riskli_list = []
@@ -162,18 +164,18 @@ def get_istatistikler():
         haftanin_gunleri = [{"gun": g, "toplam": gunluk_dev.get(g, 0)} for g in gun_sirasi]
 
         # Kritik Eşik Erken Uyarı Verileri
-        tum_nolar = {r[0] for r in tum_ogrenciler}
         esik_kategorileri = {
-            "ramakkala_10": [],    # 9.0 <= ozursuz < 10.0 (Kritik Eşik: Ramak Kala)
+            "ramakkala_10": [],    # 8.5 <= ozursuz < 10.0 (Kritik Eşik: Ramak Kala)
             "asanlar_10": [],      # ozursuz >= 10.0 (Sınıf Tekrarı Riski)
-            "mektup_siniri_5": [], # 4.5 <= ozursuz < 5.0 (1. Mektup Eşiği)
+            "mektup_siniri_5": [], # 4.5 <= ozursuz <= 5.0 (1. Mektup Eşiği)
             "toplam_risk_25": []   # toplam >= 25.0 (Toplam Sınır 30'a Yaklaşanlar)
         }
 
-        for no in tum_nolar:
-            topt = round(ogrenci_toplam.get(no, 0.0), 1)
-            ozst = round(ogrenci_ozursuz.get(no, 0.0), 1)
-            ozlt = round(topt - ozst, 1)
+        for ogr in ogrenci_listesi:
+            no = str(ogr.get('no', '')).strip()
+            topt = ogrenci_toplam.get(no, 0.0)
+            ozst = ogrenci_ozursuz.get(no, 0.0)
+            ozlt = ogrenci_ozurlu.get(no, 0.0)
             if topt == 0 and ozst == 0:
                 continue
 
@@ -186,12 +188,12 @@ def get_istatistikler():
                 "toplam": topt
             }
 
-            if 9.0 <= ozst < 10.0:
+            if 8.5 <= ozst < 10.0:
                 esik_kategorileri["ramakkala_10"].append(ogr_ozet)
             elif ozst >= 10.0:
                 esik_kategorileri["asanlar_10"].append(ogr_ozet)
 
-            if 4.5 <= ozst < 5.0:
+            if 4.5 <= ozst <= 5.0:
                 esik_kategorileri["mektup_siniri_5"].append(ogr_ozet)
 
             if topt >= 25.0:
@@ -213,7 +215,7 @@ def get_istatistikler():
             },
             "sube_dev": [{"sube": k, "toplam": v} for k, v in sube_dev.items()],
             "sube_ortalamalar": sube_ort_list,
-            "ozurlu_vs_ozursuz": {"ozurlu": ozurlu_toplam, "ozursuz": ozursuz_toplam},
+            "ozurlu_vs_ozursuz": {"ozurlu": ozurlu_genel, "ozursuz": ozursuz_genel},
             "tur_dev": [{"tur": k, "toplam": v} for k, v in tur_dev.items()],
             "aylik_trend": aylik_trend,
             "aylik_evrak": aylik_evrak_trend,

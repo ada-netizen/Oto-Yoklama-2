@@ -52,6 +52,15 @@ Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, 
   - `Esc` tuşu tüm modalları ve onay diyaloglarını kapatmalıdır.
 - **Erişilebilirlik ve Kontrast (`a11y-contrast-guard`)**:
   - Hem Aydınlık hem Karanlık temada WCAG 2.1 AA kontrast şartı (en az 4.5:1) sağlanmalıdır.
+- **Sol Gezinme Rayı (Sidebar Rail) Kategorizasyonu**:
+  - Sol menü 4 mantıksal gruba ayrılmalıdır: `ÖĞRENCİ İŞLEMLERİ`, `PERSONEL İŞLEMLERİ`, `DOĞRUDAN TEMİN`, `SİSTEM & REHBER`.
+  - Menü kapalıyken (60px) kategori başlıkları sıfır yükseklikle gizlenmeli; fare üzerine gelip menü yana açıldığında (236px) şık mikro-tipografiyle görünür hale gelmelidir.
+- **Tam Genişlik Arama ve Tek Satır Yatay Çip Rayı**:
+  - Üst arama çubuğu (`#ent_arama`) tek başına tam genişlikte konumlandırılmalı; yanına buton/dropdown konulup arama alanı daraltılmamalıdır.
+  - Risk eşik rozetleri arama çubuğunun hemen altında tek satırlık (28px) yatay rayda (`.esik-kaydirma-kapsayici`) yer almalıdır. Asla 2. satıra geçmemeli (`flex-wrap: nowrap !important;`), taşma durumunda fare tekerleğiyle pürüzsüz yatay kaymalıdır.
+- **Tablo Başlıkları ve Hücre Aralıkları**:
+  - Tablo sütun başlıkları (`th`) üzerinde `text-overflow: ellipsis` kullanılmamalı, başlıklar tam okunabilir olmalıdır.
+  - Sütun hücre yatay dolgusu (`padding`) 4px olarak tutulmalı, dikey ve yatay alan verimliliği korunmalıdır.
 
 ---
 
@@ -105,8 +114,8 @@ Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, 
 
 ---
 
-## 10. Test ve Kalite Güvencesi
-- Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` çalıştırılmalı ve **44/44 testin** yeşil (PASSED) olduğu doğrulanmalıdır.
+### 10. Test ve Kalite Güvencesi
+- Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` çalıştırılmalı ve **46/46 testin** yeşil (PASSED) olduğu doğrulanmalıdır.
 - Kritik mimari veya frontend değişikliklerinden sonra `graphify extract . --code-only; graphify cluster-only .` çalıştırılarak AST kod bağımlılık grafı güncel tutulmalıdır.
 - **Sistem Sağlığı ve Teşhis Standartları**: `/sistem-teshis` uç noktası üzerinden SQLite bütünlüğü (`PRAGMA integrity_check`), WAL modu ve kayıt sayıları denetlenmeli; Yardım ve Kılavuz sekmesinden panoya tanı raporu kopyalanabilmelidir.
 
@@ -116,12 +125,15 @@ Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, 
 - **3-Bölmeli Mimari (`.app-layout`)**:
   - **1. Sol Navigasyon ve Durum Rayı (Sidebar Rail - Sıfır İtmeli Açılır Hover Overlay)**:
     - **Kapalı Ray Durumu (60px)**: Üstte ortalanmış MEB kep amblemi (`sidebar-emblem`) ve pencere boyunca uzanan dikey kenarlık (`border-right`), ortalanmış istasyon ikonları, dikey power-user butonları ve canlı yeşil durum nabzı (`pulse-dot`) ile tema anahtarı.
-    - **Hover Overlay Durumu (236px)**: Menü üzerine gelindiğinde veya klavye odağında akıcı bir şekilde (`transition: 0.24s cubic-bezier(0.16, 1, 0.3, 1)`) 236px genişliğe ulaşır.
-    - **Sıfır İtme (Zero-Shift)**: Menü `.sidebar-rail-kapsayici` (sabit 60px) içinde `position: absolute` olarak sağa doğru genişler; yanındaki ana çalışma sahnesini (`.app-main-stage`) kesinlikle itmez veya kaydırmaz.
-    - **Derin Katmanlı Gölge**: Açıldığında sağ çalışma alanının üzerine binerek derin bir gölge yayar (`box-shadow: 18px 0 38px -4px rgba(0,0,0,0.65), 6px 0 16px -2px rgba(0,0,0,0.45)`).
-    - **Aşağı Taşmama Garantisi**: Yükseklik `100vh`, `.sidebar-nav` içeride `flex: 1; overflow-y: auto; scrollbar-width: none` esnekliğindedir; footer elemanları (`.sidebar-footer`) ekranın tabanında sabitlenir ve pencere dışına kesinlikle taşmaz.
-  - **2. Orta Panel (Akıllı Liste Akışı - 380px)**: Arama kutusu (`Ctrl+F`), şube filtresi ve Dinamik Hızlı Eşik Çipleri (`[Tümü]`, `[🚨 10G Ramak]`, `[⛔ 10G+ Aşan]`, `[📬 5G Mektup]`, `[⏳ 25G+ Toplam]`) ile anlık rozet sayaçları.
-  - **3. Sağ Panel (Detay & Aksiyon Tuvali - Esnek)**: Öğrenci künye kartı, 1-Tık Hızlı Aksiyon Barı (🟢 Veli WhatsApp Resmi Bildirim Metni Kopyalama, 📄 Veli Mektubu, 📝 İzin Dilekçesi Şablonu, ↩️ Geri Al), Yıllık GitHub-stili Isı Haritası ve canlı PDF önizleme.
+    - **Hover Overlay Durumu (236px)**: Menü üzerine gelindiğinde veya klavye odağında akıcı bir şekilde (`transition: 0.24s cubic-bezier(0.16, 1, 0.3, 1)`) 236px genişliğe ulaşır. 4 mantıksal kategori başlığı (`.sidebar-section-title`) altı çizili (`border-bottom: 1px solid var(--border)`) ve ferah aralıklarla ayrılmıştır.
+    - **Sıfır İtme (Zero-Shift) & Taşmayan Footer**: Menü `.sidebar-rail-kapsayici` (sabit 60px) içinde `position: absolute` olarak sağa doğru genişler; yanındaki ana çalışma sahnesini (`.app-main-stage`) kesinlikle itmez. Alt panelde (`.sidebar-footer`) komut butonları tam satır genişliğinde sağa yaslı kısayol rozetleriyle (`margin-left: auto`) çakışmasız yer alır; gece/gündüz anahtarı (`40px × 22px`) ve 60 FPS SQLite nabız göstergesi menü dışına asla taşmaz.
+  - **2. Orta Panel (Akıllı Liste Akışı - Sabit 380px)**: Asla genişlemeyen ve taşmayan sabit 380px genişlik (`width: 380px; min-width: 0 !important; max-width: 380px !important;`), tam genişlik arama kutusu (`#ent_arama`), canlı sayaçlı açılır durum/rozet seçim menüsü (`#combo_esik_filtre` - `[Tümü]`, `[🚨 10G Ramak]`, `[⛔ 10G+ Aşan]`, `[📬 5G Mektup]`, `[⏳ 25G+ Toplam]`, `[🌟 Kusursuz]`, `[🏥 Raporlu]`) ve sola yaslı tam metin sütun başlıkları.
+  - **3. Sağ Panel (Genişletilmiş Detay & Takvim Tuvali - Esnek)**:
+    - Takvim ve canlı PDF önizleme dikeyde en tepeye kaydırılarak net **+90px çalışma alanı** kazanmıştır; takvim başlığı iki katmanlı tam simetrik merkezleme (üstte ortalanmış Aylık/Yıllık seçici, altta ortalanmış ay navigasyonu) ile düzenlenmiştir. Öğrenci detayları yalnızca çift tıklama ile açılan Yıllık Devamsızlık Karnesi içinde toplanmıştır.
+    - **Yıllık Devamsızlık Karnesi & Çeşitlendirilmiş Rozet Motoru (`yillik_modal`)**:
+      - Öğrenciye listeden çift tıklama ile açılır.
+      - Başlıkta doğrudan 1-tık WhatsApp metin kopyalama butonu (`[💬 WhatsApp Metni]`) yer alır.
+      - Zenginleştirilmiş pedagojik rozetler: Yasal Risk (🚨 10G+ / ⚠️ 10G Ramak / 📬 5G Mektup / ⏳ 25G+ Toplam / ✅ Güvenli), Kalan Yasal Haklar (`🟢 Kalan Özürsüz`, `🛡️ Kalan Toplam`), MEB 5 Geç Kuralı Analizi (`⏱️ X Kez Geç Kalındı (${etki}G)`), Davranışsal Şablon (`🗓️ Hafta Sonu Birleştirme Eğilimi`), Devamsızlık Türü Dağılımı (`🏥 Sağlık Ağırlıklı` / `⚠️ İzinsiz Ağırlıklı` / `🌟 Kusursuz Katılım`).
 - **MEB Bordeaux Renk Hiyerarşisi**:
   - Kurumsal vurgular ve birincil aksiyonlar için `--meb-bordeaux: #881337`, `--meb-bordeaux-hover: #9F1239` ve `--gradient-bordeaux: linear-gradient(135deg, #881337, #BE123C)`.
   - Derin Slate yüzeyler (`--bg-main: #0B1120`, `--bg-card-solid: #1E293B`) ve WCAG 2.1 AA kontrast şartı.

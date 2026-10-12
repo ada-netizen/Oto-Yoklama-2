@@ -72,18 +72,21 @@ Bu belge, Claude Code ve diğer yapay zekâ kodlama ajanlarının (Antigravity, 
 * Arama filtrelerinde en az 180ms `debounce` kullanılmalı, tablo DOM render'larında `DocumentFragment` kullanılmalıdır.
 
 ### G. 3-Bölmeli Komuta Merkezi & MEB Bordeaux Hiyerarşisi
-* **Sol Navigasyon Rayı (Sidebar Rail - Sıfır İtmeli Açılır Hover Overlay)**:
-  * **Kapalı Durum (60px)**: Üstte ortalanmış MEB kep amblemi ve pencere boyunca inen dikey kenarlık (`border-right`), ortalanmış modül ikonları, dikey power butonları ve yeşil canlı nabız (`pulse-dot`) + tema anahtarı.
-  * **Hover Overlay (236px)**: Menü üzerine gelindiğinde sağa doğru akıcı şekilde açılır (`transition: 0.24s`); sabit 60px kapsayıcısı sayesinde yanındaki çalışma alanını (`.app-main-stage`) kesinlikle itmez veya kaydırmaz.
+* **Sol Navigasyon Rayı (Sidebar Rail - Sıfır İtmeli Açılır Hover Overlay & 4 Kategori)**:
+  * **Kapalı Durum (60px)**: Üstte ortalanmış MEB kep amblemi ve pencere boyunca inen dikey kenarlık (`border-right`), ortalanmış modül ikonları, dikey power butonları ve yeşil canlı nabız (`pulse-dot`) + tema anahtarı. Kategori başlıkları kapalıyken gizlidir.
+  * **Hover Overlay (236px)**: Menü üzerine gelindiğinde sağa doğru akıcı şekilde açılır (`transition: 0.24s`); sabit 60px kapsayıcısı sayesinde yanındaki çalışma alanını (`.app-main-stage`) kesinlikle itmez veya kaydırmaz. Açıldığında 4 mantıksal kategori (`ÖĞRENCİ İŞLEMLERİ`, `PERSONEL İŞLEMLERİ`, `DOĞRUDAN TEMİN`, `SİSTEM & REHBER`) belirir (`Ctrl+O` ile Öğrenci Yönetimi modalı doğrudan açılır).
   * **Gölge & Taşmama**: Sağ tarafa derin, katmanlı bir gölge yayar (`box-shadow: 18px 0 38px -4px rgba(0,0,0,0.65)`). Yükseklik `100vh` ve dikeyde esnek nav çubuğu sayesinde alt butonlar ve göstergeler pencere dışına taşmaz.
-* **Orta Liste Akışı (380px)**: Dinamik Hızlı Eşik Çipleri (`[Tümü]`, `[🚨 10G Ramak]`, `[⛔ 10G+ Aşan]`, `[📬 5G Mektup]`, `[⏳ 25G+ Toplam]`).
-* **Sağ Tuval (Esnek)**: Öğrenci künye kartı, 1-Tık Hızlı Aksiyon Barı (🟢 Veli WhatsApp Metni Kopyalama, 📄 Veli Mektubu, 📝 İzin Dilekçesi, ↩️ Geri Al), Yıllık Isı Haritası ve canlı önizleme.
+* **Orta Liste Akışı (380px) & Ergonomik Filtre Rayı**:
+  * **Tam Genişlik Arama (34px)**: Üstte tek başına ferah, tam genişlikte arama çubuğu (`#ent_arama`).
+  * **Sabit 380px Genişlik & Açılır Eşik/Rozet Menüsü (32px)**: Asla genişlemeyen ve taşmayan 380px sabit panel (`min-width: 0 !important; max-width: 380px !important; width: 380px !important;`). Arama çubuğunun hemen altında canlı öğrenci sayaçlı kompakt açılır durum/rozet seçim menüsü (`#combo_esik_filtre` - `[🔵 Tümü]`, `[🚨 10G Ramak]`, `[⛔ 10G+ Aşan]`, `[📬 5G Mektup]`, `[⏳ 25G+ Toplam Risk]`, `[🌟 Kusursuz]`, `[🏥 Sağlık / Raporlu]`).
+  * **Tümü Sola Yaslı Tablo Başlıkları**: Tüm sütun başlıkları (`Sınıf ↕`, `No ↕`, `Ad Soyad ↕`, `Özürsüz ↕`, `Özürlü ↕`) `text-align: left` ve `padding: 6px 4px` ile veri hücreleriyle tam hizada sola yaslanmıştır.
+* **Sağ Tuval (Genişletilmiş Esnek Çalışma Alanı)**: Takvim başlığı iki katmanlı tam simetrik merkezleme (üstte ortalanmış Aylık/Yıllık seçici, altta ortalanmış ay navigasyonu) ile düzenlenmiştir; takvim ve önizleme dikeyde en tepeye çekilmiş (+90px net alan) durumdadır. Zenginleştirilmiş rozetler (yasal risk, kalan haklar, 5 geç kuralı analizi, hafta sonu birleştirme eğilimi, devamsızlık türü) ve 1-Tık WhatsApp kopyalama butonu öğrenciye çift tıklamayla açılan Yıllık Devamsızlık Karnesi (`yillik_modal`) içerisine entegre edilmiştir.
 * **MEB Bordeaux Renk Hiyerarşisi**: `--meb-bordeaux: #881337`, `--meb-bordeaux-hover: #9F1239`, `--gradient-bordeaux`.
 
 ---
 
 ## 4. Test ve Kalite Güvencesi
-* Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` komutunu çalıştırarak tüm **44/44** testin yeşil (PASSED) olduğunu doğrula.
+* Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` komutunu çalıştırarak tüm **46/46** testin yeşil (PASSED) olduğunu doğrula.
 * Mevcut testlerin hiçbirini silme veya devre dışı bırakma.
 * Kod tabanı grafını senkronize tutmak için kritik değişikliklerden sonra `graphify extract . --code-only; graphify cluster-only .` çalıştır.
 

@@ -213,6 +213,15 @@ def test_kritik_esikler_endpoint():
     assert "mektup_siniri_5" in veri["veriler"]
     assert "toplam_risk_25" in veri["veriler"]
 
+    # /istatistikler endpoint bütünlüğü ve KPI uyumu
+    resp_stats = client.get("/istatistikler")
+    assert resp_stats.status_code == 200
+    stats = resp_stats.json()
+    assert "kpis" in stats
+    assert "ozursuz_10" in stats["kpis"]
+    assert "kritik_esikler" in stats
+    assert len(stats["kritik_esikler"]["asanlar_10"]) == stats["kpis"]["ozursuz_10"]
+
 
 def test_son_islemi_geri_al_ve_durum_endpoint():
     """Geri alma durum ve geri al endpoint'lerini doğrular."""
@@ -295,35 +304,29 @@ def test_3_bolmeli_komuta_merkezi_sidebar_rail():
 
 
 def test_dinamik_hizli_esik_cipleri_bileseni():
-    """Orta panel akıllı liste akışındaki dinamik hızlı eşik çiplerini doğrular."""
+    """Öğrenci listesi panelindeki dinamik hızlı eşik / rozet açılır menüsünü doğrular."""
     resp = client.get("/")
     assert resp.status_code == 200
     html = resp.text
-    assert "esik_cipleri_bar" in html
-    assert "chip_esik_tumu" in html
-    assert "chip_esik_ramak" in html
-    assert "chip_esik_asan" in html
-    assert "chip_esik_mektup" in html
-    assert "chip_esik_toplam" in html
-    assert "badge_esik_tumu" in html
-    assert "badge_esik_ramakkala" in html
-    assert "badge_esik_asanlar" in html
-    assert "badge_esik_mektup" in html
-    assert "badge_esik_toplam" in html
+    assert "combo_esik_filtre" in html
+    assert "esik-dropdown-kapsayici" in html
+    assert "ramakkala_10" in html
+    assert "asanlar_10" in html
+    assert "mektup_5" in html
+    assert "toplam_25" in html
+    assert "kusursuz_0" in html
+    assert "raporlu_ozrl" in html
 
 
-def test_ogrenci_kunye_karti_ve_hizli_aksiyon_bari():
-    """Sağ panel öğrenci künye kartını ve 1-tık hızlı aksiyon barını doğrular."""
+def test_yillik_karne_rozetleri_ve_takvim_entegrasyonu():
+    """Takvimin en üste taşınmasını ve yıllık modal rozet alanını doğrular."""
     resp = client.get("/")
     assert resp.status_code == 200
     html = resp.text
-    assert "ogr_kunye_karti" in html
-    assert "lbl_secili_ogrenci" in html
-    assert "badge_risk_durumu" in html
-    assert "kutu_ozursuz_sayac" in html
-    assert "kutu_ozurlu_sayac" in html
-    assert "kutu_toplam_sayac" in html
-    assert "quick-action-bar" in html
+    assert "aylik_navigasyon_kutusu" in html
+    assert "takvim_alani_ana" in html
+    assert "yillik_modal" in html
+    assert "yillik_rozetler_alani" in html
     assert "veliWhatsAppKopyala" in html
 
 
@@ -373,7 +376,41 @@ def test_yardim_sekmesinde_mevzuat_sss_ve_teshis_bilesenleri():
     assert "teshis_db_butunluk" in html
 
 
+def test_sidebar_rail_kategorileri_ve_ogrenci_yonetimi():
+    """Sol menü rayının 4 mantıksal kategoriye ayrıldığını ve Öğrenci Yönetimi modal butonunu içerdiğini doğrular."""
+    resp = client.get("/")
+    assert resp.status_code == 200
+    html = resp.text
+    assert "ÖĞRENCİ İŞLEMLERİ" in html
+    assert "PERSONEL İŞLEMLERİ" in html
+    assert "DOĞRUDAN TEMİN" in html
+    assert "SİSTEM &amp; REHBER" in html or "SİSTEM & REHBER" in html
+    assert "ogrenci_yonetim_modal" in html
+    assert "sidebar-section-title" in html
 
 
-
-
+def test_esik_acilir_filtre_menusu_ve_tam_basliklar():
+    """Öğrenci listesi panelinde 380px sabit genişlikli açılır eşik filtre menüsünü ve tam görünen tablo başlıklarını doğrular."""
+    resp = client.get("/")
+    assert resp.status_code == 200
+    html = resp.text
+    assert "ent_arama" in html
+    assert "combo_esik_filtre" in html
+    assert "esikSelectFiltrele" in html
+    assert "ramakkala_10" in html
+    assert "asanlar_10" in html
+    assert "mektup_5" in html
+    assert "toplam_25" in html
+    assert "kusursuz_0" in html
+    assert "raporlu_ozrl" in html
+    # Tam görünen sütun başlıkları doğrulaması
+    assert "span_temizSube" in html
+    assert "span_no" in html
+    assert "span_ad_soyad" in html
+    assert "span_ozsz" in html
+    assert "span_ozrl" in html
+    assert "Sınıf ↕" in html
+    assert "No ↕" in html
+    assert "Ad Soyad ↕" in html
+    assert "Özürsüz ↕" in html
+    assert "Özürlü ↕" in html
