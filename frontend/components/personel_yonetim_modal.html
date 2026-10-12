@@ -12,9 +12,9 @@
 </div>
 <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
 <div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-<div style="position: relative;">
-<span style="position: absolute; left: 8px; top: 6px; font-size: 12px; color: var(--fg-sub);"><i data-lucide="search" height="14" width="14"></i></span>
-<input x-model="arama" placeholder="Personel Ara..." style="padding: 6px 6px 6px 26px; width: 200px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;" type="text"/>
+<div class="input-with-icon" style="width: 220px;">
+<i data-lucide="search" class="search-icon"></i>
+<input class="search-input" x-model="arama" placeholder="Personel Ara..." type="text"/>
 </div>
 <div id="personel_filtre_cipleri" style="display: flex; gap: 6px;">
     <button class="filter-chip" :class="{'active': aktifFiltre === 'Tümü'}" @click="aktifFiltre = 'Tümü'">Tümü</button>

@@ -273,8 +273,9 @@ function ihaleTaslaginiYukle() {
     }
 }
 
-function ihaleSifirla() {
-    if(confirm("İhaleyi tamamlayıp yeni bir ihaleye başlamak istiyor musunuz? (Sadece 'Bilgi Girişi' verileriniz korunacaktır.)")) {
+async function ihaleSifirla() {
+    const onay = await modernOnayGoster("İhale Sıfırlama", "İhaleyi tamamlayıp yeni bir ihaleye başlamak istiyor musunuz? (Sadece 'Bilgi Girişi' verileriniz korunacaktır.)", "uyari");
+    if(onay) {
         let kayitliBaslik = ihaleGeciciVeri.resmi_baslik;
         let kayitliKod = ihaleGeciciVeri.yazisma_kodu;
         
@@ -548,10 +549,11 @@ function butceTertibiEkle() {
     }
 }
 
-function butceTertibiSil() {
+async function butceTertibiSil() {
     const secili = document.getElementById("ihale_tertibi").value;
     if (!secili) return;
-    if (confirm(`'${secili}' bütçe tertibini silmek istediğinize emin misiniz?`)) {
+    const onay = await modernOnayGoster("Bütçe Tertibi Silme", `'${secili}' bütçe tertibini silmek istediğinize emin misiniz?`, "uyari");
+    if (onay) {
         let tertipler = JSON.parse(localStorage.getItem("butce_tertipleri") || '["13.01.32.62-09.02.01.00-1-03.02"]');
         tertipler = tertipler.filter(t => t !== secili);
         localStorage.setItem("butce_tertipleri", JSON.stringify(tertipler));

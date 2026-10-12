@@ -40,3 +40,42 @@ def test_gec_kalma_hesaplamasi():
     
     ozsz_net, ozrl_net = VeriAraclari.hesapla_devamsizlik('852', ornek_dev, [])
     assert ozsz_net == 0.5, "HATA! 5 adet Geç (G) kaydı 0.5 gün Özürsüz yapmalıdır!"
+
+
+def test_excel_motoru_tabloyu_guvenli_oku_html_xls(tmp_path):
+    """MEB e-Okul tarzı HTML formatındaki sahte .xls dosyalarının güvenli okunduğunu doğrular."""
+    from excel_motoru import ExcelMotoru
+    
+    html_icerik = """
+    <html>
+    <head><meta http-equiv="Content-Type" content="text/html; charset=windows-1254"></head>
+    <body>
+    <table>
+        <tr><th>Öğrenci No</th><th>Adı Soyadı</th><th>Sınıf</th></tr>
+        <tr><td>101</td><td>Ahmet Çelik</td><td>9/A</td></tr>
+        <tr><td>102</td><td>Şule Öztürk</td><td>9/B</td></tr>
+    </table>
+    </body>
+    </html>
+    """
+    dosya = tmp_path / "ogrenciler_fake.xls"
+    dosya.write_bytes(html_icerik.encode("cp1254"))
+
+    df = ExcelMotoru.tabloyu_guvenli_oku(str(dosya), header=0)
+    assert not df.empty
+    assert "Ahmet Çelik" in df.values
+    assert "Şule Öztürk" in df.values
+
+
+def test_excel_motoru_tabloyu_guvenli_oku_csv(tmp_path):
+    """CSV formatındaki aktarım dosyalarının hatasız okunduğunu doğrular."""
+    from excel_motoru import ExcelMotoru
+
+    csv_icerik = "Öğrenci No;Adı Soyadı;Sınıf\n201;Çağlar Şahin;10/C\n202;İpek Aydın;10/C\n"
+    dosya = tmp_path / "ogrenciler.csv"
+    dosya.write_bytes(csv_icerik.encode("utf-8-sig"))
+
+    df = ExcelMotoru.tabloyu_guvenli_oku(str(dosya), header=0)
+    assert not df.empty
+    assert len(df) >= 2
+

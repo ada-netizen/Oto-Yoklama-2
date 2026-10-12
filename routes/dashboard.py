@@ -161,14 +161,57 @@ def get_istatistikler():
         gun_sirasi = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma"]
         haftanin_gunleri = [{"gun": g, "toplam": gunluk_dev.get(g, 0)} for g in gun_sirasi]
 
+        # Kritik Eşik Erken Uyarı Verileri
+        tum_nolar = {r[0] for r in tum_ogrenciler}
+        esik_kategorileri = {
+            "ramakkala_10": [],    # 9.0 <= ozursuz < 10.0 (Kritik Eşik: Ramak Kala)
+            "asanlar_10": [],      # ozursuz >= 10.0 (Sınıf Tekrarı Riski)
+            "mektup_siniri_5": [], # 4.5 <= ozursuz < 5.0 (1. Mektup Eşiği)
+            "toplam_risk_25": []   # toplam >= 25.0 (Toplam Sınır 30'a Yaklaşanlar)
+        }
+
+        for no in tum_nolar:
+            topt = round(ogrenci_toplam.get(no, 0.0), 1)
+            ozst = round(ogrenci_ozursuz.get(no, 0.0), 1)
+            ozlt = round(topt - ozst, 1)
+            if topt == 0 and ozst == 0:
+                continue
+
+            ogr_ozet = {
+                "no": no,
+                "ad": ogrenci_ad_map.get(no, no),
+                "sube": kisa_sube(ogrenci_sube_map.get(no, "")),
+                "ozursuz": ozst,
+                "ozurlu": ozlt,
+                "toplam": topt
+            }
+
+            if 9.0 <= ozst < 10.0:
+                esik_kategorileri["ramakkala_10"].append(ogr_ozet)
+            elif ozst >= 10.0:
+                esik_kategorileri["asanlar_10"].append(ogr_ozet)
+
+            if 4.5 <= ozst < 5.0:
+                esik_kategorileri["mektup_siniri_5"].append(ogr_ozet)
+
+            if topt >= 25.0:
+                esik_kategorileri["toplam_risk_25"].append(ogr_ozet)
+
+        esik_kategorileri["ramakkala_10"].sort(key=lambda x: x["ozursuz"], reverse=True)
+        esik_kategorileri["asanlar_10"].sort(key=lambda x: x["ozursuz"], reverse=True)
+        esik_kategorileri["mektup_siniri_5"].sort(key=lambda x: x["ozursuz"], reverse=True)
+        esik_kategorileri["toplam_risk_25"].sort(key=lambda x: x["toplam"], reverse=True)
+
         return {
             "kpis": {
                 "ozursuz_10": kpi_ozursuz_10,
                 "toplam_30": kpi_toplam_30,
                 "sifir_hata": kpi_sifir,
-                "toplam_evrak": kpi_evrak
+                "toplam_evrak": kpi_evrak,
+                "ramakkala_10_sayi": len(esik_kategorileri["ramakkala_10"]),
+                "mektup_5_sayi": len(esik_kategorileri["mektup_siniri_5"])
             },
-            "sube_dev": [{"sube": k, "toplam": v} for k, v in sube_dev.items()], # Kept for maybe other logic
+            "sube_dev": [{"sube": k, "toplam": v} for k, v in sube_dev.items()],
             "sube_ortalamalar": sube_ort_list,
             "ozurlu_vs_ozursuz": {"ozurlu": ozurlu_toplam, "ozursuz": ozursuz_toplam},
             "tur_dev": [{"tur": k, "toplam": v} for k, v in tur_dev.items()],
@@ -176,38 +219,17 @@ def get_istatistikler():
             "aylik_evrak": aylik_evrak_trend,
             "haftanin_gunleri": haftanin_gunleri,
             "riskli_ogrenciler": riskli_list,
-            "g_turu_riskli": g_riskli_list
+            "g_turu_riskli": g_riskli_list,
+            "kritik_esikler": esik_kategorileri
         }
     except Exception as e:
         import traceback
         traceback.print_exc()
         return {"hata": str(e)}
 
-@router.get("/kritik-ogrenciler")
-def kritik_ogrenciler_getir():
-    conn = baglanti_al()
-    c = conn.cursor()
-    try:
-        c.execute('''
-            SELECT sinif, no, ad_soyad, devamsizlik_ozursuz, devamsizlik_ozurlu,
-                   (devamsizlik_ozursuz + devamsizlik_ozurlu) as toplam
-            FROM ogrenciler
-            WHERE (devamsizlik_ozursuz + devamsizlik_ozurlu) >= 10
-            ORDER BY toplam DESC
-        ''')
-        kayitlar = c.fetchall()
-        liste = []
-        for k in kayitlar:
-            liste.append({
-                "sinif": k["sinif"],
-                "no": k["no"],
-                "ad_soyad": k["ad_soyad"],
-                "ozursuz": k["devamsizlik_ozursuz"],
-                "ozurlu": k["devamsizlik_ozurlu"],
-                "toplam": k["toplam"]
-            })
-        return {"basarili": True, "veri": liste}
-    except Exception as e:
-        return {"basarili": False, "mesaj": str(e)}
-    finally:
-        conn.close()
+@router.get("/kritik-esikler")
+def get_kritik_esikler():
+    stats = get_istatistikler()
+    if isinstance(stats, dict) and "kritik_esikler" in stats:
+        return {"basarili": True, "veriler": stats["kritik_esikler"]}
+    return {"basarili": False, "mesaj": stats.get("hata", "Veri alınamadı")}

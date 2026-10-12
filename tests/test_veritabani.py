@@ -71,3 +71,56 @@ def test_sifirla(test_db):
     ogr_son, dev_son = test_db.yukle()
     assert len(ogr_son) == 0
     assert len(dev_son) == 0
+
+def test_son_islemi_geri_al(test_db):
+    """Son kaydetme işleminin başarıyla geri alındığını doğrular."""
+    ilk_ogrenciler = [{"no": "101", "ad_soyad": "Öğrenci 1", "sube": "9/A"}]
+    test_db.kaydet(ilk_ogrenciler, [])
+    
+    # İkinci bir kaydetme işlemi yapalım
+    ikinci_ogrenciler = [
+        {"no": "101", "ad_soyad": "Öğrenci 1", "sube": "9/A"},
+        {"no": "102", "ad_soyad": "Öğrenci 2", "sube": "9/B"}
+    ]
+    test_db.kaydet(ikinci_ogrenciler, [])
+    
+    ogr, _ = test_db.yukle()
+    assert len(ogr) == 2
+    
+    # Geri alma işlemini çalıştır
+    basarili, mesaj = test_db.son_islemi_geri_al()
+    assert basarili is True
+    
+    # Veritabanının ilk haline döndüğünü doğrula
+    ogr_onceki, _ = test_db.yukle()
+    assert len(ogr_onceki) == 1
+    assert ogr_onceki[0]["no"] == "101"
+
+def test_canli_yedekleme_ve_surum(tmp_path):
+    """Canlı SQLite yedekleme API'si ve şema user_version sürümünü test eder."""
+    db_yol = str(tmp_path / "okul_test.db")
+    db = VeritabaniYoneticisi(db_yol)
+    
+    # User version doğrula
+    db.cursor.execute("PRAGMA user_version;")
+    ver = db.cursor.fetchone()[0]
+    assert ver >= 1
+    
+    # Veri ekle
+    db.kaydet([{"no": "500", "ad_soyad": "Yedek Test", "sube": "10/A"}], [])
+    
+    # Yedekle
+    yedek_dosyasi = str(tmp_path / "yedek.db")
+    basarili, yol = db.yedekle(hedef_yol=yedek_dosyasi)
+    assert basarili is True
+    assert os.path.exists(yedek_dosyasi)
+    
+    # Yedekten oku
+    db_yedek = VeritabaniYoneticisi(yedek_dosyasi)
+    ogr_yedek, _ = db_yedek.yukle()
+    assert len(ogr_yedek) == 1
+    assert ogr_yedek[0]["no"] == "500"
+    
+    db_yedek.kapat()
+    db.kapat()
+

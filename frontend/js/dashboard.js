@@ -119,20 +119,129 @@ function dashboardYukle() {
             `).join('');
         }
 
+        // 8. Kritik Eşik Erken Uyarı Tablosu
+        window.aktifKritikEsikler = data.kritik_esikler || {};
+        kritikEsikTablosuCiz();
 
     });
 }
 
-function arsivle() {
+window.aktifKritikEsikler = {};
+window.aktifKritikKategori = 'ramakkala_10';
+
+function kritikEsikKategorisiDegistir(kategori) {
+    window.aktifKritikKategori = kategori;
+    
+    // Buton stillerini güncelle
+    const butonlar = [
+        { id: 'btn_esik_ramakkala_10', kat: 'ramakkala_10', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
+        { id: 'btn_esik_asanlar_10', kat: 'asanlar_10', color: '#dc2626', bg: 'rgba(220, 38, 38, 0.15)' },
+        { id: 'btn_esik_mektup_5', kat: 'mektup_siniri_5', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+        { id: 'btn_esik_toplam_25', kat: 'toplam_risk_25', color: '#6366f1', bg: 'rgba(99, 102, 241, 0.15)' }
+    ];
+    
+    butonlar.forEach(b => {
+        const btnEl = document.getElementById(b.id);
+        if (!btnEl) return;
+        if (b.kat === kategori) {
+            btnEl.classList.add('aktif');
+            btnEl.style.background = b.bg;
+            btnEl.style.color = b.color;
+            btnEl.style.border = `1px solid ${b.color}`;
+            btnEl.style.fontWeight = '700';
+        } else {
+            btnEl.classList.remove('aktif');
+            btnEl.style.background = 'var(--bg-main)';
+            btnEl.style.color = 'var(--fg-main)';
+            btnEl.style.border = '1px solid var(--border)';
+            btnEl.style.fontWeight = '500';
+        }
+    });
+    
+    kritikEsikTablosuCiz();
+}
+
+function kritikEsikTablosuCiz() {
+    const tbody = document.getElementById('dashboard_kritik_ogrenciler_body');
+    if (!tbody) return;
+    
+    const veriler = (window.aktifKritikEsikler && window.aktifKritikEsikler[window.aktifKritikKategori]) || [];
+    
+    // Sayı sayaçlarını güncelle
+    if (window.aktifKritikEsikler) {
+        const k = window.aktifKritikEsikler;
+        const b1 = document.getElementById('sayi_ramakkala_10');
+        const b2 = document.getElementById('sayi_asanlar_10');
+        const b3 = document.getElementById('sayi_mektup_5');
+        const b4 = document.getElementById('sayi_toplam_25');
+        if (b1) b1.innerText = (k.ramakkala_10 || []).length;
+        if (b2) b2.innerText = (k.asanlar_10 || []).length;
+        if (b3) b3.innerText = (k.mektup_siniri_5 || []).length;
+        if (b4) b4.innerText = (k.toplam_risk_25 || []).length;
+    }
+    
+    if (veriler.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 24px; color: var(--fg-sub); font-style: italic;"><i data-lucide="check-circle" style="color: #10B981; vertical-align: middle; margin-right: 6px;"></i>Bu eşik kategorisinde riskli öğrenci bulunmamaktadır. Harika!</td></tr>`;
+        if (window.lucide) lucide.createIcons();
+        return;
+    }
+    
+    tbody.innerHTML = veriler.map(o => `
+        <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;">
+            <td style="padding: 10px 12px; font-weight: 600;">${o.sube}</td>
+            <td style="padding: 10px 12px; font-weight: bold; color: var(--fg-sub);">${o.no}</td>
+            <td style="padding: 10px 12px; font-weight: 600; color: var(--fg-main);">${o.ad}</td>
+            <td style="padding: 10px 12px; text-align: center;">
+                <span class="badge" style="background: ${o.ozursuz >= 10 ? '#fee2e2' : (o.ozursuz >= 9 ? '#ffedd5' : '#fef3c7')}; color: ${o.ozursuz >= 10 ? '#b91c1c' : (o.ozursuz >= 9 ? '#c2410c' : '#b45309')}; font-weight: bold; padding: 3px 8px; border-radius: 6px;">${o.ozursuz} Gün</span>
+            </td>
+            <td style="padding: 10px 12px; text-align: center; color: var(--fg-sub);">${o.ozurlu} Gün</td>
+            <td style="padding: 10px 12px; text-align: center; font-weight: bold;">${o.toplam} Gün</td>
+            <td style="padding: 10px 12px; text-align: right; white-space: nowrap;">
+                <button class="btn btn-temizle" onclick="veliMetniKopyala('${o.no}', '${o.ad.replace(/'/g, "\\'")}', '${o.sube}', '${o.ozursuz}', '${o.toplam}')" title="Veli WhatsApp/SMS Bilgilendirme Metnini Kopyala" style="padding: 4px 8px; font-size: 11px; margin-right: 4px;">
+                    <i data-lucide="copy" height="12" width="12"></i> Veli Metni
+                </button>
+                <button class="btn btn-dev" onclick="yillikListeAc('${o.no}', '${o.ad.replace(/'/g, "\\'")}')" title="Devamsızlık Karnesini Aç" style="padding: 4px 8px; font-size: 11px;">
+                    <i data-lucide="eye" height="12" width="12"></i> İncele
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    
+    if (window.lucide) lucide.createIcons();
+}
+
+function veliMetniKopyala(no, ad, sube, ozsz, topt) {
+    const bugun = new Date().toLocaleDateString('tr-TR');
+    const metin = `Sayın Velimiz; ${sube} şubesi ${no} numaralı öğrencimiz ${ad}, ${bugun} tarihi itibariyle ${ozsz} gün özürsüz, toplam ${topt} gün devamsızlığa ulaşmıştır. MEB mevzuatı gereğince özürsüz devamsızlık süresi 10 günü aşan öğrenciler ders durumları ne olursa olsun başarısız sayılmaktadır. Bilgilerinize rica ederiz.`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(metin).then(() => {
+            if (typeof bildirimGoster === 'function') bildirimGoster(`${ad} için veli bilgilendirme metni panoya kopyalandı!`, 'bilgi');
+        }).catch(() => fallbackKopyala(metin, ad));
+    } else {
+        fallbackKopyala(metin, ad);
+    }
+}
+
+function fallbackKopyala(metin, ad) {
+    const ta = document.createElement('textarea');
+    ta.value = metin;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (typeof bildirimGoster === 'function') bildirimGoster(`${ad} için veli metni panoya kopyalandı!`, 'bilgi');
+}
+
+async function arsivle() {
     const ad = document.getElementById('arsiv_adi').value.trim();
     if(!ad) {
         if(typeof bildirimGoster === 'function') bildirimGoster('Lütfen arşiv adı girin!', 'hata');
         return;
     }
     
-    if(!confirm(`DİKKAT! Tüm öğrenci, devamsızlık ve üretilen evrak verileri "${ad}" klasörüne kopyalanıp sıfırlanacak. Personel listesi KORUNACAK. Onaylıyor musunuz?`)) {
-        return;
-    }
+    const onay = await modernOnayGoster("Yıllık Arşivleme & Sıfırlama", `DİKKAT! Tüm öğrenci, devamsızlık ve üretilen evrak verileri "${ad}" klasörüne kopyalanıp sıfırlanacak. Personel listesi KORUNACAK. Onaylıyor musunuz?`, "uyari");
+    if(!onay) return;
     
     fetch(`${API}/arsivle`, {
         method: 'POST',
@@ -150,35 +259,4 @@ function arsivle() {
             }
         }
     });
-}
-
-async function dashboardKritikOgrencilerYukle() {
-    const tbody = document.getElementById("dashboard_kritik_ogrenciler_body");
-    if (!tbody) return;
-    try {
-        const response = await fetch(`${API}/dashboard/kritik-ogrenciler`);
-        if (!response.ok) throw new Error("Veri alinamadi");
-        const data = await response.json();
-        
-        tbody.innerHTML = "";
-        
-        if (data.basarili && data.veri.length > 0) {
-            data.veri.forEach(ogr => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td style="font-weight: bold;">${ogr.sinif}</td>
-                    <td>${ogr.no}</td>
-                    <td>${ogr.ad_soyad}</td>
-                    <td style="text-align: center;"><span class="badge badge-warning">${ogr.ozursuz}</span></td>
-                    <td style="text-align: center;"><span class="badge badge-success">${ogr.ozurlu}</span></td>
-                    <td style="text-align: center;"><span class="badge badge-danger">${ogr.toplam}</span></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } else {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--fg-sub);">Kritik sınırda öğrenci bulunmamaktadır.</td></tr>`;
-        }
-    } catch (e) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Veriler yüklenemedi.</td></tr>`;
-    }
 }

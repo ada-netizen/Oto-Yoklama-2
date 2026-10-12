@@ -1,21 +1,33 @@
 import sqlite3
 import threading
+import logging
 
 class VeritabaniYoneticisi:
     def __init__(self, db_yolu):
         self.db_yolu = db_yolu
         self._local = threading.local()
+        self._son_snapshot = None
         # Veritabanı dosyası ve tabloları ilk açılışta bir kez oluşturulur.
         self._init_db()
 
     def _init_db(self):
         bellek_veritabani = self.db_yolu == ":memory:"
-        conn = self.conn if bellek_veritabani else sqlite3.connect(self.db_yolu)
+        conn = self.conn if bellek_veritabani else sqlite3.connect(self.db_yolu, timeout=30.0)
         cursor = conn.cursor()
+        if not bellek_veritabani:
+            try:
+                cursor.execute("PRAGMA journal_mode=WAL;")
+                cursor.execute("PRAGMA synchronous=NORMAL;")
+            except Exception as pe:
+                logging.warning(f"WAL modu ayarlanamadı: {pe}")
+
         cursor.execute("CREATE TABLE IF NOT EXISTS ogrenciler (no TEXT, ad_soyad TEXT, sube TEXT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS devamsizliklar (id TEXT, no TEXT, tarih TEXT, tur TEXT, gun TEXT, secili INTEGER)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_no ON ogrenciler (no)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_ogrenci_sube ON ogrenciler (sube)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_tarih ON devamsizliklar (tarih)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_tur ON devamsizliklar (tur)")
         cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS saglik_raporlari (id INTEGER PRIMARY KEY AUTOINCREMENT, personel_ad TEXT, baslangic_tarihi TEXT, bitis_tarihi TEXT, gun_sayisi INTEGER, aciklama TEXT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS personel_rapor_kesinti (personel_ad TEXT PRIMARY KEY, onceden_kesilen_gun INTEGER)")
@@ -26,6 +38,15 @@ class VeritabaniYoneticisi:
             pass
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
         cursor.execute("CREATE TABLE IF NOT EXISTS uretilen_evraklar (id INTEGER PRIMARY KEY AUTOINCREMENT, tur TEXT, personel_ad TEXT, brans TEXT, tarih TEXT)")
+        
+        try:
+            cursor.execute("PRAGMA user_version;")
+            ver = cursor.fetchone()[0]
+            if ver < 1:
+                cursor.execute("PRAGMA user_version = 1;")
+        except Exception as e:
+            logging.warning(f"user_version ayarlanamadı: {e}")
+            
         conn.commit()
         if not bellek_veritabani:
             conn.close()
@@ -33,7 +54,15 @@ class VeritabaniYoneticisi:
     @property
     def conn(self):
         if not hasattr(self._local, "conn"):
-            self._local.conn = sqlite3.connect(self.db_yolu, check_same_thread=False)
+            c = sqlite3.connect(self.db_yolu, timeout=30.0, check_same_thread=False)
+            try:
+                c.execute("PRAGMA busy_timeout=30000;")
+                if self.db_yolu != ":memory:":
+                    c.execute("PRAGMA journal_mode=WAL;")
+                    c.execute("PRAGMA synchronous=NORMAL;")
+            except Exception as pe:
+                logging.warning(f"Bağlantı pragma ayarlanamadı: {pe}")
+            self._local.conn = c
         return self._local.conn
 
     @property
@@ -43,9 +72,8 @@ class VeritabaniYoneticisi:
         return self._local.cursor
 
     def baglan_ve_hazirla(self):
-        # Geriye dönük uyumluluk (api.py çağırıyor olabilir)
+        # Geriye dönük uyumluluk
         pass
-
 
     def yukle(self):
         # RAM'e çekilecek verileri listeler halinde hızlıca döndürür
@@ -57,13 +85,17 @@ class VeritabaniYoneticisi:
             devamsizliklar = [{'id': r[0], 'no': r[1], 'tarih': r[2], 'tur': r[3], 'gun': r[4], 'secili': False} for r in self.cursor.fetchall()]
             return ogrenciler, devamsizliklar
         except Exception as e:
-            print(f"Veritabanı okuma hatası: {e}")
+            logging.error(f"Veritabanı okuma hatası: {e}")
             return [], []
 
-    def kaydet(self, ogrenciler, devamsizliklar):
-        # 3. ADIM: TOPLU İŞLEM MODU (Transaction Motoru Kuruldu!)
+    def kaydet(self, ogrenciler, devamsizliklar, snapshot_al=True):
+        # Toplu işlem modu (Transaction Motoru)
         try:
-            # Veritabanına diski yormamasını, tüm işlemleri tek seferde beklemesini söylüyoruz
+            if snapshot_al:
+                mevcut_ogr, mevcut_dev = self.yukle()
+                if mevcut_ogr or mevcut_dev:
+                    self._son_snapshot = (mevcut_ogr, mevcut_dev)
+                    
             self.cursor.execute("BEGIN TRANSACTION")
             
             self.cursor.execute("DELETE FROM ogrenciler")
@@ -73,12 +105,40 @@ class VeritabaniYoneticisi:
             kalici_kayitlar = [(d['id'], d['no'], d['tarih'], d['tur'], d['gun'], 1 if d.get('secili') else 0) for d in devamsizliklar]
             self.cursor.executemany("INSERT INTO devamsizliklar VALUES (?, ?, ?, ?, ?, ?)", kalici_kayitlar)
             
-            # Tüm o devasa ekleme işlemleri bittiğinde tek bir komutla diske şimşek gibi yazdırıyoruz
             self.conn.commit()
             return True, ""
         except Exception as e:
-            # Eğer yükleme sırasında bir hata olursa sistemi çökertme, verileri eski haline (geri) al
             self.conn.rollback()
+            logging.error(f"Veritabanı kaydetme hatası: {e}")
+            return False, str(e)
+
+    def son_islemi_geri_al(self):
+        """Son yapılan kaydet işlemini geri alarak bir önceki veritabanı durumuna döner."""
+        if not self._son_snapshot:
+            return False, "Geri alınabilecek önceki bir işlem bulunamadı."
+        onceki_ogrenciler, onceki_devamsizliklar = self._son_snapshot
+        self._son_snapshot = None
+        return self.kaydet(onceki_ogrenciler, onceki_devamsizliklar, snapshot_al=False)
+
+    def yedekle(self, hedef_yol=None):
+        """SQLite Online Backup API kullanarak veritabanını kilitlenmeden canlı yedekler."""
+        if self.db_yolu == ":memory:":
+            return False, "Bellek veritabanı yedeklenemez."
+        try:
+            import os, datetime
+            if not hedef_yol:
+                yedek_dizin = os.path.join(os.path.dirname(self.db_yolu) or ".", "yedekler")
+                os.makedirs(yedek_dizin, exist_ok=True)
+                zaman_damgasi = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                hedef_yol = os.path.join(yedek_dizin, f"okul_veritabani_oto_yedek_{zaman_damgasi}.db")
+            
+            yedek_conn = sqlite3.connect(hedef_yol)
+            with yedek_conn:
+                self.conn.backup(yedek_conn)
+            yedek_conn.close()
+            return True, hedef_yol
+        except Exception as e:
+            logging.error(f"Canlı SQLite yedekleme hatası: {e}")
             return False, str(e)
 
     def sifirla(self):

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional, Dict
 
 class DevamsizlikEkleRequest(BaseModel):
@@ -8,14 +8,13 @@ class DevamsizlikEkleRequest(BaseModel):
     gun: str
 
 class KayitModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     tarih: Optional[str] = None
     gun: Optional[str] = None
     tarih_duzgun: Optional[str] = None
     gun_str: Optional[str] = None
     tur: str
-    
-    class Config:
-        extra = "allow"
 
 class PdfVeliFormuRequest(BaseModel):
     no: str

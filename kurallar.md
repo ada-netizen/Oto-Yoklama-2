@@ -1,30 +1,93 @@
 # Proje Kuralları (Oto Yoklama 2)
 
-Bu dosya, projede uyulması gereken temel kuralları barındırır. Projeye yeni bir özellik eklendiğinde veya kod geliştirilirken bu kurallara dikkat edilmelidir.
+Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, veri işleme prensiplerini, arayüz standartlarını ve kalite kriterlerini belirler. Yeni bir özellik eklendiğinde, hata giderildiğinde veya kod yeniden düzenlendiğinde bu kurallara kesinlikle uyulmalıdır.
+
+---
 
 ## 1. Hata Loglama (Error Logging)
-- **Kapsamlı Loglama**: Programa eklenen **HER YENİ ÖZELLİK İÇİN** hata loglama özelliği eklenmesi ZORUNLUDUR.
-- **Backend**: Her uç nokta (endpoint), işlem motoru sınıfı, utils fonksiyonu try-catch veya FastAPI genel exception handler kullanılarak sarmalanmalı ve olası tüm istisnalar `logging.error(...)` ile `app.log` dosyasına kaydedilmelidir.
-- **Frontend**: Frontend kısmında gerçekleşen JavaScript hataları (Uncaught Exceptions ve Unhandled Promise Rejections), `fetch('/log-error')` aracılığıyla arka plana iletilmeli ve onların da `app.log` dosyasına kaydedilmesi güvence altına alınmalıdır.
-- **Gizli Hata Bırakmama**: Hatalar, sessizce geçiştirilmemeli (e.g. `except: pass` kullanımından kaçınılmalı), loglara sebebiyle birlikte yazdırılmalıdır ki hata ayıklama süreci kesintiye uğramasın.
+- **Kapsamlı Loglama**: Programa eklenen **HER YENİ ÖZELLİK VE UÇ NOKTA İÇİN** hata loglama özelliği eklenmesi ZORUNLUDUR.
+- **Backend**: Her uç nokta (endpoint), işlem motoru sınıfı ve yardımcı fonksiyon `try...except` blokları veya FastAPI genel exception handler kullanılarak sarmalanmalı; tüm istisnalar `logging.error(...)` ile `app.log` dosyasına kaydedilmelidir.
+- **Frontend**: Frontend kısmında gerçekleşen JavaScript hataları (`window.onerror` ve `unhandledrejection`), `fetch('/log-error')` aracılığıyla arka plana iletilmeli ve `app.log` dosyasına yazılması güvence altına alınmalıdır.
+- **Sessiz Hata Bırakmama**: Hatalar asla `except: pass` ile sessizce yutulmamalı; sebebi ve stack trace bilgisiyle loglanmalıdır.
+
+---
 
 ## 2. Ponytail / YAGNI Prensibi (En Küçük Tam Çözüm)
-- **Gereksiz Kod Yazmama**: İstenmeyen soyutlamalar, kullanılmayacak konfigürasyonlar veya gereksiz sarmalayıcılar (wrapper) yazılmamalıdır.
-- **Önce Mevcut Kod ve Standart Kütüphane**: Kod yazmadan önce projede var olan yardımcı fonksiyonlar ve standart kütüphane araçları kontrol edilmeli, tekerlek yeniden icat edilmemelidir.
-- **En Kısa Temiz Çözüm**: İşi eksiksiz yapan en az satırlı ve yalın kod tercih edilmelidir. Gerekmedikçe harici bağımlılık eklenmemelidir.
-- **Taviz Verilmeyecekler**: Hata yakalama/loglama, veri güvenliği ve doğrulama mekanizmaları asla kırpılmamalıdır.
+- **Gereksiz Kod ve Aşırı Mühendislik Yasağı**: İhtiyaç duyulmayan soyutlamalar, kullanılmayacak konfigürasyonlar veya gereksiz sarmalayıcılar (wrapper) yazılmamalıdır.
+- **Mevcut Kütüphane ve Kod Önceliği**: Kod yazmadan önce projede var olan fonksiyonlar ve standart kütüphane kontrol edilmeli, tekerlek yeniden icat edilmemelidir.
+- **Dökümantasyon ve Yorum Bütünlüğü**: Değiştirilmeyen mevcut yorum satırları, docstring'ler ve mimari açıklamalar korunmalıdır.
+- **Geriye Dönük Uyumluluk**: Var olan API uç noktaları, parametre isimleri ve veritabanı şeması geriye dönük uyumluluk bozulmadan korunmalıdır.
 
-## 3. Ekosistem, MCP ve Yetenek (Skill) Entegrasyonu
-- **Veritabanı İşlemleri (`sqlite-concurrency-guard` & `sqlite-veritabani` MCP)**: Veritabanı sorguları yapılırken doğrudan MCP üzerinden güvenli okuma yapılabilir. Kod tarafında her zaman WAL modu ve kısa transaction prensibine uyulmalı, `database is locked` hatası önlenmelidir.
-- **MEB Kural Doğrulama (`pytest-runner`)**: MEB devamsızlık hesaplamalarını (5 geç = 0.5 gün vb.) ilgilendiren her değişiklik sonrasında `pytest` test paketi çalıştırılmalı ve 26/26 testin geçtiği doğrulanmalıdır.
-- **Excel Doğrulama (`excel-schema-validator`)**: Okul Excel listeleri işlenirken Türkçe karakter kodlama (mojibake) ve boşluk temizleme kurallarına uyulmalıdır.
-- **Sürüm ve Paketleme (`semantic-release-sync` & `pyinstaller-desktop-packager`)**: Yeni sürüm derlenirken `versiyon.txt`, `update_manifest.json` ve `installer.iss` uyumlu tutulmalı, gizli importlar (hidden imports) korunmalıdır.
-- **PDF Denetimi (`markitdown-pdf` MCP)**: `pdf_motoru.py` tarafından üretilen veli mektupları ve tutanakların içerik formatı gerektiğinde doğrulanmalıdır.
+---
 
-## 4. UI/UX Tasarım ve Arayüz Standartları
-- **E2E ve Görsel Test (`playwright-e2e` MCP)**: Arayüz değişikliklerinde buton, form ve modal davranışları otomatik test edilir.
-- **Bileşen Düzeni (`tailwind-ui-craftsman`)**: Tablo başlıkları sabit (sticky), form alanları erişilebilir ve eylem butonları (kaydet/sil) net görsel hiyerarşiye sahip olmalıdır.
-- **İkon Standardı (`icon-design-system`)**: Anlaşılır SVG ikonlar kullanılmalı, tüm butonlarda `aria-label`/tooltip bulunmalı, harici ağır webfontlardan kaçınılmalıdır.
-- **Geri Bildirim ve İlerleme (`ux-micro-interactions`)**: 300ms'den uzun süren işlemlerde (toplu PDF mektubu, Excel yükleme) ilerleme çubuğu veya yükleniyor göstergesi sunulmalı; işlem bitiminde toast bildirimi verilmelidir.
-- **Erişilebilirlik ve Kontrast (`a11y-contrast-guard`)**: MEB devamsızlık durumları (özürlü, özürsüz, faaliyet, geç) için açık/koyu temalarda WCAG AA uyumlu yüksek kontrastlı renkler kullanılmalıdır.
+## 3. MEB Mevzuat Kuralları (Dokunulmaz Mantık)
+- **5 Geç Kalma = 0.5 Gün Özürsüz**: 5 adet Geç (G) devamsızlık kaydı tam olarak 0.5 gün Özürsüz devamsızlığa dönüşür (`hesapla_devamsizlik` fonksiyonu).
+- **Hafta Sonu Filtresi**: Cumartesi ve Pazar günlerine denk gelen devamsızlık kayıtları resmi devamsızlık toplamına dahil edilmez (`gun_farki_hesapla`).
+- **Yasal Devamsızlık Sınırları**: Özürsüz 10 gün, toplam 30 gün yasal sınırları kontrol edilir; bu sınırları aşan öğrenciler arayüzde yüksek kontrastlı uyarı rozetleriyle (`status-pill`) vurgulanır.
 
+---
+
+## 4. Dosya, Excel ve Veri Güvenliği
+- **Güvenli Excel Okuyucu**: Excel dosyaları işlenirken her zaman `ExcelMotoru.tabloyu_guvenli_oku` kullanılmalıdır.
+  - Dosyanın ilk 8 baytı okunarak gerçek OLE2 ikili XLS (`\xd0\xcf\x11\xe0`) doğrudan `xlrd` motoruna yönlendirilmeli (böylece `0xd0` UTF-8 çökmesi engellenir),
+  - ZIP tabanlı XLSX (`PK\x03\x04`) `openpyxl` motoruna yönlendirilmeli,
+  - Sahte XLS (HTML tablo) için `lxml` kullanılmalı,
+  - CSV ve metin formatları için Türkçe karakter kodlamaları (`cp1254`, `iso-8859-9`, `utf-8-sig`, `utf-8`) sırasıyla denenmelidir.
+- **Veritabanı Eşzamanlılığı (`sqlite-concurrency-guard`)**: SQLite veritabanı her zaman WAL modunda (`PRAGMA journal_mode=WAL;`) çalışmalı, bağlantılar `with` veya `try...finally` blokları ile güvenle kapatılarak `database is locked` hataları önlenmelidir.
+
+---
+
+## 5. UI/UX Yekpare Tasarım Standartları
+- **Sekmeler Arası 52px Başlık Bandı**:
+  - Tüm sekmelerde tepe başlık alanı `.top-bar` sınıfı altında `52px` sabit yükseklikte olmalıdır (`height: 52px !important; min-height: 52px !important; max-height: 52px !important; padding: 0 16px !important; margin-bottom: 12px !important`).
+  - Sekmeler arası geçişlerde dikey zıplama veya piksel kayması yaşanmamalıdır.
+- **Arama Kutusu ve İkon Hizalaması**:
+  - Arama alanları `.input-with-icon` ve `input.search-input` sarmalayıcısıyla tanımlanmalıdır.
+  - Sol büyüteç simgesi `left: 11px` ile sabitlenmeli; placeholder ve giriş metni kesinlikle `padding-left: 36px !important` ile merceğin sağından başlamalıdır.
+- **Kurumsal Açılış (Splash) Ekranı**:
+  - Açılışta cam efektli kurumsal kart (`glassmorphism`), kep amblemi (`graduation-cap`) ve dengeli tipografi sunulmalıdır.
+  - Arka planda veriler yüklendikten sonra 700ms içinde zarif bir animasyonla (`.splash-overlay.gizli`) çalışma alanına geçilmelidir.
+- **Modern Onay Pencereleri**:
+  - Tarayıcının ilkel `alert()` veya `confirm()` pencereleri yerine `core.js` içerisindeki modern cam efektli `modernOnayGoster(baslik, mesaj, tip)` kullanılmalıdır.
+  - `Esc` tuşu tüm modalları ve onay diyaloglarını kapatmalıdır.
+- **Erişilebilirlik ve Kontrast (`a11y-contrast-guard`)**:
+  - Hem Aydınlık hem Karanlık temada WCAG 2.1 AA kontrast şartı (en az 4.5:1) sağlanmalıdır.
+
+---
+
+## 6. Geri Alma (Undo) ve Canlı Yedekleme Standartları
+- **Son İşlemi Geri Alma (Snapshot Rollback)**:
+  - Toplu öğrenci veya devamsızlık aktarımları öncesinde `veritabani.py` otomatik olarak önceki durumun anlık görüntüsünü (`_son_snapshot`) saklamalıdır.
+  - Hatalı bir aktarım yapıldığında `/api/son-islemi-geri-al` uç noktası ve arayüzdeki "Geri Al" butonu ile tek tıkla önceki duruma dönülebilmelidir.
+- **Canlı SQLite Online Backup**:
+  - Veritabanı yedeklemeleri kilitlenme ve veri bozulmasını önlemek için SQLite'ın yerel `backup` API'si (`db.yedekle()`) üzerinden çalışmalıdır.
+
+---
+
+## 7. Performans ve Klavye Ergonomisi (Power-User)
+- **Arama Tuş Geciktirmesi (Debounce)**:
+  - Metin filtreleme kutularında (`#ent_arama`, `#txt_personel_ara`) en az `180ms` debounce uygulanmalı, her harfte anında DOM render'ı tetiklenmemelidir.
+- **Toplu DOM Ekleme (DocumentFragment)**:
+  - Tablo satırları DOM'a tek tek (`appendChild`) değil, `DocumentFragment` içinde toplanarak tek bir işlemde eklenmelidir.
+- **Evrensel Kısayollar**:
+  - `Ctrl + F`: Arama kutusuna odaklanma.
+  - `Ctrl + D`: Devamsızlık dosya yükleyicisini açma.
+  - `Ctrl + 1..7`: Sekmeler arası hızlı geçiş.
+  - `Esc`: Açık modal ve onay pencerelerini kapatma.
+
+---
+
+## 8. Kritik Eşik Erken Uyarı Sistemi Standartları
+- **MEB Mevzuatına Uygun 4 Eşik Grubu**:
+  - `ramakkala_10`: 9.0 - 9.9 gün özürsüz devamsızlık yapanlar (Sınıf tekrarı öncesi acil uyarı).
+  - `asanlar_10`: 10 gün ve üzeri özürsüz devamsızlık yapanlar.
+  - `mektup_siniri_5`: 4.5 - 4.9 gün özürsüz devamsızlık yapanlar (1. Veli Mektubu eşiği).
+  - `toplam_risk_25`: Toplam 25 gün ve üzeri devamsızlık yapanlar (30 gün genel sınırına yaklaşanlar).
+- **Hızlı Veli Metni Kopyalama**:
+  - Her riskli öğrenci satırında veliye gönderilecek standart bilgilendirme metnini tek tıkla panoya kopyalayan aksiyon butonu yer almalıdır.
+
+---
+
+## 9. Test ve Kalite Güvencesi
+- Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` çalıştırılmalı ve **32/32 testin** yeşil (PASSED) olduğu doğrulanmalıdır.
+- Kritik mimari veya frontend değişikliklerinden sonra `graphify extract . --code-only; graphify cluster-only .` çalıştırılarak AST kod bağımlılık grafı güncel tutulmalıdır.

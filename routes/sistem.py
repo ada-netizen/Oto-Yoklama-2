@@ -38,53 +38,6 @@ def versiyon_getir():
 def islem_durumu(job_id: str):
     return islem_durumlari.get(job_id, {"durum": "bulunamadi"})
 
-def personel_isleme_gorevi(temp_yol, job_id):
-    try:
-        import pandas as pd
-        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Personel Excel okunuyor...", "yuzde": 30}
-        df_temp = pd.read_excel(temp_yol, header=None)
-        header_idx = 0
-        for i, row in df_temp.iterrows():
-            satir_metni = " ".join([str(x).upper() for x in row.values if pd.notna(x)])
-            if "AD" in satir_metni and "SOYAD" in satir_metni:
-                header_idx = i
-                break
-        try:
-            df = pd.read_excel(temp_yol, header=header_idx)
-        except Exception:
-            try:
-                df_list = pd.read_html(temp_yol, header=header_idx)
-                df = max(df_list, key=len) if df_list else pd.DataFrame()
-            except Exception:
-                df = pd.read_csv(temp_yol, header=header_idx, on_bad_lines='skip')
-        df.columns = df.columns.str.strip().str.upper()
-        if df.empty:
-            islem_durumlari[job_id] = {"durum": "hata", "mesaj": "Excel dosyası boş."}
-            return
-        personeller = []
-        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Kayitlar donusturuluyor...", "yuzde": 60}
-        for _, row in df.iterrows():
-            if pd.isna(row.get("AD")): continue
-            ad = str(row.get("AD", "")).strip()
-            soyad = str(row.get("SOYAD", "")).strip()
-            gorev = str(row.get("GÖREVİ", "")).strip()
-            brans = str(row.get("ALANI", "")).strip()
-            if not gorev or gorev == "nan": gorev = "-"
-            if not brans or brans == "nan": brans = "-"
-            personeller.append({"ad": ad, "soyad": soyad, "gorev": gorev, "brans": brans})
-        
-        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Veritabanina kaydediliyor...", "yuzde": 90}
-        db.personel_kaydet(personeller)
-        islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": f"{len(personeller)} personel basariyla yuklendi!", "yuzde": 100}
-    except Exception as e:
-        islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e)}
-    finally:
-        if os.path.exists(temp_yol):
-            try:
-                os.remove(temp_yol)
-            except Exception:
-                pass
-
 @router.get("/loglar")
 def loglari_getir():
     try:

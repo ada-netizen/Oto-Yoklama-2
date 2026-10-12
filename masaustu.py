@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import json
 import time
@@ -38,9 +38,13 @@ def logging_ayarla() -> None:
 
 logging_ayarla()
 
-# Beklenmedik çöküşleri ayrı bir crash.log'a yönlendir
-sys.stderr = open('crash.log', 'w', encoding='utf-8')
-sys.stdout = open('crash.log', 'a', encoding='utf-8')
+# Beklenmedik çöküşleri derlenmiş modda crash.log'a yönlendir
+if getattr(sys, 'frozen', False):
+    try:
+        sys.stderr = open('crash.log', 'w', encoding='utf-8')
+        sys.stdout = open('crash.log', 'a', encoding='utf-8')
+    except Exception as ex:
+        logging.warning(f"crash.log açılamadı: {ex}")
 
 # Windows görev çubuğu gruplama kimliği
 try:

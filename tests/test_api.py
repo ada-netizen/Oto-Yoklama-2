@@ -195,3 +195,33 @@ def test_rapor_al_veri_yapisi():
     veri = {"tur": "esik", "format": "pdf", "ozel_deger": None}
     response = client.post("/rapor-al", json=veri)
     assert response.status_code != 422
+
+
+# -----------------------------------------------------------
+# KRİTİK EŞİKLER VE GERİ ALMA TESTLERİ
+# -----------------------------------------------------------
+
+def test_kritik_esikler_endpoint():
+    """Dashboard kritik eşik erken uyarı verilerini döndürmelidir."""
+    response = client.get("/kritik-esikler")
+    assert response.status_code == 200
+    veri = response.json()
+    assert veri["basarili"] is True
+    assert "veriler" in veri
+    assert "ramakkala_10" in veri["veriler"]
+    assert "asanlar_10" in veri["veriler"]
+    assert "mektup_siniri_5" in veri["veriler"]
+    assert "toplam_risk_25" in veri["veriler"]
+
+
+def test_son_islemi_geri_al_ve_durum_endpoint():
+    """Geri alma durum ve geri al endpoint'lerini doğrular."""
+    resp_durum = client.get("/geri-al-durumu")
+    assert resp_durum.status_code == 200
+    assert "geri_alinabilir" in resp_durum.json()
+
+    resp_geri = client.post("/son-islemi-geri-al")
+    assert resp_geri.status_code == 200
+    # Eğer daha önce bir kayıt işlemi yoksa kontrollü hata mesajı döner
+    assert "basarili" in resp_geri.json()
+

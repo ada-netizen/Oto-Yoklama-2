@@ -1,22 +1,20 @@
 <div class="modal-overlay" id="ogrenci_yonetim_modal" x-data="ogrenciYonetimComponent()" @ogrenciler-guncellendi.window="arama = arama; /* re-trigger reactivity */">
-<div class="modal-content" style="width: 850px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main);">
-<div class="modal-header">
-<h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
-<i data-lucide="graduation-cap" height="16" width="16"></i> Öğrenci Yönetimi
+<div class="modal-content" style="width: 880px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main); border-radius: var(--radius-lg); overflow: hidden;">
+<div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+<h2 style="margin:0; color: #38BDF8; font-size: 16px; font-weight: 700; display:flex; align-items:center; gap:8px;">
+<i data-lucide="graduation-cap" height="18" width="18"></i> Öğrenci Veritabanı Yönetimi
 </h2>
-<div style="display: flex; gap: 8px; align-items: center;">
-<button class="icon-btn" onclick="modalKapat('ogrenci_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
+<button class="btn btn-temizle" onclick="modalKapat('ogrenci_yonetim_modal')" style="padding: 6px 12px; font-size: 12px; display:flex; align-items:center; gap:4px;"><i data-lucide="x" height="14" width="14"></i> Kapat</button>
 </div>
-</div>
-<div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-<div style="position: relative;">
-<span style="position: absolute; left: 8px; top: 6px; font-size: 12px; color: var(--fg-sub);"><i data-lucide="search" height="14" width="14"></i></span>
-<input x-model="arama" placeholder="Öğrenci Ara (Ad veya No)..." style="padding: 6px 6px 6px 26px; width: 250px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;" type="text"/>
+<div style="padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: var(--bg-card); border-bottom: 1px solid var(--border);">
+<div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+<div class="input-with-icon" style="width: 260px;">
+<i data-lucide="search" class="search-icon"></i>
+<input class="search-input" x-model="arama" placeholder="Öğrenci Ara (Ad veya No)..." type="text"/>
 </div>
 <div style="display: flex; gap: 6px;">
-    <select x-model="aktifFiltre" style="padding: 6px 12px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 16px; outline: none;">
-        <option value="Tümü">Tümü (Sınıflar)</option>
+    <select x-model="aktifFiltre" style="padding: 7px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: var(--radius-sm); outline: none; font-size: 12px; cursor: pointer;">
+        <option value="Tümü">Tüm Sınıflar</option>
         <template x-for="sube in subeler" :key="sube">
             <option :value="sube" x-text="sube"></option>
         </template>
@@ -24,40 +22,40 @@
 </div>
 </div>
 <div style="display: flex; gap: 10px;">
-<button class="btn btn-ogr" @click="yeniEkle()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="user-plus" height="16" width="16"></i> Yeni Öğrenci</button>
+<button class="btn btn-ogr" @click="yeniEkle()" style="padding: 7px 16px; border-radius: var(--radius-sm); display:flex; align-items:center; gap:6px;"><i data-lucide="user-plus" height="15" width="15"></i> Yeni Öğrenci Ekle</button>
 </div>
 </div>
 
 <!-- Duzenleme / Ekleme Formu -->
-<div x-show="formAcik" style="padding: 15px 20px; background-color: var(--bg-card); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
-    <h3 style="margin-top:0; color: var(--fg-main); font-size: 14px;" x-text="duzenlenenOgrenci.eski_no ? 'Öğrenciyi Düzenle' : 'Yeni Öğrenci Ekle'"></h3>
-    <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
+<div x-show="formAcik" style="padding: 16px 20px; background-color: var(--bg-card-solid); border-bottom: 1px solid var(--border);">
+    <h3 style="margin-top:0; color: var(--fg-main); font-size: 14px; font-weight:700;" x-text="duzenlenenOgrenci.eski_no ? 'Öğrenciyi Düzenle' : 'Yeni Öğrenci Ekle'"></h3>
+    <div style="display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap;">
         <div style="display: flex; flex-direction: column; gap: 5px;">
-            <label style="font-size: 11px; color: var(--fg-sub);">Okul No</label>
-            <input type="text" x-model="duzenlenenOgrenci.no" class="input-modern" style="width: 100px;">
+            <label style="font-size: 11px; font-weight:600; color: var(--fg-sub);">Okul No</label>
+            <input type="text" x-model="duzenlenenOgrenci.no" class="input-modern" style="width: 100px; padding: 7px; background:var(--bg-main); color:var(--fg-main); border:1px solid var(--border); border-radius:var(--radius-sm);">
         </div>
         <div style="display: flex; flex-direction: column; gap: 5px;">
-            <label style="font-size: 11px; color: var(--fg-sub);">Ad Soyad</label>
-            <input type="text" x-model="duzenlenenOgrenci.ad_soyad" class="input-modern" style="width: 250px;">
+            <label style="font-size: 11px; font-weight:600; color: var(--fg-sub);">Ad Soyad</label>
+            <input type="text" x-model="duzenlenenOgrenci.ad_soyad" class="input-modern" style="width: 250px; padding: 7px; background:var(--bg-main); color:var(--fg-main); border:1px solid var(--border); border-radius:var(--radius-sm);">
         </div>
         <div style="display: flex; flex-direction: column; gap: 5px;">
-            <label style="font-size: 11px; color: var(--fg-sub);">Sınıfı</label>
-            <input type="text" x-model="duzenlenenOgrenci.sube" class="input-modern" style="width: 100px;">
+            <label style="font-size: 11px; font-weight:600; color: var(--fg-sub);">Sınıfı</label>
+            <input type="text" x-model="duzenlenenOgrenci.sube" class="input-modern" style="width: 100px; padding: 7px; background:var(--bg-main); color:var(--fg-main); border:1px solid var(--border); border-radius:var(--radius-sm);">
         </div>
         <div style="display: flex; gap: 8px;">
-            <button class="btn btn-dev" @click="kaydet()" style="padding: 6px 15px;"><i data-lucide="check" height="14" width="14"></i> Kaydet</button>
-            <button class="btn" @click="formAcik = false" style="padding: 6px 15px;">İptal</button>
+            <button class="btn btn-dev" @click="kaydet()" style="padding: 7px 16px;"><i data-lucide="check" height="14" width="14"></i> Kaydet</button>
+            <button class="btn btn-temizle" @click="formAcik = false" style="padding: 7px 14px;">İptal</button>
         </div>
     </div>
 </div>
 
-<div class="tree-card" style="margin: 20px; flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-card); border-radius: 6px; min-height: 300px;">
+<div class="tree-card" style="margin: 16px 20px; flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-card); border-radius: var(--radius-md); min-height: 300px; box-shadow: var(--shadow-sm);">
 <table id="ogrenci_tablosu" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
-<thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
+<thead style="position: sticky; top: 0; background-color: var(--bg-card-solid); z-index: 1; border-bottom: 1px solid var(--border);">
 <tr>
-<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">No</th>
-<th style="width: 50%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Ad Soyad</th>
-<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Sınıfı</th>
+<th style="width: 15%; padding: 10px 14px; color: var(--fg-main); font-weight: 600;">No</th>
+<th style="width: 50%; padding: 10px 14px; color: var(--fg-main); font-weight: 600;">Ad Soyad</th>
+<th style="width: 15%; padding: 10px 14px; color: var(--fg-main); font-weight: 600;">Sınıfı</th>
 <th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">İşlemler</th>
 </tr>
 </thead>

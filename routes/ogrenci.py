@@ -244,3 +244,19 @@ def ogrenci_ekle_guncelle(ogr: OgrenciRequest):
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
+@router.post("/son-islemi-geri-al")
+def son_islemi_geri_al():
+    try:
+        basarili, mesaj = db.son_islemi_geri_al()
+        if basarili:
+            islem_logla("uyarı", "Geri Alma", "Son aktarım/kayıt işlemi başarıyla geri alındı.")
+            return {"basarili": True, "mesaj": "Son işlem başarıyla geri alındı. Veriler önceki haline döndürüldü."}
+        else:
+            return {"basarili": False, "mesaj": mesaj}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+@router.get("/geri-al-durumu")
+def geri_al_durumu():
+    return {"geri_alinabilir": db._son_snapshot is not None}
+

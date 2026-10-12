@@ -1,0 +1,64 @@
+<div class="tab-content" id="sekme_iletisim">
+    <div class="top-bar">
+        <h2 class="top-bar-title"><i data-lucide="message-square" height="20" width="20"></i> İletişim ve Geri Bildirim</h2>
+        <div class="top-bar-buttons">
+            <span style="font-size: 12px; color: var(--fg-sub); font-weight: 500;"><i data-lucide="send" height="14" width="14" style="vertical-align: middle;"></i> Destek ve Öneri</span>
+        </div>
+    </div>
+    <div class="settings-container-scroll">
+        <div class="settings-main-wrapper" style="max-width: 800px; margin: 0 auto; padding-top: 20px;">
+            <div class="settings-section">
+                <h3 class="settings-section-title"><i data-lucide="mail" height="16" width="16"></i> Geliştiriciye Mesaj Gönder</h3>
+                <div class="settings-list-card">
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">Adınız / Kurumunuz</span>
+                            <span class="settings-item-desc">İsteğe bağlı (Örn: Ahmet Yılmaz)</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <input type="text" id="gb_isim" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">İletişim E-Postası</span>
+                            <span class="settings-item-desc">Size geri dönebilmemiz için (İsteğe bağlı)</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <input type="email" id="gb_eposta" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">Mesaj Türü</span>
+                            <span class="settings-item-desc">Geri bildiriminizin türü nedir?</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <select id="gb_tur" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
+                                <option value="Hata Bildirimi">Hata Bildirimi (Program Çöktü/Çalışmıyor)</option>
+                                <option value="Öneri / İstek">Öneri / Yeni Özellik İsteği</option>
+                                <option value="Soru">Soru / Yardım Talebi</option>
+                                <option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="settings-list-item" style="align-items: flex-start;">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name">Mesaj İçeriği</span>
+                            <span class="settings-item-desc">Lütfen detaylıca açıklayın...</span>
+                        </div>
+                        <div class="settings-item-action" style="flex: 2;">
+                            <textarea id="gb_mesaj" rows="5" style="width: 100%; padding: 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; resize: vertical;"></textarea>
+                        </div>
+                    </div>
+                    <div class="settings-list-item" style="border-bottom: none; justify-content: flex-end;">
+                        <button id="gb_gonder_btn" class="btn" style="background-color: #10B981; color: white; padding: 10px 20px; font-weight: bold;" onclick="geriBildirimGonder()">
+                            <i data-lucide="send" width="16" height="16"></i> Gönder
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

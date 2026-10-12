@@ -182,8 +182,9 @@ function filtreTumuDegisti() {
             });
         }
 
-        function personelGrubuSil(ad) {
-            if(!confirm(`'${ad}' grubunu silmek istediğinize emin misiniz?`)) return;
+        async function personelGrubuSil(ad) {
+            const onay = await modernOnayGoster("Grup Silme Onayı", `'${ad}' grubunu silmek istediğinize emin misiniz?`, "uyari");
+            if(!onay) return;
             tumPersonelGruplari = tumPersonelGruplari.filter(g => g !== ad);
             if(aktifPersonelFiltresi === ad) aktifPersonelFiltresi = 'Tümü';
             personelGrubuKaydet().then(() => {
@@ -255,10 +256,11 @@ function filtreTumuDegisti() {
             });
         }
 
-        function yedekGeriYukle() {
+        async function yedekGeriYukle() {
             const secim = document.getElementById('ayar_yedek_secim').value;
             if(!secim) return bildirimGoster("Lütfen bir yedek dosyası seçin.", "hata");
-            if(!confirm("Mevcut veriler silinecek ve seçilen yedekteki veriler yüklenecek.\n\nBu işlemi onaylıyor musunuz?")) return;
+            const onay = await modernOnayGoster("Yedekten Geri Yükle", "Mevcut veriler silinecek ve seçilen yedekteki veriler yüklenecektir.\n\nBu işlemi onaylıyor musunuz?", "uyari");
+            if(!onay) return;
             fetch(`${API}/yedek-geri-yukle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dosya: secim }) })
                 .then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) location.reload(); });
         }
@@ -329,35 +331,33 @@ function filtreTumuDegisti() {
             }).catch(() => bildirimGoster('Loglar okunamadı.', 'hata'));
         }
 
-        function sonIslemiGeriAl() {
-            if(!confirm('Son güvenli yedeğe dönülecek. Mevcut durum önce ayrıca yedeklenecek. Devam edilsin mi?')) return;
+        async function sonIslemiGeriAl() {
+            const onay = await modernOnayGoster("Son İşlemi Geri Al", "Son güvenli yedeğe dönülecektir. Mevcut durum önce ayrıca yedeklenecektir. Devam edilsin mi?", "soru");
+            if(!onay) return;
             fetch(`${API}/son-islemi-geri-al`, { method: 'POST' }).then(r => r.json()).then(v => {
                 bildirimGoster(v.mesaj, v.basarili ? 'bilgi' : 'hata');
                 if(v.basarili) location.reload();
             }).catch(() => bildirimGoster('Geri alma işlemi başarısız.', 'hata'));
         }
         
-        function veritabaniniSifirla() {
-            if(confirm("Tüm öğrenciler, devamsızlıklar ve personeller SİLİNECEK.\nEmin misiniz?")) {
-                if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
-                    fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
-                }
+        async function veritabaniniSifirla() {
+            const onay = await modernOnayGoster("Tüm Veritabanını Sıfırla", "DİKKAT: Tüm öğrenciler, devamsızlıklar ve personeller kalıcı olarak SİLİNECEKTİR.\n\nBu işlem geri alınamaz! Onaylıyor musunuz?", "uyari");
+            if(onay) {
+                fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
             }
         }
 
-        function ogrencileriSifirla() {
-            if(confirm("Tüm öğrenci ve devamsızlık kayıtları SİLİNECEK.\nPersonel verilerine dokunulmayacak.\nEmin misiniz?")) {
-                if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
-                    fetch(`${API}/ogrencileri-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
-                }
+        async function ogrencileriSifirla() {
+            const onay = await modernOnayGoster("Öğrenci Verilerini Sıfırla", "Tüm öğrenci ve devamsızlık kayıtları SİLİNECEK.\nPersonel verilerine dokunulmayacaktır.\n\nOnaylıyor musunuz?", "uyari");
+            if(onay) {
+                fetch(`${API}/ogrencileri-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
             }
         }
 
-        function personelSifirla() {
-            if(confirm("Tüm personel kayıtları SİLİNECEK.\nÖğrenci verilerine dokunulmayacak.\nEmin misiniz?")) {
-                if(confirm("Bu işlem GERİ ALINAMAZ! Onaylıyor musunuz?")) {
-                    fetch(`${API}/personel-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
-                }
+        async function personelSifirla() {
+            const onay = await modernOnayGoster("Personel Verilerini Sıfırla", "Tüm personel kayıtları SİLİNECEK.\nÖğrenci verilerine dokunulmayacaktır.\n\nOnaylıyor musunuz?", "uyari");
+            if(onay) {
+                fetch(`${API}/personel-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
             }
         }
 

@@ -238,7 +238,8 @@ async function saglikDetayGoster(personelAd, oncedenKesilen = 0) {
 }
 
 async function saglikRaporSil(id, personelAd) {
-    if (!confirm('Bu raporu silmek istediğinize emin misiniz?')) return;
+    const onay = await modernOnayGoster("Rapor Silme Onayı", "Bu raporu silmek istediğinize emin misiniz?", "uyari");
+    if (!onay) return;
     
     try {
         const response = await apiIstegi(`/saglik/sil/${id}`, 'DELETE');

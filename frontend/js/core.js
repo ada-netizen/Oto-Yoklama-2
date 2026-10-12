@@ -1,10 +1,35 @@
 
-        // TEMA YÜKLEME
+        // BAŞLANGIÇ YÜKLEMESİ VE TEMA
+        function splashEkraniniKapat() {
+            const splash = document.getElementById('splash_overlay');
+            if (splash && !splash.classList.contains('gizli')) {
+                splash.classList.add('gizli');
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    if (window.lucide && typeof lucide.createIcons === 'function') {
+                        lucide.createIcons();
+                    }
+                }, 450);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const savedTema = localStorage.getItem('temaPref') || 'gece';
             karanlikMod = (savedTema === 'gece');
-            // Wait a tiny bit for elements to exist
             setTimeout(() => temaDegistir(savedTema), 50);
+
+            // İlk verileri arka planda çek
+            if (typeof verileriYukle === 'function') {
+                verileriYukle();
+            }
+
+            // Kurumsal açılış kartını zarif bir geçişle kapat
+            setTimeout(splashEkraniniKapat, 700);
+        });
+
+        // Sayfa kaynakları tamamen yüklendiğinde garanti kapatma
+        window.addEventListener('load', () => {
+            setTimeout(splashEkraniniKapat, 500);
         });
 
 const API = 'http://127.0.0.1:8000';
@@ -34,6 +59,182 @@ const API = 'http://127.0.0.1:8000';
                     padding: "12px 24px"
                 }
             }).showToast();
+        }
+
+        // --- MODERN ONAY VE UYARI DİYALOĞU (NATIVE ALERT/CONFIRM YERİNE) ---
+        function modernOnayGoster(baslik, mesaj, tip = 'soru') {
+            return new Promise((resolve) => {
+                let overlay = document.getElementById('custom_dialog_overlay');
+                if (!overlay) {
+                    overlay = document.createElement('div');
+                    overlay.id = 'custom_dialog_overlay';
+                    overlay.className = 'custom-dialog-overlay';
+                    overlay.innerHTML = `
+                        <div class="custom-dialog-card">
+                            <div class="custom-dialog-icon ${tip}" id="custom_dialog_icon">
+                                <i data-lucide="${tip === 'uyari' ? 'alert-triangle' : (tip === 'bilgi' ? 'info' : 'help-circle')}" style="width:24px;height:24px;"></i>
+                            </div>
+                            <h3 class="custom-dialog-title" id="custom_dialog_title"></h3>
+                            <p class="custom-dialog-message" id="custom_dialog_msg"></p>
+                            <div class="custom-dialog-actions">
+                                <button class="custom-dialog-btn cancel" id="custom_dialog_cancel">Vazgeç</button>
+                                <button class="custom-dialog-btn ${tip === 'uyari' ? 'confirm-danger' : 'confirm-primary'}" id="custom_dialog_confirm">Onayla</button>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(overlay);
+                    if (window.lucide) window.lucide.createIcons();
+                }
+
+                const titleEl = document.getElementById('custom_dialog_title');
+                const msgEl = document.getElementById('custom_dialog_msg');
+                const cancelBtn = document.getElementById('custom_dialog_cancel');
+                const confirmBtn = document.getElementById('custom_dialog_confirm');
+                const iconEl = document.getElementById('custom_dialog_icon');
+
+                if (titleEl) titleEl.innerText = baslik || 'Onay Gerekiyor';
+                if (msgEl) msgEl.innerText = mesaj || '';
+                if (iconEl) {
+                    iconEl.className = `custom-dialog-icon ${tip}`;
+                    iconEl.innerHTML = `<i data-lucide="${tip === 'uyari' ? 'alert-triangle' : (tip === 'bilgi' ? 'info' : 'help-circle')}" style="width:24px;height:24px;"></i>`;
+                    if (window.lucide) window.lucide.createIcons();
+                }
+
+                overlay.classList.add('active');
+
+                const cleanup = (result) => {
+                    overlay.classList.remove('active');
+                    confirmBtn.onclick = null;
+                    cancelBtn.onclick = null;
+                    resolve(result);
+                };
+
+                confirmBtn.onclick = () => cleanup(true);
+                cancelBtn.onclick = () => cleanup(false);
+            });
+        }
+
+        // Global Kısayollar ve Esc Tuşu Yönetimi (Power-User Kısayolları)
+        document.addEventListener('keydown', (e) => {
+            // Esc Tuşu
+            if (e.key === 'Escape') {
+                const dialog = document.getElementById('custom_dialog_overlay');
+                if (dialog && dialog.classList.contains('active')) {
+                    const cancelBtn = document.getElementById('custom_dialog_cancel');
+                    if (cancelBtn) cancelBtn.click();
+                    return;
+                }
+                const acikModallar = document.querySelectorAll('.modal-overlay');
+                acikModallar.forEach(m => {
+                    if (m.style.display === 'flex' || m.style.display === 'block') {
+                        m.style.display = 'none';
+                    }
+                });
+                const acikDrawers = document.querySelectorAll('.drawer-overlay.open');
+                acikDrawers.forEach(d => d.classList.remove('open'));
+                return;
+            }
+
+            // Ctrl + F: Aktif Arama Kutusuna Odaklanma
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+                e.preventDefault();
+                const aktifSekme = document.querySelector('.tab-content.aktif');
+                if (aktifSekme) {
+                    const aramaInput = aktifSekme.querySelector('input[type="text"], .search-input');
+                    if (aramaInput) {
+                        aramaInput.focus();
+                        aramaInput.select();
+                        return;
+                    }
+                }
+                const genelArama = document.getElementById('ent_arama');
+                if (genelArama) { genelArama.focus(); genelArama.select(); }
+                return;
+            }
+
+            // Ctrl + D: Devamsızlık Yükleme
+            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+                const fDev = document.getElementById('f-dev');
+                if (fDev) {
+                    e.preventDefault();
+                    fDev.click();
+                    return;
+                }
+            }
+
+            // Ctrl + 1..7: Sekme Geçiş Kısayolları
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && ['1','2','3','4','5','6','7'].includes(e.key)) {
+                const sekmeMap = {
+                    '1': 'sekme_izin',
+                    '2': 'sekme_teblig',
+                    '3': 'sekme_ihale',
+                    '4': 'sekme_dashboard',
+                    '5': 'sekme_saglik',
+                    '6': 'sekme_ayarlar',
+                    '7': 'sekme_yardim'
+                };
+                const hedefSekme = sekmeMap[e.key];
+                if (hedefSekme) {
+                    e.preventDefault();
+                    const btn = document.querySelector(`.tab-btn[onclick*="${hedefSekme}"]`);
+                    if (btn) btn.click();
+                    return;
+                }
+            }
+        });
+
+        // --- YARDIMCI MOTORLAR (DEBOUNCE & CENTRAL STATE STORE) ---
+        function debounce(func, wait = 180) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        window.OtoStore = {
+            state: {
+                ogrenciler: [],
+                devamsizliklar: [],
+                seciliOgrenci: null
+            },
+            listeners: {},
+            on(event, callback) {
+                if (!this.listeners[event]) this.listeners[event] = [];
+                this.listeners[event].push(callback);
+            },
+            emit(event, data) {
+                if (this.listeners[event]) {
+                    this.listeners[event].forEach(cb => {
+                        try { cb(data); } catch(e) { console.error('OtoStore error:', e); }
+                    });
+                }
+            }
+        };
+
+        async function sonIslemiGeriAl() {
+            const onay = await modernOnayGoster(
+                "Son İşlemi Geri Al",
+                "Son yapılan aktarım veya kayıt işlemini geri alarak bir önceki veritabanı durumuna dönmek istiyor musunuz?",
+                "uyari"
+            );
+            if (!onay) return;
+
+            yuklemeGoster("İşlem geri alınıyor...");
+            try {
+                const res = await fetch(`${API}/son-islemi-geri-al`, { method: 'POST' });
+                const data = await res.json();
+                yuklemeGizle();
+                if (data.basarili) {
+                    bildirimGoster(data.mesaj, "bilgi");
+                    verileriYukle();
+                } else {
+                    bildirimGoster(data.mesaj, "hata");
+                }
+            } catch (err) {
+                yuklemeGizle();
+                bildirimGoster("Bağlantı hatası: " + err, "hata");
+            }
         }
 
         // --- YÜKLENİYOR GÖSTERGESİ ---
@@ -72,40 +273,67 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             const root = document.documentElement; 
             const btnTema = document.getElementById('btn_tema');
             
-            // Eğer forceState verilmişse onu kullan (başlangıçta okumak için)
             if (forceState !== null) {
                 karanlikMod = (forceState === 'gece');
             } else {
-                karanlikMod = !karanlikMod; // Toggle
+                karanlikMod = !karanlikMod;
             }
             
             if (!karanlikMod) {
-                // Gündüz Moduna Geçiş
-                root.style.setProperty('--bg-main', '#F1F5F9'); 
+                // Gündüz Moduna Geçiş (Açık, Ferah, WCAG AA Uyumlu)
+                root.style.setProperty('--bg-main', '#F8FAFC'); 
                 root.style.setProperty('--bg-card', '#FFFFFF');
                 root.style.setProperty('--bg-card-solid', '#FFFFFF'); 
+                root.style.setProperty('--bg-card-hover', '#F1F5F9');
                 root.style.setProperty('--fg-main', '#0F172A'); 
                 root.style.setProperty('--fg-sub', '#475569'); 
-                root.style.setProperty('--border', '#CBD5E1');
+                root.style.setProperty('--border', '#E2E8F0');
+                root.style.setProperty('--border-hover', '#CBD5E1');
+                root.style.setProperty('--tree-sel', '#0284C7');
+                
+                // Devamsızlık Renkleri (Gündüz Modu - Yüksek Kontrast)
+                root.style.setProperty('--dev-ozursuz-bg', '#FEE2E2'); 
+                root.style.setProperty('--dev-ozursuz-fg', '#991B1B'); 
+                root.style.setProperty('--dev-ozurlu-bg', '#FEF3C7'); 
+                root.style.setProperty('--dev-ozurlu-fg', '#92400E'); 
+                root.style.setProperty('--dev-gec-bg', '#FFEDD5'); 
+                root.style.setProperty('--dev-gec-fg', '#9A3412'); 
+                root.style.setProperty('--dev-faaliyet-bg', '#DBEAFE'); 
+                root.style.setProperty('--dev-faaliyet-fg', '#1E40AF'); 
                 root.style.setProperty('--dev-bg', '#FEE2E2'); 
                 root.style.setProperty('--dev-fg', '#991B1B'); 
+                
                 if(btnTema) { btnTema.classList.remove('dark'); btnTema.classList.add('light'); }
                 localStorage.setItem('temaPref', 'gunduz');
             } else {
-                // Gece Moduna Geçiş
-                root.style.setProperty('--bg-main', '#0F172A'); 
-                root.style.setProperty('--bg-card', '#1E293B');
+                // Gece Moduna Geçiş (Derin Slate, Göz Yormayan)
+                root.style.setProperty('--bg-main', '#0B1120'); 
+                root.style.setProperty('--bg-card', 'rgba(30, 41, 59, 0.75)');
                 root.style.setProperty('--bg-card-solid', '#1E293B'); 
+                root.style.setProperty('--bg-card-hover', 'rgba(51, 65, 85, 0.5)');
                 root.style.setProperty('--fg-main', '#F8FAFC'); 
                 root.style.setProperty('--fg-sub', '#94A3B8'); 
-                root.style.setProperty('--border', '#334155');
+                root.style.setProperty('--border', 'rgba(51, 65, 85, 0.65)');
+                root.style.setProperty('--border-hover', '#475569');
+                root.style.setProperty('--tree-sel', '#38BDF8');
+                
+                // Devamsızlık Renkleri (Gece Modu)
+                root.style.setProperty('--dev-ozursuz-bg', '#7F1D1D'); 
+                root.style.setProperty('--dev-ozursuz-fg', '#FCA5A5'); 
+                root.style.setProperty('--dev-ozurlu-bg', '#78350F'); 
+                root.style.setProperty('--dev-ozurlu-fg', '#FDE68A'); 
+                root.style.setProperty('--dev-gec-bg', '#7C2D12'); 
+                root.style.setProperty('--dev-gec-fg', '#FDBA74'); 
+                root.style.setProperty('--dev-faaliyet-bg', '#1E3A8A'); 
+                root.style.setProperty('--dev-faaliyet-fg', '#93C5FD'); 
                 root.style.setProperty('--dev-bg', '#7F1D1D'); 
                 root.style.setProperty('--dev-fg', '#FEF2F2'); 
+                
                 if(btnTema) { btnTema.classList.remove('light'); btnTema.classList.add('dark'); }
                 localStorage.setItem('temaPref', 'gece');
             }
             
-            // Tablodaki hata hücrelerini tekrar boya (eski kodun parçası)
+            // Tablodaki hücre stillerini güncelle
             const dHucreler = document.querySelectorAll('#tree_tum_liste td');
             dHucreler.forEach(td => {
                 if(td.textContent.includes('Gün)') || td.style.color === 'white' || td.style.color === 'var(--dev-fg)') {
@@ -129,6 +357,10 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             const hedef = document.getElementById(sekmeId);
             if(hedef) hedef.classList.add('aktif');
             if(evt && evt.currentTarget) evt.currentTarget.classList.add('aktif');
+            
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                setTimeout(() => lucide.createIcons(), 30);
+            }
             
             if(sekmeId === 'sekme_izin') verileriYukle();
             if(sekmeId === 'sekme_teblig') personelleriYukle();
@@ -353,8 +585,9 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
         function kopyalaNo() { navigator.clipboard.writeText(sagTikOgrNo); bildirimGoster("Numara kopyalandı!", "bilgi"); }
         function kopyalaAd() { navigator.clipboard.writeText(sagTikOgrAd); bildirimGoster("Ad Soyad kopyalandı!", "bilgi"); }
-        function ogrenciyiTamamenSil() {
-            if(!confirm(`${sagTikOgrAd} kalıcı olarak silinecek. Onaylıyor musunuz?`)) return;
+        async function ogrenciyiTamamenSil() {
+            const onay = await modernOnayGoster("Öğrenciyi Sil", `${sagTikOgrAd} kalıcı olarak silinecek. Bu işlem geri alınamaz. Onaylıyor musunuz?`, "uyari");
+            if(!onay) return;
             fetch(`${API}/ogrenci-sil/${sagTikOgrNo}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
                 bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); verileriYukle();
                 document.getElementById('sag_bos_uyari').style.display = 'flex'; document.getElementById('sag_dolu_icerik').style.display = 'none';
@@ -458,6 +691,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 return 0;
             });
 
+            const fragment = document.createDocumentFragment();
             islenecekler.forEach(ogr => {
                 const ozszStr = ogr.ozsz >= 10 ? `<span style="font-weight:bold; color:#EF4444;">${ogr.ozsz} Gün</span>` : `${ogr.ozsz} Gün`;
                 const tr = document.createElement('tr'); tr.style.cursor = "pointer"; tr.style.borderBottom = "1px solid var(--border)";
@@ -471,11 +705,10 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
                     tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.temizSube, ogr.ozsz, ogr.ozrl); sagTikMenuAc(e, ogr.no, ogr.ad_soyad);
                 };
-                // Taşan yazıları ... olarak göstermek için CSS eklendi
-                // Taşan yazıları ... olarak göstermek için CSS eklendi ve BOLD etiketleri silindi
                 tr.innerHTML = `<td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.temizSube}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.no}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ad_soyad}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ozszStr}</td><td style="padding: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ozrl} Gün</td>`;
-                govde.appendChild(tr);
+                fragment.appendChild(tr);
             });
+            govde.appendChild(fragment);
         }
 
         function ogrenciSec(no, ad, sube, ozsz, ozrl) {

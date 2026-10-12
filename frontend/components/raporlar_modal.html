@@ -1,34 +1,43 @@
 <div class="modal-overlay" id="raporlar_modal" x-data="raporlarComponent()">
-<div class="modal-content" style="width: 700px; padding: 0; background-color: var(--bg-main);">
-<div class="modal-header">
-<h2 style="margin:0; color: var(--tree-sel); font-size: 16px;">Raporlar (Alpine.js)</h2>
-<button class="btn btn-kirmizi" onclick="modalKapat('raporlar_modal')" style="padding: 5px 15px;">Kapat</button>
+<div class="modal-content" style="width: 740px; padding: 0; background-color: var(--bg-main); border-radius: var(--radius-lg); overflow: hidden;">
+<div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+<h2 style="margin:0; color: #38BDF8; font-size: 16px; font-weight: 700; display:flex; align-items:center; gap:8px;"><i data-lucide="bar-chart-3" height="18" width="18"></i> MEB Devamsızlık Raporları</h2>
+<button class="btn btn-temizle" onclick="modalKapat('raporlar_modal')" style="padding: 6px 12px; font-size: 12px; display:flex; align-items:center; gap:4px;"><i data-lucide="x" height="14" width="14"></i> Kapat</button>
 </div>
-<div style="padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+<div style="padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; overflow-y: auto;">
 <!-- Chart.js: Devamsizlik Ozeti -->
-<div style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 15px;">
-<div style="font-size: 12px; font-weight: bold; color: var(--fg-sub); margin-bottom: 10px;">Ş/S Sınıf Bazlı Devamsızlık Özeti</div>
+<div style="background-color: var(--bg-card); backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm);">
+<div style="font-size: 13px; font-weight: 700; color: var(--fg-main); margin-bottom: 10px; display:flex; align-items:center; gap:6px;"><i data-lucide="pie-chart" height="15" width="15" style="color:#38BDF8;"></i> Şube Bazlı Devamsızlık Dağılım Grafiği</div>
 <canvas height="120" id="devamsizlik_chart"></canvas>
 </div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Sınırını Aşanlar (10+ Gün)</span>
-<div style="display:flex; gap:5px;">
-<button class="btn btn-ogr" @click="rapor('ozursuz','excel')" style="padding: 6px 15px;">Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('ozursuz','pdf')" style="padding: 6px 15px;">PDF</button>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+<div>
+<div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Özürsüz Sınırını Aşanlar (10+ Gün)</div>
+<div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">MEB mevzuatına göre resmi uyarı gerektiren öğrenciler</div>
+</div>
+<div style="display:flex; gap:6px;">
+<button class="btn btn-ogr" @click="rapor('ozursuz','excel')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-spreadsheet" height="13" width="13"></i> Excel</button>
+<button class="btn btn-kirmizi" @click="rapor('ozursuz','pdf')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-text" height="13" width="13"></i> PDF</button>
 </div>
 </div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Sınıf Bazlı Devamsızlık Eşik Raporu</span>
-<div style="display:flex; gap:5px;">
-<button class="btn btn-ogr" @click="esikRaporu('excel')" style="padding: 6px 15px;">Excel</button>
-<button class="btn btn-kirmizi" @click="esikRaporu('pdf')" style="padding: 6px 15px;">PDF</button>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+<div>
+<div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Sınıf Bazlı Devamsızlık Eşik Raporu</div>
+<div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">Tüm sınıfların risk eşiğine göre karşılaştırmalı listesi</div>
+</div>
+<div style="display:flex; gap:6px;">
+<button class="btn btn-ogr" @click="esikRaporu('excel')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-spreadsheet" height="13" width="13"></i> Excel</button>
+<button class="btn btn-kirmizi" @click="esikRaporu('pdf')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-text" height="13" width="13"></i> PDF</button>
 </div>
 </div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürlü Sınırını Aşanlar (20+ Gün)</span>
-<div style="display:flex; gap:5px;">
-<button class="btn btn-ogr" @click="rapor('ozurlu','excel')" style="padding: 6px 15px;">Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('ozurlu','pdf')" style="padding: 6px 15px;">PDF</button>
+<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+<div>
+<div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Özürlü Sınırını Aşanlar (20+ Gün)</div>
+<div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">Raporlu/sağlık izinlerinde mevzuat sınırını dolduranlar</div>
+</div>
+<div style="display:flex; gap:6px;">
+<button class="btn btn-ogr" @click="rapor('ozurlu','excel')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-spreadsheet" height="13" width="13"></i> Excel</button>
+<button class="btn btn-kirmizi" @click="rapor('ozurlu','pdf')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-text" height="13" width="13"></i> PDF</button>
 </div>
 </div>
 <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">

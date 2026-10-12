@@ -9,19 +9,29 @@ env/
 .env
 .env.*
 
-# Tests
+# Tests & Coverage
 .pytest_cache/
+.coverage
+htmlcov/
 
-# Agents / MCP
+# Agents, AI Skills & Packages
 .agents/
+agent/
+.claude/
+skills-lock.json
+package-lock.json
+node_modules/
 
-# Build and PyInstaller
+# Build, PyInstaller & Setup Executables
 build/
 dist/
 *.spec
 *.toc
 *.pyz
 *.pkg
+*.exe
+Elektronik_Okul_*.exe
+installer_output/
 
 # IDE and OS
 .vscode/
@@ -29,8 +39,9 @@ dist/
 .DS_Store
 Thumbs.db
 
-# App Data and Logs
+# App Data, Databases and Logs
 *.log
+app.log
 *.tmp
 *.temp
 *.bak
@@ -38,7 +49,11 @@ Thumbs.db
 *~
 *out.txt
 my_test_log.txt
+*.db
+*.sqlite
+*.sqlite3
 *.yoklama_veritabani.db
+okul_veritabani.db
 veri.db
 yak_mal.json
 *.db-journal
@@ -46,12 +61,13 @@ yak_mal.json
 *.db-shm
 *.db-wal
 
-# Output and Caches
+# Output, Caches and Exports
 webview_cache/
 webview_cache_v2/
 webview_cache_v3/
 .tmp.driveupload/
 Eski_Dosyalar_Arsivi/
+yedekler/
 graphify-out/
 PDF_Ciktilari/
 *.pdf

@@ -4,27 +4,136 @@ from araclar import VeriAraclari
 
 class ExcelMotoru:
     @staticmethod
+    def tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str):
+        """
+        MEB e-Okul ve diğer kaynaklardan gelen her türlü Excel (.xlsx, .xls), 
+        sahte XLS (HTML/XML) ve CSV formatını doğru motor ve encoding ile okur.
+        """
+        try:
+            with open(dosya_yolu, 'rb') as f:
+                magic = f.read(8)
+        except Exception as e:
+            raise ValueError(f"Dosya okunamadı: {e}")
+
+        # 1. Gerçek .xls (OLE2 Binary Compound: \xd0\xcf\x11\xe0...)
+        if magic.startswith(b'\xd0\xcf\x11\xe0'):
+            try:
+                return pd.read_excel(dosya_yolu, engine='xlrd', header=header, dtype=dtype)
+            except Exception:
+                pass
+
+        # 2. Gerçek .xlsx (ZIP PK\x03\x04...)
+        if magic.startswith(b'PK\x03\x04'):
+            try:
+                return pd.read_excel(dosya_yolu, engine='openpyxl', header=header, dtype=dtype)
+            except Exception:
+                pass
+
+        # 3. Otomatik read_excel denemesi
+        try:
+            return pd.read_excel(dosya_yolu, header=header, dtype=dtype)
+        except Exception:
+            pass
+
+        # 4. Motorları zorlayarak deneme
+        try:
+            return pd.read_excel(dosya_yolu, engine='xlrd', header=header, dtype=dtype)
+        except Exception:
+            pass
+        try:
+            return pd.read_excel(dosya_yolu, engine='openpyxl', header=header, dtype=dtype)
+        except Exception:
+            pass
+
+        # 5. Sahte XLS (HTML Tablo - e-Okul / MEBBİS formatı)
+        for enc in ['cp1254', 'utf-8', 'utf-8-sig', 'iso-8859-9']:
+            try:
+                df_list = pd.read_html(dosya_yolu, header=header, encoding=enc)
+                if df_list:
+                    df = max(df_list, key=len)
+                    if dtype is not None:
+                        df = df.astype(dtype)
+                    return df
+            except Exception:
+                continue
+
+        # 6. CSV Formatı
+        for enc in ['utf-8-sig', 'cp1254', 'utf-8', 'iso-8859-9']:
+            try:
+                return pd.read_csv(dosya_yolu, header=header, dtype=dtype, encoding=enc, on_bad_lines='skip')
+            except Exception:
+                continue
+
+        raise ValueError("Dosya Excel, HTML veya CSV olarak çözümlenemedi.")
+
+    @staticmethod
     def ogrenci_oku(dosya_yolu, mevcut_ogrenciler):
         yeni_liste = []
         try:
-            # --- 1. GELİŞTİRME: Sahte XLS (HTML) Çözücü Zırhı ---
-            try: df = pd.read_excel(dosya_yolu, header=None, dtype=str)
-            except:
-                try: 
-                    df_list = pd.read_html(dosya_yolu, header=None, dtype=str)
-                    df = max(df_list, key=len) if df_list else pd.DataFrame()
-                except: df = pd.read_csv(dosya_yolu, header=None, dtype=str)
+            df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
+            if df.empty:
+                return None, "Excel dosyası boş veya okunamadı."
 
             aktif_sube = ""
             mevcut_nolar = {str(o['no']).strip() for o in mevcut_ogrenciler}
             yeni_nolar = set()
             
+            # --- 1. AKILLI TABLO BAŞLIĞI TESPİTİ (Fuzzy Header Detection) ---
+            no_col = None
+            ad_col = None
+            soyad_col = None
+            ad_soyad_col = None
+            sube_col = None
+            header_row_idx = -1
+
+            for idx in range(min(15, len(df))):
+                for col_idx, cell in enumerate(df.iloc[idx].values):
+                    c_clean = str(cell).strip().upper().replace('.', '').replace('İ', 'I').replace('Ğ', 'G').replace('Ş', 'S').replace('Ö', 'O').replace('Ü', 'U')
+                    if c_clean in ['NO', 'OGRENCI NO', 'OKUL NO', 'NUMARA', 'OGR NO'] and no_col is None:
+                        no_col = col_idx
+                    elif c_clean in ['AD SOYAD', 'ADI SOYADI', 'OGRENCI ADI SOYADI', 'AD VE SOYAD'] and ad_soyad_col is None:
+                        ad_soyad_col = col_idx
+                    elif c_clean in ['AD', 'ADI', 'OGRENCI ADI'] and ad_col is None:
+                        ad_col = col_idx
+                    elif c_clean in ['SOYAD', 'SOYADI', 'OGRENCI SOYADI'] and soyad_col is None:
+                        soyad_col = col_idx
+                    elif any(k in c_clean for k in ['SUBE', 'SINIF', 'SINIF/SUBE', 'SINIFI']) and sube_col is None:
+                        sube_col = col_idx
+                
+                if no_col is not None and (ad_soyad_col is not None or (ad_col is not None and soyad_col is not None)):
+                    header_row_idx = idx
+                    break
+
+            if header_row_idx != -1 and no_col is not None:
+                for idx in range(header_row_idx + 1, len(df)):
+                    row = df.iloc[idx]
+                    val_no = str(row.iloc[no_col]).replace('.0', '').strip() if pd.notna(row.iloc[no_col]) else ""
+                    if not val_no or not val_no.isdigit():
+                        continue
+                    
+                    if ad_soyad_col is not None:
+                        ad_soyad = str(row.iloc[ad_soyad_col]).strip() if pd.notna(row.iloc[ad_soyad_col]) else ""
+                    else:
+                        ad = str(row.iloc[ad_col]).strip() if ad_col is not None and pd.notna(row.iloc[ad_col]) else ""
+                        soyad = str(row.iloc[soyad_col]).strip() if soyad_col is not None and pd.notna(row.iloc[soyad_col]) else ""
+                        ad_soyad = f"{ad} {soyad}".strip()
+                    
+                    sube = str(row.iloc[sube_col]).strip() if sube_col is not None and pd.notna(row.iloc[sube_col]) else ""
+                    
+                    if ad_soyad and val_no not in mevcut_nolar and val_no not in yeni_nolar:
+                        yeni_liste.append({'no': val_no, 'ad_soyad': ad_soyad, 'sube': sube})
+                        yeni_nolar.add(val_no)
+
+                if yeni_liste:
+                    return yeni_liste, None
+
+            # --- 2. KLASİK E-OKUL SINIF LİSTESİ ŞABLONU ---
             for index, row in df.iterrows():
                 satir_metni = str(row.values)
                 if "Sınıf Listesi" in satir_metni:
                     aktif_sube = str(row[0]).split("Sınıf Listesi")[0].replace("Müdürlüğü", "").replace("\n", "").strip()
                     if "AL -" in aktif_sube: aktif_sube = aktif_sube.split("AL -")[-1].strip()
-                elif pd.notna(row[1]) and str(row[1]).replace('.0', '').isdigit() and "Öğrenci" not in str(row[1]):
+                elif len(row) > 7 and pd.notna(row[1]) and str(row[1]).replace('.0', '').isdigit() and "Öğrenci" not in str(row[1]):
                     ogr_no = str(row[1]).replace('.0', '').strip()
                     ad = str(row[3]).strip() if pd.notna(row[3]) else ""
                     soyad = str(row[7]).strip() if pd.notna(row[7]) else ""
@@ -39,20 +148,10 @@ class ExcelMotoru:
 
     @staticmethod
     def devamsizlik_oku(dosya_yolu, mevcut_devamsizliklar):
-        import uuid
-        import pandas as pd
-        from araclar import VeriAraclari
-        
         yeni_liste = []
         eklenen = 0
         try:
-            try: df = pd.read_excel(dosya_yolu, header=None, dtype=str)
-            except:
-                try: 
-                    df_list = pd.read_html(dosya_yolu, header=None, dtype=str)
-                    df = max(df_list, key=len) if df_list else pd.DataFrame()
-                except: df = pd.read_csv(dosya_yolu, header=None, dtype=str)
-            
+            df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
             if df.empty: return None, 0, "Excel dosyası boş veya okunamadı."
 
             mevcut_hash = {f"{str(d['no']).strip()}_{d['tarih']}_{d['tur'].upper()}" for d in mevcut_devamsizliklar}

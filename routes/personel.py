@@ -32,8 +32,7 @@ def personelleri_getir():
 def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
     """Hazırlanmış personel dosyasını okur ve tek transaction ile kaydeder."""
     try:
-        tablo_oku = pd.read_csv if uzanti == ".csv" else pd.read_excel
-        df_temp = tablo_oku(temp_yol, header=None)
+        df_temp = ExcelMotoru.tabloyu_guvenli_oku(temp_yol, header=None)
         if df_temp.empty:
             return {"basarili": False, "mesaj": "Excel dosyası boş."}
         header_idx = 0
@@ -43,7 +42,7 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
                 header_idx = i
                 break
 
-        df = tablo_oku(temp_yol, header=header_idx)
+        df = ExcelMotoru.tabloyu_guvenli_oku(temp_yol, header=header_idx)
         df.columns = df.columns.str.strip().str.upper()
 
         ad_sutunu = _excel_sutunu_bul(df.columns, ['AD SOYAD', 'ADI SOYADI'])
