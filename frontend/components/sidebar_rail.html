@@ -1,0 +1,88 @@
+<!-- ================= SOL NAVİGASYON & DURUM RAYI (SIDEBAR RAIL) ================= -->
+<aside class="sidebar-rail" id="sidebar_rail">
+    <!-- 1. OKUL & SİSTEM KİMLİĞİ -->
+    <div class="sidebar-brand">
+        <div class="sidebar-emblem">
+            <i data-lucide="graduation-cap" height="22" width="22"></i>
+        </div>
+        <div class="sidebar-brand-text">
+            <span class="sidebar-app-name">ELEKTRONİK OKUL</span>
+            <span class="sidebar-app-badge">MEB UYUMLU V2.0</span>
+        </div>
+    </div>
+
+    <!-- 2. ÇALIŞMA İSTASYONLARI & MODÜLLER -->
+    <nav class="sidebar-nav">
+        <div class="sidebar-section-title">ANA İSTASYONLAR</div>
+        <button class="rail-btn tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')" title="Öğrenci İzin ve Devamsızlık İstasyonu (Ctrl+1)">
+            <i data-lucide="calendar-check" height="18" width="18"></i>
+            <span class="rail-label">Yoklama İstasyonu</span>
+            <span class="rail-shortcut-badge">1</span>
+        </button>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_teblig')" title="Personel Tebliğ Masası (Ctrl+2)">
+            <i data-lucide="users" height="18" width="18"></i>
+            <span class="rail-label">Personel & Tebliğ</span>
+            <span class="rail-shortcut-badge">2</span>
+        </button>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_ihale')" title="22/d Doğrudan Temin & İhale Masası (Ctrl+3)">
+            <i data-lucide="briefcase" height="18" width="18"></i>
+            <span class="rail-label">22/d Satın Alma</span>
+            <span class="rail-shortcut-badge">3</span>
+        </button>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_dashboard'); dashboardYukle();" title="Proaktif Dashboard & İstatistikler (Ctrl+4)">
+            <i data-lucide="pie-chart" height="18" width="18"></i>
+            <span class="rail-label">İstatistik & Uyarı</span>
+            <span class="rail-shortcut-badge">4</span>
+        </button>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_saglik'); saglikYukle();" title="Personel Sağlık İzinleri (Ctrl+5)">
+            <i data-lucide="activity" height="18" width="18"></i>
+            <span class="rail-label">Sağlık İzinleri</span>
+            <span class="rail-shortcut-badge">5</span>
+        </button>
+
+        <div class="sidebar-section-title" style="margin-top: 14px;">YÖNETİM & DESTEK</div>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')" title="Sistem Ayarları ve Yedekler (Ctrl+6)">
+            <i data-lucide="sliders" height="18" width="18"></i>
+            <span class="rail-label">Ayarlar & Yedek</span>
+            <span class="rail-shortcut-badge">6</span>
+        </button>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_yardim')" title="Yardım ve Kılavuz (Ctrl+7)">
+            <i data-lucide="help-circle" height="18" width="18"></i>
+            <span class="rail-label">Yardım & Rehber</span>
+            <span class="rail-shortcut-badge">7</span>
+        </button>
+        <button class="rail-btn tab-btn" onclick="sekmeAc(event, 'sekme_iletisim')" title="Geri Bildirim ve İletişim">
+            <i data-lucide="message-square" height="18" width="18"></i>
+            <span class="rail-label">İletişim & Geri Bildirim</span>
+        </button>
+    </nav>
+
+    <!-- 3. CANLI SİSTEM NABZI & POWER-USER BUTONLARI -->
+    <div class="sidebar-footer">
+        <div class="sidebar-power-actions">
+            <button class="cmd-palette-trigger-btn sidebar-action-btn" onclick="komutPaletiAc()" title="Evrensel Komut Paleti (Ctrl + K)">
+                <i data-lucide="command" height="14" width="14"></i>
+                <span>Komutlar</span>
+                <kbd>Ctrl K</kbd>
+            </button>
+            <button class="cmd-palette-trigger-btn sidebar-action-btn" onclick="modalAc('kisayollar_modal')" title="Klavye Kısayolları Rehberi (F1)">
+                <i data-lucide="keyboard" height="14" width="14"></i>
+                <span>Kısayol</span>
+                <kbd>F1</kbd>
+            </button>
+        </div>
+
+        <div class="sidebar-pulse-row">
+            <div class="sidebar-status-indicator" title="SQLite Veritabanı ve Yerel Motor Aktif">
+                <span class="pulse-dot"></span>
+                <span class="pulse-text">60 FPS • SQLite</span>
+            </div>
+            <div class="tema-switch" id="btn_tema" onclick="temaDegistir()" title="Aydınlık / Karanlık Mod (WCAG AA)">
+                <div class="switch-top"></div>
+                <span class="ay"><i data-lucide="moon" height="13" width="13"></i></span>
+                <span class="gunes"><i data-lucide="sun" height="13" width="13"></i></span>
+            </div>
+        </div>
+    </div>
+</aside>
+

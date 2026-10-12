@@ -8,8 +8,16 @@
 <div style="display: grid; grid-template-columns: 280px 1fr; gap: 20px; padding: 20px; height: calc(100vh - 120px); box-sizing: border-box; overflow: hidden; background-color: var(--bg-main);">
 <!-- Sol Menü (Master) -->
 <div style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-<div style="padding: 15px; border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.02);">
-<h3 style="margin: 0; font-size: 14px; color: var(--fg-main);"><i data-lucide="list" height="16" style="vertical-align: middle; margin-right: 5px;" width="16"></i> Rehber Konuları</h3>
+<div style="padding: 12px 14px; border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.02); display: flex; align-items: center; justify-content: space-between;">
+<h3 style="margin: 0; font-size: 13px; font-weight: 700; color: var(--fg-main);"><i data-lucide="list" height="15" style="vertical-align: middle; margin-right: 5px;" width="15"></i> Rehber Konuları</h3>
+<span style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">11 Konu</span>
+</div>
+<!-- KILAVUZ İÇİ ANLIK ARAMA ÇUBUĞU (ÖNERİ 4) -->
+<div style="padding: 10px 12px; border-bottom: 1px solid var(--border); background-color: var(--bg-main);">
+    <div class="input-with-icon" style="width: 100%;">
+        <i data-lucide="search" class="search-icon"></i>
+        <input type="text" id="yardim_konu_arama" class="search-input" placeholder="Konularda ara (örn: mevzuat, sss, yedek)..." oninput="yardimKonulariFiltrele(this.value)">
+    </div>
 </div>
 <div id="yardim_menu_liste" style="flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px;">
 <button class="yardim-menu-btn active" onclick="yardimIcerikGoster('y_ogrenci', this)">
@@ -33,6 +41,25 @@
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_personel', this)">
 <i data-lucide="user-cog" height="16" width="16"></i> Personel Düzenleme
 </button>
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_kisayollar', this)">
+<i data-lucide="keyboard" height="16" width="16"></i> Klavye Kısayolları
+</button>
+<!-- ÖNERİ 2: MEB DEVAMSIZLIK MEVZUATI -->
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_mevzuat', this)">
+<i data-lucide="scale" height="16" width="16"></i> Devamsızlık Mevzuatı
+</button>
+<!-- ÖNERİ 3: SIKÇA SORULAN SORULAR -->
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_sss', this)">
+<i data-lucide="help-circle" height="16" width="16"></i> Sıkça Sorulan Sorular
+</button>
+<!-- ÖNERİ 5: SİSTEM TEŞHİSİ VE SAĞLIK -->
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_teshis', this); sistemTeshisVerileriniYukle();">
+<i data-lucide="activity" height="16" width="16"></i> Sistem Teşhisi &amp; Sağlık
+</button>
+<div id="yardim_arama_sonuc_yok" style="display: none; padding: 16px 8px; text-align: center; color: var(--fg-sub); font-size: 12px;">
+    <i data-lucide="search-x" height="18" width="18" style="display: block; margin: 0 auto 6px auto; opacity: 0.6;"></i>
+    Eşleşen rehber konusu bulunamadı.
+</div>
 </div>
 </div>
 <!-- Sağ İçerik (Detail) -->
@@ -248,6 +275,449 @@
 <strong>5. Otomatik Güncelleme:</strong> Tüm bu işlemleriniz anında veritabanına kaydedilir,
                         Yazı Tebliği ekranındaki personel ağacına otomatik yansır.
                     </div>
+</div>
+<!-- İçerik 8: Klavye Kısayolları Rehberi -->
+<div class="yardim-icerik" id="y_kisayollar" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+        <h2 style="color: var(--tree-sel); margin: 0; display: flex; align-items: center; gap: 10px;">
+            <i data-lucide="keyboard" height="24" width="24"></i> Klavye Kısayolları ve Hızlı Erişim Rehberi
+        </h2>
+        <button class="btn btn-dev" onclick="modalAc('kisayollar_modal')" style="padding: 6px 14px; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="zap" height="14" width="14"></i> Canlı Kısayol Penceresi (F1)
+        </button>
+    </div>
+
+    <div style="background-color: var(--bg-main); border-left: 4px solid var(--tree-sel); padding: 15px; margin-bottom: 25px; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 13.5px; line-height: 1.6;">
+        <strong>⚡ Hızlı ve Ergonomik İdare Deneyimi:</strong> Program, fareye ihtiyaç duymadan günlük tüm devamsızlık, tebliğ, arama ve yedekleme işlemlerinizi klavyeden yönetebilmeniz için power-user kısayollarıyla donatılmıştır. Herhangi bir ekrandayken <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:bold;">F1</kbd> veya <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:bold;">Ctrl + /</kbd> tuşlarına basarak hızlı rehber penceresini açabilirsiniz.
+    </div>
+
+    <!-- Kısayol Tabloları / Kart Grupları -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-bottom: 25px;">
+        <!-- Grup 1: Gezinme & Çalışma İstasyonları -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="compass" height="16" width="16" style="color: #38BDF8;"></i> İstasyonlar Arası Hızlı Geçiş
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px; width: 110px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 1</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Öğrenci İzin ve Devamsızlık İstasyonu</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 2</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Personel & Tebliğ Masası</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 3</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">22/d Doğrudan Temin & İhale Masası</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 4</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Proaktif Dashboard & İstatistikler</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 5</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Personel Sağlık İzinleri Takibi</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 6</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Sistem Ayarları ve Canlı Yedekler</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + 7</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Yardım ve Kullanım Rehberi</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Grup 2: Küresel Komuta & Görünüm -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="command" height="16" width="16" style="color: #A855F7;"></i> Evrensel Komuta & Görünüm
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px; width: 110px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + K</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);"><b>Evrensel Komut Paleti</b> (Arama, komutlar, öğrenci/personel)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">F1</kbd> / <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + /</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Klavye Kısayolları Rehberi Modalı</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + T</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Aydınlık / Karanlık Tema Değiştirme (WCAG AA)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">F5</kbd> / <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + R</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Verileri Yumuşak Yenileme (Soft Refresh)</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Esc</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Açık modal, komut paleti ve onay diyaloglarını kapatma</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Grup 3: Hızlı İşlemler & Belge Üretimi -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="zap" height="16" width="16" style="color: #10B981;"></i> Hızlı İşlemler & Belge Üretimi
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px; width: 110px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + F</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Arama Kutusuna Odaklanma (Öğrenci / Personel)</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + D</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Devamsızlık Excel Dosyası Yükleme</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + Z</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);"><b>Son Yapılan Devamsızlık Aktarımını Geri Alma (Undo)</b></td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + S</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Aktif Ekrandaki Formu / Ayarları Kaydetme</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + B</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Canlı SQLite Veritabanı Yedeği Alma</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + P</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Veli İzin Mektubu / Boş İzin Dilekçesi PDF Yazdırma</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + Shift + R</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Devamsızlık Sınır Raporları Modalı</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 4px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + O</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Öğrenci Yönetimi Modalı</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Grup 4: Tablo & Fare Kısayolları -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="mouse-pointer-click" height="16" width="16" style="color: #F59E0B;"></i> Tablo ve Liste Hızlı Etkileşimleri
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px; width: 110px;"><kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">↑ / ↓ Yön Tuşları</kbd></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Öğrenci listesi içinde satırlar arasında hızlı gezinme</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><strong style="color: var(--tree-sel);">Çift Tıklama</strong></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Seçili öğrencinin 365 Günlük Detaylı Devamsızlık Karnesini açma</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 4px;"><strong style="color: var(--tree-sel);">Sağ Tıklama</strong></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Hızlı Numara Kopyalama, Ad Kopyalama ve Devamsızlık Gösterme Menüsü</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 4px;"><strong style="color: #10B981;">1-Tık WhatsApp</strong></td>
+                        <td style="padding: 7px 4px; color: var(--fg-main);">Öğrenci künye kartından resmi veli yasal uyarı metnini tek tıkla panoya kopyalama</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- İÇERİK: MEB DEVAMSIZLIK MEVZUATI VE YASAL SINIRLAR (ÖNERİ 2) -->
+<!-- ======================================================== -->
+<div class="yardim-icerik" id="y_mevzuat" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+        <div>
+            <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="scale" height="22" width="22" style="color: #F59E0B;"></i> MEB Devamsızlık Mevzuatı ve Yasal Sınırlar El Kitabı
+            </h2>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
+                Milli Eğitim Bakanlığı Ortaöğretim ve Temel Eğitim Kurumları Yönetmeliği resmi kuralları
+            </p>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; color: #F59E0B; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); padding: 4px 10px; border-radius: 9999px;">
+            MEB Mevzuat Uyumlu
+        </span>
+    </div>
+
+    <!-- Mevzuat Bilgilendirme Notu -->
+    <div style="background: rgba(136, 19, 55, 0.08); border-left: 4px solid var(--meb-bordeaux); padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px;">
+        <div style="font-size: 13px; font-weight: 700; color: var(--fg-main); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            <i data-lucide="info" height="16" width="16" style="color: var(--meb-bordeaux-light);"></i> Yasal Dayanak: MEB Ortaöğretim Kurumları Yönetmeliği (Madde 36)
+        </div>
+        <div style="font-size: 12px; color: var(--fg-sub); line-height: 1.5;">
+            Bu sayfada açıklanan tüm kurallar ve hesaplama katsayıları, Bakanlık mevzuatına uygun olarak programın çekirdek hesaplama motoruna (<code>hesapla_devamsizlik</code>) kodlanmıştır. Devamsızlık Excel'i yüklendiğinde ve veli mektubu basıldığında bu kurallar tam doğrulukla uygulanır.
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+        <!-- Kart 1: 5 Geç = 0.5 Gün -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="clock" height="17" width="17" style="color: #38BDF8;"></i> 5 Geç Kalma = Yarım Gün Özürsüz Kuralı
+            </h3>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 10px 0;">
+                Öğrencilerin ders saatleri içinde okula <b>5 defa geç kalması</b>, sistem tarafından tam olarak <b>0.5 gün özürsüz devamsızlık</b> olarak toplam devamsızlığa dahil edilir.
+            </p>
+            <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 11.5px; color: var(--fg-main);">
+                <b>Örnek Uygulama:</b> 7 geç kaydı olan bir öğrencinin 5 geçi 0.5 gün özürsüze dönüşür, kalan 2 geç kaydı ise 'Geç' hanesinde takip edilmeye devam eder.
+            </div>
+        </div>
+
+        <!-- Kart 2: Yasal Sınırlar -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="alert-octagon" height="17" width="17" style="color: #EF4444;"></i> Yasal Devamsızlık Sınırları &amp; Sınıf Tekrarı
+            </h3>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Özürsüz Sınır (10 Gün):</b> Özürsüz devamsızlığı 10 günü aşan öğrenciler ders başarı puanları ne olursa olsun başarısız sayılır (sınıf tekrarı).</li>
+                <li><b>Toplam Sınır (30 Gün):</b> Özürlü (rapor/izin) ve özürsüz devamsızlık toplamı 30 günü aşamaz.</li>
+                <li><b>Ağır Tedavi &amp; Heyet Raporu:</b> Üniversite veya eğitim araştırma hastanesi heyet raporu olan öğrenciler için toplam süre <b>60 güne</b> kadar uzayabilir.</li>
+            </ul>
+        </div>
+
+        <!-- Kart 3: Veli Bildirim Zorunluluğu -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="mail-warning" height="17" width="17" style="color: #F59E0B;"></i> Yasal Veli Bildirim Eşikleri
+            </h3>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 10px 0;">
+                Mevzuat gereği okul idaresi belirlenen gün eşiklerinde öğrenci velisine resmi iadeli taahhütlü tebligat veya tebliğ belgesi ulaştırmakla yükümlüdür:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;">
+                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(245, 158, 11, 0.1); border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2);">
+                    <span><b>1. Bildirim Eşiği:</b> Özürsüz 5. gün</span>
+                    <span style="color: #F59E0B; font-weight: 700;">4.5 - 4.9 gün Erken Uyarı</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <span><b>2. Bildirim Eşiği:</b> Toplam 15. gün</span>
+                    <span style="color: #EF4444; font-weight: 700;">2. Resmi Tebligat</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(136, 19, 55, 0.15); border-radius: 4px; border: 1px solid rgba(136, 19, 55, 0.3);">
+                    <span><b>3. Bildirim Eşiği:</b> Toplam 25. gün</span>
+                    <span style="color: #F43F5E; font-weight: 700;">Nihai Kritik Tebligat</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kart 4: Hafta Sonu ve Faaliyet Muafiyeti -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
+            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="shield-check" height="17" width="17" style="color: #10B981;"></i> Hafta Sonu &amp; Faaliyet Muafiyetleri
+            </h3>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Hafta Sonu Filtresi:</b> Cumartesi ve Pazar günleri resmi izinli veya devamsız gün sayılmaz (<code>gun_farki_hesapla</code> algoritması bu günleri otomatik eler).</li>
+                <li><b>Resmi Faaliyet İzinleri:</b> MEB veya Gençlik ve Spor Bakanlığı onaylı ulusal/uluslararası spor, sanat ve bilim yarışmalarına katılan öğrencilerin izinleri devamsızlıktan sayılmaz.</li>
+                <li><b>İzin Dilekçesi:</b> Veli tarafından onaylanan mazeret izinleri en fazla 20 güne kadar özürlü devamsızlık olarak işlenebilir.</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- İÇERİK: SIKÇA SORULAN SORULAR & HATA ÇÖZÜMLERİ (ÖNERİ 3) -->
+<!-- ======================================================== -->
+<div class="yardim-icerik" id="y_sss" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+        <div>
+            <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="help-circle" height="22" width="22" style="color: #38BDF8;"></i> Sıkça Sorulan Sorular ve Hızlı Sorun Giderme
+            </h2>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
+                Okul idarecilerinin en sık karşılaştığı durumlar ve adım adım pratik çözümleri
+            </p>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; color: #38BDF8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 9999px;">
+            5 Temel Soru &amp; Yanıt
+        </span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+        <!-- Soru 1 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">1</span>
+                e-Okul'dan aldığım Excel dosyasını yüklerken biçim hatası alıyorum, ne yapmalıyım?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> e-Okul raporlama ekranında yazdır seçeneğine tıkladıktan sonra dosya formatı açılır menüsünden <b>"Excel"</b> değil, mutlaka <b>"Excel (Sadece Veri)"</b> seçeneğini işaretleyip indirmelisiniz. Standart "Excel" seçildiğinde e-Okul sahte HTML tablosu üretir. Programımızdaki güvenli Excel motoru bu dosyaları da otomatik onarır ancak en temiz ve hızlı yükleme <b>"Sadece Veri"</b> ile sağlanır.
+            </div>
+        </div>
+
+        <!-- Soru 2 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(239, 68, 68, 0.15); color: #EF4444; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">2</span>
+                Yanlışlıkla hatalı veya eski bir devamsızlık listesi aktardım, nasıl geri alırım?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> Endişelenmeyin! Klavyeden <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + Z</kbd> tuşuna basın veya sağ panel öğrenci künyesinin altındaki <b>"↩️ Geri Al"</b> butonuna tıklayın. Sistemimiz her toplu aktarım öncesinde otomatik SQLite bellek anlık görüntüsü (Snapshot Rollback) alır ve tek tıklamayla önceki duruma döner.
+            </div>
+        </div>
+
+        <!-- Soru 3 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">3</span>
+                DYS Personel Tebliğ PDF'inden personel isimleri neden otomatik çekilmiyor?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> Fiziksel tarayıcıdan taranmış (resim/fotoğraf PDF) evraklar sayısal metin katmanı içermez. DYS (Doküman Yönetim Sistemi) üzerinden doğrudan üretilmiş, e-imzalı dijital metin tabanlı orijinal PDF belgesini yüklemeniz gerekir.
+            </div>
+        </div>
+
+        <!-- Soru 4 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">4</span>
+                Programı ve tüm veritabanımı başka bir bilgisayara nasıl aktarırım?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> <b>Ayarlar ve Yedekler</b> sekmesinden veya <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + B</kbd> kısayolu ile veritabanı yedeğini alın. Oluşan <code>okul_veritabani.db</code> dosyasını bir USB belleğe kopyalayın. Yeni bilgisayara programı kurduktan sonra <i>Ayarlar &gt; Yedekten Geri Yükle</i> adımıyla içe aktarın.
+            </div>
+        </div>
+
+        <!-- Soru 5 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(139, 92, 246, 0.15); color: #8B5CF6; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">5</span>
+                Veliye resmi WhatsApp bildirim metni oluştururken veli telefonu boş geliyor?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> e-Okul şube listesinde veli telefon sütunu boş bırakılmış olabilir. Klavyeden <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + O</kbd> kısayoluna basarak <b>Öğrenci Yönetimi</b> penceresini açabilir, ilgili öğrenciyi seçerek veli cep telefonunu ve adresini anında kaydedebilirsiniz.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================================== -->
+<!-- İÇERİK: SİSTEM TEŞHİSİ VE SAĞLIK KONTROLÜ (ÖNERİ 5) -->
+<!-- ======================================================== -->
+<div class="yardim-icerik" id="y_teshis" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+        <div>
+            <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="activity" height="22" width="22" style="color: #10B981;"></i> Sistem Teşhisi ve Sağlık Kontrolü
+            </h2>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
+                Veritabanı bütünlüğü, kayıt sayaçları ve canlı çalışma ortamı tanı metrikleri
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-outline" onclick="sistemTeshisVerileriniYukle()" title="Verileri Yenile" style="height: 32px; padding: 0 10px; font-size: 12px;">
+                <i data-lucide="refresh-cw" height="14" width="14"></i> Yenile
+            </button>
+            <button class="btn btn-primary" onclick="sistemTeshisRaporuKopyala()" title="Tanı Raporunu Panoya Kopyala" style="height: 32px; padding: 0 12px; font-size: 12px; background: var(--gradient-bordeaux);">
+                <i data-lucide="clipboard-copy" height="14" width="14"></i> Tanı Raporunu Kopyala
+            </button>
+        </div>
+    </div>
+
+    <!-- Canlı Metrik Izgarası -->
+    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px;">
+        <!-- Kart 1: Kayıtlı Öğrenci -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(56, 189, 248, 0.12); display: flex; align-items: center; justify-content: center; color: #38BDF8;">
+                <i data-lucide="users" height="20" width="20"></i>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kayıtlı Öğrenci</div>
+                <div id="teshis_ogr_sayisi" style="font-size: 20px; font-weight: 800; color: var(--fg-main);">...</div>
+            </div>
+        </div>
+
+        <!-- Kart 2: Devamsızlık Kayıtları -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(245, 158, 11, 0.12); display: flex; align-items: center; justify-content: center; color: #F59E0B;">
+                <i data-lucide="calendar-check" height="20" width="20"></i>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Devamsızlık Kaydı</div>
+                <div id="teshis_dev_sayisi" style="font-size: 20px; font-weight: 800; color: var(--fg-main);">...</div>
+            </div>
+        </div>
+
+        <!-- Kart 3: Personel Sayısı -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(139, 92, 246, 0.12); display: flex; align-items: center; justify-content: center; color: #8B5CF6;">
+                <i data-lucide="user-check" height="20" width="20"></i>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kayıtlı Personel</div>
+                <div id="teshis_per_sayisi" style="font-size: 20px; font-weight: 800; color: var(--fg-main);">...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sistem ve Veritabanı Detay Tabloları -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+        <!-- Veritabanı Teşhisi -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="database" height="16" width="16" style="color: #10B981;"></i> SQLite Veritabanı Sağlığı
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Bütünlük Kontrolü</td>
+                        <td id="teshis_db_butunluk" style="padding: 7px 0; text-align: right; font-weight: 700; color: #10B981;">OK</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Journal Modu</td>
+                        <td id="teshis_db_mod" style="padding: 7px 0; text-align: right; font-weight: 700; color: var(--fg-main);">WAL</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Dosya Boyutu</td>
+                        <td id="teshis_db_boyut" style="padding: 7px 0; text-align: right; font-weight: 700; color: var(--fg-main);">...</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Anlık Snapshot (Geri Alma)</td>
+                        <td id="teshis_snapshot_durum" style="padding: 7px 0; text-align: right; font-weight: 700; color: #38BDF8;">Hazır (Ctrl+Z)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Yazılım & Çalışma Ortamı -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h3 style="margin: 0 0 12px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="cpu" height="16" width="16" style="color: #38BDF8;"></i> Yazılım ve Çalışma Ortamı
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <tbody>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Yazılım Sürümü</td>
+                        <td style="padding: 7px 0; text-align: right; font-weight: 700; color: var(--meb-bordeaux-light);">v2.0 MEB Uyumlu</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 0; color: var(--fg-sub);">İşletim Sistemi</td>
+                        <td id="teshis_os_bilgi" style="padding: 7px 0; text-align: right; font-weight: 700; color: var(--fg-main);">Windows</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Python Çalışma Zamanı</td>
+                        <td id="teshis_py_bilgi" style="padding: 7px 0; text-align: right; font-weight: 700; color: var(--fg-main);">Python 3.11+</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 7px 0; color: var(--fg-sub);">Son Teşhis Kontrolü</td>
+                        <td id="teshis_son_kontrol" style="padding: 7px 0; text-align: right; font-weight: 600; color: var(--fg-sub);">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 </div>
 </div>

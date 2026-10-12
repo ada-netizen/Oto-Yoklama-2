@@ -58,13 +58,32 @@ Bu belge, Claude Code ve diğer yapay zekâ kodlama ajanlarının (Antigravity, 
 * Özürsüz: Koyu Kırmızı (`#991B1B` / `#FCA5A5`), Özürlü: Amber (`#92400E` / `#FDE68A`), Geç: Turuncu (`#9A3412` / `#FDBA74`).
 
 ### F. Kısayollar ve Performans (Power-User)
+* `Ctrl+K`: Evrensel Komut Paletini (Command Palette) açar/kapatır.
+* `F1` veya `Ctrl+/`: Klavye Kısayolları Rehberini (Cheat Sheet) açar.
+* `Ctrl+Z`: Son devamsızlık aktarımını geri alır (Undo Snapshot).
+* `Ctrl+S`: Aktif sekmedeki form veya ayarları kaydeder.
+* `Ctrl+B`: Canlı veritabanı yedeği alır.
+* `Ctrl+P`: Veli mektubu / izin dilekçesi PDF oluşturur.
+* `Ctrl+T`: Aydınlık / Karanlık temayı değiştirir (WCAG AA).
+* `Ctrl+Shift+R`: Raporlar penceresini açar.
+* `Ctrl+O`: Öğrenci yönetimi penceresini açar.
+* `F5` / `Ctrl+R`: Verileri yumuşak yeniler (Soft Refresh).
 * `Ctrl+F` arama çubuğuna odaklanmalı, `Ctrl+D` dosya yükleme diyaloğunu açmalı, `Ctrl+1..7` sekmeler arası geçiş yapmalıdır.
 * Arama filtrelerinde en az 180ms `debounce` kullanılmalı, tablo DOM render'larında `DocumentFragment` kullanılmalıdır.
+
+### G. 3-Bölmeli Komuta Merkezi & MEB Bordeaux Hiyerarşisi
+* **Sol Navigasyon Rayı (Sidebar Rail - Sıfır İtmeli Açılır Hover Overlay)**:
+  * **Kapalı Durum (60px)**: Üstte ortalanmış MEB kep amblemi ve pencere boyunca inen dikey kenarlık (`border-right`), ortalanmış modül ikonları, dikey power butonları ve yeşil canlı nabız (`pulse-dot`) + tema anahtarı.
+  * **Hover Overlay (236px)**: Menü üzerine gelindiğinde sağa doğru akıcı şekilde açılır (`transition: 0.24s`); sabit 60px kapsayıcısı sayesinde yanındaki çalışma alanını (`.app-main-stage`) kesinlikle itmez veya kaydırmaz.
+  * **Gölge & Taşmama**: Sağ tarafa derin, katmanlı bir gölge yayar (`box-shadow: 18px 0 38px -4px rgba(0,0,0,0.65)`). Yükseklik `100vh` ve dikeyde esnek nav çubuğu sayesinde alt butonlar ve göstergeler pencere dışına taşmaz.
+* **Orta Liste Akışı (380px)**: Dinamik Hızlı Eşik Çipleri (`[Tümü]`, `[🚨 10G Ramak]`, `[⛔ 10G+ Aşan]`, `[📬 5G Mektup]`, `[⏳ 25G+ Toplam]`).
+* **Sağ Tuval (Esnek)**: Öğrenci künye kartı, 1-Tık Hızlı Aksiyon Barı (🟢 Veli WhatsApp Metni Kopyalama, 📄 Veli Mektubu, 📝 İzin Dilekçesi, ↩️ Geri Al), Yıllık Isı Haritası ve canlı önizleme.
+* **MEB Bordeaux Renk Hiyerarşisi**: `--meb-bordeaux: #881337`, `--meb-bordeaux-hover: #9F1239`, `--gradient-bordeaux`.
 
 ---
 
 ## 4. Test ve Kalite Güvencesi
-* Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` komutunu çalıştırarak tüm **32/32** testin yeşil (PASSED) olduğunu doğrula.
+* Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` komutunu çalıştırarak tüm **44/44** testin yeşil (PASSED) olduğunu doğrula.
 * Mevcut testlerin hiçbirini silme veya devre dışı bırakma.
 * Kod tabanı grafını senkronize tutmak için kritik değişikliklerden sonra `graphify extract . --code-only; graphify cluster-only .` çalıştır.
 

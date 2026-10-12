@@ -54,9 +54,14 @@
 <div class="toast-container" id="toast_container"></div>
 <div class="splash-overlay" id="splash_overlay">
 <div class="splash-card">
-<div class="splash-emblem"><i data-lucide="graduation-cap" height="32" width="32"></i></div>
+<div class="splash-emblem"><i data-lucide="graduation-cap" height="24" width="24"></i></div>
 <div class="splash-baslik">ELEKTRONİK OKUL</div>
 <div class="splash-altyazi">Otomatik Yoklama &amp; Resmi Evrak Yönetimi</div>
+<div class="splash-badge-strip">
+<span class="splash-pill"><i data-lucide="shield-check" height="12" width="12"></i> MEB Uyumlu</span>
+<span class="splash-pill"><i data-lucide="zap" height="12" width="12"></i> 60 FPS</span>
+<span class="splash-pill"><i data-lucide="command" height="12" width="12"></i> Ctrl + K</span>
+</div>
 <div class="splash-progress-track"><div class="splash-progress-bar"></div></div>
 </div>
 </div>
@@ -89,22 +94,46 @@
 {% include 'components/personel_drawer.html' %}
 <!-- PERSONEL GRUP YÖNETİM MODALI -->
 {% include 'components/personel_grup_yonetim_modal.html' %}
-<div class="notebook-header" style="display: flex; align-items: center;">
-<button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')"><i data-lucide="calendar-check" height="17" width="17"></i> Öğrenci İzin ve Devamsızlık</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')"><i data-lucide="users" height="17" width="17"></i> Personel Tebliğ</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_ihale')"><i data-lucide="briefcase" height="17" width="17"></i> İhale Yönetimi</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_dashboard'); dashboardYukle();"><i data-lucide="pie-chart" height="17" width="17"></i> İstatistikler</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_saglik'); saglikYukle();"><i data-lucide="activity" height="17" width="17"></i> Personel Sağlık İzinleri</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')"><i data-lucide="sliders" height="17" width="17"></i> Ayarlar ve Yedekler</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_yardim')"><i data-lucide="help-circle" height="17" width="17"></i> Yardım</button>
-<button class="tab-btn" onclick="sekmeAc(event, 'sekme_iletisim')"><i data-lucide="message-square" height="17" width="17"></i> İletişim</button>
-<div style="flex: 1; border-bottom: 1px solid var(--border); height: 100%;"></div>
-<div class="tema-switch" id="btn_tema" onclick="temaDegistir()" style="margin-right: 12px; margin-left: 10px;" title="Aydınlık / Karanlık Mod (WCAG AA)">
-<div class="switch-top"></div>
-<span class="ay"><i data-lucide="moon" height="15" width="15"></i></span>
-<span class="gunes"><i data-lucide="sun" height="15" width="15"></i></span>
-</div>
-</div>
+<!-- EVRENSEL KOMUT PALETİ (CTRL + K) -->
+{% include 'components/command_palette.html' %}
+<!-- KLAVYE KISAYOLLARI REHBERİ (F1) -->
+{% include 'components/kisayollar_modal.html' %}
+<!-- ================= 3-BÖLMELİ KOMUTA MERKEZİ DÜZENİ ================= -->
+<div class="app-layout">
+    <!-- 1. SOL NAVİGASYON & DURUM RAYI (SIDEBAR RAIL - SIFIR İTMELİ AÇILIR OVERLAY) -->
+    <div class="sidebar-rail-kapsayici">
+        {% include 'components/sidebar_rail.html' %}
+    </div>
+
+    <!-- 2. ANA ÇALIŞMA SAHNESİ (MAIN STAGE) -->
+    <main class="app-main-stage">
+        <!-- Geriye dönük uyumluluk için gizli notebook header -->
+        <div class="notebook-header" style="display: none;">
+            <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')"><i data-lucide="calendar-check" height="17" width="17"></i> Öğrenci İzin ve Devamsızlık</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')"><i data-lucide="users" height="17" width="17"></i> Personel Tebliğ</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ihale')"><i data-lucide="briefcase" height="17" width="17"></i> İhale Yönetimi</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_dashboard'); dashboardYukle();"><i data-lucide="pie-chart" height="17" width="17"></i> İstatistikler</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_saglik'); saglikYukle();"><i data-lucide="activity" height="17" width="17"></i> Personel Sağlık İzinleri</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ayarlar')"><i data-lucide="sliders" height="17" width="17"></i> Ayarlar ve Yedekler</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_yardim')"><i data-lucide="help-circle" height="17" width="17"></i> Yardım</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_iletisim')"><i data-lucide="message-square" height="17" width="17"></i> İletişim</button>
+            <div style="flex: 1; border-bottom: 1px solid var(--border); height: 100%;"></div>
+            <button class="cmd-palette-trigger-btn" onclick="komutPaletiAc()" title="Evrensel Komut Paleti (Ctrl + K)">
+                <i data-lucide="command" height="14" width="14"></i>
+                <span>Komutlar</span>
+                <kbd>Ctrl K</kbd>
+            </button>
+            <button class="cmd-palette-trigger-btn" onclick="modalAc('kisayollar_modal')" title="Klavye Kısayolları Rehberi (F1 / Ctrl + /)" style="margin-left: 6px;">
+                <i data-lucide="keyboard" height="14" width="14"></i>
+                <span>Kısayollar</span>
+                <kbd>F1</kbd>
+            </button>
+            <div class="tema-switch" id="btn_tema" onclick="temaDegistir()" style="margin-right: 12px; margin-left: 4px;" title="Aydınlık / Karanlık Mod (WCAG AA)">
+                <div class="switch-top"></div>
+                <span class="ay"><i data-lucide="moon" height="15" width="15"></i></span>
+                <span class="gunes"><i data-lucide="sun" height="15" width="15"></i></span>
+            </div>
+        </div>
 <div class="tab-content aktif" id="sekme_izin">
 <div class="top-bar">
 <h2 class="top-bar-title"><i data-lucide="check-square" height="20" width="20"></i> Yoklama Yönetim Paneli</h2>
@@ -129,6 +158,29 @@
 </select>
 <button class="btn btn-temizle" onclick="filtreTemizle()" style="padding: 7px 10px; cursor: pointer; border-radius: var(--radius-sm); font-size: 11px;" title="Aramayı Sıfırla"><i data-lucide="rotate-ccw" height="13" width="13"></i></button>
 </div>
+</div>
+<!-- DİNAMİK HIZLI EŞİK ÇİPLERİ (QUICK FILTER CHIPS) -->
+<div class="esik-cipleri-kapsayici" id="esik_cipleri_bar">
+    <button class="esik-cip aktif" id="chip_esik_tumu" onclick="esikFiltrele('tumu', this)" title="Tüm kayıtlı öğrenciler">
+        <span>Tümü</span>
+        <span class="esik-cip-badge" id="badge_esik_tumu">0</span>
+    </button>
+    <button class="esik-cip ramak" id="chip_esik_ramak" onclick="esikFiltrele('ramakkala_10', this)" title="Özürsüz devamsızlığı 8.5 ile 9.5 gün arası olan riskli öğrenciler">
+        <span>🚨 10G Ramak</span>
+        <span class="esik-cip-badge" id="badge_esik_ramakkala">0</span>
+    </button>
+    <button class="esik-cip asan" id="chip_esik_asan" onclick="esikFiltrele('asanlar_10', this)" title="Özürsüz devamsızlığı 10 günü aşmış öğrenciler">
+        <span>⛔ 10G+ Aşan</span>
+        <span class="esik-cip-badge" id="badge_esik_asanlar">0</span>
+    </button>
+    <button class="esik-cip mektup" id="chip_esik_mektup" onclick="esikFiltrele('mektup_5', this)" title="1. İadeli mektup eşiğindeki öğrenciler (4.5 - 5 gün)">
+        <span>📬 5G Mektup</span>
+        <span class="esik-cip-badge" id="badge_esik_mektup">0</span>
+    </button>
+    <button class="esik-cip toplam" id="chip_esik_toplam" onclick="esikFiltrele('toplam_25', this)" title="Toplam devamsızlığı 25 günü aşan öğrenciler (Sınır 30 gün)">
+        <span>⏳ 25G+ Toplam</span>
+        <span class="esik-cip-badge" id="badge_esik_toplam">0</span>
+    </button>
 </div>
 <div class="tree-card" style="flex: 1; border: 1px solid var(--border); border-radius: var(--radius-md); overflow-y: auto; background-color: var(--bg-card); box-shadow: var(--shadow-sm);">
 <table id="tree_tum_liste" style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 12px; text-align: left;">
@@ -173,14 +225,79 @@
 </div>
 </div>
 <div id="sag_dolu_icerik" style="display: none; flex-direction: column; height: 100%; gap: 10px;">
+<!-- ÖĞRENCİ KÜNYE KARTI VE 1-TIK HIZLI AKSİYON BARI -->
+<div class="ogr-kunye-karti" id="ogr_kunye_karti">
+    <div class="ogr-kunye-sol">
+        <div class="ogr-avatar-ikon">
+            <i data-lucide="user" height="20" width="20"></i>
+        </div>
+        <div class="ogr-kimlik-detay">
+            <div class="ogr-ad-baslik">
+                <span id="lbl_secili_ogrenci">Öğrenci Seçiniz</span>
+                <span class="status-pill" id="badge_risk_durumu" style="font-size: 10.5px; padding: 2px 7px;">Güvenli</span>
+            </div>
+            <div class="ogr-kunye-meta">
+                <span id="lbl_ogr_sube_bilgi"><i data-lucide="layers" height="12" width="12"></i> Sınıf: -</span>
+                <span style="opacity: 0.4;">•</span>
+                <span id="lbl_ogr_no_bilgi"><i data-lucide="hash" height="12" width="12"></i> No: -</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sayaç Rozetleri -->
+    <div class="ogr-sayac-rozetler">
+        <div class="ogr-sayac-kutusu" id="kutu_ozursuz_sayac" title="Özürsüz devamsızlık (Yasal sınır: 10 gün)">
+            <span>Özürsüz: </span><strong id="lbl_ozursuz_gun">0 Gün</strong>
+        </div>
+        <div class="ogr-sayac-kutusu" id="kutu_ozurlu_sayac" title="Özürlü / İzinli devamsızlık">
+            <span>Özürlü: </span><strong id="lbl_ozurlu_gun">0 Gün</strong>
+        </div>
+        <div class="ogr-sayac-kutusu" id="kutu_toplam_sayac" title="Toplam devamsızlık (Yasal sınır: 30 gün)">
+            <span>Toplam: </span><strong id="lbl_toplam_gun">0 Gün</strong>
+        </div>
+    </div>
+
+    <!-- 1-Tık Hızlı Aksiyonlar -->
+    <div class="quick-action-bar">
+        <button class="quick-action-btn whatsapp" onclick="veliWhatsAppKopyala()" title="Veliye resmi MEB uyarı bildirimini hazır WhatsApp metni olarak panoya kopyalar">
+            <i data-lucide="message-circle" height="14" width="14"></i>
+            <span>WhatsApp Metni</span>
+        </button>
+        <button class="quick-action-btn mektup" onclick="modalAc('raporlar_modal')" title="Veli bilgilendirme mektubu ve sınır raporları">
+            <i data-lucide="mail" height="14" width="14"></i>
+            <span>Veli Mektubu</span>
+        </button>
+        <button class="quick-action-btn dilekce" onclick="izinDilekcesiSablonuOlustur()" title="Boş izin dilekçesi şablonu (PDF) indir">
+            <i data-lucide="file-text" height="14" width="14"></i>
+            <span>İzin Dilekçesi</span>
+        </button>
+        <button class="quick-action-btn geri-al" onclick="sonIslemiGeriAl()" title="Son yapılan devamsızlık aktarımını geri al (Ctrl + Z)">
+            <i data-lucide="undo" height="14" width="14"></i>
+            <span>Geri Al</span>
+        </button>
+    </div>
+</div>
 <div style="display: flex; flex-direction: row; flex: 1; min-height: 0; gap: 10px;">
 <div id="takvim_alani_ana" style="flex: 55; display: flex; flex-direction: column; background-color: var(--bg-card); backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm);">
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">
-<button class="btn btn-temizle" onclick="ayDegistir(-1)" style="padding: 5px 12px; font-weight: 600;"><i data-lucide="chevron-left" height="14" width="14"></i> Önceki</button>
-<span id="lbl_ay_yil" style="font-weight: 700; font-size: 16px; color: var(--fg-main); letter-spacing: -0.2px;">Ocak 2026</span>
-<button class="btn btn-temizle" onclick="ayDegistir(1)" style="padding: 5px 12px; font-weight: 600;">Sonraki <i data-lucide="chevron-right" height="14" width="14"></i></button>
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
+<div style="display: flex; align-items: center; gap: 8px;">
+<div id="aylik_navigasyon_kutusu" style="display: flex; align-items: center; gap: 8px;">
+<button class="btn btn-temizle" onclick="ayDegistir(-1)" style="padding: 4px 10px; font-weight: 600;"><i data-lucide="chevron-left" height="14" width="14"></i> Önceki</button>
+<span id="lbl_ay_yil" style="font-weight: 700; font-size: 15px; color: var(--fg-main); letter-spacing: -0.2px;">Ocak 2026</span>
+<button class="btn btn-temizle" onclick="ayDegistir(1)" style="padding: 4px 10px; font-weight: 600;">Sonraki <i data-lucide="chevron-right" height="14" width="14"></i></button>
+</div>
+<span id="lbl_yillik_baslik" style="display: none; font-weight: 700; font-size: 14px; color: var(--fg-main); letter-spacing: -0.2px; align-items: center; gap: 6px;">
+<i data-lucide="flame" height="16" width="16" style="color: #F59E0B;"></i> Yıllık Devamsızlık Isı Haritası (Eylül - Haziran)
+</span>
+</div>
+<div class="segmented-control-mini">
+<button class="seg-mini-btn aktif" id="btn_gorunum_aylik" onclick="takvimGorunumDegistir('aylik')" title="Tek Aylık Detaylı Takvim"><i data-lucide="calendar" height="12" width="12"></i> Aylık</button>
+<button class="seg-mini-btn" id="btn_gorunum_yillik" onclick="takvimGorunumDegistir('yillik')" title="Tüm Eğitim Yılı Devamsızlık Isı Haritası (Eylül - Haziran)"><i data-lucide="grid" height="12" width="12"></i> Yıllık Isı Haritası</button>
+</div>
 </div>
 <div id="takvim_grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; flex: 1; align-content: start;">
+</div>
+<div id="yillik_isi_haritasi_kapsayici" style="display: none; grid-template-columns: repeat(2, 1fr); gap: 10px; flex: 1; overflow-y: auto; padding-right: 4px; align-content: start;">
 </div>
 <div style="background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-top: 12px;">
 <div style="text-align: center; font-size: 11px; font-weight: 600; color: var(--fg-sub); margin-bottom: 8px;">Hızlı Seçim</div>
@@ -898,14 +1015,16 @@
     </div>
 </div>
 {% include 'components/sekme_yardim.html' %}
- <!-- /sag_panel_ana -->
- <!-- /ana-kapsayici -->
+{% include 'components/sekme_iletisim.html' %}
+    </main>
+</div> <!-- /app-layout -->
 {% include 'components/ihale_komisyon_modal.html' %}
 <script src="js/core.js"></script>
 <script src="js/dashboard.js?v=4"></script>
 <script src="js/personel_teblig.js"></script>
 <script src="js/ihale.js"></script>
 <script src="js/saglik.js"></script>
+<script src="js/command_palette.js"></script>
 <script>
         lucide.createIcons();
     </script>
@@ -1095,6 +1214,5 @@ tippyStyle.textContent = `
 `;
 document.head.appendChild(tippyStyle);
 </script>
-{% include 'components/sekme_iletisim.html' %}
 </body>
 </html>

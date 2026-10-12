@@ -1579,5 +1579,136 @@ function yardimIcerikGoster(id, btnElement) {
     if (btnElement) {
         btnElement.classList.add('active');
     }
+
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
 }
+
+// ==========================================
+// YARDIM REHBERİ: KONU FİLTRELEME & SİSTEM TEŞHİSİ
+// ==========================================
+function yardimKonulariFiltrele(kelime) {
+    const q = (kelime || '').trim().toLowerCase();
+    const butonlar = document.querySelectorAll('#yardim_menu_liste .yardim-menu-btn');
+    let gorunenSayisi = 0;
+
+    butonlar.forEach(btn => {
+        const metin = (btn.textContent || '').toLowerCase();
+        if (!q || metin.includes(q)) {
+            btn.style.display = 'flex';
+            gorunenSayisi++;
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+
+    const emptyMsg = document.getElementById('yardim_arama_sonuc_yok');
+    if (emptyMsg) {
+        emptyMsg.style.display = (gorunenSayisi === 0 && q) ? 'block' : 'none';
+    }
+}
+
+let sonSistemTeshisVerisi = null;
+
+async function sistemTeshisVerileriniYukle() {
+    try {
+        const resp = await fetch('/sistem-teshis');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        if (!data.basarili) throw new Error(data.mesaj || 'Teşhis verisi alınamadı');
+
+        sonSistemTeshisVerisi = data;
+        const vb = data.veritabani || {};
+        const sis = data.sistem || {};
+
+        const elOgr = document.getElementById('teshis_ogr_sayisi');
+        if (elOgr) elOgr.textContent = (vb.ogrenci_sayisi ?? 0).toLocaleString();
+
+        const elDev = document.getElementById('teshis_dev_sayisi');
+        if (elDev) elDev.textContent = (vb.devamsizlik_sayisi ?? 0).toLocaleString();
+
+        const elPer = document.getElementById('teshis_per_sayisi');
+        if (elPer) elPer.textContent = (vb.personel_sayisi ?? 0).toLocaleString();
+
+        const elBoyut = document.getElementById('teshis_db_boyut');
+        if (elBoyut) elBoyut.textContent = (vb.boyut_kb ?? 0) + ' KB';
+
+        const elMod = document.getElementById('teshis_db_mod');
+        if (elMod) elMod.textContent = vb.journal_mode || 'WAL';
+
+        const elButunluk = document.getElementById('teshis_db_butunluk');
+        if (elButunluk) elButunluk.textContent = vb.butunluk === 'OK' ? 'Sağlıklı (OK)' : vb.butunluk;
+
+        const elSnapshot = document.getElementById('teshis_snapshot_durum');
+        if (elSnapshot) elSnapshot.textContent = vb.snapshot_var ? 'Hazır (Ctrl+Z Aktif)' : 'Beklemede';
+
+        const elOs = document.getElementById('teshis_os_bilgi');
+        if (elOs) elOs.textContent = sis.os || 'Windows';
+
+        const elPy = document.getElementById('teshis_py_bilgi');
+        if (elPy) elPy.textContent = sis.python_versiyon ? 'Python ' + sis.python_versiyon : 'Python 3.11+';
+
+        const elZaman = document.getElementById('teshis_son_kontrol');
+        if (elZaman) elZaman.textContent = sis.zaman || new Date().toLocaleTimeString();
+
+        if (window.lucide && typeof lucide.createIcons === 'function') {
+            lucide.createIcons();
+        }
+    } catch (e) {
+        console.error('Sistem teşhis yükleme hatası:', e);
+        if (typeof bildirimGoster === 'function') {
+            bildirimGoster('Sistem teşhis verisi alınamadı: ' + e.message, 'hata');
+        }
+    }
+}
+
+async function sistemTeshisRaporuKopyala() {
+    if (!sonSistemTeshisVerisi) {
+        await sistemTeshisVerileriniYukle();
+    }
+    const vb = (sonSistemTeshisVerisi && sonSistemTeshisVerisi.veritabani) || {};
+    const sis = (sonSistemTeshisVerisi && sonSistemTeshisVerisi.sistem) || {};
+
+    const raporMetni = 
+`==============================================
+OTO-YOKLAMA V2.0 SİSTEM TANI VE SAĞLIK RAPORU
+Tarih: ${sis.zaman || new Date().toLocaleString()}
+==============================================
+- Yazılım Sürümü : ${sis.versiyon || 'v2.0 MEB Uyumlu'}
+- İşletim Sistemi: ${sis.os || 'Bilinmiyor'}
+- Python Sürümü  : ${sis.python_versiyon || '3.11+'}
+- Motor / Arayüz : FastAPI REST + Edge WebView2 (60 FPS)
+
+[VERİTABANI BİLGİLERİ]
+- Veritabanı Yolu : ${vb.yol || 'okul_veritabani.db'}
+- Dosya Boyutu    : ${vb.boyut_kb || 0} KB
+- Journal Modu    : ${vb.journal_mode || 'WAL'}
+- Bütünlük Durumu : ${vb.butunluk || 'OK'}
+- Snapshot Durumu : ${vb.snapshot_var ? 'Mevcut (Geri Alınabilir)' : 'Yok'}
+
+[KAYIT İSTATİSTİKLERİ]
+- Kayıtlı Öğrenci : ${vb.ogrenci_sayisi ?? 0}
+- Devamsızlık     : ${vb.devamsizlik_sayisi ?? 0}
+- Kayıtlı Personel: ${vb.personel_sayisi ?? 0}
+==============================================`;
+
+    try {
+        await navigator.clipboard.writeText(raporMetni);
+        if (typeof bildirimGoster === 'function') {
+            bildirimGoster('📋 Sistem tanı raporu panoya kopyalandı! Destek mesajınıza yapıştırabilirsiniz.', 'basarili');
+        }
+    } catch (err) {
+        const textarea = document.createElement('textarea');
+        textarea.value = raporMetni;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        if (typeof bildirimGoster === 'function') {
+            bildirimGoster('📋 Sistem tanı raporu panoya kopyalandı.', 'basarili');
+        }
+    }
+}
+
 

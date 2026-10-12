@@ -70,10 +70,20 @@ Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, 
 - **Toplu DOM Ekleme (DocumentFragment)**:
   - Tablo satırları DOM'a tek tek (`appendChild`) değil, `DocumentFragment` içinde toplanarak tek bir işlemde eklenmelidir.
 - **Evrensel Kısayollar**:
-  - `Ctrl + F`: Arama kutusuna odaklanma.
-  - `Ctrl + D`: Devamsızlık dosya yükleyicisini açma.
-  - `Ctrl + 1..7`: Sekmeler arası hızlı geçiş.
-  - `Esc`: Açık modal ve onay pencerelerini kapatma.
+  - `Ctrl + K`: Evrensel Komut Paletini (Command Palette) açma/kapatma.
+  - `F1` veya `Ctrl + /`: Klavye Kısayolları Rehberi (Cheat Sheet) modalını açma.
+  - `Ctrl + F`: Aktif arama kutusuna odaklanma ve metni seçme.
+  - `Ctrl + D`: Devamsızlık Excel dosya seçicisini açma.
+  - `Ctrl + Z`: Son yapılan devamsızlık aktarımını geri alma (Undo Snapshot).
+  - `Ctrl + S`: Aktif sekmedeki formu/ayarları kaydetme.
+  - `Ctrl + B`: Canlı SQLite veritabanı yedeği alma.
+  - `Ctrl + P`: Seçili öğrenci veli mektubu / boş izin dilekçesi PDF oluşturma.
+  - `Ctrl + T`: Aydınlık / Karanlık temayı değiştirme (WCAG AA).
+  - `Ctrl + Shift + R`: Devamsızlık raporları modalını açma.
+  - `Ctrl + O`: Öğrenci yönetim modalını açma.
+  - `F5` / `Ctrl + R`: Verileri yumuşak yenileme (Soft Refresh).
+  - `Ctrl + 1..7`: Sekmeler arası hızlı geçiş (1: İzin, 2: Tebliğ, 3: İhale, 4: Dashboard, 5: Sağlık, 6: Ayarlar, 7: Yardım).
+  - `Esc`: Açık modal, komut paleti ve onay pencerelerini kapatma.
 
 ---
 
@@ -88,6 +98,33 @@ Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, 
 
 ---
 
-## 9. Test ve Kalite Güvencesi
-- Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` çalıştırılmalı ve **32/32 testin** yeşil (PASSED) olduğu doğrulanmalıdır.
+## 9. Evrensel Komut Paleti (Command Palette) Standartları
+- `Ctrl + K` veya üst çubuktaki "Komutlar" butonu ile tetiklenmeli, modal `Esc` veya dışına tıklama ile kapanmalıdır.
+- Sistem komutları (eşikler, geri alma, canlı yedek, excel yükleme, tema değiştirme), canlı öğrenci araması ve personel araması tek çatı altında toplanmalıdır.
+- Yön tuşları (`↑`, `↓`) ile seçim yapılmalı, `Enter` ile ilgili aksiyon çalıştırılmalıdır.
+
+---
+
+## 10. Test ve Kalite Güvencesi
+- Yapılan her kod değişikliğinden sonra `.\venv\Scripts\pytest -q` çalıştırılmalı ve **44/44 testin** yeşil (PASSED) olduğu doğrulanmalıdır.
 - Kritik mimari veya frontend değişikliklerinden sonra `graphify extract . --code-only; graphify cluster-only .` çalıştırılarak AST kod bağımlılık grafı güncel tutulmalıdır.
+- **Sistem Sağlığı ve Teşhis Standartları**: `/sistem-teshis` uç noktası üzerinden SQLite bütünlüğü (`PRAGMA integrity_check`), WAL modu ve kayıt sayıları denetlenmeli; Yardım ve Kılavuz sekmesinden panoya tanı raporu kopyalanabilmelidir.
+
+---
+
+## 11. 3-Bölmeli Komuta Merkezi Düzeni & MEB Bordeaux Renk Sistemi
+- **3-Bölmeli Mimari (`.app-layout`)**:
+  - **1. Sol Navigasyon ve Durum Rayı (Sidebar Rail - Sıfır İtmeli Açılır Hover Overlay)**:
+    - **Kapalı Ray Durumu (60px)**: Üstte ortalanmış MEB kep amblemi (`sidebar-emblem`) ve pencere boyunca uzanan dikey kenarlık (`border-right`), ortalanmış istasyon ikonları, dikey power-user butonları ve canlı yeşil durum nabzı (`pulse-dot`) ile tema anahtarı.
+    - **Hover Overlay Durumu (236px)**: Menü üzerine gelindiğinde veya klavye odağında akıcı bir şekilde (`transition: 0.24s cubic-bezier(0.16, 1, 0.3, 1)`) 236px genişliğe ulaşır.
+    - **Sıfır İtme (Zero-Shift)**: Menü `.sidebar-rail-kapsayici` (sabit 60px) içinde `position: absolute` olarak sağa doğru genişler; yanındaki ana çalışma sahnesini (`.app-main-stage`) kesinlikle itmez veya kaydırmaz.
+    - **Derin Katmanlı Gölge**: Açıldığında sağ çalışma alanının üzerine binerek derin bir gölge yayar (`box-shadow: 18px 0 38px -4px rgba(0,0,0,0.65), 6px 0 16px -2px rgba(0,0,0,0.45)`).
+    - **Aşağı Taşmama Garantisi**: Yükseklik `100vh`, `.sidebar-nav` içeride `flex: 1; overflow-y: auto; scrollbar-width: none` esnekliğindedir; footer elemanları (`.sidebar-footer`) ekranın tabanında sabitlenir ve pencere dışına kesinlikle taşmaz.
+  - **2. Orta Panel (Akıllı Liste Akışı - 380px)**: Arama kutusu (`Ctrl+F`), şube filtresi ve Dinamik Hızlı Eşik Çipleri (`[Tümü]`, `[🚨 10G Ramak]`, `[⛔ 10G+ Aşan]`, `[📬 5G Mektup]`, `[⏳ 25G+ Toplam]`) ile anlık rozet sayaçları.
+  - **3. Sağ Panel (Detay & Aksiyon Tuvali - Esnek)**: Öğrenci künye kartı, 1-Tık Hızlı Aksiyon Barı (🟢 Veli WhatsApp Resmi Bildirim Metni Kopyalama, 📄 Veli Mektubu, 📝 İzin Dilekçesi Şablonu, ↩️ Geri Al), Yıllık GitHub-stili Isı Haritası ve canlı PDF önizleme.
+- **MEB Bordeaux Renk Hiyerarşisi**:
+  - Kurumsal vurgular ve birincil aksiyonlar için `--meb-bordeaux: #881337`, `--meb-bordeaux-hover: #9F1239` ve `--gradient-bordeaux: linear-gradient(135deg, #881337, #BE123C)`.
+  - Derin Slate yüzeyler (`--bg-main: #0B1120`, `--bg-card-solid: #1E293B`) ve WCAG 2.1 AA kontrast şartı.
+- **İnteraktif Devamsızlık Aktarımı Toast'ı**:
+  - Devamsızlık aktarımı tamamlandığında açılan bildirimde doğrudan `↩️ Geri Al` butonu sunularak anında geri alma (Undo) imkanı sağlanmalıdır.
+

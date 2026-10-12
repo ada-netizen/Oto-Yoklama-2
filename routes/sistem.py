@@ -263,3 +263,65 @@ async def arsivle_sistem(request: Request):
         return {"basarili": True, "mesaj": "Arşivleme tamamlandı ve veritabanı sıfırlandı."}
     except Exception as e:
         return {"basarili": False, "mesaj": f"Hata: {str(e)}"}
+
+
+@router.get("/sistem-teshis")
+def sistem_teshis_getir():
+    """Sistem sağlığı, SQLite bütünlük ve kayıt teşhis verilerini döndürür."""
+    import platform
+    try:
+        db_yolu = db.db_yolu
+        db_boyut_kb = round(os.path.getsize(db_yolu) / 1024, 1) if os.path.exists(db_yolu) else 0
+
+        # SQLite PRAGMA kontrolleri
+        integrity = "OK"
+        journal_mode = "WAL"
+        try:
+            db.cursor.execute("PRAGMA integrity_check")
+            row = db.cursor.fetchone()
+            if row:
+                integrity = str(row[0])
+            db.cursor.execute("PRAGMA journal_mode")
+            row_j = db.cursor.fetchone()
+            if row_j:
+                journal_mode = str(row_j[0]).upper()
+        except Exception as pe:
+            logging.warning(f"Pragma kontrol uyarısı: {pe}")
+
+        # Kayıt sayıları
+        ogrenci_sayisi = 0
+        devamsizlik_sayisi = 0
+        personel_sayisi = 0
+        try:
+            db.cursor.execute("SELECT COUNT(*) FROM ogrenciler")
+            ogrenci_sayisi = db.cursor.fetchone()[0]
+            db.cursor.execute("SELECT COUNT(*) FROM devamsizliklar")
+            devamsizlik_sayisi = db.cursor.fetchone()[0]
+            db.cursor.execute("SELECT COUNT(*) FROM personel")
+            personel_sayisi = db.cursor.fetchone()[0]
+        except Exception as ce:
+            logging.warning(f"Kayıt sayısı sorgu uyarısı: {ce}")
+
+        return {
+            "basarili": True,
+            "veritabani": {
+                "yol": db_yolu,
+                "boyut_kb": db_boyut_kb,
+                "butunluk": integrity,
+                "journal_mode": journal_mode,
+                "ogrenci_sayisi": ogrenci_sayisi,
+                "devamsizlik_sayisi": devamsizlik_sayisi,
+                "personel_sayisi": personel_sayisi,
+                "snapshot_var": getattr(db, "_son_snapshot", None) is not None
+            },
+            "sistem": {
+                "python_versiyon": platform.python_version(),
+                "os": f"{platform.system()} {platform.release()}",
+                "versiyon": "v2.0 MEB Uyumlu",
+                "zaman": datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+            }
+        }
+    except Exception as e:
+        logging.error(f"/sistem-teshis genel hatası: {e}")
+        return {"basarili": False, "mesaj": f"Sistem teşhis hatası: {e}"}
+

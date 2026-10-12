@@ -1,0 +1,41 @@
+<!-- ================= GLOBAL COMMAND PALETTE (CTRL + K) ================= -->
+<div id="cmd_palette_overlay" class="cmd-palette-overlay" style="display: none;" onclick="komutPaletiOverlayTikla(event)">
+    <div class="cmd-palette-box" role="dialog" aria-modal="true" aria-label="Evrensel Komut Paleti">
+        <!-- Üst Arama Çubuğu -->
+        <div class="cmd-palette-header">
+            <div class="cmd-palette-search-icon">
+                <i data-lucide="command" height="18" width="18"></i>
+            </div>
+            <input 
+                type="text" 
+                id="cmd_palette_input" 
+                class="cmd-palette-input" 
+                placeholder="Komut yazın veya öğrenci/personel arayın... (Örn: 10 gün, mektup, Ali, yedek)" 
+                autocomplete="off" 
+                spellcheck="false" 
+                oninput="komutPaletiAramaGirdisi(this.value)"
+            />
+            <div class="cmd-palette-header-actions">
+                <span class="cmd-palette-kbd" onclick="komutPaletiKapat()" title="Kapat (ESC)">ESC</span>
+            </div>
+        </div>
+
+        <!-- Sonuçlar Listesi -->
+        <div id="cmd_palette_list" class="cmd-palette-list">
+            <!-- Dinamik olarak JS tarafından doldurulacak -->
+        </div>
+
+        <!-- Alt Bilgi ve Kısayol İpuçları Çubuğu -->
+        <div class="cmd-palette-footer">
+            <div class="cmd-palette-tips">
+                <span class="cmd-tip-item"><kbd>↑</kbd><kbd>↓</kbd> Gezin</span>
+                <span class="cmd-tip-item"><kbd>↵</kbd> Seç / Çalıştır</span>
+                <span class="cmd-tip-item"><kbd>Esc</kbd> Kapat</span>
+            </div>
+            <div class="cmd-palette-status" id="cmd_palette_status">
+                Komut Paleti
+            </div>
+        </div>
+    </div>
+</div>
+
