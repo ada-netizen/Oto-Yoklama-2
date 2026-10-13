@@ -42,6 +42,18 @@ def test_gec_kalma_hesaplamasi():
     assert ozsz_net == 0.5, "HATA! 5 adet Geç (G) kaydı 0.5 gün Özürsüz yapmalıdır!"
 
 
+def test_sv_sevkli_ozurlu_hesaplamasi():
+    """SV (Sevkli) türünün yasal olarak Özürlü devamsızlık sayıldığını doğrular."""
+    ornek_dev = [
+        {'no': '853', 'tarih': '08/05/2026', 'tur': 'SV', 'gun': '1'},  # Cuma - Hafta içi 1 gün
+        {'no': '853', 'tarih': '11/05/2026', 'tur': 'S', 'gun': '2'},   # Pazartesi - Hafta içi 2 gün
+        {'no': '853', 'tarih': '13/05/2026', 'tur': 'D', 'gun': '1'},   # Çarşamba - Hafta içi 1 gün
+    ]
+    ozsz_net, ozrl_net = VeriAraclari.hesapla_devamsizlik('853', ornek_dev, [])
+    assert ozsz_net == 1.0, f"Özürsüz 1.0 olmalı, sistemdeki: {ozsz_net}"
+    assert ozrl_net == 3.0, f"SV (1) + S (2) = 3.0 Özürlü olmalı, sistemdeki: {ozrl_net}"
+
+
 def test_excel_motoru_tabloyu_guvenli_oku_html_xls(tmp_path):
     """MEB e-Okul tarzı HTML formatındaki sahte .xls dosyalarının güvenli okunduğunu doğrular."""
     from excel_motoru import ExcelMotoru

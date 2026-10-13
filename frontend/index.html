@@ -503,7 +503,9 @@
 <div class="tab-content" id="sekme_dashboard" style="overflow-y: auto;">
 <div class="top-bar">
 <h2 class="top-bar-title"><i data-lucide="pie-chart" height="20" width="20"></i> İstatistikler ve Analitik Dashboard</h2>
-<div class="top-bar-buttons">
+<div class="top-bar-buttons" style="display: flex; gap: 8px; align-items: center;">
+<button class="btn btn-dev" id="btn_dash_duzenle" onclick="dashboardDuzenlemeModuToggle()" title="Grafiklerin ve kartların yerlerini ve boyutlarını serbestçe düzenleyin"><i data-lucide="layout-grid" height="15" width="15"></i> <span id="lbl_dash_duzenle">Yerleşimi Düzenle</span></button>
+<button class="btn btn-temizle" onclick="dashboardYerlesimiSifirla()" title="Varsayılan kart dizilimine ve boyutlarına geri dön"><i data-lucide="rotate-ccw" height="15" width="15"></i> Sıfırla</button>
 <button class="btn btn-dev" onclick="dashboardYukle()" title="Grafik ve İstatistikleri Yenile"><i data-lucide="refresh-cw" height="15" width="15"></i> Verileri Yenile</button>
 </div>
 </div>
@@ -514,11 +516,36 @@
         .kpi-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
         .kpi-info h4 { margin: 0; font-size: 11px; color: var(--fg-sub); font-weight: normal; }
         .kpi-info h2 { margin: 5px 0 0 0; font-size: 24px; color: var(--fg-main); font-weight: 800; }
-        .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
-        .dash-card { background: var(--bg-card); border-radius: 12px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .dash-card.span-2 { grid-column: span 2; }
-        .dash-card-header { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 15px; }
-        .dash-card-header h3 { margin: 0; font-size: 14px; color: var(--fg-main); font-weight: 600; }
+        
+        /* Dinamik Esnek Widget Izgarası */
+        .dashboard-widget-grid { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; box-sizing: border-box; padding-bottom: 24px; align-items: stretch; position: relative; }
+        .dash-card { background: var(--bg-card); border-radius: 12px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 4px 6px rgba(0,0,0,0.05); display: flex; flex-direction: column; box-sizing: border-box; position: relative; min-width: 260px; min-height: 180px; transition: border-color 0.2s, box-shadow 0.2s; }
+        .dash-card-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 12px; gap: 8px; user-select: none; }
+        .dash-card-header h3 { margin: 0; font-size: 13.5px; color: var(--fg-main); font-weight: 600; }
+        
+        .dash-drag-handle { cursor: grab; color: var(--fg-sub); display: inline-flex; align-items: center; justify-content: center; padding: 4px; border-radius: 6px; user-select: none; touch-action: none; transition: all 0.15s; margin-right: 4px; }
+        .dash-drag-handle:hover { color: #0284c7; background: rgba(2, 132, 199, 0.12); }
+        .dash-drag-handle:active { cursor: grabbing; }
+        .dash-drag-handle svg { pointer-events: none; }
+
+        .dash-widget-tools { display: flex; align-items: center; gap: 6px; }
+        .dash-size-presets { display: flex; gap: 2px; align-items: center; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 6px; padding: 2px; }
+        .dash-size-btn { background: transparent; border: none; color: var(--fg-sub); font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 4px; cursor: pointer; transition: all 0.15s; user-select: none; }
+        .dash-size-btn:hover { background: rgba(255, 255, 255, 0.12); color: var(--fg-main); }
+        .dash-size-btn.aktif { background: #0284c7; color: white; }
+
+        .dash-corner-resizer { position: absolute; bottom: 0px; right: 0px; width: 26px; height: 26px; cursor: nwse-resize; display: flex; align-items: flex-end; justify-content: flex-end; padding: 0 4px 4px 0; color: var(--fg-sub); opacity: 0.65; transition: color 0.15s, opacity 0.15s, transform 0.15s; user-select: none; touch-action: none; z-index: 20; }
+        .dash-corner-resizer:hover, .dash-corner-resizer:active { opacity: 1; color: #0284c7; transform: scale(1.2); }
+        .dash-corner-resizer svg { pointer-events: none; }
+
+        /* Sürükleme ve Düzenleme Durumları */
+        .dash-drop-placeholder { border: 2px dashed #0284c7 !important; background: rgba(2, 132, 199, 0.08) !important; border-radius: 12px; box-sizing: border-box; transition: all 0.12s ease; min-width: 260px; min-height: 180px; }
+        .dash-card.is-dragging { box-shadow: 0 20px 35px rgba(0, 0, 0, 0.35) !important; opacity: 0.92 !important; cursor: grabbing !important; }
+        .dash-card.is-resizing { border-color: #0284c7 !important; box-shadow: 0 0 14px rgba(2, 132, 199, 0.25) !important; }
+        .dashboard-duzenle-aktif .dash-card { border: 1.5px dashed #38bdf8 !important; box-shadow: 0 0 10px rgba(56, 189, 248, 0.15) !important; }
+        .dashboard-duzenle-aktif .dash-card-header { cursor: grab; }
+        .dashboard-duzenle-aktif .dash-drag-handle { color: #38bdf8 !important; background: rgba(56, 189, 248, 0.1) !important; }
+
         .modern-table { width: 100%; border-collapse: collapse; font-size: 11px; }
         .modern-table th { text-align: left; padding: 8px; color: var(--fg-sub); border-bottom: 2px solid var(--border); font-weight: 600; }
         .modern-table td { padding: 8px; color: var(--fg-main); border-bottom: 1px solid var(--border); }
@@ -547,95 +574,324 @@
     </div>
 
 
-    <!-- KRİTİK EŞİK ERKEN UYARI WIDGET'I (PROAKTİF DASHBOARD) -->
-    <div class="dash-card" style="margin-bottom: 24px; border: 1px solid var(--border); box-shadow: var(--shadow-md);">
-        <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="shield-alert" style="color: #ef4444; width: 20px; height: 20px;"></i>
-                <h3 style="margin: 0; font-size: 15px; font-weight: 700; color: var(--fg-main);">Kritik Eşik Erken Uyarı Paneli</h3>
-                <span style="font-size: 11px; color: var(--fg-sub);">(MEB Mevzuat Takip Asistanı)</span>
-            </div>
-            <!-- Eşik Filtreleme Butonları / Chips -->
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button id="btn_esik_ramakkala_10" class="btn esik-filtre-btn aktif" onclick="kritikEsikKategorisiDegistir('ramakkala_10')" style="font-size: 11px; padding: 5px 10px; border-radius: 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600;">
-                    🚨 10 Güne Yaklaşanlar (9-9.9G) <span id="sayi_ramakkala_10" style="background:#ef4444; color:white; border-radius:10px; padding:1px 6px; margin-left:4px; font-size:10px;">0</span>
-                </button>
-                <button id="btn_esik_asanlar_10" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('asanlar_10')" style="font-size: 11px; padding: 5px 10px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                    ⚠️ 10 Günü Aşanlar <span id="sayi_asanlar_10" style="background:#dc2626; color:white; border-radius:10px; padding:1px 6px; margin-left:4px; font-size:10px;">0</span>
-                </button>
-                <button id="btn_esik_mektup_5" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('mektup_siniri_5')" style="font-size: 11px; padding: 5px 10px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                    📬 1. Mektup Eşiği (4.5-5G) <span id="sayi_mektup_5" style="background:#f59e0b; color:white; border-radius:10px; padding:1px 6px; margin-left:4px; font-size:10px;">0</span>
-                </button>
-                <button id="btn_esik_toplam_25" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('toplam_risk_25')" style="font-size: 11px; padding: 5px 10px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                    ⏳ Toplam 25+ Gün <span id="sayi_toplam_25" style="background:#6366f1; color:white; border-radius:10px; padding:1px 6px; margin-left:4px; font-size:10px;">0</span>
-                </button>
-            </div>
-        </div>
-        <div style="overflow-x: auto; max-height: 320px;">
-            <table class="modern-table" style="width: 100%; white-space: nowrap;">
-                <thead style="position: sticky; top: 0; background: var(--bg-card-solid); z-index: 1;">
-                    <tr>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: left;">Sınıf/Şube</th>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: left;">Okul No</th>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: left;">Adı Soyadı</th>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: center;">Özürsüz Gün</th>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: center;">Özürlü Gün</th>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: center;">Toplam Gün</th>
-                        <th style="padding: 10px 12px; border-bottom: 2px solid var(--border); text-align: right;">Hızlı Aksiyon</th>
-                    </tr>
-                </thead>
-                <tbody id="dashboard_kritik_ogrenciler_body">
-                    <!-- JS ile doldurulacak -->
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- MAIN CHARTS (ROW 1) -->
-    <div class="dash-grid">
-        <div class="dash-card span-2">
-            <div class="dash-card-header"><i data-lucide="trending-up" style="color: #3b82f6;"></i> <h3>Aylık Trend Analizi (Devamsızlık vs Evrak)</h3></div>
-            <div style="flex:1; position: relative;"><canvas id="chart_aylik"></canvas></div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="calendar" style="color: #f59e0b;"></i> <h3>Haftanın Günlerine Göre</h3></div>
-            <div style="flex:1; position: relative;"><canvas id="chart_gunluk"></canvas></div>
-        </div>
-    </div>
-
-    <!-- BREAKDOWN CHARTS (ROW 2) -->
-    <div class="dash-grid">
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="pie-chart" style="color: #8b5cf6;"></i> <h3>Devamsızlık Türleri</h3></div>
-            <div style="flex:1; position: relative;"><canvas id="chart_tur"></canvas></div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="bar-chart" style="color: #10b981;"></i> <h3>Sınıf Başına Düşen Ortalama</h3></div>
-            <div style="flex:1; position: relative;"><canvas id="chart_sube"></canvas></div>
-        </div>
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="pie-chart" style="color: #06b6d4;"></i> <h3>Özürlü / Özürsüz Oranı</h3></div>
-              <div style="flex:1; position: relative;"><canvas id="chart_ozurlu_oran"></canvas></div>
-        </div>
-    </div>
-
-    <!-- TABLES (ROW 3) -->
-    <div class="dash-grid">
-        <div class="dash-card">
-            <div class="dash-card-header"><i data-lucide="user-x" style="color: #ef4444;"></i> <h3 style="color: #ef4444;">Riskli: En Çok G (Geç) Kalanlar (Adet)</h3></div>
-            <table class="modern-table">
-                <thead><tr><th>Öğrenci</th><th>Şube</th><th>Adet</th></tr></thead>
-                  <tbody id="tbody_g_riskli"></tbody>
-            </table>
-        </div>
-        <div class="dash-card span-2">
-              <div class="dash-card-header"><i data-lucide="user-minus" style="color: #f59e0b;"></i> <h3>En Çok Devamsızlık Yapan 5</h3></div>
-            <table class="modern-table">
-                <thead><tr><th>Öğrenci</th><th>Şube</th><th>Toplam</th></tr></thead>
-                <tbody id="tbody_riskli"></tbody>
-            </table>
-        </div>
+    <!-- DİNAMİK SÜRÜKLENEBİLİR VE BOYUTLANDIRILABİLİR WIDGET PANELİ -->
+    <div id="dashboard_widget_container" class="dashboard-widget-grid">
         
+        <!-- 1. KRİTİK EŞİK ERKEN UYARI WIDGET'I -->
+        <div id="w_kritik_esikler" data-widget-id="w_kritik_esikler" class="dash-card" style="width: 100%; flex: 0 0 100%;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="shield-alert" style="color: #ef4444; width: 18px; height: 18px;"></i>
+                    <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--fg-main);">Kritik Eşik Erken Uyarı Paneli</h3>
+                    <span style="font-size: 11px; color: var(--fg-sub);">(MEB Mevzuat Takip Asistanı)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <!-- Eşik Filtreleme Butonları -->
+                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                        <button id="btn_esik_ramakkala_10" class="btn esik-filtre-btn aktif" onclick="kritikEsikKategorisiDegistir('ramakkala_10')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600;">
+                            🚨 10G Yaklaşan <span id="sayi_ramakkala_10" style="background:#ef4444; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
+                        </button>
+                        <button id="btn_esik_asanlar_10" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('asanlar_10')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                            ⚠️ 10G Aşan <span id="sayi_asanlar_10" style="background:#dc2626; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
+                        </button>
+                        <button id="btn_esik_mektup_5" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('mektup_siniri_5')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                            📬 5G Mektup <span id="sayi_mektup_5" style="background:#f59e0b; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
+                        </button>
+                        <button id="btn_esik_toplam_25" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('toplam_risk_25')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
+                            ⏳ 25G+ Toplam <span id="sayi_toplam_25" style="background:#6366f1; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
+                        </button>
+                    </div>
+                    <!-- Boyutlandırma Butonları -->
+                    <div class="dash-size-presets">
+                        <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                        <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                        <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                        <button type="button" class="dash-size-btn aktif" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                    </div>
+                </div>
+            </div>
+            <div style="overflow-x: auto; overflow-y: auto; min-height: 120px; flex: 1;">
+                <table class="modern-table" style="width: 100%; white-space: nowrap;">
+                    <thead style="position: sticky; top: 0; background: var(--bg-card-solid); z-index: 1;">
+                        <tr>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: left;">Sınıf/Şube</th>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: left;">Okul No</th>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: left;">Adı Soyadı</th>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: center;">Özürsüz Gün</th>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: center;">Özürlü Gün</th>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: center;">Toplam Gün</th>
+                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: right;">Hızlı Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dashboard_kritik_ogrenciler_body"></tbody>
+                </table>
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- YENİ 1: DEVAMSIZLIK RİSK PİRAMİDİ (OKUL SAĞLIK SKORU) -->
+        <div id="w_risk_piramidi" data-widget-id="w_risk_piramidi" class="dash-card" style="width: calc(50% - 8px); flex: 0 0 calc(50% - 8px); height: 340px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="bar-chart-2" style="color: #10b981;"></i>
+                    <h3>Devamsızlık Risk Piramidi</h3>
+                    <span style="font-size: 11px; color: var(--fg-sub);">(Özürsüz Gün Dağılımı)</span>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn aktif" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div id="container_risk_piramidi" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; padding: 4px 0;">
+                <!-- JS ile dinamik render edilecek -->
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- YENİ 2: KADEME BAZLI ANALİZ (9, 10, 11, 12. SINIFLAR) -->
+        <div id="w_chart_kademe" data-widget-id="w_chart_kademe" class="dash-card" style="width: calc(50% - 8px); flex: 0 0 calc(50% - 8px); height: 340px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="layers" style="color: #6366f1;"></i>
+                    <h3>Kademe Bazlı Devamsızlık</h3>
+                    <span style="font-size: 11px; color: var(--fg-sub);">(9, 10, 11, 12. Sınıf Ort.)</span>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn aktif" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div style="flex: 1; position: relative; min-height: 180px;"><canvas id="chart_kademe"></canvas></div>
+            <div id="kademe_kpi_alani" style="display: flex; gap: 8px; justify-content: space-between; margin-top: 6px; font-size: 11px;"></div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- YENİ 3: GEÇ KALMA ALARMI (5G = 0.5G DÖNÜŞÜM EŞİĞİNDEKİLER) -->
+        <div id="w_gec_kalma_alarmi" data-widget-id="w_gec_kalma_alarmi" class="dash-card" style="width: calc(50% - 8px); flex: 0 0 calc(50% - 8px); height: 340px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="alarm-clock" style="color: #f59e0b;"></i>
+                    <h3 style="color: #d97706;">Geç Kalma Alarmı</h3>
+                    <span style="font-size: 11px; color: var(--fg-sub);">(5G Kuralı Eşikteki Öğrenciler)</span>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn aktif" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div id="gec_kalma_ozet_bari" style="display: flex; gap: 8px; justify-content: space-between; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; margin-bottom: 8px; font-size: 11px;">
+                <!-- JS ile özet istatistik dolacak -->
+            </div>
+            <div style="overflow-y: auto; flex: 1;">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Öğrenci</th>
+                            <th>Şube</th>
+                            <th style="text-align: center;">Mevcut G</th>
+                            <th style="text-align: center;">Sonraki Ceza</th>
+                            <th style="text-align: right;">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody_gec_alarmi"></tbody>
+                </table>
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- YENİ 4: OKULUN ŞAMPİYON ŞUBELERİ (EN DÜZENLİ SINIFLAR) -->
+        <div id="w_sampiyon_subeler" data-widget-id="w_sampiyon_subeler" class="dash-card" style="width: calc(50% - 8px); flex: 0 0 calc(50% - 8px); height: 340px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="trophy" style="color: #f59e0b;"></i>
+                    <h3 style="color: #d97706;">Şampiyon Şubeler</h3>
+                    <span style="font-size: 11px; color: var(--fg-sub);">(En Düşük Devamsızlık Ort.)</span>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn aktif" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div id="container_sampiyon_subeler" style="flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px;">
+                <!-- JS ile podyum kartları render edilecek -->
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 2. AYLIK TREND ANALİZİ -->
+        <div id="w_chart_aylik" data-widget-id="w_chart_aylik" class="dash-card" style="width: calc(66.666% - 8px); flex: 0 0 calc(66.666% - 8px); height: 320px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="trending-up" style="color: #3b82f6;"></i>
+                    <h3>Aylık Trend Analizi (Devamsızlık vs Evrak)</h3>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn aktif" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div style="flex:1; position: relative; min-height: 0;"><canvas id="chart_aylik"></canvas></div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 3. GÜNLÜK TREND (HAFTANIN GÜNLERİ) -->
+        <div id="w_chart_gunluk" data-widget-id="w_chart_gunluk" class="dash-card" style="width: calc(33.333% - 11px); flex: 0 0 calc(33.333% - 11px); height: 320px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="calendar" style="color: #f59e0b;"></i>
+                    <h3>Haftanın Günlerine Göre</h3>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn aktif" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div style="flex:1; position: relative; min-height: 0;"><canvas id="chart_gunluk"></canvas></div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 4. DEVAMSIZLIK TÜRLERİ & İNTERAKTİF FİLTRE -->
+        <div id="w_chart_tur" data-widget-id="w_chart_tur" class="dash-card" style="width: calc(33.333% - 11px); flex: 0 0 calc(33.333% - 11px); height: 330px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="pie-chart" style="color: #8b5cf6;"></i> 
+                    <h3>Devamsızlık Türleri</h3>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div style="display: flex; gap: 3px;">
+                        <button class="btn btn-temizle" onclick="tumTurleriSec(true)" style="padding: 2px 5px; font-size: 9.5px;" title="Tüm türleri seç">Tümü</button>
+                        <button class="btn btn-temizle" onclick="tumTurleriSec(false)" style="padding: 2px 5px; font-size: 9.5px;" title="Tüm seçimleri temizle">Temizle</button>
+                    </div>
+                    <div class="dash-size-presets">
+                        <button type="button" class="dash-size-btn aktif" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                        <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                        <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                        <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; flex-direction: row; gap: 8px; align-items: center; flex: 1; min-height: 0;">
+                <div style="flex: 1.15; min-width: 130px; position: relative; height: 100%;">
+                    <canvas id="chart_tur"></canvas>
+                </div>
+                <div id="tur_filtre_paneli" style="flex: 0.85; min-width: 130px; height: 100%; overflow-y: auto; padding-left: 8px; border-left: 1px solid var(--border); font-size: 11px; display: flex; flex-direction: column; gap: 6px;">
+                    <!-- JS ile dinamik doldurulacak -->
+                </div>
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 5. SINIF BAŞINA DÜŞEN ORTALAMA -->
+        <div id="w_chart_sube" data-widget-id="w_chart_sube" class="dash-card" style="width: calc(33.333% - 11px); flex: 0 0 calc(33.333% - 11px); height: 330px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="bar-chart" style="color: #10b981;"></i> 
+                    <h3>Sınıf Başına Düşen Ortalama</h3>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn aktif" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div style="flex:1; position: relative; min-height: 0;"><canvas id="chart_sube"></canvas></div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 6. ÖZÜRLÜ / ÖZÜRSÜZ ORANI -->
+        <div id="w_chart_ozurlu_oran" data-widget-id="w_chart_ozurlu_oran" class="dash-card" style="width: calc(33.333% - 11px); flex: 0 0 calc(33.333% - 11px); height: 330px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="pie-chart" style="color: #06b6d4;"></i> 
+                    <h3>Özürlü / Özürsüz Oranı</h3>
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <div class="dash-size-presets">
+                        <button type="button" class="dash-size-btn aktif" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                        <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                        <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                        <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                    </div>
+                </div>
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-bottom: 4px;">
+                <span id="ozurlu_oran_badge" style="font-size: 10.5px; color: var(--fg-sub); font-weight: 600;"></span>
+            </div>
+            <div style="flex:1; position: relative; min-height: 0;"><canvas id="chart_ozurlu_oran"></canvas></div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 7. EN ÇOK G (GEÇ) KALANLAR (TABLO) -->
+        <div id="w_g_riskli" data-widget-id="w_g_riskli" class="dash-card" style="width: calc(33.333% - 11px); flex: 0 0 calc(33.333% - 11px); height: 320px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="user-x" style="color: #ef4444;"></i>
+                    <h3 style="color: #ef4444;">Riskli: En Çok G Kalanlar</h3>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn aktif" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div style="overflow-y: auto; flex: 1;">
+                <table class="modern-table">
+                    <thead><tr><th>Öğrenci</th><th>Şube</th><th>Adet</th></tr></thead>
+                    <tbody id="tbody_g_riskli"></tbody>
+                </table>
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
+        <!-- 8. EN ÇOK DEVAMSIZLIK YAPAN 5 (TABLO) -->
+        <div id="w_riskli_ogrenciler" data-widget-id="w_riskli_ogrenciler" class="dash-card" style="width: calc(66.666% - 8px); flex: 0 0 calc(66.666% - 8px); height: 320px;">
+            <div class="dash-card-header">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
+                    <i data-lucide="user-minus" style="color: #f59e0b;"></i>
+                    <h3>En Çok Devamsızlık Yapan 5 Öğrenci</h3>
+                </div>
+                <div class="dash-size-presets">
+                    <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
+                    <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
+                    <button type="button" class="dash-size-btn aktif" data-size="66%" onclick="kartGenislikAyarla(this, '66%')" title="Genişlik: 2/3">2/3</button>
+                    <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
+                </div>
+            </div>
+            <div style="overflow-y: auto; flex: 1;">
+                <table class="modern-table">
+                    <thead><tr><th>Öğrenci</th><th>Şube</th><th>Toplam</th></tr></thead>
+                    <tbody id="tbody_riskli"></tbody>
+                </table>
+            </div>
+            <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
+        </div>
+
     </div>
 </div>
 
@@ -948,12 +1204,12 @@
     </main>
 </div> <!-- /app-layout -->
 {% include 'components/ihale_komisyon_modal.html' %}
-<script src="js/core.js"></script>
-<script src="js/dashboard.js?v=5"></script>
-<script src="js/personel_teblig.js"></script>
-<script src="js/ihale.js"></script>
-<script src="js/saglik.js"></script>
-<script src="js/command_palette.js"></script>
+<script src="js/core.js?ts={{ ts }}"></script>
+<script src="js/dashboard.js?ts={{ ts }}"></script>
+<script src="js/personel_teblig.js?ts={{ ts }}"></script>
+<script src="js/ihale.js?ts={{ ts }}"></script>
+<script src="js/saglik.js?ts={{ ts }}"></script>
+<script src="js/command_palette.js?ts={{ ts }}"></script>
 <script>
         lucide.createIcons();
     </script>

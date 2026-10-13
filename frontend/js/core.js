@@ -465,6 +465,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             
             if(sekmeId === 'sekme_izin') verileriYukle();
             if(sekmeId === 'sekme_teblig') personelleriYukle();
+            if(sekmeId === 'sekme_dashboard' && typeof dashboardYukle === 'function') dashboardYukle();
             if(sekmeId === 'sekme_ihale') {
                 const icerik = document.getElementById("ihale_icerik");
                 if (icerik && icerik.querySelector("#ihale_baslangic_mesaj")) {
@@ -631,11 +632,15 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
                     if (["D", "ÖY", "SY"].includes(tur)) { detayOzursuz[tur] = (detayOzursuz[tur] || 0) + gunMiktari; hsOzursuz[tur] = (hsOzursuz[tur] || 0) + hsMiktari; ozszNet += hiMiktari; } 
                     else if (tur === "G") { gSayisi += 1; } 
-                    else if (["N", "F", "SV"].includes(tur)) { detayDiger[tur] = (detayDiger[tur] || 0) + gunMiktari; hsDiger[tur] = (hsDiger[tur] || 0) + hsMiktari; digerNet += hiMiktari; } 
+                    else if (["N", "F"].includes(tur)) { detayDiger[tur] = (detayDiger[tur] || 0) + gunMiktari; hsDiger[tur] = (hsDiger[tur] || 0) + hsMiktari; digerNet += hiMiktari; } 
                     else { detayOzurlu[tur] = (detayOzurlu[tur] || 0) + gunMiktari; hsOzurlu[tur] = (hsOzurlu[tur] || 0) + hsMiktari; ozrlNet += hiMiktari; }
                 });
 
                 if (gSayisi > 0) { let g = Math.floor(gSayisi / 5) * 0.5; detayOzursuz[`G (${gSayisi})`] = g; ozszNet += g; }
+
+                ozszNet = Math.round(ozszNet * 10) / 10;
+                ozrlNet = Math.round(ozrlNet * 10) / 10;
+                const toplamNet = Math.round((ozszNet + ozrlNet) * 10) / 10;
 
                 const ogrKayit = (window.ogrenciListesi || []).find(o => String(o.no) === String(no));
                 const ogrSube = ogrKayit ? ogrKayit.sube : (veri.sube || '');

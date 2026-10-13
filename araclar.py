@@ -88,7 +88,7 @@ class VeriAraclari:
                     ozsz_toplam_net += hi_miktari
                 elif tur == "G":
                     g_sayisi += 1 
-                elif tur in ["N", "F", "SV"]: 
+                elif tur in ["N", "F"]: 
                     pass 
                 else: 
                     ozrl_toplam_net += hi_miktari

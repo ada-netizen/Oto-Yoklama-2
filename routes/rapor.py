@@ -33,8 +33,8 @@ def rapor_esik_siniflar(format_tipi: str, background_tasks: BackgroundTasks):
         
         # Tur: Özürsüz -> D, Y, SY
         # Tur: Özürlü -> G, I, S, R, M
-        # Tur: Diğer -> N, F, SV (bunları saymıyoruz)
-        sayilmayacak_turler = ['N', 'F', 'SV']
+        # Tur: Diğer -> N, F (bunları saymıyoruz, SV sevkli/özürlü sayılır)
+        sayilmayacak_turler = ['N', 'F']
         
         for no, tur, gun in dev_kayitlar:
             if not tur or tur.upper() in sayilmayacak_turler:
