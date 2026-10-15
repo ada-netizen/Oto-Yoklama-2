@@ -140,7 +140,7 @@
 <div class="top-bar-buttons">
 <input accept=".xlsx, .xls, .csv" id="f-dev" onchange="dosyaYukle('devamsizlik-excel-yukle', event)" style="display: none;" type="file"/>
 <button class="btn btn-dev" onclick="document.getElementById('f-dev').click()" title="E-Okul'dan alınan devamsızlık Excel dosyasını yükleyin (Kısayol: Ctrl+D)"><i data-lucide="upload" height="15" width="15"></i> Devamsızlık Yükle</button>
-<button class="btn btn-temizle" onclick="sonIslemiGeriAl()" title="Son yapılan devamsızlık aktarımını geri al"><i data-lucide="undo" height="15" width="15"></i> Geri Al</button>
+<button class="btn btn-kirmizi" onclick="tumDevamsizliklariSil()" title="Sistemdeki tüm devamsızlık kayıtlarını temizler (Öğrenci listesi korunur)"><i data-lucide="trash-2" height="15" width="15"></i> Tüm Devamsızlığı Sil</button>
 <button class="btn btn-rapor" onclick="modalAc('raporlar_modal')" title="Devamsızlık sınırlarına göre öğrenci raporları oluşturun"><i data-lucide="file-text" height="15" width="15"></i> Raporlar</button>
 <button class="btn btn-rapor" onclick="izinDilekcesiSablonuOlustur()" title="Boş izin dilekçesi şablonu (PDF) oluştur" style="background-color: #0284c7; color: white;"><i data-lucide="download" height="15" width="15"></i> İzin Dilekçesi Şablonu</button>
 </div>
@@ -226,9 +226,6 @@
 <span id="lbl_ay_yil" style="font-weight: 700; font-size: 15px; color: var(--fg-main); letter-spacing: -0.2px; min-width: 105px; text-align: center;">Ocak 2026</span>
 <button class="btn btn-temizle" onclick="ayDegistir(1)" style="padding: 4px 12px; font-weight: 600;">Sonraki <i data-lucide="chevron-right" height="14" width="14"></i></button>
 </div>
-<span id="lbl_yillik_baslik" style="display: none; font-weight: 700; font-size: 14px; color: var(--fg-main); letter-spacing: -0.2px; align-items: center; justify-content: center; gap: 6px;">
-<i data-lucide="flame" height="16" width="16" style="color: #F59E0B;"></i> Yıllık Devamsızlık Isı Haritası (Eylül - Haziran)
-</span>
 </div>
 </div>
 <div id="takvim_grid" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; flex: 1; align-content: start;">
@@ -405,13 +402,17 @@
 <thead style="position: sticky; top: 0; background-color: var(--bg-card); z-index: 1;">
 <tr>
 <th style="width: 35%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                                Ad Soyad</th>
+    <span id="span_teblig_ad" onclick="personelSirala('ad')" style="cursor: pointer; user-select: none; color: var(--fg-main); font-weight: 700; font-size: 11px; white-space: nowrap;">Ad Soyad ▲</span>
+</th>
 <th style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                                Görev</th>
+    <span id="span_teblig_gorev" onclick="personelSirala('gorev')" style="cursor: pointer; user-select: none; color: var(--fg-main); font-weight: 700; font-size: 11px; white-space: nowrap;">Görev ↕</span>
+</th>
 <th style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                                Branş</th>
+    <span id="span_teblig_brans" onclick="personelSirala('brans')" style="cursor: pointer; user-select: none; color: var(--fg-main); font-weight: 700; font-size: 11px; white-space: nowrap;">Branş ↕</span>
+</th>
 <th style="width: 20%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align:left; font-weight: 600;">
-                                                Personel Grubu</th>
+    <span id="span_teblig_grup" onclick="personelSirala('grup')" style="cursor: pointer; user-select: none; color: var(--fg-main); font-weight: 700; font-size: 11px; white-space: nowrap;">Personel Grubu ↕</span>
+</th>
 <th style="width: 5%; padding: 10px 6px; color: var(--fg-sub); border-bottom: 2px solid var(--border); text-align: center;">
 <input id="chk_master_personel" onchange="personelMasterSecim(this.checked)" title="Ekranda görünenleri seç/bırak" type="checkbox"/>
 </th>
@@ -506,7 +507,6 @@
 <div class="top-bar-buttons" style="display: flex; gap: 8px; align-items: center;">
 <button class="btn btn-dev" id="btn_dash_duzenle" onclick="dashboardDuzenlemeModuToggle()" title="Grafiklerin ve kartların yerlerini ve boyutlarını serbestçe düzenleyin"><i data-lucide="layout-grid" height="15" width="15"></i> <span id="lbl_dash_duzenle">Yerleşimi Düzenle</span></button>
 <button class="btn btn-temizle" onclick="dashboardYerlesimiSifirla()" title="Varsayılan kart dizilimine ve boyutlarına geri dön"><i data-lucide="rotate-ccw" height="15" width="15"></i> Sıfırla</button>
-<button class="btn btn-dev" onclick="dashboardYukle()" title="Grafik ve İstatistikleri Yenile"><i data-lucide="refresh-cw" height="15" width="15"></i> Verileri Yenile</button>
 </div>
 </div>
     <style>

@@ -115,11 +115,12 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
-        sil(index) {
-            if(!confirm("Kuralı silmek istediğinize emin misiniz?")) return;
+        async sil(index) {
+            const onay = await modernOnayGoster("Kural Silme Onayı", "Kuralı silmek istediğinize emin misiniz?", "uyari");
+            if(!onay) return;
             window.sistemAyarlari.oto_eslesmeler.splice(index, 1);
-            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(window.sistemAyarlari) })
-            .then(r => r.json()).then(v => {
+            apiFetch('/ayarlar-kaydet', { method: 'POST', body: window.sistemAyarlari })
+            .then(v => {
                 bildirimGoster("Kural silindi!", "bilgi");
                 this.personellerGunce++;
             });

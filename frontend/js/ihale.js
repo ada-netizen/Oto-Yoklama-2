@@ -48,131 +48,7 @@ function ihaleTablosunuCiz() {
     govde.innerHTML = html;
 }
 
-async function ihaleExcelYukle(event) {
-    const inputEl = event.target;
-    const dosya = inputEl.files[0];
-    if (!dosya) return;
-    
-    yuklemeGoster("İhale Exceli Okunuyor...");
-    const formData = new FormData();
-    formData.append("dosya", dosya);
 
-    try {
-        const res = await fetch("http://localhost:8000/ihale-excel-oku", {
-            method: "POST",
-            body: formData
-        });
-        const sonuc = await res.json();
-        
-        if (sonuc.basarili) {
-            ihaleKalemleri = sonuc.kalemler;
-            ihaleTablosunuCiz();
-            bildirimGoster("Excel başarıyla okundu. " + ihaleKalemleri.length + " kalem bulundu.", "basarili");
-        } else {
-            bildirimGoster("Hata: " + sonuc.mesaj, "hata");
-        }
-    } catch (e) {
-        bildirimGoster("Sunucuya bağlanılamadı.", "hata");
-    } finally {
-        yuklemeGizle();
-        if (inputEl) inputEl.value = "";
-    }
-}
-
-function ihaleAdim3Goster() {
-    // Validate Step 2
-    const gecerliKalemler = ihaleGeciciVeri.kalemler.filter(k => k.cins && k.cins.trim() !== "");
-
-    if (gecerliKalemler.length === 0) {
-        bildirimGoster("Lütfen ihtiyaç listesine en az 1 kalem ekleyin.", "uyari");
-        return;
-    }
-    if (!ihaleGeciciVeri.konu) {
-        bildirimGoster("Lütfen ihale konusu (Adım 1) girin.", "uyari");
-        return;
-    }
-
-    const secim_ids = [
-        "ihale_kom_yaklasik_1", "ihale_kom_yaklasik_2", "ihale_kom_yaklasik_3",
-        "ihale_kom_piyasa_1", "ihale_kom_piyasa_2", "ihale_kom_piyasa_3",
-        "ihale_kom_muayene_1", "ihale_kom_muayene_2", "ihale_kom_muayene_3"
-    ];
-    let komisyon_eksik = false;
-    secim_ids.forEach(id => {
-        if (!ihaleKomisyonSecimleri[id]) komisyon_eksik = true;
-    });
-
-    if (komisyon_eksik) {
-        ihaleKomisyonHataModu = true;
-        bildirimGoster("Lütfen 'Görevli Yönetimi' butonuna basarak eksik komisyon üyelerini seçin! (Eksik olanlar kırmızı işaretlendi)", "hata");
-        return;
-    }
-    ihaleKomisyonHataModu = false;
-
-    // Hide Step 1 and Step 2
-    document.getElementById("ihale_icerik").children[0].style.display = "none";
-    document.getElementById("ihale_adim2_alani").style.display = "none";
-
-    const alan3 = document.getElementById("ihale_adim3_alani");
-    alan3.style.display = "flex";
-    
-    const bugun = new Date().toISOString().split('T')[0];
-
-    alan3.innerHTML = `
-        <div class="settings-card" style="flex: 1;">
-            <div class="settings-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-                <span><i data-lucide="printer" width="16" height="16"></i> 3. Adım: Belge Üretim Merkezi</span>
-                <button class="btn btn-ogr" style="padding: 4px 10px; font-size: 11px;" onclick="ihaleAdim3Geri()"><i data-lucide="arrow-left" width="14" height="14"></i> Geri Dön</button>
-            </div>
-            <div class="settings-card-body" style="padding: 15px;">
-                <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                    <thead>
-                        <tr style="border-bottom: 2px solid var(--border);">
-                            <th style="padding: 10px; color: var(--fg-main);">Sıra</th>
-                            <th style="padding: 10px; color: var(--fg-main);">Belge Adı</th>
-                            <th style="padding: 10px; color: var(--fg-main);">Belge Tarihi</th>
-                            <th style="padding: 10px; color: var(--fg-main); text-align: right;">İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 15px 10px; color: var(--fg-sub);">1</td>
-                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Fiyat İsteme</td>
-                            <td style="padding: 15px 10px;">
-                                <input type="date" id="tarih_fiyat_isteme" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                            </td>
-                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'pdf', getVal('tarih_fiyat_isteme'))"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="belgeUret('fiyat_isteme', 'excel', getVal('tarih_fiyat_isteme'))"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
-                            </td>
-                        </tr>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 15px 10px; color: var(--fg-sub);">2</td>
-                            <td style="padding: 15px 10px; font-weight: bold; color: var(--fg-main);">Yaklaşık Maliyet Hesap Cetveli</td>
-                            <td style="padding: 15px 10px;">
-                                <input type="date" id="tarih_yaklasik_maliyet" value="${bugun}" style="padding: 8px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px;">
-                            </td>
-                            <td style="padding: 15px 10px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                                <button class="btn" style="background-color: #EF4444; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('pdf')"><i data-lucide="file-text" width="14" height="14"></i> PDF Üret</button>
-                                <button class="btn" style="background-color: #10B981; color: white; padding: 6px 12px; font-size: 13px;" onclick="fiyatGirisModalAc('excel')"><i data-lucide="table" width="14" height="14"></i> Excel Üret</button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-    lucide.createIcons();
-    setTimeout(() => {
-        alan3.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-}
-
-function ihaleAdim3Geri() {
-    document.getElementById("ihale_icerik").children[0].style.display = "block";
-    document.getElementById("ihale_adim2_alani").style.display = "flex";
-    document.getElementById("ihale_adim3_alani").style.display = "none";
-}
 
 // Güvenli getElementById.value - null olursa "" döner (Promise Rejection önler)
 function getVal(id) {
@@ -216,15 +92,10 @@ async function belgeUret(belgeTipi, format, tarih) {
     };
 
     try {
-        const response = await fetch('http://localhost:8000/ihale-tekli-belge', {
+        const sonuc = await apiFetch('/ihale-tekli-belge', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(veri)
+            body: veri
         });
-        
-        const sonuc = await response.json();
         if (sonuc.basarili) {
             bildirimGoster(sonuc.mesaj, "basarili");
         } else {
@@ -1172,8 +1043,7 @@ async function ihaleKomisyonModalAc() {
     yuklemeGoster("Personel listesi alınıyor...");
     try {
         if (typeof tumPersoneller === 'undefined' || tumPersoneller.length === 0) {
-            const res = await fetch("http://localhost:8000/personeller?t=" + new Date().getTime());
-            const responseData = await res.json();
+            const responseData = await apiFetch(`/personeller?t=${new Date().getTime()}`);
             tumPersoneller = responseData.personeller || [];
         }
         
@@ -1356,12 +1226,6 @@ async function ihaleKomisyonOnayPdfYukle(event, gorevId) {
     }
 }
 
-function ihaleKomisyonOnaySil(gorevId) {
-    delete ihaleKomisyonOnaylari[gorevId];
-    localStorage.setItem("ihaleKomisyonOnaylari", JSON.stringify(ihaleKomisyonOnaylari));
-    ihaleKomisyonOnayBilgileriniGuncelle();
-}
-
 // Fiyat Giriş Modal Mantığı
 let seciliBelgeFormat = "";
 let seciliBelgeTuru = "yaklasik_maliyet";
@@ -1526,189 +1390,6 @@ function fiyatGirisTamamla() {
     let inputEl = document.getElementById(inputId);
     let tarih = inputEl ? inputEl.value : "";
     belgeUret(seciliBelgeTuru, seciliBelgeFormat, tarih);
-}
-
-// ==========================================
-// TEBLİĞ MODÜLÜ UI FONKSİYONLARI
-// ==========================================
-function tebligModuDegistir(mod) {
-    const btnToplu = document.getElementById('btn_alt_toplu');
-    const btnBireysel = document.getElementById('btn_alt_bireysel');
-    const viewToplu = document.getElementById('view_toplu_teblig');
-    const viewBireysel = document.getElementById('view_bireysel_teblig');
-
-    if (!btnToplu || !btnBireysel || !viewToplu || !viewBireysel) return;
-
-    if (mod === 'toplu') {
-        btnToplu.style.background = 'var(--tree-sel)';
-        btnToplu.style.color = 'white';
-        
-        btnBireysel.style.background = 'transparent';
-        btnBireysel.style.color = 'var(--fg-sub)';
-        
-        viewToplu.style.display = 'flex';
-        viewBireysel.style.display = 'none';
-    } else {
-        btnBireysel.style.background = 'var(--tree-sel)';
-        btnBireysel.style.color = 'white';
-        
-        btnToplu.style.background = 'transparent';
-        btnToplu.style.color = 'var(--fg-sub)';
-        
-        viewToplu.style.display = 'none';
-        viewBireysel.style.display = 'flex';
-    }
-}
-
-// ==========================================
-// YARDIM MODÜLÜ UI FONKSİYONLARI
-// ==========================================
-function yardimIcerikGoster(id, btnElement) {
-    // Tüm içerikleri gizle
-    const icerikler = document.querySelectorAll('.yardim-icerik');
-    icerikler.forEach(el => el.style.display = 'none');
-    
-    // Tüm butonlardan active sınıfını kaldır
-    const butonlar = document.querySelectorAll('.yardim-menu-btn');
-    butonlar.forEach(btn => btn.classList.remove('active'));
-    
-    // Seçileni göster ve butonunu aktif yap
-    const secilenIcerik = document.getElementById(id);
-    if (secilenIcerik) secilenIcerik.style.display = 'block';
-    
-    if (btnElement) {
-        btnElement.classList.add('active');
-    }
-
-    if (window.lucide && typeof lucide.createIcons === 'function') {
-        lucide.createIcons();
-    }
-}
-
-// ==========================================
-// YARDIM REHBERİ: KONU FİLTRELEME & SİSTEM TEŞHİSİ
-// ==========================================
-function yardimKonulariFiltrele(kelime) {
-    const q = (kelime || '').trim().toLowerCase();
-    const butonlar = document.querySelectorAll('#yardim_menu_liste .yardim-menu-btn');
-    let gorunenSayisi = 0;
-
-    butonlar.forEach(btn => {
-        const metin = (btn.textContent || '').toLowerCase();
-        if (!q || metin.includes(q)) {
-            btn.style.display = 'flex';
-            gorunenSayisi++;
-        } else {
-            btn.style.display = 'none';
-        }
-    });
-
-    const emptyMsg = document.getElementById('yardim_arama_sonuc_yok');
-    if (emptyMsg) {
-        emptyMsg.style.display = (gorunenSayisi === 0 && q) ? 'block' : 'none';
-    }
-}
-
-let sonSistemTeshisVerisi = null;
-
-async function sistemTeshisVerileriniYukle() {
-    try {
-        const resp = await fetch('/sistem-teshis');
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const data = await resp.json();
-        if (!data.basarili) throw new Error(data.mesaj || 'Teşhis verisi alınamadı');
-
-        sonSistemTeshisVerisi = data;
-        const vb = data.veritabani || {};
-        const sis = data.sistem || {};
-
-        const elOgr = document.getElementById('teshis_ogr_sayisi');
-        if (elOgr) elOgr.textContent = (vb.ogrenci_sayisi ?? 0).toLocaleString();
-
-        const elDev = document.getElementById('teshis_dev_sayisi');
-        if (elDev) elDev.textContent = (vb.devamsizlik_sayisi ?? 0).toLocaleString();
-
-        const elPer = document.getElementById('teshis_per_sayisi');
-        if (elPer) elPer.textContent = (vb.personel_sayisi ?? 0).toLocaleString();
-
-        const elBoyut = document.getElementById('teshis_db_boyut');
-        if (elBoyut) elBoyut.textContent = (vb.boyut_kb ?? 0) + ' KB';
-
-        const elMod = document.getElementById('teshis_db_mod');
-        if (elMod) elMod.textContent = vb.journal_mode || 'WAL';
-
-        const elButunluk = document.getElementById('teshis_db_butunluk');
-        if (elButunluk) elButunluk.textContent = vb.butunluk === 'OK' ? 'Sağlıklı (OK)' : vb.butunluk;
-
-        const elSnapshot = document.getElementById('teshis_snapshot_durum');
-        if (elSnapshot) elSnapshot.textContent = vb.snapshot_var ? 'Hazır (Ctrl+Z Aktif)' : 'Beklemede';
-
-        const elOs = document.getElementById('teshis_os_bilgi');
-        if (elOs) elOs.textContent = sis.os || 'Windows';
-
-        const elPy = document.getElementById('teshis_py_bilgi');
-        if (elPy) elPy.textContent = sis.python_versiyon ? 'Python ' + sis.python_versiyon : 'Python 3.11+';
-
-        const elZaman = document.getElementById('teshis_son_kontrol');
-        if (elZaman) elZaman.textContent = sis.zaman || new Date().toLocaleTimeString();
-
-        if (window.lucide && typeof lucide.createIcons === 'function') {
-            lucide.createIcons();
-        }
-    } catch (e) {
-        console.error('Sistem teşhis yükleme hatası:', e);
-        if (typeof bildirimGoster === 'function') {
-            bildirimGoster('Sistem teşhis verisi alınamadı: ' + e.message, 'hata');
-        }
-    }
-}
-
-async function sistemTeshisRaporuKopyala() {
-    if (!sonSistemTeshisVerisi) {
-        await sistemTeshisVerileriniYukle();
-    }
-    const vb = (sonSistemTeshisVerisi && sonSistemTeshisVerisi.veritabani) || {};
-    const sis = (sonSistemTeshisVerisi && sonSistemTeshisVerisi.sistem) || {};
-
-    const raporMetni = 
-`==============================================
-OTO-YOKLAMA V2.0 SİSTEM TANI VE SAĞLIK RAPORU
-Tarih: ${sis.zaman || new Date().toLocaleString()}
-==============================================
-- Yazılım Sürümü : ${sis.versiyon || 'v2.0 MEB Uyumlu'}
-- İşletim Sistemi: ${sis.os || 'Bilinmiyor'}
-- Python Sürümü  : ${sis.python_versiyon || '3.11+'}
-- Motor / Arayüz : FastAPI REST + Edge WebView2 (60 FPS)
-
-[VERİTABANI BİLGİLERİ]
-- Veritabanı Yolu : ${vb.yol || 'okul_veritabani.db'}
-- Dosya Boyutu    : ${vb.boyut_kb || 0} KB
-- Journal Modu    : ${vb.journal_mode || 'WAL'}
-- Bütünlük Durumu : ${vb.butunluk || 'OK'}
-- Snapshot Durumu : ${vb.snapshot_var ? 'Mevcut (Geri Alınabilir)' : 'Yok'}
-
-[KAYIT İSTATİSTİKLERİ]
-- Kayıtlı Öğrenci : ${vb.ogrenci_sayisi ?? 0}
-- Devamsızlık     : ${vb.devamsizlik_sayisi ?? 0}
-- Kayıtlı Personel: ${vb.personel_sayisi ?? 0}
-==============================================`;
-
-    try {
-        await navigator.clipboard.writeText(raporMetni);
-        if (typeof bildirimGoster === 'function') {
-            bildirimGoster('📋 Sistem tanı raporu panoya kopyalandı! Destek mesajınıza yapıştırabilirsiniz.', 'basarili');
-        }
-    } catch (err) {
-        const textarea = document.createElement('textarea');
-        textarea.value = raporMetni;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-        if (typeof bildirimGoster === 'function') {
-            bildirimGoster('📋 Sistem tanı raporu panoya kopyalandı.', 'basarili');
-        }
-    }
 }
 
 

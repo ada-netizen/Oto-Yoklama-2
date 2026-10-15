@@ -71,7 +71,33 @@ function filtreTumuDegisti() {
             personelTablosunuDoldur();
         }
 
-        // --- 2. GÖREV VE BRANŞ İÇİN "ARAMA İÇİNDE FİLTRE" MANTIĞI ---
+        // --- 2. GÖREV VE BRANŞ İÇİN "ARAMA İÇİNDE FİLTRE" VE SÜTUN SIRALAMA MANTIĞI ---
+        let personelSiralamaSutun = 'ad';
+        let personelSiralamaYon = 1;
+
+        function personelSirala(sutun) {
+            if (personelSiralamaSutun === sutun) {
+                personelSiralamaYon *= -1;
+            } else {
+                personelSiralamaSutun = sutun;
+                personelSiralamaYon = 1;
+            }
+            const basliklar = {
+                ad: 'Ad Soyad',
+                gorev: 'Görev',
+                brans: 'Branş',
+                grup: 'Personel Grubu'
+            };
+            Object.keys(basliklar).forEach(key => {
+                const el = document.getElementById(`span_teblig_${key}`);
+                if (el) {
+                    el.innerText = basliklar[key] + (personelSiralamaSutun === key ? (personelSiralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕');
+                }
+            });
+            personelTablosunuDoldur();
+        }
+        window.personelSirala = personelSirala;
+
         function personelTablosunuDoldur() {
             const govde = document.getElementById('personel-govde');
             if(!govde) return;
@@ -81,6 +107,13 @@ function filtreTumuDegisti() {
             const gosterilecekler = tumPersoneller.filter(p => {
                 const aramaUygun = arama === "" || p.ad.toLocaleUpperCase('tr-TR').includes(arama) || p.gorev.toLocaleUpperCase('tr-TR').includes(arama) || p.brans.toLocaleUpperCase('tr-TR').includes(arama) || p.grup.toLocaleUpperCase('tr-TR').includes(arama);
                 return p.secili || (arama !== "" && aramaUygun);
+            });
+
+            // Sütun başlığına göre aşağıdan yukarıya / yukarıdan aşağıya sıralama
+            gosterilecekler.sort((a, b) => {
+                let valA = (a[personelSiralamaSutun] || '').toString();
+                let valB = (b[personelSiralamaSutun] || '').toString();
+                return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * personelSiralamaYon;
             });
 
             govde.innerHTML = "";
@@ -166,33 +199,6 @@ function filtreTumuDegisti() {
             modalAc('personel_grup_yonetim_modal');
         }
 
-        function yeniPersonelGrubuEkle() {
-            const input = document.getElementById('yeni_grup_adi');
-            const ad = input.value.trim();
-            if (!ad) return;
-            if (tumPersonelGruplari.includes(ad)) {
-                bildirimGoster("Bu grup zaten mevcut!", "hata");
-                return;
-            }
-            tumPersonelGruplari.push(ad);
-            personelGrubuKaydet().then(() => {
-                input.value = '';
-                personelGruplariCiz();
-                bildirimGoster("Grup eklendi", "bilgi");
-            });
-        }
-
-        async function personelGrubuSil(ad) {
-            const onay = await modernOnayGoster("Grup Silme Onayı", `'${ad}' grubunu silmek istediğinize emin misiniz?`, "uyari");
-            if(!onay) return;
-            tumPersonelGruplari = tumPersonelGruplari.filter(g => g !== ad);
-            if(aktifPersonelFiltresi === ad) aktifPersonelFiltresi = 'Tümü';
-            personelGrubuKaydet().then(() => {
-                personelGruplariCiz();
-                bildirimGoster("Grup silindi", "bilgi");
-            });
-        }
-
         function personelGrubuKaydet() {
             return fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
                 let ayar = v.ayarlar || {};
@@ -204,25 +210,18 @@ function filtreTumuDegisti() {
             });
         }
 
-        function personelFiltreAyarla(filtre, btn) {
-            aktifPersonelFiltresi = filtre;
-            document.querySelectorAll('#personel_filtre_cipleri .filter-chip').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            yonetimPersonelTablosunuDoldur();
-        }
-
         function yonetimPersonelTablosunuDoldur() { }
 
         function personelPdfIndir() {
-            fetch(`${API}/personel-pdf-indir`).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+            apiFetch('/personel-pdf-indir').then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
 
         function personelExcelIndir() {
-            fetch(`${API}/personel-excel-indir`).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+            apiFetch('/personel-excel-indir').then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
         
         function esikRaporuAl(format) {
-            fetch(`${API}/rapor-esik-siniflar/${format}`).then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+            apiFetch(`/rapor-esik-siniflar/${format}`).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
 
         // --- RAPORLAR ---
@@ -245,15 +244,15 @@ function filtreTumuDegisti() {
                 payload.ozel_deger = typeof ozelDeger === 'string' ? ozelDeger : (ozelDeger ? JSON.stringify(ozelDeger) : null);
             }
 
-            fetch(`${API}/rapor-al`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
-                .then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
+            apiFetch('/rapor-al', { method: 'POST', body: payload })
+                .then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
 
         // --- AYARLAR, LOGO VE YEDEKLEME ---
         function logoYukle(tur, event) {
             const dosya = event.target.files[0]; if (!dosya) return;
             const formData = new FormData(); formData.append("tur", tur); formData.append("dosya", dosya);
-            fetch(`${API}/logo-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
+            apiFetch('/logo-yukle', { method: 'POST', body: formData }).then(v => {
                 bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
                 if(v.basarili) {
                     const etiket = tur === 'meb' ? 'ayar_meb_logo_ad' : 'ayar_okul_logo_ad';
@@ -264,7 +263,7 @@ function filtreTumuDegisti() {
         }
 
         function yedekleriListele() {
-            fetch(`${API}/yedekler-listele`).then(r => r.json()).then(v => {
+            apiFetch('/yedekler-listele').then(v => {
                 const kutu = document.getElementById('ayar_yedek_secim'); if(!kutu) return;
                 if(!v.yedekler || v.yedekler.length === 0) { kutu.innerHTML = '<option value="">Yedek dosyası bulunamadı</option>'; return; }
                 kutu.innerHTML = v.yedekler.map(y => `<option value="${y.dosya_adi}">${y.tarih} (${y.boyut_kb} KB)</option>`).join('');
@@ -276,12 +275,12 @@ function filtreTumuDegisti() {
             if(!secim) return bildirimGoster("Lütfen bir yedek dosyası seçin.", "hata");
             const onay = await modernOnayGoster("Yedekten Geri Yükle", "Mevcut veriler silinecek ve seçilen yedekteki veriler yüklenecektir.\n\nBu işlemi onaylıyor musunuz?", "uyari");
             if(!onay) return;
-            fetch(`${API}/yedek-geri-yukle`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dosya: secim }) })
-                .then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) location.reload(); });
+            apiFetch('/yedek-geri-yukle', { method: 'POST', body: { dosya: secim } })
+                .then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); if(v.basarili) location.reload(); });
         }
 
         function ayarlariYukle() {
-            fetch(`${API}/ayarlar-getir`).then(r => r.json()).then(v => {
+            apiFetch('/ayarlar-getir').then(v => {
                 sistemAyarlari = v.ayarlar;
                 window.sistemAyarlari = v.ayarlar;
                 if(document.getElementById('ayar_pdf_yol')) document.getElementById('ayar_pdf_yol').value = v.ayarlar.pdf_kayit_klasoru || v.yollar.PDF;
@@ -301,17 +300,16 @@ function filtreTumuDegisti() {
                 // İlk kullanım karşılama mesajı ve MEB logosu uyarısı
                 if (v.ayarlar.ilk_kullanim !== false) {
                     bildirimGoster("Sisteme Hoş Geldiniz! Önce Ayarlar menüsünden PDF kayıt yerini seçiniz.", "bilgi");
-                    fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ilk_kullanim: false }) });
+                    apiFetch('/ayarlar-kaydet', { method: 'POST', body: { ilk_kullanim: false } });
                 } else if (!v.ayarlar.meb_logosu) {
-                fetch(`${API}/versiyon`).then(res => res.json()).then(versiyonData => {
+                apiFetch('/versiyon').then(versiyonData => {
                     const GUNCEL = versiyonData.versiyon;
                     if (v.ayarlar.son_gorulen_versiyon !== GUNCEL) {
                         setTimeout(() => {
                             if(window.yeniliklerModalAc) window.yeniliklerModalAc();
-                            fetch(`${API}/ayarlar-kaydet`, { 
+                            apiFetch('/ayarlar-kaydet', { 
                                 method: 'POST', 
-                                headers: { 'Content-Type': 'application/json' }, 
-                                body: JSON.stringify({ son_gorulen_versiyon: GUNCEL }) 
+                                body: { son_gorulen_versiyon: GUNCEL } 
                             });
                         }, 1500);
                     }
@@ -332,13 +330,13 @@ function filtreTumuDegisti() {
             if(document.getElementById('ayar_yedek_saati')) sistemAyarlari.yedek_saati = document.getElementById('ayar_yedek_saati').value;
             if(document.getElementById('ayar_yedek_sikligi')) sistemAyarlari.yedek_sikligi = document.getElementById('ayar_yedek_sikligi').value;
             if(document.getElementById('ayar_yedek_gun_sayisi')) sistemAyarlari.yedek_gun_sayisi = document.getElementById('ayar_yedek_gun_sayisi').value;
-            fetch(`${API}/ayarlar-kaydet`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sistemAyarlari) }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); modalKapat('ayarlar_modal'); });
+            apiFetch('/ayarlar-kaydet', { method: 'POST', body: sistemAyarlari }).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); modalKapat('ayarlar_modal'); });
         }
 
-        function sistemYedekle() { fetch(`${API}/yedek-al`, { method: 'POST' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); yedekleriListele(); }); }
+        function sistemYedekle() { apiFetch('/yedek-al', { method: 'POST' }).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); yedekleriListele(); }); }
 
         function loglariGoster() {
-            fetch(`${API}/loglar`).then(r => r.json()).then(v => {
+            apiFetch('/loglar').then(v => {
                 const govde = document.getElementById('ayar_log_govde');
                 if(!govde) return;
                 govde.style.display = 'block';
@@ -349,7 +347,7 @@ function filtreTumuDegisti() {
         async function sonIslemiGeriAl() {
             const onay = await modernOnayGoster("Son İşlemi Geri Al", "Son güvenli yedeğe dönülecektir. Mevcut durum önce ayrıca yedeklenecektir. Devam edilsin mi?", "soru");
             if(!onay) return;
-            fetch(`${API}/son-islemi-geri-al`, { method: 'POST' }).then(r => r.json()).then(v => {
+            apiFetch('/son-islemi-geri-al', { method: 'POST' }).then(v => {
                 bildirimGoster(v.mesaj, v.basarili ? 'bilgi' : 'hata');
                 if(v.basarili) location.reload();
             }).catch(() => bildirimGoster('Geri alma işlemi başarısız.', 'hata'));
@@ -358,21 +356,21 @@ function filtreTumuDegisti() {
         async function veritabaniniSifirla() {
             const onay = await modernOnayGoster("Tüm Veritabanını Sıfırla", "DİKKAT: Tüm öğrenciler, devamsızlıklar ve personeller kalıcı olarak SİLİNECEKTİR.\n\nBu işlem geri alınamaz! Onaylıyor musunuz?", "uyari");
             if(onay) {
-                fetch(`${API}/veritabani-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
+                apiFetch('/veritabani-sifirla', { method: 'DELETE' }).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
             }
         }
 
         async function ogrencileriSifirla() {
             const onay = await modernOnayGoster("Öğrenci Verilerini Sıfırla", "Tüm öğrenci ve devamsızlık kayıtları SİLİNECEK.\nPersonel verilerine dokunulmayacaktır.\n\nOnaylıyor musunuz?", "uyari");
             if(onay) {
-                fetch(`${API}/ogrencileri-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
+                apiFetch('/ogrencileri-sifirla', { method: 'DELETE' }).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
             }
         }
 
         async function personelSifirla() {
             const onay = await modernOnayGoster("Personel Verilerini Sıfırla", "Tüm personel kayıtları SİLİNECEK.\nÖğrenci verilerine dokunulmayacaktır.\n\nOnaylıyor musunuz?", "uyari");
             if(onay) {
-                fetch(`${API}/personel-sifirla`, { method: 'DELETE' }).then(r => r.json()).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
+                apiFetch('/personel-sifirla', { method: 'DELETE' }).then(v => { bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); location.reload(); });
             }
         }
 
@@ -386,8 +384,7 @@ function filtreTumuDegisti() {
         }
 
         function gecKalanlariIndir() {
-            fetch(`${API}/rapor-gec-bugun`)
-                .then(res => res.json())
+            apiFetch('/rapor-gec-bugun')
                 .then(sonuc => {
                     if(!sonuc.basarili) {
                         bildirimGoster(sonuc.mesaj, "hata");
@@ -416,4 +413,34 @@ function filtreTumuDegisti() {
         };
 
 // ==========================================
-// İHALE MODÜLÜ (22/d) FONKSİYONLARI
+// TEBLİĞ MODÜLÜ UI FONKSİYONLARI
+// ==========================================
+function tebligModuDegistir(mod) {
+    const btnToplu = document.getElementById('btn_alt_toplu');
+    const btnBireysel = document.getElementById('btn_alt_bireysel');
+    const viewToplu = document.getElementById('view_toplu_teblig');
+    const viewBireysel = document.getElementById('view_bireysel_teblig');
+
+    if (!btnToplu || !btnBireysel || !viewToplu || !viewBireysel) return;
+
+    if (mod === 'toplu') {
+        btnToplu.style.background = 'var(--tree-sel)';
+        btnToplu.style.color = 'white';
+        
+        btnBireysel.style.background = 'transparent';
+        btnBireysel.style.color = 'var(--fg-sub)';
+        
+        viewToplu.style.display = 'flex';
+        viewBireysel.style.display = 'none';
+    } else {
+        btnBireysel.style.background = 'var(--tree-sel)';
+        btnBireysel.style.color = 'white';
+        
+        btnToplu.style.background = 'transparent';
+        btnToplu.style.color = 'var(--fg-sub)';
+        
+        viewToplu.style.display = 'none';
+        viewBireysel.style.display = 'flex';
+    }
+}
+window.tebligModuDegistir = tebligModuDegistir;

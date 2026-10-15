@@ -258,12 +258,61 @@
         /* 6. Resizer (Ayırıcı Çubuk) */
         .resizer { width: 4px !important; margin: 0 3px !important; }
 
-        /* --- BİLDİRİM (TOAST) SİSTEMİ: Tkinter'daki bildirim_goster ile birebir --- */
+        /* --- BİLDİRİM (TOAST) SİSTEMİ --- */
         .toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
         .toast { padding: 12px 25px; border-radius: 4px; color: #FFFFFF; font-family: var(--font-ui); font-size: 12px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.35); border: 1px solid; opacity: 0; transform: translateY(-15px); transition: opacity 0.25s ease, transform 0.25s ease; max-width: 480px; text-align: center; white-space: pre-line; }
         .toast.bilgi { background-color: #10B981; border-color: #065F46; }
         .toast.hata { background-color: #EF4444; border-color: #7F1D1D; }
         .toast.goster { opacity: 0.97; transform: translateY(0); }
+
+        /* Toastify Çarpı İşareti ve Metin Akışı İyileştirmesi */
+        .toastify {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 14px !important;
+            max-width: min(680px, 92vw) !important;
+            box-sizing: border-box !important;
+            line-height: 1.5 !important;
+            word-break: break-word !important;
+            white-space: pre-line !important;
+        }
+
+        .toastify .toast-content,
+        .toastify .toast-text {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            display: inline-block !important;
+            line-height: 1.45 !important;
+            word-break: break-word !important;
+        }
+
+        .toastify .toast-close {
+            flex: 0 0 auto !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 22px !important;
+            height: 22px !important;
+            padding: 0 !important;
+            margin: 0 0 0 6px !important;
+            border: none !important;
+            background: rgba(255, 255, 255, 0.18) !important;
+            color: #FFFFFF !important;
+            border-radius: 50% !important;
+            font-size: 12px !important;
+            font-weight: 700 !important;
+            line-height: 1 !important;
+            opacity: 0.85 !important;
+            cursor: pointer !important;
+            transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease !important;
+        }
+
+        .toastify .toast-close:hover {
+            opacity: 1 !important;
+            background: rgba(255, 255, 255, 0.35) !important;
+            transform: scale(1.1) !important;
+        }
 
         /* --- YÜKLENİYOR GÖSTERGESİ (Excel işlenirken) --- */
         .yukleniyor-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.75); z-index: 9998; justify-content: center; align-items: center; flex-direction: column; gap: 15px; }

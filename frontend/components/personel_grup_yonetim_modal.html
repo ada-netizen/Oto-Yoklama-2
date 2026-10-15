@@ -24,8 +24,9 @@
         this.yeniAd = '';
     },
     
-    sil(grup) {
-        if(!confirm(`'${grup}' grubunu silmek istediğinize emin misiniz?`)) return;
+    async sil(grup) {
+        const onay = await modernOnayGoster("Grup Silme Onayı", `'${grup}' grubunu silmek istediğinize emin misiniz?`, "uyari");
+        if(!onay) return;
         window.tumPersonelGruplari = window.tumPersonelGruplari.filter(g => g !== grup);
         if(window.aktifPersonelFiltresi === grup) window.aktifPersonelFiltresi = 'Tümü';
         personelGrubuKaydet().then(() => personelGruplariCiz());

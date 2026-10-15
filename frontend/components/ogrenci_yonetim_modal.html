@@ -148,10 +148,10 @@ document.addEventListener("alpine:init", () => {
             });
         },
         
-        sil(no, ad) {
-            if (!confirm(`${no} numaralı ${ad} adlı öğrenciyi (ve tüm devamsızlıklarını) silmek istediğinize emin misiniz?`)) return;
-            fetch(`${window.API || ''}/ogrenci-sil/${encodeURIComponent(no)}`, { method: "DELETE" })
-            .then(r => r.json())
+        async sil(no, ad) {
+            const onay = await modernOnayGoster("Öğrenci Silme Onayı", `${no} numaralı ${ad} adlı öğrenciyi (ve tüm devamsızlıklarını) silmek istediğinize emin misiniz?`, "uyari");
+            if(!onay) return;
+            apiFetch(`/ogrenci-sil/${encodeURIComponent(no)}`, { method: "DELETE" })
             .then(v => {
                 if(window.bildirimGoster) window.bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
                 if (v.basarili) {

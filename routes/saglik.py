@@ -7,6 +7,7 @@ import os
 
 router = APIRouter()
 from dependencies import db
+from araclar import VeriAraclari
 
 class SaglikRaporuRequest(BaseModel):
     personel_ad: str
@@ -79,10 +80,6 @@ def format_tr_tarih(tarih_str: str) -> str:
 def cakisan_rapor_kontrol(personel_ad: str, baslangic: str, bitis: str, haric_id: Optional[int] = None):
     if not bitis:
         bitis = baslangic
-        
-    def tr_norm(s):
-        if not s: return ""
-        return s.strip().upper().replace('İ', 'I').replace('Ğ', 'G').replace('Ü', 'U').replace('Ş', 'S').replace('Ö', 'O').replace('Ç', 'C')
 
     try:
         db.cursor.execute(
@@ -96,12 +93,12 @@ def cakisan_rapor_kontrol(personel_ad: str, baslangic: str, bitis: str, haric_id
         )
         rows = db.cursor.fetchall()
         
-        target_norm = tr_norm(personel_ad)
+        target_norm = VeriAraclari.tr_normalize(personel_ad)
         for r in rows:
             r_id, r_ad, r_bas, r_bit, r_gun, r_acik = r
             if haric_id is not None and r_id == haric_id:
                 continue
-            if r_ad == personel_ad or tr_norm(r_ad) == target_norm:
+            if r_ad == personel_ad or VeriAraclari.tr_normalize(r_ad) == target_norm:
                 return {
                     "id": r_id,
                     "personel_ad": r_ad,

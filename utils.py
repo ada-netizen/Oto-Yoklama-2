@@ -2,7 +2,7 @@ import os, logging, tempfile, re, shutil, uuid, json
 import platform, subprocess
 from datetime import datetime, timedelta
 import pandas as pd
-from dependencies import yollar, db, islem_loglari
+from dependencies import yollar, db, islem_loglari, islem_logla
 from sistem_motoru import SistemMotoru
 from models import *
 from araclar import VeriAraclari
@@ -89,27 +89,6 @@ def excel_yukleme_dogrula(dosya):
         return None, "Dosya boyutu 25 MB sınırını aşamaz."
     return uzanti, None
 
-
-def islem_logla(seviye, islem, mesaj):
-    """Kullanıcıya gösterilebilecek hassas olmayan işlem kaydı oluşturur."""
-    if seviye.lower() == "hata":
-        logging.error(f"İşlem Hatası: {islem} - {mesaj}")
-    else:
-        logging.info(f"İşlem Kaydı: {islem} - {mesaj}")
-        
-    kayit = {
-        "zaman": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "seviye": seviye,
-        "islem": islem,
-        "mesaj": mesaj,
-    }
-    islem_loglari.append(kayit)
-    del islem_loglari[:-200]
-    try:
-        with open(yollar["LOG"], "a", encoding="utf-8") as dosya:
-            dosya.write(json.dumps(kayit, ensure_ascii=False) + "\n")
-    except OSError:
-        pass
 
 from contextlib import contextmanager
 from fastapi import UploadFile

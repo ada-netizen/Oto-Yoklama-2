@@ -124,22 +124,54 @@ def test_excel_motoru_fuzzy_sutun_haritalama(tmp_path):
     assert ogrenciler2[0]["ad_soyad"] == "Elif Koç"
 
 
-def test_ihale_stilleri_font_ve_stil_onbellekleme():
-    """ihale_stilleri modülünün ReportLab ve openpyxl stillerini önbellekten tutarlı döndürdüğünü doğrular."""
-    from ihale_stilleri import font_hazirla, get_ihale_stilleri, FONT_TITLE_12, THIN_BORDER
-    
-    font1 = font_hazirla()
-    font2 = font_hazirla()
-    assert font1 == font2
-    assert isinstance(font1, str)
+def test_veri_araclari_turkce_yardimcilari():
+    """VeriAraclari tr_capitalize ve tr_normalize fonksiyonlarını test eder."""
+    from araclar import VeriAraclari
 
-    stiller = get_ihale_stilleri()
-    assert 'normal' in stiller
-    assert 'justify' in stiller
-    assert 'center' in stiller
-    assert 'title' in stiller
+    assert VeriAraclari.tr_capitalize("istanbul ili milli eğitim müdürlüğü") == "İstanbul İli Milli Eğitim Müdürlüğü"
+    assert VeriAraclari.tr_capitalize("ışık ılık su") == "Işık Ilık Su"
 
-    assert FONT_TITLE_12.bold is True
-    assert THIN_BORDER.left.style == "thin"
+    assert VeriAraclari.tr_normalize("Şule Öztürk-Çelik") == "SULE OZTURK-CELIK"
+    assert VeriAraclari.tr_normalize("İBRAHİM") == "IBRAHIM"
+
+
+def test_veri_araclari_tr_format_ad_soyad():
+    """VeriAraclari tr_format_ad_soyad fonksiyonunun son kelimeyi BÜYÜK, öncekileri Baş Harfi Büyük yaptığını doğrular."""
+    from araclar import VeriAraclari
+
+    assert VeriAraclari.tr_format_ad_soyad("ahmet can yılmaz") == "Ahmet Can YILMAZ"
+    assert VeriAraclari.tr_format_ad_soyad("MEHMET ALİ KAYA") == "Mehmet Ali KAYA"
+    assert VeriAraclari.tr_format_ad_soyad("AYŞE ÇETİN") == "Ayşe ÇETİN"
+    assert VeriAraclari.tr_format_ad_soyad("İSMAİL HAKKI ŞEN") == "İsmail Hakkı ŞEN"
+    assert VeriAraclari.tr_format_ad_soyad("ömer faruk ışık") == "Ömer Faruk IŞIK"
+    assert VeriAraclari.tr_format_ad_soyad("şule çelik") == "Şule ÇELİK"
+    assert VeriAraclari.tr_format_ad_soyad("GÜL") == "GÜL"
+    assert VeriAraclari.tr_format_ad_soyad("  ali   veli   ") == "Ali VELİ"
+    assert VeriAraclari.tr_format_ad_soyad("") == ""
+
+
+def test_dependencies_islem_ve_log_yonetimi(tmp_path):
+    """dependencies modülündeki tekilleştirilmiş job yönetimi ve log kaydetmeyi test eder."""
+    from dependencies import create_job, update_job, get_job, islem_logla, islem_loglari
+
+    job_id = create_job(mesaj="Test başlatıldı", yuzde=0)
+    assert job_id is not None
+    durum = get_job(job_id)
+    assert durum["durum"] == "basladi"
+    assert durum["yuzde"] == 0
+
+    update_job(job_id, durum="isleniyor", mesaj="Veri işleniyor", yuzde=50, ekstra="deger")
+    durum = get_job(job_id)
+    assert durum["durum"] == "isleniyor"
+    assert durum["yuzde"] == 50
+    assert durum["ekstra"] == "deger"
+
+    update_job(job_id, durum="tamamlandi", yuzde=100)
+    assert get_job(job_id)["durum"] == "tamamlandi"
+    assert get_job("olmayan_job_id") == {"durum": "bulunamadi"}
+
+    islem_logla("bilgi", "Test İşlem", "Başarılı bir test logu")
+    assert any(log.get("islem") == "Test İşlem" for log in islem_loglari)
+
 
 

@@ -10,6 +10,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_JUSTIFY, TA_CENTER
 from reportlab.lib.units import cm
 from PyPDF2 import PdfReader, PdfWriter
+from araclar import VeriAraclari
 
 class PDFYoneticisi:
     def __init__(self, ayarlar):
@@ -41,21 +42,22 @@ class PDFYoneticisi:
 
     def veli_formu_ciz(self, ogrenci_no, ogrenci_ad, kisa_sube, secili_kayitlar, kayit_yeri, ozurlu_str=0, ozursuz_str=0):
         """A5 Boyutunda Resmi Veli Devamsızlık Bildirim Formu Çizer"""
+        ogrenci_ad = VeriAraclari.tr_format_ad_soyad(ogrenci_ad)
         genislik, yukseklik = 419.53, 595.27 # A5 Boyutu
         pdf_bellek = io.BytesIO()
         c = canvas.Canvas(pdf_bellek, pagesize=(genislik, yukseklik))
         
         # --- 1. BAŞLIK VE LOGOLAR ---
         orta_y = yukseklik - 42.5  
-        logo_y = orta_y - 20
+        logo_y = orta_y - 24
         
         meb_logo_yolu = self.ayarlar.get("meb_logosu", "")
         if meb_logo_yolu and os.path.exists(meb_logo_yolu):
-            c.drawImage(meb_logo_yolu, 25, logo_y, width=40, height=40, preserveAspectRatio=True, mask='auto')
+            c.drawImage(meb_logo_yolu, 25, logo_y, width=48, height=48, preserveAspectRatio=True, mask='auto')
             
         okul_logo_yolu = self.ayarlar.get("okul_logosu", "")
         if okul_logo_yolu and os.path.exists(okul_logo_yolu):
-            c.drawImage(okul_logo_yolu, genislik - 65, logo_y, width=40, height=40, preserveAspectRatio=True, mask='auto')
+            c.drawImage(okul_logo_yolu, genislik - 73, logo_y, width=48, height=48, preserveAspectRatio=True, mask='auto')
 
         style_baslik = ParagraphStyle(name='CenterTitle', fontName=self.font_bold, fontSize=10, alignment=TA_CENTER, leading=14)
         okul_adi_metni = self.ayarlar.get("okul_adi", "Okul Adı")
@@ -79,7 +81,7 @@ class PDFYoneticisi:
         )
         
         style_metin = ParagraphStyle(name='JustifyIndent', fontName=self.font, fontSize=10, alignment=TA_JUSTIFY, firstLineIndent=1.25 * cm, leading=14)
-        metin_p1 = f"Velisi bulunduğum {ogrenci_no} numaralı, {kisa_sube} sınıfı öğrencisi {ogrenci_ad} aşağıda belirtilen tarihlerde bilgim dahilinde okula devam etmemiştir/etmeyecektir."
+        metin_p1 = f"Velisi bulunduğum {kisa_sube} sınıfı öğrencisi, {ogrenci_no} numaralı {ogrenci_ad} aşağıda belirtilen tarihlerde bilgim dahilinde okula devam etmemiştir/etmeyecektir."
         
         p1 = Paragraph(self.metin_duzelt(metin_p1), style_metin)
         p1_genislik, p1_yukseklik = p1.wrapOn(c, genislik - 50, yukseklik) 
@@ -120,7 +122,7 @@ class PDFYoneticisi:
             kutu_x_sol = 25
             kutu_x_sag = genislik - 25
             kutu_y_alt = 35
-            kutu_y_ust = 110
+            kutu_y_ust = 125
             orta_x = genislik / 2
 
             c.rect(kutu_x_sol, kutu_y_alt, kutu_x_sag - kutu_x_sol, kutu_y_ust - kutu_y_alt)
@@ -150,14 +152,17 @@ class PDFYoneticisi:
             noktalar = "." * 40
             nokta_genislik = c.stringWidth(noktalar, self.font, 9)
             y_tarih = kutu_y_ust - 15
-            y_ad = kutu_y_ust - 35
-            y_veli = kutu_y_ust - 50
-            y_imza = kutu_y_alt + 10
+            y_ad = kutu_y_ust - 31
+            y_veli = kutu_y_ust - 47
+            y_imza = kutu_y_ust - 63
+            y_tel = kutu_y_ust - 79
             x_label = sag_icerik_x
             x_colon = x_label + 45
             x_value = kutu_x_sag - nokta_genislik - 10
             merkez_x_nokta = x_value + (nokta_genislik / 2)
-            c.drawCentredString(merkez_x_nokta, y_tarih, f"Tarih: {bugun}")
+            c.drawString(x_label, y_tarih, "Tarih")
+            c.drawString(x_colon, y_tarih, ":")
+            c.drawCentredString(merkez_x_nokta, y_tarih, bugun)
             c.drawString(x_label, y_ad, "Ad Soyad")
             c.drawString(x_colon, y_ad, ":")
             c.drawString(x_value, y_ad, noktalar)
@@ -165,6 +170,9 @@ class PDFYoneticisi:
             c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
             c.drawString(x_colon, y_imza, ":")
             c.drawString(x_value, y_imza, noktalar)
+            c.drawString(x_label, y_tel, "Tel")
+            c.drawString(x_colon, y_tel, ":")
+            c.drawString(x_value, y_tel, noktalar)
             c.setFont(self.font, 8)
             c.drawString(kutu_x_sol, kutu_y_alt - 15, self.metin_duzelt(
                 "Not: Toplam devamsızlık süresi 10 gün özürsüz, 20 gün özürlü olmak üzere 30 gün ile sınırlıdır."
@@ -182,7 +190,7 @@ class PDFYoneticisi:
         toplam_gun = 0.0
         c.setFont(self.font, 10)
         for kayit_index, kayit in enumerate(secili_kayitlar):
-            if y_pozisyon < 135:
+            if y_pozisyon < 140:
                 alt_blok_ciz()
                 c.showPage()
                 c.setLineWidth(1)
@@ -234,15 +242,15 @@ class PDFYoneticisi:
         c = canvas.Canvas(pdf_bellek, pagesize=(genislik, yukseklik))
         
         orta_y = yukseklik - 42.5  
-        logo_y = orta_y - 20
+        logo_y = orta_y - 24
         
         meb_logo_yolu = self.ayarlar.get("meb_logosu", "")
         if meb_logo_yolu and os.path.exists(meb_logo_yolu):
-            c.drawImage(meb_logo_yolu, 25, logo_y, width=40, height=40, preserveAspectRatio=True, mask='auto')
+            c.drawImage(meb_logo_yolu, 25, logo_y, width=48, height=48, preserveAspectRatio=True, mask='auto')
             
         okul_logo_yolu = self.ayarlar.get("okul_logosu", "")
         if okul_logo_yolu and os.path.exists(okul_logo_yolu):
-            c.drawImage(okul_logo_yolu, genislik - 65, logo_y, width=40, height=40, preserveAspectRatio=True, mask='auto')
+            c.drawImage(okul_logo_yolu, genislik - 73, logo_y, width=48, height=48, preserveAspectRatio=True, mask='auto')
 
         style_baslik = ParagraphStyle(name='CenterTitle', fontName=self.font_bold, fontSize=10, alignment=TA_CENTER, leading=14)
         okul_adi_metni = self.ayarlar.get("okul_adi", "Okul Adı")
@@ -303,7 +311,7 @@ class PDFYoneticisi:
             kutu_x_sol = 25
             kutu_x_sag = genislik - 25
             kutu_y_alt = 35
-            kutu_y_ust = 110
+            kutu_y_ust = 125
             orta_x = genislik / 2
 
             c.rect(kutu_x_sol, kutu_y_alt, kutu_x_sag - kutu_x_sol, kutu_y_ust - kutu_y_alt)
@@ -329,14 +337,17 @@ class PDFYoneticisi:
             noktalar = "." * 40
             nokta_genislik = c.stringWidth(noktalar, self.font, 9)
             y_tarih = kutu_y_ust - 15
-            y_ad = kutu_y_ust - 35
-            y_veli = kutu_y_ust - 50
-            y_imza = kutu_y_alt + 10
+            y_ad = kutu_y_ust - 31
+            y_veli = kutu_y_ust - 47
+            y_imza = kutu_y_ust - 63
+            y_tel = kutu_y_ust - 79
             x_label = sag_icerik_x
             x_colon = x_label + 45
             x_value = kutu_x_sag - nokta_genislik - 10
             merkez_x_nokta = x_value + (nokta_genislik / 2)
-            c.drawCentredString(merkez_x_nokta, y_tarih, "Tarih: ..../..../20...")
+            c.drawString(x_label, y_tarih, "Tarih")
+            c.drawString(x_colon, y_tarih, ":")
+            c.drawCentredString(merkez_x_nokta, y_tarih, "..../..../20...")
             c.drawString(x_label, y_ad, "Ad Soyad")
             c.drawString(x_colon, y_ad, ":")
             c.drawString(x_value, y_ad, noktalar)
@@ -344,6 +355,9 @@ class PDFYoneticisi:
             c.drawString(x_label, y_imza, self.metin_duzelt("İmza"))
             c.drawString(x_colon, y_imza, ":")
             c.drawString(x_value, y_imza, noktalar)
+            c.drawString(x_label, y_tel, "Tel")
+            c.drawString(x_colon, y_tel, ":")
+            c.drawString(x_value, y_tel, noktalar)
             # Not: kutunun hemen altinda iki satir olarak yazilir
             c.setFont(self.font, 8)
             not_satir1 = self.metin_duzelt("Not: Toplam devamsızlık süresi 10 gün özürsüz, 20 gün özürlü olmak üzere 30 gün ile sınırlıdır.")

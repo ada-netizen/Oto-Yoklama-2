@@ -32,9 +32,15 @@
 <table id="personel_tablosu" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
 <thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
 <tr>
-<th style="width: 40%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Ad Soyad</th>
-<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Branşı</th>
-<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub);">Görevi</th>
+<th style="width: 40%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('ad')">
+    <span style="font-weight: 700; color: var(--fg-main);" x-text="'Ad Soyad' + (siralamaSutun === 'ad' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
+</th>
+<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('brans')">
+    <span style="font-weight: 700; color: var(--fg-main);" x-text="'Branşı' + (siralamaSutun === 'brans' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
+</th>
+<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('gorev')">
+    <span style="font-weight: 700; color: var(--fg-main);" x-text="'Görevi' + (siralamaSutun === 'gorev' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
+</th>
 <th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">İşlemler</th>
 </tr>
 </thead>
@@ -60,6 +66,8 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('personelYonetimComponent', () => ({
         arama: '',
         aktifFiltre: 'Tümü',
+        siralamaSutun: 'ad',
+        siralamaYon: 1,
         personeller: [...(window.tumPersoneller || [])],
         gruplarVerisi: [...(window.tumPersonelGruplari || [])],
         
@@ -92,6 +100,15 @@ document.addEventListener('alpine:init', () => {
             }
         },
         
+        sirala(sutun) {
+            if (this.siralamaSutun === sutun) {
+                this.siralamaYon *= -1;
+            } else {
+                this.siralamaSutun = sutun;
+                this.siralamaYon = 1;
+            }
+            this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+        },
         
         get gruplar() {
             return this.gruplarVerisi;
@@ -99,12 +116,18 @@ document.addEventListener('alpine:init', () => {
         
         get gosterilecekPersoneller() {
             let filterText = this.arama.toLocaleUpperCase('tr-TR');
-            let arr = [...this.personeller].sort((a,b) => a.ad.localeCompare(b.ad));
+            let arr = [...this.personeller];
             
-            return arr.filter(p => {
+            let filtered = arr.filter(p => {
                 if(filterText && !p.ad.toLocaleUpperCase('tr-TR').includes(filterText)) return false;
                 if(this.aktifFiltre !== 'Tümü' && p.grup !== this.aktifFiltre) return false;
                 return true;
+            });
+
+            return filtered.sort((a, b) => {
+                let valA = (a[this.siralamaSutun] || '').toString();
+                let valB = (b[this.siralamaSutun] || '').toString();
+                return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * this.siralamaYon;
             });
         },
         
@@ -112,10 +135,10 @@ document.addEventListener('alpine:init', () => {
             if(window.personelDuzenleBaslat) window.personelDuzenleBaslat(ad);
         },
         
-        sil(ad) {
-            if (!confirm(ad + ' adlı personeli silmek istediğinize emin misiniz?')) return;
-            fetch(`http://127.0.0.1:8000/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' })
-            .then(r => r.json())
+        async sil(ad) {
+            const onay = await modernOnayGoster("Personel Silme Onayı", `${ad} adlı personeli silmek istediğinize emin misiniz?`, "uyari");
+            if(!onay) return;
+            apiFetch(`/personel-sil/${encodeURIComponent(ad)}`, { method: 'DELETE' })
             .then(v => {
                 if(window.bildirimGoster) window.bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata");
                 if (v.basarili) {

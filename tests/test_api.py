@@ -21,9 +21,17 @@ client = TestClient(app)
 
 @pytest.fixture(autouse=True)
 def isolated_database(monkeypatch, tmp_path):
-    """Her API testi gerçek kullanıcı veritabanından bağımsız çalışır."""
+    """Her API testi gerçek kullanıcı veritabanından tamamen bağımsız çalışır."""
     test_db = api.VeritabaniYoneticisi(str(tmp_path / "test.db"))
-    monkeypatch.setattr(api, "db", test_db)
+    modules_to_patch = [
+        "dependencies", "api", "utils",
+        "routes.personel", "routes.ogrenci", "routes.dashboard",
+        "routes.ihale", "routes.pdf", "routes.rapor",
+        "routes.saglik", "routes.sistem"
+    ]
+    for mod_name in modules_to_patch:
+        if mod_name in sys.modules:
+            monkeypatch.setattr(sys.modules[mod_name], "db", test_db)
     yield
     test_db.kapat()
 
@@ -233,6 +241,15 @@ def test_son_islemi_geri_al_ve_durum_endpoint():
     assert resp_geri.status_code == 200
     # Eğer daha önce bir kayıt işlemi yoksa kontrollü hata mesajı döner
     assert "basarili" in resp_geri.json()
+
+
+def test_tum_devamsizliklari_sil_endpoint():
+    """Tüm devamsızlıkları silme endpoint'ini ve başarılı yanıt döndüğünü test eder."""
+    resp = client.delete("/tum-devamsizliklari-sil")
+    assert resp.status_code == 200
+    veri = resp.json()
+    assert veri["basarili"] is True
+    assert "başarıyla silindi" in veri["mesaj"]
 
 
 def test_command_palette_bileseni_ve_varliklari():

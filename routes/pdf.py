@@ -26,11 +26,11 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
     if not os.path.exists(sube_klasoru):
         os.makedirs(sube_klasoru)
 
+    ad_formatli = VeriAraclari.tr_format_ad_soyad(veri.ad)
     zaman_damgasi = datetime.now().strftime("%d-%m-%Y_%H%M%S")
-    kayit_yeri = os.path.join(sube_klasoru, f"{veri.no}_{veri.ad.replace(' ', '_')}_{zaman_damgasi}.pdf")
+    kayit_yeri = os.path.join(sube_klasoru, f"{veri.no}_{ad_formatli.replace(' ', '_')}_{zaman_damgasi}.pdf")
     try:
-        job_id = str(uuid.uuid4())
-        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "PDF hazırlığı başlatıldı...", "yuzde": 0}
+        job_id = create_job(mesaj="PDF hazırlığı başlatıldı...", yuzde=0)
         # Ön yüzden gelen kayıtlarda ham 'tarih'/'gun' alanları var; PDF motoru
         # düzgün biçimlendirilmiş 'tarih_duzgun'/'gun_str' bekliyor. Burada dönüştürüyoruz.
         kayitlar_islenmis = []
@@ -42,15 +42,15 @@ def pdf_veli_formu_olustur(veri: PdfVeliFormuRequest, background_tasks: Backgrou
 
         def gorev_pdf_olustur():
             try:
-                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "PDF oluşturuluyor...", "yuzde": 50}
+                update_job(job_id, durum="isleniyor", mesaj="PDF oluşturuluyor...", yuzde=50)
                 motor = PDFYoneticisi(ayar)
-                motor.veli_formu_ciz(veri.no, veri.ad, veri.sube, kayitlar_islenmis, kayit_yeri, veri.ozurlu_str, veri.ozursuz_str)
-                evrak_kaydet("Devamsızlık Mektubu", veri.ad, veri.sube)
+                motor.veli_formu_ciz(veri.no, ad_formatli, veri.sube, kayitlar_islenmis, kayit_yeri, veri.ozurlu_str, veri.ozursuz_str)
+                evrak_kaydet("Devamsızlık Mektubu", ad_formatli, veri.sube)
                 dosyayi_otomatik_ac(kayit_yeri)
-                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "PDF oluşturuldu.", "yuzde": 100, "yol": kayit_yeri}
+                update_job(job_id, durum="tamamlandi", mesaj="PDF oluşturuldu.", yuzde=100, yol=kayit_yeri)
             except Exception as e:
                 logging.error(f"Veli formu cizim hatasi: {e}")
-                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"PDF oluşturulamadı: {e}", "yuzde": 100}
+                update_job(job_id, durum="hata", mesaj=f"PDF oluşturulamadı: {e}", yuzde=100)
 
         background_tasks.add_task(gorev_pdf_olustur)
         return {"basarili": True, "mesaj": "PDF işlemi başlatıldı.", "job_id": job_id, "yol": kayit_yeri}
@@ -68,19 +68,18 @@ def pdf_izin_sablonu_olustur(background_tasks: BackgroundTasks):
     zaman_damgasi = datetime.now().strftime("%d-%m-%Y_%H%M%S")
     kayit_yeri = os.path.join(izin_klasoru, f"Izin_Dilekcesi_Sablonu_{zaman_damgasi}.pdf")
     try:
-        job_id = str(uuid.uuid4())
-        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Şablon PDF hazırlığı başlatıldı...", "yuzde": 0}
+        job_id = create_job(mesaj="Şablon PDF hazırlığı başlatıldı...", yuzde=0)
 
         def gorev_sablon_olustur():
             try:
-                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Şablon PDF oluşturuluyor...", "yuzde": 50}
+                update_job(job_id, durum="isleniyor", mesaj="Şablon PDF oluşturuluyor...", yuzde=50)
                 motor = PDFYoneticisi(ayar)
                 motor.izin_sablonu_ciz(kayit_yeri)
                 dosyayi_otomatik_ac(kayit_yeri)
-                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Şablon PDF oluşturuldu.", "yuzde": 100, "yol": kayit_yeri}
+                update_job(job_id, durum="tamamlandi", mesaj="Şablon PDF oluşturuldu.", yuzde=100, yol=kayit_yeri)
             except Exception as e:
                 logging.error(f"Şablon formu cizim hatasi: {e}")
-                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Şablon oluşturulamadı: {e}", "yuzde": 100}
+                update_job(job_id, durum="hata", mesaj=f"Şablon oluşturulamadı: {e}", yuzde=100)
 
         background_tasks.add_task(gorev_sablon_olustur)
         return {"basarili": True, "mesaj": "Şablon işlemi başlatıldı.", "job_id": job_id, "yol": kayit_yeri}
@@ -212,12 +211,11 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
     yol = os.path.join(teblig_klasoru, f"Bireysel_Teblig_{veri.edilen.ad.replace(' ', '_')}_{datetime.now().strftime('%H%M')}.pdf")
     try:
         yuklenen_pdf = veri.gecici_pdf_yolu
-        job_id = str(uuid.uuid4())
-        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Bireysel tebliğ hazırlığı başlatıldı...", "yuzde": 0}
+        job_id = create_job(mesaj="Bireysel tebliğ hazırlığı başlatıldı...", yuzde=0)
         
         def gorev_bireysel_teblig():
             try:
-                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Bireysel tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
+                update_job(job_id, durum="isleniyor", mesaj="Bireysel tebliğ PDF'i oluşturuluyor...", yuzde=50)
                 motor = PDFYoneticisi(ayar)
                 
                 # Geldiği yer (kurum) "Müdürlüğü" ile bitmiyorsa ekle
@@ -228,10 +226,10 @@ def teblig_bireysel_pdf(veri: TebligBireyselRequest, background_tasks: Backgroun
                 motor.bireysel_teblig_ciz(kurum_adi, veri.sayi, veri.konu, veri.tarih, veri.eden.model_dump(), veri.edilen.model_dump(), veri.yer, veri.teblig_tarihi, veri.teblig_saati, yol, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
                 evrak_kaydet("Yazı Tebliği", veri.edilen.ad, veri.edilen.brans)
-                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Bireysel tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
+                update_job(job_id, durum="tamamlandi", mesaj="Bireysel tebliğ PDF'i oluşturuldu.", yuzde=100, yol=yol)
             except Exception as e:
                 logging.error(f"Bireysel teblig cizim hatasi: {e}")
-                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Bireysel tebliğ oluşturulamadı: {e}", "yuzde": 100}
+                update_job(job_id, durum="hata", mesaj=f"Bireysel tebliğ oluşturulamadı: {e}", yuzde=100)
 
         background_tasks.add_task(gorev_bireysel_teblig)
         return {"basarili": True, "mesaj": "Bireysel tebliğ işlemi başlatıldı.", "job_id": job_id, "yol": yol}
@@ -256,21 +254,20 @@ def teblig_toplu_pdf(veri: TebligTopluRequest, background_tasks: BackgroundTasks
             
         yuklenen_pdf = veri.gecici_pdf_yolu
         personeller_dict = [p.model_dump() for p in veri.personeller]
-        job_id = str(uuid.uuid4())
-        islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Toplu tebliğ hazırlığı başlatıldı...", "yuzde": 0}
+        job_id = create_job(mesaj="Toplu tebliğ hazırlığı başlatıldı...", yuzde=0)
         
         def gorev_toplu_teblig():
             try:
-                islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Toplu tebliğ PDF'i oluşturuluyor...", "yuzde": 50}
+                update_job(job_id, durum="isleniyor", mesaj="Toplu tebliğ PDF'i oluşturuluyor...", yuzde=50)
                 motor = PDFYoneticisi(ayar)
                 motor.teblig_tebellug_ciz(veri.sayi, veri.konu, veri.tarih, personeller_dict, yol, kurum_adi, yuklenen_pdf)
                 dosyayi_otomatik_ac(yol)
                 for p in veri.personeller:
                     evrak_kaydet("Yazı Tebliği", p.ad, p.brans)
-                islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": "Toplu tebliğ PDF'i oluşturuldu.", "yuzde": 100, "yol": yol}
+                update_job(job_id, durum="tamamlandi", mesaj="Toplu tebliğ PDF'i oluşturuldu.", yuzde=100, yol=yol)
             except Exception as e:
                 logging.error(f"Toplu teblig cizim hatasi: {e}")
-                islem_durumlari[job_id] = {"durum": "hata", "mesaj": f"Toplu tebliğ oluşturulamadı: {e}", "yuzde": 100}
+                update_job(job_id, durum="hata", mesaj=f"Toplu tebliğ oluşturulamadı: {e}", yuzde=100)
 
         background_tasks.add_task(gorev_toplu_teblig)
         return {"basarili": True, "mesaj": "Toplu tebliğ işlemi başlatıldı.", "job_id": job_id, "yol": yol}

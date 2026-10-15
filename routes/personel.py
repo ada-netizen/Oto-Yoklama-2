@@ -103,14 +103,14 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
 
 def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id):
     try:
-        islem_durumlari[job_id] = {"durum": "isleniyor", "mesaj": "Personel Excel okunuyor...", "yuzde": 30}
+        update_job(job_id, durum="isleniyor", mesaj="Personel Excel okunuyor...", yuzde=30)
         sonuc = _personel_excel_yukle_dogrudan(temp_yol, uzanti)
         if sonuc["basarili"]:
-            islem_durumlari[job_id] = {"durum": "tamamlandi", "mesaj": sonuc["mesaj"], "yuzde": 100}
+            update_job(job_id, durum="tamamlandi", mesaj=sonuc["mesaj"], yuzde=100)
         else:
-            islem_durumlari[job_id] = {"durum": "hata", "mesaj": sonuc["mesaj"], "yuzde": 100}
+            update_job(job_id, durum="hata", mesaj=sonuc["mesaj"], yuzde=100)
     except Exception as e:
-        islem_durumlari[job_id] = {"durum": "hata", "mesaj": str(e), "yuzde": 100}
+        update_job(job_id, durum="hata", mesaj=str(e), yuzde=100)
         if os.path.exists(temp_yol):
             try:
                 os.remove(temp_yol)
@@ -124,8 +124,7 @@ async def personel_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadF
     uzanti, hata = excel_yukleme_dogrula(dosya)
     if hata:
         return {"basarili": False, "mesaj": hata}
-    job_id = str(uuid.uuid4())
-    islem_durumlari[job_id] = {"durum": "basladi", "mesaj": "Dosya alınıyor...", "yuzde": 0}
+    job_id = create_job(mesaj="Dosya alınıyor...", yuzde=0)
     temp_yol = f"temp_personel_{job_id}{uzanti}"
     with open(temp_yol, "wb") as buffer:
         shutil.copyfileobj(dosya.file, buffer)

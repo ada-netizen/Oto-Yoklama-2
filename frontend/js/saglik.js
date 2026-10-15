@@ -3,13 +3,7 @@
 let aktifSaglikPersoneli = [];
 
 async function apiIstegi(endpoint, method = 'GET', body = null) {
-    const options = { method };
-    if (body) {
-        options.headers = { 'Content-Type': 'application/json' };
-        options.body = JSON.stringify(body);
-    }
-    const res = await fetch(`${API}${endpoint}`, options);
-    return await res.json();
+    return await apiFetch(endpoint, { method, body });
 }
 
 async function saglikYukle() {
@@ -163,11 +157,10 @@ async function saglikPdfYukle(event) {
     }
     
     try {
-        const res = await fetch(`${API}/saglik/pdf-oku`, {
+        const data = await apiFetch('/saglik/pdf-oku', {
             method: 'POST',
             body: formData
         });
-        const data = await res.json();
         
         if (typeof yuklemeGizle === 'function') {
             yuklemeGizle();

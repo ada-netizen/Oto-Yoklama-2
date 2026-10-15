@@ -312,8 +312,7 @@ function tumTurleriSec(durum) {
 }
 
 function dashboardYukle() {
-    fetch(`${API}/istatistikler`)
-    .then(r => r.json())
+    apiFetch('/istatistikler')
     .then(data => {
         if(data.hata) {
             console.error("Dashboard veri hatası:", data.hata);
@@ -581,12 +580,10 @@ async function arsivle() {
     const onay = await modernOnayGoster("Yıllık Arşivleme & Sıfırlama", `DİKKAT! Tüm öğrenci, devamsızlık ve üretilen evrak verileri "${ad}" klasörüne kopyalanıp sıfırlanacak. Personel listesi KORUNACAK. Onaylıyor musunuz?`, "uyari");
     if(!onay) return;
     
-    fetch(`${API}/arsivle`, {
+    apiFetch('/arsivle', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({arsiv_adi: ad})
+        body: { arsiv_adi: ad }
     })
-    .then(r => r.json())
     .then(data => {
         if(typeof bildirimGoster === 'function') {
             if(data.basarili) {

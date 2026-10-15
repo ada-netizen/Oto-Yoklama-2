@@ -36,7 +36,7 @@ def versiyon_getir():
 
 @router.get("/islem-durumu/{job_id}")
 def islem_durumu(job_id: str):
-    return islem_durumlari.get(job_id, {"durum": "bulunamadi"})
+    return get_job(job_id)
 
 @router.get("/loglar")
 def loglari_getir():

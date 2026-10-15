@@ -11,6 +11,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, Border, Side
+from araclar import VeriAraclari
 
 def format_date(date_str):
     if not date_str:
@@ -1038,31 +1039,11 @@ def uret_ozel_fiyat_isteme_pdf(veri, hedef_klasor):
     komisyon_uyeleri = get_komisyon(veri)
         
     elements = []
-    
-    def tr_capitalize(text):
-        tr_lower = {'I': 'ı', 'İ': 'i'}
-        tr_upper = {'ı': 'I', 'i': 'İ'}
-        
-        words = text.split()
-        res = []
-        for w in words:
-            if not w: continue
-            first = w[0]
-            rest = w[1:]
-            
-            first = tr_upper.get(first, first.upper())
-            rest_lower = ""
-            for c in rest:
-                rest_lower += tr_lower.get(c, c.lower())
-                
-            res.append(first + rest_lower)
-        return " ".join(res)
-    
     baslik = veri.get("resmi_baslik", "").replace("\\n", "\n")
     baslik_satirlari = [s.strip() for s in baslik.split("\n") if s.strip()]
     for i, satir in enumerate(baslik_satirlari):
         if i == 2:
-            satir = tr_capitalize(satir)
+            satir = VeriAraclari.tr_capitalize(satir)
         elements.append(Paragraph(satir.strip(), style_center_10))
     
     elements.append(Spacer(1, 8*mm))
@@ -1245,25 +1226,6 @@ def uret_ozel_fiyat_isteme_excel(veri, hedef_klasor):
     right_align = Alignment(horizontal='right', vertical='center', wrap_text=True)
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
     
-    def tr_capitalize(text):
-        tr_lower = {'I': 'ı', 'İ': 'i'}
-        tr_upper = {'ı': 'I', 'i': 'İ'}
-        
-        words = text.split()
-        res = []
-        for w in words:
-            if not w: continue
-            first = w[0]
-            rest = w[1:]
-            
-            first = tr_upper.get(first, first.upper())
-            rest_lower = ""
-            for c in rest:
-                rest_lower += tr_lower.get(c, c.lower())
-                
-            res.append(first + rest_lower)
-        return " ".join(res)
-    
     baslik = veri.get("resmi_baslik", "").replace("\\n", "\n")
     baslik_satirlari = [s.strip() for s in baslik.split("\n") if s.strip()]
     
@@ -1271,7 +1233,7 @@ def uret_ozel_fiyat_isteme_excel(veri, hedef_klasor):
     for i, satir in enumerate(baslik_satirlari):
         ws.merge_cells(start_row=r, start_column=1, end_row=r, end_column=7)
         if i == 2:
-            satir = tr_capitalize(satir)
+            satir = VeriAraclari.tr_capitalize(satir)
         c = ws.cell(row=r, column=1, value=satir)
         c.font = bold_font_10
         c.alignment = center_align

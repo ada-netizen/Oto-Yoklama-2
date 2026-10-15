@@ -30,10 +30,13 @@ def test_veli_pdf_turkce_karakter_a5_ve_cerceveyi_korur(tmp_path):
     assert round(float(sayfa.mediabox.width), 2) == 419.53
     assert round(float(sayfa.mediabox.height), 2) == 595.27
     metin = sayfa.extract_text() or ""
-    assert "Çağrı Özışık" in metin
+    assert "Çağrı ÖZIŞIK" in metin
     assert "Özürlü" in metin
     assert "MÜDÜRLÜĞÜNE" in metin
     assert "DEVAMSIZLIK BİLGİLENDİRME FORMU" in metin
+    assert "Tarih" in metin
+    assert "İmza" in metin
+    assert "Tel" in metin
 
 
 def test_veli_pdf_cok_sayfada_sayfa_numarasini_ve_alt_imza_blogunu_tekrarlar(tmp_path):
@@ -59,10 +62,27 @@ def test_veli_pdf_cok_sayfada_sayfa_numarasini_ve_alt_imza_blogunu_tekrarlar(tmp
         assert "Toplam Devamsızlık" in metin
         assert "İmza" in metin
         assert "Tarih" in metin
+        assert "Tel" in metin
     assert "Sayfa 1/2" in (sayfalar[0].extract_text() or "")
     assert "Sayfa 2/2" in (sayfalar[1].extract_text() or "")
     assert "Devamı arka sayfadadır." not in (sayfalar[0].extract_text() or "")
     assert "DEVAMSIZLIK BİLGİLENDİRME FORMU - DEVAMI" not in (sayfalar[1].extract_text() or "")
+
+
+def test_izin_sablonu_tarih_ve_tel_satiri(tmp_path):
+    hedef = tmp_path / "izin_sablonu.pdf"
+    motor = PDFYoneticisi({"okul_adi": "Çınar Lisesi"})
+    basarili, hata = motor.izin_sablonu_ciz(str(hedef))
+
+    assert basarili is True
+    assert hata == ""
+    assert hedef.exists() and hedef.stat().st_size > 0
+    sayfa = PdfReader(str(hedef)).pages[0]
+    metin = sayfa.extract_text() or ""
+    assert "Tarih" in metin
+    assert "Velisi" in metin
+    assert "İmza" in metin
+    assert "Tel" in metin
 
 
 def test_toplu_teblig_turkce_okul_adi_ve_personel_bilgilerini_yazar(tmp_path):

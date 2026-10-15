@@ -22,6 +22,9 @@
             if (typeof verileriYukle === 'function') {
                 verileriYukle();
             }
+            if (typeof personelleriYukle === 'function') {
+                personelleriYukle();
+            }
 
             // Kurumsal açılış kartını zarif bir geçişle kapat
             setTimeout(splashEkraniniKapat, 700);
@@ -48,7 +51,7 @@ const API = 'http://127.0.0.1:8000';
             }
             
             Toastify({
-                text: mesaj,
+                text: `<div class="toast-content">${mesaj}</div>`,
                 duration: 6000,
                 escapeMarkup: false,
                 gravity: "top", 
@@ -61,7 +64,7 @@ const API = 'http://127.0.0.1:8000';
                     fontWeight: "600",
                     fontFamily: "'Inter', sans-serif",
                     boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.2)",
-                    padding: "12px 24px"
+                    padding: "12px 18px"
                 }
             }).showToast();
         }
@@ -118,6 +121,93 @@ const API = 'http://127.0.0.1:8000';
                 cancelBtn.onclick = () => cleanup(false);
             });
         }
+        window.modernOnayGoster = modernOnayGoster;
+
+        // --- ORTAK MERKEZİ YARDIMCI İŞLEVLER (DRY UTILITIES) ---
+        window.API = API;
+
+        // 1. Güvenli DOM Değer Okuma (Null hatasını önler)
+        function getVal(id, varsayilan = "") {
+            const el = document.getElementById(id);
+            if (!el) return varsayilan;
+            return el.value !== undefined ? el.value : varsayilan;
+        }
+        window.getVal = getVal;
+
+        // 2. Standart ve Güvenli API İstek Yöneticisi
+        async function apiFetch(endpoint, options = {}) {
+            const url = endpoint.startsWith('http') ? endpoint : `${API}${endpoint.startsWith('/') ? '' : '/'}${endpoint}`;
+            const opts = { ...options };
+            opts.headers = { ...opts.headers };
+
+            if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+                opts.headers['Content-Type'] = 'application/json';
+                opts.body = JSON.stringify(opts.body);
+            }
+
+            try {
+                const res = await fetch(url, opts);
+                const contentType = res.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    return await res.json();
+                }
+                return res;
+            } catch (err) {
+                console.error(`apiFetch hatası (${url}):`, err);
+                throw err;
+            }
+        }
+        window.apiFetch = apiFetch;
+
+        // 3. Ortak Tarih Dönüştürücüler
+        function tarihFormatlaTR(tarihDegeri) {
+            if (!tarihDegeri) return "";
+            if (tarihDegeri instanceof Date) {
+                const pad = n => String(n).padStart(2, '0');
+                return `${pad(tarihDegeri.getDate())}.${pad(tarihDegeri.getMonth() + 1)}.${tarihDegeri.getFullYear()}`;
+            }
+            const str = String(tarihDegeri).trim().split('T')[0];
+            const parcalar = str.split(/[-/.]/);
+            if (parcalar.length === 3) {
+                if (parcalar[0].length === 4) { // YYYY-MM-DD
+                    return `${parcalar[2].padStart(2, '0')}.${parcalar[1].padStart(2, '0')}.${parcalar[0]}`;
+                } else if (parcalar[2].length === 4) { // DD-MM-YYYY
+                    return `${parcalar[0].padStart(2, '0')}.${parcalar[1].padStart(2, '0')}.${parcalar[2]}`;
+                }
+            }
+            return str;
+        }
+        window.tarihFormatlaTR = tarihFormatlaTR;
+
+        function tarihFormatlaISO(tarihDegeri) {
+            if (!tarihDegeri) return "";
+            if (tarihDegeri instanceof Date) {
+                const pad = n => String(n).padStart(2, '0');
+                return `${tarihDegeri.getFullYear()}-${pad(tarihDegeri.getMonth() + 1)}-${pad(tarihDegeri.getDate())}`;
+            }
+            const str = String(tarihDegeri).trim().split('T')[0];
+            const parcalar = str.split(/[-/.]/);
+            if (parcalar.length === 3) {
+                if (parcalar[2].length === 4) { // DD.MM.YYYY -> YYYY-MM-DD
+                    return `${parcalar[2]}-${parcalar[1].padStart(2, '0')}-${parcalar[0].padStart(2, '0')}`;
+                } else if (parcalar[0].length === 4) { // YYYY.MM.DD -> YYYY-MM-DD
+                    return `${parcalar[0]}-${parcalar[1].padStart(2, '0')}-${parcalar[2].padStart(2, '0')}`;
+                }
+            }
+            return str;
+        }
+        window.tarihFormatlaISO = tarihFormatlaISO;
+
+        // 4. Türkçe Karakter ve Metin Normalizasyonu
+        function trUpper(str) {
+            return str ? String(str).toLocaleUpperCase('tr-TR') : "";
+        }
+        window.trUpper = trUpper;
+
+        function trNormalize(str) {
+            return str ? String(str).trim().toLocaleUpperCase('tr-TR').replace(/[\s\.\-_]/g, '') : "";
+        }
+        window.trNormalize = trNormalize;
 
         // Global Kısayollar ve Esc Tuşu Yönetimi (Power-User Kısayolları)
         document.addEventListener('keydown', (e) => {
@@ -332,6 +422,47 @@ const API = 'http://127.0.0.1:8000';
                 if (data.basarili) {
                     bildirimGoster(data.mesaj, "bilgi");
                     verileriYukle();
+                } else {
+                    bildirimGoster(data.mesaj, "hata");
+                }
+            } catch (err) {
+                yuklemeGizle();
+                bildirimGoster("Bağlantı hatası: " + err, "hata");
+            }
+        }
+
+        async function tumDevamsizliklariSil() {
+            const onay = await modernOnayGoster(
+                "Tüm Devamsızlıkları Sil",
+                "DİKKAT: Sistemdeki TÜM öğrencilerin devamsızlık kayıtları silinecektir (Öğrenci listesi korunur).\n\nBu işlemi onaylıyor musunuz?",
+                "tehlike"
+            );
+            if (!onay) return;
+
+            yuklemeGoster("Devamsızlıklar siliniyor...");
+            try {
+                const res = await fetch(`${API}/tum-devamsizliklari-sil`, { method: 'DELETE' });
+                const data = await res.json();
+                yuklemeGizle();
+                if (data.basarili) {
+                    bildirimGoster(data.mesaj, "bilgi");
+                    seciliDevamsizliklar = [];
+                    geciciDevamsizliklar = [];
+                    if (seciliOgrenci) {
+                        seciliOgrenci.ozsz = 0;
+                        seciliOgrenci.ozrl = 0;
+                        seciliOgrenci.toplam = 0;
+                        const elOzsz = document.getElementById('lbl_detay_ozursuz');
+                        const elOzrl = document.getElementById('lbl_detay_ozurlu');
+                        const elTop = document.getElementById('lbl_detay_toplam');
+                        if (elOzsz) elOzsz.innerText = '0';
+                        if (elOzrl) elOzrl.innerText = '0';
+                        if (elTop) elTop.innerText = '0';
+                    }
+                    if (typeof aktifTakvimiCiz === 'function') aktifTakvimiCiz();
+                    if (typeof onizlemeGuncelle === 'function') onizlemeGuncelle();
+                    if (typeof kalanDevamsizlikGuncelle === 'function') kalanDevamsizlikGuncelle();
+                    if (typeof verileriYukle === 'function') verileriYukle();
                 } else {
                     bildirimGoster(data.mesaj, "hata");
                 }
@@ -768,14 +899,6 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
         function kopyalaNo() { navigator.clipboard.writeText(sagTikOgrNo); bildirimGoster("Numara kopyalandı!", "bilgi"); }
         function kopyalaAd() { navigator.clipboard.writeText(sagTikOgrAd); bildirimGoster("Ad Soyad kopyalandı!", "bilgi"); }
-        async function ogrenciyiTamamenSil() {
-            const onay = await modernOnayGoster("Öğrenciyi Sil", `${sagTikOgrAd} kalıcı olarak silinecek. Bu işlem geri alınamaz. Onaylıyor musunuz?`, "uyari");
-            if(!onay) return;
-            fetch(`${API}/ogrenci-sil/${sagTikOgrNo}`, { method: 'DELETE' }).then(r => r.json()).then(v => {
-                bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"); verileriYukle();
-                document.getElementById('sag_bos_uyari').style.display = 'flex'; document.getElementById('sag_dolu_icerik').style.display = 'none';
-            });
-        }
 
         // --- 4. ANA TABLO, ZEKİ FORMATLAYICI VE TAKVİM ---
         function sinifFormatla(orj) {
@@ -843,7 +966,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
                     // İnteraktif Toast [Geri Al] Butonlu Bildirim (Manifesto Madde 5.2)
                     Toastify({
-                        text: `<div style="display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%;">
+                        text: `<div class="toast-content" style="display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%;">
                             <span>✓ ${durum.mesaj}</span>
                             <button onclick="sonIslemiGeriAl()" style="background:#EF4444; color:#FFFFFF; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:11px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space:nowrap;">↩️ Geri Al</button>
                         </div>`,
@@ -890,10 +1013,6 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             const combo = document.getElementById('combo_esik_filtre');
             if (combo && combo.value !== aktifEsikFiltresi) combo.value = aktifEsikFiltresi;
             tabloyuDoldur();
-        }
-
-        function esikFiltrele(tur, btnElement) {
-            esikSelectFiltrele(tur);
         }
 
         function esikSayilariniGuncelle() {
@@ -1866,7 +1985,7 @@ function geriBildirimGonder() {
 }
 
         function gecKalanBildirimiGoster() {
-            fetch(`${API}/gec-bugun-sayisi`).then(r => r.json()).then(data => {
+            apiFetch('/gec-bugun-sayisi').then(data => {
                 if(data.basarili && data.sayi > 0) {
                     setTimeout(() => {
                         bildirimGoster(`Bugün ${data.sayi} öğrenci geç yazıldı. Listeyi görmek için <u style="cursor:pointer;" onclick="gecKalanlariIndir()">tıklayın</u>`, 'bilgi');
@@ -1874,3 +1993,145 @@ function geriBildirimGonder() {
                 }
             }).catch(e => console.error(e));
         }
+
+        // ==========================================
+        // YARDIM MODÜLÜ UI FONKSİYONLARI
+        // ==========================================
+        function yardimIcerikGoster(id, btnElement) {
+            const icerikler = document.querySelectorAll('.yardim-icerik');
+            icerikler.forEach(el => el.style.display = 'none');
+            
+            const butonlar = document.querySelectorAll('.yardim-menu-btn');
+            butonlar.forEach(btn => btn.classList.remove('active'));
+            
+            const secilenIcerik = document.getElementById(id);
+            if (secilenIcerik) secilenIcerik.style.display = 'block';
+            
+            if (btnElement) {
+                btnElement.classList.add('active');
+            }
+
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                lucide.createIcons();
+            }
+        }
+        window.yardimIcerikGoster = yardimIcerikGoster;
+
+        function yardimKonulariFiltrele(kelime) {
+            const q = (kelime || '').trim().toLowerCase();
+            const butonlar = document.querySelectorAll('#yardim_menu_liste .yardim-menu-btn');
+            let gorunenSayisi = 0;
+
+            butonlar.forEach(btn => {
+                const metin = (btn.textContent || '').toLowerCase();
+                if (!q || metin.includes(q)) {
+                    btn.style.display = 'flex';
+                    gorunenSayisi++;
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+
+            const emptyMsg = document.getElementById('yardim_arama_sonuc_yok');
+            if (emptyMsg) {
+                emptyMsg.style.display = (gorunenSayisi === 0 && q) ? 'block' : 'none';
+            }
+        }
+        window.yardimKonulariFiltrele = yardimKonulariFiltrele;
+
+        let sonSistemTeshisVerisi = null;
+
+        async function sistemTeshisVerileriniYukle() {
+            try {
+                const data = await apiFetch('/sistem-teshis');
+                if (!data.basarili) throw new Error(data.mesaj || 'Teşhis verisi alınamadı');
+
+                sonSistemTeshisVerisi = data;
+                const vb = data.veritabani || {};
+                const sis = data.sistem || {};
+
+                const elOgr = document.getElementById('teshis_ogr_sayisi');
+                if (elOgr) elOgr.textContent = (vb.ogrenci_sayisi ?? 0).toLocaleString();
+
+                const elDev = document.getElementById('teshis_dev_sayisi');
+                if (elDev) elDev.textContent = (vb.devamsizlik_sayisi ?? 0).toLocaleString();
+
+                const elPer = document.getElementById('teshis_per_sayisi');
+                if (elPer) elPer.textContent = (vb.personel_sayisi ?? 0).toLocaleString();
+
+                const elBoyut = document.getElementById('teshis_db_boyut');
+                if (elBoyut) elBoyut.textContent = (vb.boyut_kb ?? 0) + ' KB';
+
+                const elMod = document.getElementById('teshis_db_mod');
+                if (elMod) elMod.textContent = vb.journal_mode || 'WAL';
+
+                const elButunluk = document.getElementById('teshis_db_butunluk');
+                if (elButunluk) elButunluk.textContent = vb.butunluk === 'OK' ? 'Sağlıklı (OK)' : vb.butunluk;
+
+                const elSnapshot = document.getElementById('teshis_snapshot_durum');
+                if (elSnapshot) elSnapshot.textContent = vb.snapshot_var ? 'Hazır (Ctrl+Z Aktif)' : 'Beklemede';
+
+                const elOs = document.getElementById('teshis_os_bilgi');
+                if (elOs) elOs.textContent = sis.os || 'Windows';
+
+                const elPy = document.getElementById('teshis_py_bilgi');
+                if (elPy) elPy.textContent = sis.python_versiyon ? 'Python ' + sis.python_versiyon : 'Python 3.11+';
+
+                const elZaman = document.getElementById('teshis_son_kontrol');
+                if (elZaman) elZaman.textContent = sis.zaman || new Date().toLocaleTimeString();
+
+                if (window.lucide && typeof lucide.createIcons === 'function') {
+                    lucide.createIcons();
+                }
+            } catch (e) {
+                console.error('Sistem teşhis yükleme hatası:', e);
+                bildirimGoster('Sistem teşhis verisi alınamadı: ' + e.message, 'hata');
+            }
+        }
+        window.sistemTeshisVerileriniYukle = sistemTeshisVerileriniYukle;
+
+        async function sistemTeshisRaporuKopyala() {
+            if (!sonSistemTeshisVerisi) {
+                await sistemTeshisVerileriniYukle();
+            }
+            const vb = (sonSistemTeshisVerisi && sonSistemTeshisVerisi.veritabani) || {};
+            const sis = (sonSistemTeshisVerisi && sonSistemTeshisVerisi.sistem) || {};
+
+            const raporMetni = 
+`==============================================
+OTO-YOKLAMA V2.0 SİSTEM TANI VE SAĞLIK RAPORU
+Tarih: ${sis.zaman || new Date().toLocaleString()}
+==============================================
+- Yazılım Sürümü : ${sis.versiyon || 'v2.0 MEB Uyumlu'}
+- İşletim Sistemi: ${sis.os || 'Bilinmiyor'}
+- Python Sürümü  : ${sis.python_versiyon || '3.11+'}
+- Motor / Arayüz : FastAPI REST + Edge WebView2 (60 FPS)
+
+[VERİTABANI BİLGİLERİ]
+- Veritabanı Yolu : ${vb.yol || 'yoklama_veritabani.db'}
+- Dosya Boyutu    : ${vb.boyut_kb || 0} KB
+- Journal Modu    : ${vb.journal_mode || 'WAL'}
+- Bütünlük Durumu : ${vb.butunluk || 'OK'}
+- Snapshot Durumu : ${vb.snapshot_var ? 'Mevcut (Geri Alınabilir)' : 'Yok'}
+
+[KAYIT İSTATİSTİKLERİ]
+- Kayıtlı Öğrenci : ${vb.ogrenci_sayisi ?? 0}
+- Devamsızlık     : ${vb.devamsizlik_sayisi ?? 0}
+- Kayıtlı Personel: ${vb.personel_sayisi ?? 0}
+==============================================`;
+
+            try {
+                await navigator.clipboard.writeText(raporMetni);
+                bildirimGoster('📋 Sistem tanı raporu panoya kopyalandı! Destek mesajınıza yapıştırabilirsiniz.', 'basarili');
+            } catch (err) {
+                const textarea = document.createElement('textarea');
+                textarea.value = raporMetni;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                bildirimGoster('📋 Sistem tanı raporu panoya kopyalandı.', 'basarili');
+            }
+        }
+        window.sistemTeshisRaporuKopyala = sistemTeshisRaporuKopyala;
+        window.tumDevamsizliklariSil = tumDevamsizliklariSil;

@@ -49,13 +49,58 @@ class VeriAraclari:
         return VeriAraclari.tarih_formatla(excel_tarih)
 
     @staticmethod
-    def parse_tarih(t_str):
-        try: return datetime.strptime(t_str, "%d/%m/%Y")
-        except: return None
+    def tr_upper(metin): 
+        if not metin:
+            return ""
+        return metin.replace("i", "İ").replace("ı", "I").upper()
 
     @staticmethod
-    def tr_upper(metin): 
-        return metin.replace("i", "İ").replace("ı", "I").upper()
+    def tr_capitalize(text):
+        """Türkçe karakter kurallarına uygun şekilde metindeki her kelimenin ilk harfini büyütür."""
+        if not text:
+            return ""
+        tr_lower = {'I': 'ı', 'İ': 'i'}
+        tr_upper = {'ı': 'I', 'i': 'İ'}
+        words = str(text).split()
+        res = []
+        for w in words:
+            if not w:
+                continue
+            first = tr_upper.get(w[0], w[0].upper())
+            rest_lower = "".join(tr_lower.get(c, c.lower()) for c in w[1:])
+            res.append(first + rest_lower)
+        return " ".join(res)
+
+    @staticmethod
+    def tr_format_ad_soyad(metin):
+        """Türkçe kurallarına uygun şekilde ad soyadda son kelimeyi tamamen büyük, önceki kelimeleri ilk harfi büyük diğerleri küçük yapar."""
+        if not metin:
+            return ""
+        kelimeler = str(metin).strip().split()
+        if not kelimeler:
+            return ""
+        if len(kelimeler) == 1:
+            return VeriAraclari.tr_upper(kelimeler[0])
+        ad_kismi = [VeriAraclari.tr_capitalize(k) for k in kelimeler[:-1]]
+        soyad_kismi = VeriAraclari.tr_upper(kelimeler[-1])
+        return " ".join(ad_kismi + [soyad_kismi])
+
+    @staticmethod
+    def tr_normalize(s):
+        """Türkçe karakterleri ASCII eşdeğerlerine ve büyük harfe çevirerek karşılaştırma sağlar."""
+        if not s:
+            return ""
+        return (
+            str(s)
+            .strip()
+            .upper()
+            .replace('İ', 'I')
+            .replace('Ğ', 'G')
+            .replace('Ü', 'U')
+            .replace('Ş', 'S')
+            .replace('Ö', 'O')
+            .replace('Ç', 'C')
+        )
 
     @staticmethod
     def hesapla_devamsizlik(ogr_no, devamsizlik_listesi, gecici_devamsizliklar):

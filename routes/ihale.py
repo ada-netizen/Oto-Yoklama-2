@@ -136,82 +136,49 @@ async def excel_onizle(dosya: UploadFile = File(...), tur: str = Form("personel"
     if tur not in {"ogrenci", "devamsizlik", "personel"}:
         return {"basarili": False, "mesaj": "Geçersiz içe aktarma türü."}
 
-    temp_yol = os.path.join(tempfile.gettempdir(), f"onizleme_{uuid.uuid4().hex}{uzanti}")
     try:
-        with open(temp_yol, "wb") as buffer:
-            shutil.copyfileobj(dosya.file, buffer)
+        with gecici_dosya_olustur(dosya, prefix="onizleme_") as temp_yol:
+            df_ham = ExcelMotoru.tabloyu_guvenli_oku(temp_yol, header=None)
+            if df_ham is None or df_ham.empty:
+                return {"basarili": False, "mesaj": "Dosya boş."}
 
-        if uzanti == ".csv":
-            try:
-                df_ham = pd.read_csv(temp_yol, header=None, encoding="utf-8-sig")
-            except UnicodeDecodeError:
-                df_ham = pd.read_csv(temp_yol, header=None, encoding="cp1254")
-        else:
-            try:
-                df_ham = pd.read_excel(temp_yol, header=None)
-            except Exception:
-                try:
-                    df_list = pd.read_html(temp_yol, header=None)
-                    df_ham = max(df_list, key=len) if df_list else pd.DataFrame()
-                except Exception:
-                    df_ham = pd.read_csv(temp_yol, header=None, on_bad_lines='skip')
-        if df_ham.empty:
-            return {"basarili": False, "mesaj": "Dosya boş."}
+            header_idx = 0
+            if tur == "personel":
+                for i, row in df_ham.iterrows():
+                    basliklar = {_excel_sutunu_bul([deger], ["AD SOYAD", "ADI SOYADI"]) for deger in row.values}
+                    if any(basliklar):
+                        header_idx = i
+                        break
 
-        header_idx = 0
-        if tur == "personel":
-            for i, row in df_ham.iterrows():
-                basliklar = {_excel_sutunu_bul([deger], ["AD SOYAD", "ADI SOYADI"]) for deger in row.values}
-                if any(basliklar):
-                    header_idx = i
-                    break
+            df = ExcelMotoru.tabloyu_guvenli_oku(temp_yol, header=header_idx)
+            if df is None or df.empty:
+                return {"basarili": False, "mesaj": "Tablo verisi okunamadı."}
+            df.columns = [str(sutun).strip() for sutun in df.columns]
 
-        if uzanti == ".csv":
-            try:
-                df = pd.read_csv(temp_yol, header=header_idx, encoding="utf-8-sig")
-            except UnicodeDecodeError:
-                df = pd.read_csv(temp_yol, header=header_idx, encoding="cp1254")
-        else:
-            try:
-                df = pd.read_excel(temp_yol, header=header_idx)
-            except Exception:
-                try:
-                    df_list = pd.read_html(temp_yol, header=header_idx)
-                    df = max(df_list, key=len) if df_list else pd.DataFrame()
-                except Exception:
-                    df = pd.read_csv(temp_yol, header=header_idx, on_bad_lines='skip')
-        df.columns = [str(sutun).strip() for sutun in df.columns]
+            hatalar = []
+            if tur == "personel":
+                ad_sutunu = _excel_sutunu_bul(df.columns, ["AD SOYAD", "ADI SOYADI"])
+                if not ad_sutunu:
+                    hatalar.append("Ad Soyad sütunu bulunamadı.")
+                else:
+                    eksik_ad = int(df[ad_sutunu].isna().sum())
+                    if eksik_ad:
+                        hatalar.append(f"{eksik_ad} satırda ad-soyad eksik.")
 
-        hatalar = []
-        if tur == "personel":
-            ad_sutunu = _excel_sutunu_bul(df.columns, ["AD SOYAD", "ADI SOYADI"])
-            if not ad_sutunu:
-                hatalar.append("Ad Soyad sütunu bulunamadı.")
-            else:
-                eksik_ad = int(df[ad_sutunu].isna().sum())
-                if eksik_ad:
-                    hatalar.append(f"{eksik_ad} satırda ad-soyad eksik.")
-
-        onizleme_kayitlar = df.head(20).to_dict(orient="records")
-        onizleme = [{str(k): (str(v) if pd.notna(v) else "") for k, v in row.items()} for row in onizleme_kayitlar]
-        return {
-            "basarili": True,
-            "tur": tur,
-            "toplam_satir": int(len(df)),
-            "gosterilen_satir": len(onizleme),
-            "sutunlar": list(df.columns),
-            "onizleme": onizleme,
-            "hatalar": hatalar,
-        }
+            onizleme_kayitlar = df.head(20).to_dict(orient="records")
+            onizleme = [{str(k): (str(v) if pd.notna(v) else "") for k, v in row.items()} for row in onizleme_kayitlar]
+            return {
+                "basarili": True,
+                "tur": tur,
+                "toplam_satir": int(len(df)),
+                "gosterilen_satir": len(onizleme),
+                "sutunlar": list(df.columns),
+                "onizleme": onizleme,
+                "hatalar": hatalar,
+            }
     except Exception as e:
         logging.error(f"Excel önizleme hatası: {e}")
         return {"basarili": False, "mesaj": f"Dosya önizlenemedi: {e}"}
-    finally:
-        if os.path.exists(temp_yol):
-            try:
-                os.remove(temp_yol)
-            except Exception:
-                pass
 
 @router.post("/ihale-excel-oku")
 async def ihale_excel_oku(dosya: UploadFile = File(...)):
