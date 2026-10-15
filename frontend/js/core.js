@@ -790,6 +790,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                       .replace(/[\.\s]/g, '')
                       .toLocaleUpperCase('tr-TR');
         }
+        window.sinifFormatla = sinifFormatla;
         
         function sirala(sutun) {
             if (siralamaSutun === sutun) siralamaYon *= -1; else { siralamaSutun = sutun; siralamaYon = 1; }

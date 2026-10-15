@@ -9,10 +9,8 @@ router = APIRouter()
 def kisa_sube(sube_adi):
     if not sube_adi:
         return ""
-    match = re.search(r'(\d+)\.\s*S.n.f\s*/\s*([A-Za-z0-9ÇĞİÖŞÜçğıöşü]+)\s*.ubesi', str(sube_adi))
-    if match:
-        return f"{match.group(1)}/{match.group(2)}"
-    return sube_adi
+    from araclar import VeriAraclari
+    return VeriAraclari.kisa_sube_adi(sube_adi)
 
 @router.get("/istatistikler")
 def get_istatistikler():

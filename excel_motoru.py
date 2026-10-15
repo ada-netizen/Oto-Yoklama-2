@@ -70,15 +70,77 @@ class ExcelMotoru:
     def ogrenci_oku(dosya_yolu, mevcut_ogrenciler):
         yeni_liste = []
         try:
+            import re
             df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
             if df.empty:
                 return None, "Excel dosyası boş veya okunamadı."
 
-            aktif_sube = ""
             mevcut_nolar = {str(o['no']).strip() for o in mevcut_ogrenciler}
             yeni_nolar = set()
-            
-            # --- 1. AKILLI TABLO BAŞLIĞI TESPİTİ (Fuzzy Header Detection) ---
+
+            # --- 1. E-OKUL ÇOKLU SINIF LİSTESİ ŞABLONU TESPİTİ ---
+            is_eokul = False
+            for idx in range(min(50, len(df))):
+                row_str = " ".join([str(x) for x in df.iloc[idx].values if pd.notna(x)]).lower()
+                if "sınıf listesi" in row_str or "sinif listesi" in row_str:
+                    is_eokul = True
+                    break
+
+            if is_eokul:
+                aktif_sube = ""
+                col_no_idx = 1
+                col_ad_idx = 3
+                col_soyad_idx = 7
+
+                for index, row in df.iterrows():
+                    row_str = " ".join([str(v) for v in row.values if pd.notna(v)])
+                    # Yeni bir sınıf başlığı satırı mı?
+                    if "sınıf listesi" in row_str.lower() or "sinif listesi" in row_str.lower():
+                        for val in row.values:
+                            v_str = str(val) if pd.notna(val) else ""
+                            if "sınıf listesi" in v_str.lower() or "sinif listesi" in v_str.lower():
+                                raw = re.split(r's[ıi]n[ıi]f\s+listesi', v_str, flags=re.IGNORECASE)[0]
+                                if "Müdürlüğü" in raw: raw = raw.split("Müdürlüğü")[-1]
+                                if "Mdrl" in raw: raw = raw.split("Mdrl")[-1]
+                                raw = raw.replace("\n", " ").strip()
+                                if "AL -" in raw: raw = raw.split("AL -")[-1].strip()
+                                if "AMP -" in raw: raw = raw.split("AMP -")[-1].strip()
+                                aktif_sube = VeriAraclari.kisa_sube_adi(raw)
+                                break
+                        continue
+
+                    # Tablo sütun başlıkları satırı mı? (Örn: S.No, Öğrenci No, Adı, Soyadı)
+                    row_cells_clean = [
+                        str(x).strip().upper().replace('.', '').replace('İ', 'I').replace('Ğ', 'G').replace('Ş', 'S').replace('Ö', 'O').replace('Ü', 'U')
+                        for x in row.values if pd.notna(x)
+                    ]
+                    if any("OGRENCI NO" in c for c in row_cells_clean):
+                        for c_idx, cell_val in enumerate(row.values):
+                            c_clean = str(cell_val).strip().upper().replace('.', '').replace('İ', 'I').replace('Ğ', 'G').replace('Ş', 'S').replace('Ö', 'O').replace('Ü', 'U')
+                            if "OGRENCI NO" in c_clean or c_clean == "NO":
+                                col_no_idx = c_idx
+                            elif c_clean in ["ADI", "AD", "OGRENCI ADI"]:
+                                col_ad_idx = c_idx
+                            elif c_clean in ["SOYADI", "SOYAD", "OGRENCI SOYADI"]:
+                                col_soyad_idx = c_idx
+                        continue
+
+                    # Öğrenci veri satırı mı?
+                    max_col = max(col_no_idx, col_ad_idx, col_soyad_idx)
+                    if len(row) > max_col and pd.notna(row.iloc[col_no_idx]):
+                        val_no = str(row.iloc[col_no_idx]).replace('.0', '').strip()
+                        if val_no.isdigit() and "öğrenci" not in str(row.iloc[col_no_idx]).lower():
+                            ad = str(row.iloc[col_ad_idx]).strip() if pd.notna(row.iloc[col_ad_idx]) else ""
+                            soyad = str(row.iloc[col_soyad_idx]).strip() if pd.notna(row.iloc[col_soyad_idx]) else ""
+                            ad_soyad = f"{ad} {soyad}".strip()
+                            if ad_soyad and val_no not in mevcut_nolar and val_no not in yeni_nolar:
+                                yeni_liste.append({'no': val_no, 'ad_soyad': ad_soyad, 'sube': aktif_sube})
+                                yeni_nolar.add(val_no)
+
+                if yeni_liste:
+                    return yeni_liste, None
+
+            # --- 2. GENEL DÜZ TABLO ŞABLONU (Fuzzy Header Detection) ---
             no_col = None
             ad_col = None
             soyad_col = None
@@ -86,22 +148,33 @@ class ExcelMotoru:
             sube_col = None
             header_row_idx = -1
 
-            for idx in range(min(15, len(df))):
+            for idx in range(min(20, len(df))):
+                cur_no_col = None
+                cur_ad_col = None
+                cur_soyad_col = None
+                cur_ad_soyad_col = None
+                cur_sube_col = None
+
                 for col_idx, cell in enumerate(df.iloc[idx].values):
                     c_clean = str(cell).strip().upper().replace('.', '').replace('İ', 'I').replace('Ğ', 'G').replace('Ş', 'S').replace('Ö', 'O').replace('Ü', 'U')
-                    if c_clean in ['NO', 'OGRENCI NO', 'OKUL NO', 'NUMARA', 'OGR NO'] and no_col is None:
-                        no_col = col_idx
-                    elif c_clean in ['AD SOYAD', 'ADI SOYADI', 'OGRENCI ADI SOYADI', 'AD VE SOYAD'] and ad_soyad_col is None:
-                        ad_soyad_col = col_idx
-                    elif c_clean in ['AD', 'ADI', 'OGRENCI ADI'] and ad_col is None:
-                        ad_col = col_idx
-                    elif c_clean in ['SOYAD', 'SOYADI', 'OGRENCI SOYADI'] and soyad_col is None:
-                        soyad_col = col_idx
-                    elif any(k in c_clean for k in ['SUBE', 'SINIF', 'SINIF/SUBE', 'SINIFI']) and sube_col is None:
-                        sube_col = col_idx
-                
-                if no_col is not None and (ad_soyad_col is not None or (ad_col is not None and soyad_col is not None)):
+                    if c_clean in ['NO', 'OGRENCI NO', 'OKUL NO', 'NUMARA', 'OGR NO'] and cur_no_col is None:
+                        cur_no_col = col_idx
+                    elif c_clean in ['AD SOYAD', 'ADI SOYADI', 'OGRENCI ADI SOYADI', 'AD VE SOYAD'] and cur_ad_soyad_col is None:
+                        cur_ad_soyad_col = col_idx
+                    elif c_clean in ['AD', 'ADI', 'OGRENCI ADI'] and cur_ad_col is None:
+                        cur_ad_col = col_idx
+                    elif c_clean in ['SOYAD', 'SOYADI', 'OGRENCI SOYADI'] and cur_soyad_col is None:
+                        cur_soyad_col = col_idx
+                    elif c_clean in ['SUBE', 'SUBESI', 'SINIF', 'SINIFI', 'SINIF/SUBE', 'SINIF / SUBE', 'SINIF SUBE'] and cur_sube_col is None:
+                        cur_sube_col = col_idx
+
+                if cur_no_col is not None and (cur_ad_soyad_col is not None or (cur_ad_col is not None and cur_soyad_col is not None)):
                     header_row_idx = idx
+                    no_col = cur_no_col
+                    ad_col = cur_ad_col
+                    soyad_col = cur_soyad_col
+                    ad_soyad_col = cur_ad_soyad_col
+                    sube_col = cur_sube_col
                     break
 
             if header_row_idx != -1 and no_col is not None:
@@ -110,16 +183,16 @@ class ExcelMotoru:
                     val_no = str(row.iloc[no_col]).replace('.0', '').strip() if pd.notna(row.iloc[no_col]) else ""
                     if not val_no or not val_no.isdigit():
                         continue
-                    
+
                     if ad_soyad_col is not None:
                         ad_soyad = str(row.iloc[ad_soyad_col]).strip() if pd.notna(row.iloc[ad_soyad_col]) else ""
                     else:
                         ad = str(row.iloc[ad_col]).strip() if ad_col is not None and pd.notna(row.iloc[ad_col]) else ""
                         soyad = str(row.iloc[soyad_col]).strip() if soyad_col is not None and pd.notna(row.iloc[soyad_col]) else ""
                         ad_soyad = f"{ad} {soyad}".strip()
-                    
-                    sube = str(row.iloc[sube_col]).strip() if sube_col is not None and pd.notna(row.iloc[sube_col]) else ""
-                    
+
+                    sube = VeriAraclari.kisa_sube_adi(str(row.iloc[sube_col])) if sube_col is not None and pd.notna(row.iloc[sube_col]) else ""
+
                     if ad_soyad and val_no not in mevcut_nolar and val_no not in yeni_nolar:
                         yeni_liste.append({'no': val_no, 'ad_soyad': ad_soyad, 'sube': sube})
                         yeni_nolar.add(val_no)
@@ -127,21 +200,6 @@ class ExcelMotoru:
                 if yeni_liste:
                     return yeni_liste, None
 
-            # --- 2. KLASİK E-OKUL SINIF LİSTESİ ŞABLONU ---
-            for index, row in df.iterrows():
-                satir_metni = str(row.values)
-                if "Sınıf Listesi" in satir_metni:
-                    aktif_sube = str(row[0]).split("Sınıf Listesi")[0].replace("Müdürlüğü", "").replace("\n", "").strip()
-                    if "AL -" in aktif_sube: aktif_sube = aktif_sube.split("AL -")[-1].strip()
-                elif len(row) > 7 and pd.notna(row[1]) and str(row[1]).replace('.0', '').isdigit() and "Öğrenci" not in str(row[1]):
-                    ogr_no = str(row[1]).replace('.0', '').strip()
-                    ad = str(row[3]).strip() if pd.notna(row[3]) else ""
-                    soyad = str(row[7]).strip() if pd.notna(row[7]) else ""
-                    
-                    if ad and soyad:
-                        if ogr_no not in mevcut_nolar and ogr_no not in yeni_nolar:
-                            yeni_liste.append({'no': ogr_no, 'ad_soyad': f"{ad} {soyad}".strip(), 'sube': aktif_sube})
-                            yeni_nolar.add(ogr_no)
             return yeni_liste, None
         except Exception as e:
             return None, str(e)

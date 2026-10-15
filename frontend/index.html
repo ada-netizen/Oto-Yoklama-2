@@ -1231,15 +1231,21 @@ document.addEventListener('DOMContentLoaded', function() {
         theme: "dark"
     };
 
-    // Raporlar modalı tarih inputu
-    const raporTarih = document.getElementById('rapor_tarih_kutu');
-    if (raporTarih) {
-        flatpickr(raporTarih, {
-            ...flatpickrConfig,
-            dateFormat: "d/m/Y",
-            allowInput: true
-        });
-    }
+    // Raporlar modalı tarih inputları
+    ['rapor_tarih_kutu', 'rapor_tarih_tur_tarih'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            flatpickr(el, {
+                ...flatpickrConfig,
+                dateFormat: "d/m/Y",
+                allowInput: true,
+                onChange: function(selectedDates, dateStr) {
+                    el.value = dateStr;
+                    el.dispatchEvent(new Event('input'));
+                }
+            });
+        }
+    });
 
     // İhale modülü tarih inputları
     const bTarih = document.getElementById('b-tarih');
@@ -1271,90 +1277,32 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// ============================================================
-// CHART.JS - Devamsızlık Grafiği (Raporlar modalı açıldığında)
-// ============================================================
-let devamsizlikChart = null;
-
-function raporlariGorselleEtir() {
-    const canvas = document.getElementById('devamsizlik_chart');
-    if (!canvas) return;
-
-    // Mevcut veriyi tablolardan çek
-    const ogrenciler = window.tumOgrenciler || [];
-    const devamsizliklar = window.tumDevamsizliklar || [];
-
-    // Şube bazlı özet hesapla
-    const subeSayilari = {};
-    devamsizliklar.forEach(d => {
-        const ogr = ogrenciler.find(o => String(o.no) === String(d.no));
-        if (ogr) {
-            const sube = ogr.sube || 'Bilinmiyor';
-            subeSayilari[sube] = (subeSayilari[sube] || 0) + 1;
-        }
-    });
-
-    const subeEtiketleri = Object.keys(subeSayilari).sort();
-    const subeDegerleri = subeEtiketleri.map(s => subeSayilari[s]);
-
-    const colors = subeEtiketleri.map((_, i) => {
-        const palette = ['#38BDF8','#818CF8','#34D399','#F472B6','#FB923C','#A78BFA','#60A5FA','#4ADE80'];
-        return palette[i % palette.length];
-    });
-
-    if (devamsizlikChart) {
-        devamsizlikChart.destroy();
-    }
-
-    if (subeEtiketleri.length === 0) {
-        canvas.parentElement.querySelector('div').textContent = '📊 Henüz devamsızlık verisi yok.';
-        return;
-    }
-
-    devamsizlikChart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: subeEtiketleri,
-            datasets: [{
-                label: 'Toplam Devamsızlık (Gün)',
-                data: subeDegerleri,
-                backgroundColor: colors,
-                borderColor: colors,
-                borderWidth: 1,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` ${ctx.parsed.y} gün devamsızlık`
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    ticks: { color: '#94A3B8', font: { size: 10 } },
-                    grid: { color: 'rgba(51,65,85,0.4)' }
-                },
-                y: {
-                    ticks: { color: '#94A3B8', font: { size: 10 } },
-                    grid: { color: 'rgba(51,65,85,0.4)' },
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-}
-
-// Raporlar modalı her açıldığında grafiği güncelle
+// Raporlar modalı her açıldığında Flatpickr ve ikonları tazele
 const _orijinalModalAc = window.modalAc;
 window.modalAc = function(id) {
     if (_orijinalModalAc) _orijinalModalAc(id);
     if (id === 'raporlar_modal') {
-        setTimeout(raporlariGorselleEtir, 100);
+        window.dispatchEvent(new CustomEvent('raporlar-modal-acildi'));
+        setTimeout(() => {
+            ['rapor_tarih_kutu', 'rapor_tarih_tur_tarih'].forEach(inputId => {
+                const el = document.getElementById(inputId);
+                if (el && !el._flatpickr) {
+                    flatpickr(el, {
+                        locale: "tr",
+                        theme: "dark",
+                        dateFormat: "d/m/Y",
+                        allowInput: true,
+                        onChange: function(selectedDates, dateStr) {
+                            el.value = dateStr;
+                            el.dispatchEvent(new Event('input'));
+                        }
+                    });
+                }
+            });
+            if (typeof lucide !== 'undefined' && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        }, 60);
     }
 };
 

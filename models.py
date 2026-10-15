@@ -60,3 +60,5 @@ class RaporAlRequest(BaseModel):
     tur: str
     format: str
     ozel_deger: Optional[str] = None
+    tarih: Optional[str] = None
+    devamsizlik_turu: Optional[str] = None

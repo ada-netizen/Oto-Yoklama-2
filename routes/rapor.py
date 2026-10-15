@@ -158,6 +158,14 @@ def rapor_al(veri: RaporAlRequest, background_tasks: BackgroundTasks):
         "sube_bazli": f"{ozel_deger} Şubesi Özürsüz Devamsızlık Listesi",
         "tarih_bazli": f"{ozel_deger} Tarihli Özürsüz Devamsızlık Listesi",
     }
+
+    if tur == "tarih_tur_bazli":
+        tarih = veri.tarih or (veri.ozel_deger.split('|')[0] if veri.ozel_deger and '|' in veri.ozel_deger else veri.ozel_deger)
+        secilen_tur = veri.devamsizlik_turu or (veri.ozel_deger.split('|')[1] if veri.ozel_deger and '|' in veri.ozel_deger else "TÜMÜ")
+        tur_etiket = "Tüm Devamsızlıklar" if secilen_tur == "TÜMÜ" else f"'{secilen_tur}' Türü"
+        basliklar["tarih_tur_bazli"] = f"{tarih} Tarihli {tur_etiket} Devamsızlık Yapanlar"
+        ozel_deger = f"{tarih}|{secilen_tur}"
+
     if tur not in basliklar:
         return {"basarili": False, "mesaj": "Geçersiz rapor türü."}
 
@@ -168,8 +176,8 @@ def rapor_al(veri: RaporAlRequest, background_tasks: BackgroundTasks):
         return {"basarili": False, "mesaj": "Bu kritere uygun öğrenci bulunamadı."}
 
     baslik = basliklar[tur]
-    kolon4_adi = "Tür" if tur == "tarih_bazli" else "Özürsüz (Gün)"
-    excel_kolonlar = ["Sınıf/Şube", "Numara", "Ad Soyad", "Devamsızlık Türü" if tur == "tarih_bazli" else "Özürsüz Toplam (Gün)"]
+    kolon4_adi = "Devamsızlık Türü (Süre)" if tur in ["tarih_bazli", "tarih_tur_bazli"] else "Özürsüz (Gün)"
+    excel_kolonlar = ["Sınıf/Şube", "Numara", "Ad Soyad", "Devamsızlık Türü (Süre)" if tur in ["tarih_bazli", "tarih_tur_bazli"] else "Özürsüz Toplam (Gün)"]
 
     ana_klasor, ayar = pdf_klasoru_hazirla()
     rapor_klasoru = os.path.join(ana_klasor, "Raporlar")

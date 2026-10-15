@@ -1,89 +1,130 @@
 <div class="modal-overlay" id="raporlar_modal" x-data="raporlarComponent()">
-<div class="modal-content" style="width: 740px; padding: 0; background-color: var(--bg-main); border-radius: var(--radius-lg); overflow: hidden;">
-<div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
-<h2 style="margin:0; color: #38BDF8; font-size: 16px; font-weight: 700; display:flex; align-items:center; gap:8px;"><i data-lucide="bar-chart-3" height="18" width="18"></i> MEB Devamsızlık Raporları</h2>
-<button class="btn btn-temizle" onclick="modalKapat('raporlar_modal')" style="padding: 6px 12px; font-size: 12px; display:flex; align-items:center; gap:4px;"><i data-lucide="x" height="14" width="14"></i> Kapat</button>
-</div>
-<div style="padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; overflow-y: auto;">
-<!-- Chart.js: Devamsizlik Ozeti -->
-<div style="background-color: var(--bg-card); backdrop-filter: var(--glass-blur); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm);">
-<div style="font-size: 13px; font-weight: 700; color: var(--fg-main); margin-bottom: 10px; display:flex; align-items:center; gap:6px;"><i data-lucide="pie-chart" height="15" width="15" style="color:#38BDF8;"></i> Şube Bazlı Devamsızlık Dağılım Grafiği</div>
-<canvas height="120" id="devamsizlik_chart"></canvas>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
-<div>
-<div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Özürsüz Sınırını Aşanlar (10+ Gün)</div>
-<div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">MEB mevzuatına göre resmi uyarı gerektiren öğrenciler</div>
-</div>
-<div style="display:flex; gap:6px;">
-<button class="btn btn-ogr" @click="rapor('ozursuz','excel')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-spreadsheet" height="13" width="13"></i> Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('ozursuz','pdf')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-text" height="13" width="13"></i> PDF</button>
-</div>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
-<div>
-<div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Sınıf Bazlı Devamsızlık Eşik Raporu</div>
-<div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">Tüm sınıfların risk eşiğine göre karşılaştırmalı listesi</div>
-</div>
-<div style="display:flex; gap:6px;">
-<button class="btn btn-ogr" @click="esikRaporu('excel')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-spreadsheet" height="13" width="13"></i> Excel</button>
-<button class="btn btn-kirmizi" @click="esikRaporu('pdf')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-text" height="13" width="13"></i> PDF</button>
-</div>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
-<div>
-<div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Özürlü Sınırını Aşanlar (20+ Gün)</div>
-<div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">Raporlu/sağlık izinlerinde mevzuat sınırını dolduranlar</div>
-</div>
-<div style="display:flex; gap:6px;">
-<button class="btn btn-ogr" @click="rapor('ozurlu','excel')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-spreadsheet" height="13" width="13"></i> Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('ozurlu','pdf')" style="padding: 6px 14px; font-size:12px;"><i data-lucide="file-text" height="13" width="13"></i> PDF</button>
-</div>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-<div style="display: flex; align-items: center; gap: 8px;">
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Özürsüz Devamsızlığı</span>
-<select x-model="gun_siniri" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;">
-<option value="">Seç</option>
-<option value="5">5 Gün</option>
-<option value="6">6 Gün</option>
-<option value="7">7 Gün</option>
-<option value="8">8 Gün</option>
-<option value="9">9 Gün</option>
-</select>
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">ve Üstü Olanlar</span>
-</div>
-<div style="display:flex; gap:5px;">
-<button class="btn btn-ogr" @click="rapor('gun_siniri','excel', gun_siniri)" style="padding: 6px 15px;">Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('gun_siniri','pdf', gun_siniri)" style="padding: 6px 15px;">PDF</button>
-</div>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-<div style="display: flex; align-items: center; gap: 8px;">
-<select x-model="sube" style="padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;">
-<option value="">Seç</option>
-<template x-for="s in subeler" :key="s">
-    <option :value="s" x-text="s"></option>
-</template>
-</select>
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Şubesi Özürsüz Devamsızlık Listesi</span>
-</div>
-<div style="display:flex; gap:5px;">
-<button class="btn btn-ogr" @click="rapor('sube_bazli','excel', sube)" style="padding: 6px 15px;">Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('sube_bazli','pdf', sube)" style="padding: 6px 15px;">PDF</button>
-</div>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 15px; border: 1px solid var(--border); border-radius: 4px;">
-<div style="display: flex; align-items: center; gap: 8px;">
-<input x-model="tarih" placeholder="GG/AA/YYYY" style="width: 90px; padding: 4px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); font-weight: bold;" type="text"/>
-<span style="color: var(--fg-main); font-weight: bold; font-size: 12px;">Tarihinde Özürsüz Devamsızlık Yapanlar</span>
-</div>
-<div style="display:flex; gap:5px;">
-<button class="btn btn-ogr" @click="rapor('tarih_bazli','excel', tarih)" style="padding: 6px 15px;">Excel</button>
-<button class="btn btn-kirmizi" @click="rapor('tarih_bazli','pdf', tarih)" style="padding: 6px 15px;">PDF</button>
-</div>
-</div>
-</div>
+<div class="modal-content" style="width: 780px; padding: 0; background-color: var(--bg-main); border-radius: var(--radius-lg); overflow: hidden;">
+    <div class="modal-header" style="padding: 16px 20px; border-bottom: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+        <h2 style="margin:0; color: #38BDF8; font-size: 16px; font-weight: 700; display:flex; align-items:center; gap:8px;"><i data-lucide="bar-chart-3" height="18" width="18"></i> MEB Devamsızlık Raporları</h2>
+        <button class="btn btn-temizle" onclick="modalKapat('raporlar_modal')" style="padding: 6px 12px; font-size: 12px; display:flex; align-items:center; gap:4px;"><i data-lucide="x" height="14" width="14"></i> Kapat</button>
+    </div>
+    <div style="padding: 20px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; overflow-y: auto;">
+        
+        <!-- 1. Özürsüz Sınırını Aşanlar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div>
+                <div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Özürsüz Sınırını Aşanlar (10+ Gün)</div>
+                <div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">MEB mevzuatına göre resmi uyarı gerektiren öğrenciler</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="rapor('ozursuz','excel')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="rapor('ozursuz','pdf')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+        <!-- 2. Sınıf Bazlı Eşik Raporu -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div>
+                <div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Sınıf Bazlı Devamsızlık Eşik Raporu</div>
+                <div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">Tüm sınıfların risk eşiğine göre karşılaştırmalı listesi</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="esikRaporu('excel')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="esikRaporu('pdf')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+        <!-- 3. Özürlü Sınırını Aşanlar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div>
+                <div style="color: var(--fg-main); font-weight: 600; font-size: 13px;">Özürlü Sınırını Aşanlar (20+ Gün)</div>
+                <div style="font-size: 11px; color: var(--fg-sub); margin-top: 2px;">Raporlu/sağlık izinlerinde mevzuat sınırını dolduranlar</div>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="rapor('ozurlu','excel')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="rapor('ozurlu','pdf')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+        <!-- 4. Gün Sınırı -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="color: var(--fg-main); font-weight: 600; font-size: 12px;">Özürsüz Devamsızlığı</span>
+                <select x-model="gun_siniri" style="padding: 6px 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                    <option value="">Seç</option>
+                    <option value="5">5 Gün</option>
+                    <option value="6">6 Gün</option>
+                    <option value="7">7 Gün</option>
+                    <option value="8">8 Gün</option>
+                    <option value="9">9 Gün</option>
+                </select>
+                <span style="color: var(--fg-main); font-weight: 600; font-size: 12px;">ve Üstü Olanlar</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="rapor('gun_siniri','excel', gun_siniri)" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="rapor('gun_siniri','pdf', gun_siniri)" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+        <!-- 5. Şube Bazlı -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <select x-model="sube" style="padding: 6px 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer; min-width: 110px;">
+                    <option value="">Şube Seç</option>
+                    <template x-for="s in subeler" :key="s">
+                        <option :value="s" x-text="s"></option>
+                    </template>
+                </select>
+                <span style="color: var(--fg-main); font-weight: 600; font-size: 12px;">Şubesi Özürsüz Devamsızlık Listesi</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="rapor('sube_bazli','excel', sube)" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="rapor('sube_bazli','pdf', sube)" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+        <!-- 6. Tarih Bazlı Özürsüz -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; width: 140px; box-sizing: border-box; cursor: pointer;">
+                    <i data-lucide="calendar" height="15" width="15" style="color: var(--fg-sub); flex-shrink: 0; margin-right: 8px;"></i>
+                    <input id="rapor_tarih_kutu" x-model="tarih" placeholder="Tarih Seçin" readonly style="width: 100%; border: none; background: transparent; padding: 6px 0; font-weight: bold; font-size: 12px; color: var(--fg-main); outline: none; cursor: pointer;" type="text"/>
+                </div>
+                <span style="color: var(--fg-main); font-weight: 600; font-size: 12px;">Tarihinde Özürsüz Devamsızlık Yapanlar</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="rapor('tarih_bazli','excel', tarih)" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="rapor('tarih_bazli','pdf', tarih)" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+        <!-- 7. Tarih ve Devamsızlık Türü Bazlı -->
+        <div style="display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-card); padding: 14px 18px; border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; background: var(--bg-main); border: 1px solid var(--border); border-radius: 6px; padding: 0 10px; width: 140px; box-sizing: border-box; cursor: pointer;">
+                    <i data-lucide="calendar" height="15" width="15" style="color: var(--fg-sub); flex-shrink: 0; margin-right: 8px;"></i>
+                    <input id="rapor_tarih_tur_tarih" x-model="tarih_tur_tarih" placeholder="Tarih Seçin" readonly style="width: 100%; border: none; background: transparent; padding: 6px 0; font-weight: bold; font-size: 12px; color: var(--fg-main); outline: none; cursor: pointer;" type="text"/>
+                </div>
+                <span style="color: var(--fg-main); font-weight: 600; font-size: 12px;">tarihinde</span>
+                <select x-model="tarih_tur_tur" style="padding: 6px 10px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; font-weight: bold; font-size: 12px; cursor: pointer;">
+                    <option value="TÜMÜ">TÜMÜ (Tüm Devamsızlıklar)</option>
+                    <option value="D">D - Tam Gün Özürsüz</option>
+                    <option value="ÖY">ÖY - Yarım Gün Özürsüz</option>
+                    <option value="SY">SY - Sabah Yarım Gün</option>
+                    <option value="G">G - Geç Kalma</option>
+                    <option value="S">S - Sevkli</option>
+                    <option value="R">R - Raporlu</option>
+                    <option value="İ">İ - İzinli</option>
+                    <option value="M">M - Mazeretli</option>
+                    <option value="N">N - Nöbetçi</option>
+                    <option value="F">F - Faaliyet</option>
+                    <option value="SV">SV - Sevkli (Diğer)</option>
+                </select>
+                <span style="color: var(--fg-main); font-weight: 600; font-size: 12px;">türünde devamsızlık yapanlar</span>
+            </div>
+            <div style="display:flex; gap:8px; flex-shrink: 0;">
+                <button class="btn btn-ogr" @click="raporTarihTur('excel')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-spreadsheet" height="14" width="14"></i> Excel</button>
+                <button class="btn btn-kirmizi" @click="raporTarihTur('pdf')" style="padding: 6px 14px; font-size:12px; display: inline-flex; align-items: center; gap: 6px; border-radius: 6px; cursor: pointer;"><i data-lucide="file-text" height="14" width="14"></i> PDF</button>
+            </div>
+        </div>
+
+    </div>
 </div>
 </div>
 <script>
@@ -92,11 +133,69 @@ document.addEventListener('alpine:init', () => {
         gun_siniri: '',
         sube: '',
         tarih: '',
+        tarih_tur_tarih: '',
+        tarih_tur_tur: 'TÜMÜ',
+        subeler: [],
         
-        get subeler() {
-            if(!window.ogrenciListesi) return [];
-            const subelerArr = [...new Set(window.ogrenciListesi.map(o => window.sinifFormatla ? window.sinifFormatla(o.sube) : o.sube))];
-            return subelerArr.sort((a, b) => (parseInt(a)||99) - (parseInt(b)||99));
+        init() {
+            this.subeleriYukle();
+            window.addEventListener('ogrenciler-guncellendi', () => this.subeleriYukle());
+            window.addEventListener('raporlar-modal-acildi', () => this.subeleriYukle());
+        },
+
+        kisaSube(subeStr) {
+            if(!subeStr) return "";
+            let s = String(subeStr).replace(/\(.*?\)/g, ''); // (ALANI YOK) temizle
+            s = s.replace(/^[A-Z]+\s*-\s*/, ''); // AMP - temizle
+            s = s.replace(/\.?\s*sınıfı?/gi, '');
+            s = s.replace(/\s*şubesi?/gi, '');
+            s = s.replace(/\.?\s*sinifi?/gi, '');
+            s = s.replace(/\s*subesi?/gi, '');
+            if(s.includes('/')) {
+                let parts = s.split('/');
+                return (parts[0].trim() + '/' + parts[1].trim()).toLocaleUpperCase('tr-TR');
+            }
+            let m = s.match(/(\d+)\s*([A-Za-zÇĞİÖŞÜçğıöşü])/);
+            if(m) {
+                return (m[1] + '/' + m[2]).toLocaleUpperCase('tr-TR');
+            }
+            return s.replace(/[\.\s]/g, '').toLocaleUpperCase('tr-TR');
+        },
+
+        subeleriYukle() {
+            let hamList = window.ogrenciListesi || [];
+            if (hamList.length === 0) {
+                if (typeof API !== 'undefined') {
+                    fetch(`${API}/ogrenciler`).then(r => r.json()).then(data => {
+                        if (data && data.ogrenciler) {
+                            window.ogrenciListesi = data.ogrenciler;
+                            this.subeleriDoldur(data.ogrenciler);
+                        }
+                    }).catch(() => {});
+                }
+                return;
+            }
+            this.subeleriDoldur(hamList);
+        },
+
+        subeleriDoldur(list) {
+            const set = new Set();
+            list.forEach(o => {
+                if (o && o.sube) {
+                    let kisa = this.kisaSube(o.sube);
+                    if (kisa) set.add(kisa);
+                }
+            });
+            this.subeler = Array.from(set).sort((a, b) => {
+                let matchA = String(a).match(/^(\d+)\/?(.*)$/);
+                let matchB = String(b).match(/^(\d+)\/?(.*)$/);
+                let numA = matchA ? parseInt(matchA[1]) : (parseInt(a) || 99);
+                let numB = matchB ? parseInt(matchB[1]) : (parseInt(b) || 99);
+                if (numA !== numB) return numA - numB;
+                let subA = matchA ? matchA[2] : a;
+                let subB = matchB ? matchB[2] : b;
+                return subA.localeCompare(subB, 'tr');
+            });
         },
         
         rapor(tur, format, ozelDeger) {
@@ -104,6 +203,21 @@ document.addEventListener('alpine:init', () => {
         },
         esikRaporu(format) {
             if(window.esikRaporuAl) window.esikRaporuAl(format);
+        },
+        raporTarihTur(format) {
+            if (!this.tarih_tur_tarih) {
+                if(typeof bildirimGoster === 'function') {
+                    return bildirimGoster("Lütfen rapor için bir tarih seçiniz!", "uyari");
+                } else {
+                    return alert("Lütfen rapor için bir tarih seçiniz!");
+                }
+            }
+            if(window.raporAl) {
+                window.raporAl('tarih_tur_bazli', format, {
+                    tarih: this.tarih_tur_tarih,
+                    tur: this.tarih_tur_tur || 'TÜMÜ'
+                });
+            }
         }
     }));
 });

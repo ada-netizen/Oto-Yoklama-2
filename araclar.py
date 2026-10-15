@@ -9,19 +9,27 @@ class VeriAraclari:
 
     @staticmethod
     def kisa_sube_adi(sube_str):
-        s = str(sube_str)
-        # Okul türü öneklerini (AL -, AMP - vb.) temizler
-        s = re.sub(r'^[A-Z]+\s*-\s*', '', s)
+        if not sube_str:
+            return ""
+        s = str(sube_str).strip()
+        # Parantez iclerini temizle: (ALANI YOK) vb.
         s = re.sub(r'\(.*?\)', '', s)
-        # Sınıf ve şube kelimelerini atar
-        s = s.replace(". Sınıf", "").replace(" Sınıf", "").replace("Sınıfı", "")
-        s = s.replace("Şubesi", "").replace("Şube", "").replace("şubesi", "")
-        # "10/A" veya "10 /A" gibi formatları her zaman nizami "10 / A" yapar
+        # Okul turu oneklerini (AL -, AMP - vb.) temizler
+        s = re.sub(r'^[A-Z]+\s*-\s*', '', s)
+        # Sinif ve sube kelimelerini atar
+        for w in ['. Sınıf', ' Sınıf', 'Sınıfı', 'sınıfı', 'sınıf', 'sinifi', 'sinif',
+                  'Şubesi', 'Şube', 'şubesi', 'şube', 'subesi', 'sube']:
+            s = s.replace(w, '')
+        s = s.replace('.', '').strip()
+        # "10/A" veya "10 / A" formatlarini nizami "10/A" yapar
         if "/" in s:
             kisimlar = s.split("/")
             if len(kisimlar) == 2:
-                s = f"{kisimlar[0].strip()} / {kisimlar[1].strip()}"
-        return s.strip()
+                return f"{kisimlar[0].strip()}/{kisimlar[1].strip()}".upper()
+        m = re.match(r'(\d+)\s*([A-Za-zÇĞİÖŞÜçğıöşü])', s)
+        if m:
+            return f"{m.group(1)}/{m.group(2)}".upper()
+        return s.upper()
     
     @staticmethod
     def tarih_formatla(tarih_str):

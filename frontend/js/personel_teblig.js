@@ -230,7 +230,22 @@ function filtreTumuDegisti() {
             if((tur === 'gun_siniri' || tur === 'sube_bazli' || tur === 'tarih_bazli') && !ozelDeger) {
                 return bildirimGoster("Lütfen rapor almadan önce bir seçim yapınız!", "hata");
             }
-            fetch(`${API}/rapor-al`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tur, format, ozel_deger: ozelDeger }) })
+            if (tur === 'tarih_tur_bazli') {
+                if (!ozelDeger || !ozelDeger.tarih) {
+                    return bildirimGoster("Lütfen rapor için bir tarih seçiniz!", "uyari");
+                }
+            }
+
+            let payload = { tur, format };
+            if (tur === 'tarih_tur_bazli') {
+                payload.tarih = ozelDeger.tarih;
+                payload.devamsizlik_turu = ozelDeger.tur || 'TÜMÜ';
+                payload.ozel_deger = `${ozelDeger.tarih}|${payload.devamsizlik_turu}`;
+            } else {
+                payload.ozel_deger = typeof ozelDeger === 'string' ? ozelDeger : (ozelDeger ? JSON.stringify(ozelDeger) : null);
+            }
+
+            fetch(`${API}/rapor-al`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
                 .then(r => r.json()).then(v => bildirimGoster(v.mesaj, v.basarili ? "bilgi" : "hata"));
         }
 

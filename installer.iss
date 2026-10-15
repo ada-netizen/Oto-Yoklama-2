@@ -1,5 +1,5 @@
 #define MyAppName "Elektronik Okul"
-#define MyAppVersion "2.3.2"
+#define MyAppVersion "2.3.3"
 #define MyAppPublisher "Elektronik Okul"
 #define MyAppExeName "Elektronik Okul.exe"
 
@@ -14,10 +14,14 @@ OutputDir=installer
 OutputBaseFilename=Elektronik_Okul_V{#MyAppVersion}_Setup
 Compression=lzma
 SolidCompression=yes
-WizardStyle=modern
 PrivilegesRequired=lowest
 ArchitecturesInstallIn64BitMode=x64
 CloseApplications=yes
+VersionInfoVersion={#MyAppVersion}
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription={#MyAppName} Kurulumu
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion={#MyAppVersion}
 
 [Files]
 Source: "dist\Elektronik Okul\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion

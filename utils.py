@@ -184,9 +184,25 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
         gruplu.setdefault(no, []).append(dev)
 
     hedef_tarih_obj = None
-    if tur == "tarih_bazli":
+    secilen_dev_turu = "TÜMÜ"
+    if tur in ["tarih_bazli", "tarih_tur_bazli"]:
+        tarih_str = ""
+        if tur == "tarih_bazli":
+            tarih_str = str(ozel_deger)
+        elif tur == "tarih_tur_bazli":
+            if isinstance(ozel_deger, dict):
+                tarih_str = str(ozel_deger.get("tarih", ""))
+                secilen_dev_turu = str(ozel_deger.get("tur", "TÜMÜ")).strip().upper()
+            elif isinstance(ozel_deger, str) and "|" in ozel_deger:
+                parcalar = ozel_deger.split("|")
+                tarih_str = parcalar[0].strip()
+                secilen_dev_turu = parcalar[1].strip().upper()
+            else:
+                tarih_str = str(ozel_deger).strip()
+
         try:
-            gg, aa, yy = map(int, str(ozel_deger).split('/'))
+            t_temiz = VeriAraclari.tarih_formatla(tarih_str)
+            gg, aa, yy = map(int, t_temiz.split('/'))
             hedef_tarih_obj = datetime(yy, aa, gg)
         except Exception as e:
             logging.error(f"_rapor_verisi_hazirla tarih formati hatasi: {e}")
@@ -229,10 +245,47 @@ def _rapor_verisi_hazirla(tur, ozel_deger):
             if not bulundu:
                 continue
             veri.append([gosterilen_sube, ogr_no, ogr['ad_soyad'], dev_turu])
+        elif tur == "tarih_tur_bazli":
+            bulundu = False
+            bulunan_bilgi = ""
+            for dev in ogr_devleri:
+                dev_tur = str(dev.get('tur', '')).strip().upper()
+                if secilen_dev_turu != "TÜMÜ":
+                    if secilen_dev_turu in ["İ", "I"] and dev_tur in ["İ", "I"]:
+                        eslesti = True
+                    elif secilen_dev_turu == "S" and dev_tur in ["S", "SV"]:
+                        eslesti = True
+                    elif dev_tur == secilen_dev_turu:
+                        eslesti = True
+                    else:
+                        eslesti = False
+                    if not eslesti:
+                        continue
+
+                try:
+                    gun_mik = float(VeriAraclari.temiz_sure(dev.get('gun', 1)))
+                    tam_g = int(gun_mik) if gun_mik >= 1 else 1
+                    t_str = VeriAraclari.tarih_formatla(dev['tarih'])
+                    bd, bm, by = map(int, t_str.split('/'))
+                    bas_tarih = datetime(by, bm, bd)
+                    for i in range(tam_g):
+                        g_t = bas_tarih + timedelta(days=i)
+                        if g_t.weekday() < 5 and g_t.date() == hedef_tarih_obj.date():
+                            bulundu = True
+                            gun_gosterim = f"{gun_mik:g} Gün" if gun_mik != 1 else "1 Gün"
+                            bulunan_bilgi = f"{dev_tur} ({gun_gosterim})"
+                            break
+                    if bulundu:
+                        break
+                except Exception as e:
+                    logging.error(f"_rapor_verisi_hazirla tarih_tur dongu hatasi: {e}")
+            if not bulundu:
+                continue
+            veri.append([gosterilen_sube, ogr_no, ogr['ad_soyad'], bulunan_bilgi])
         else:
             veri.append([gosterilen_sube, ogr_no, ogr['ad_soyad'], ozsz])
 
-    if tur == "tarih_bazli":
+    if tur in ["tarih_bazli", "tarih_tur_bazli"]:
         def anahtar(x):
             r = re.findall(r'\d+', str(x[0]))
             return (int(r[0]) if r else 99, x[0], x[1])
