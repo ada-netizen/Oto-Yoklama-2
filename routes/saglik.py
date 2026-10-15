@@ -65,10 +65,71 @@ def saglik_liste():
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 
+def format_tr_tarih(tarih_str: str) -> str:
+    if not tarih_str:
+        return ""
+    try:
+        parts = tarih_str.split("-")
+        if len(parts) == 3:
+            return f"{parts[2]}.{parts[1]}.{parts[0]}"
+    except Exception:
+        pass
+    return tarih_str
+
+def cakisan_rapor_kontrol(personel_ad: str, baslangic: str, bitis: str, haric_id: Optional[int] = None):
+    if not bitis:
+        bitis = baslangic
+        
+    def tr_norm(s):
+        if not s: return ""
+        return s.strip().upper().replace('İ', 'I').replace('Ğ', 'G').replace('Ü', 'U').replace('Ş', 'S').replace('Ö', 'O').replace('Ç', 'C')
+
+    try:
+        db.cursor.execute(
+            """
+            SELECT id, personel_ad, baslangic_tarihi, COALESCE(NULLIF(bitis_tarihi, ''), baslangic_tarihi) as bitis, gun_sayisi, aciklama
+            FROM saglik_raporlari
+            WHERE baslangic_tarihi <= ?
+              AND COALESCE(NULLIF(bitis_tarihi, ''), baslangic_tarihi) >= ?
+            """,
+            (bitis, baslangic)
+        )
+        rows = db.cursor.fetchall()
+        
+        target_norm = tr_norm(personel_ad)
+        for r in rows:
+            r_id, r_ad, r_bas, r_bit, r_gun, r_acik = r
+            if haric_id is not None and r_id == haric_id:
+                continue
+            if r_ad == personel_ad or tr_norm(r_ad) == target_norm:
+                return {
+                    "id": r_id,
+                    "personel_ad": r_ad,
+                    "baslangic": r_bas,
+                    "bitis": r_bit,
+                    "gun_sayisi": r_gun,
+                    "aciklama": r_acik
+                }
+    except Exception:
+        pass
+        
+    return None
+
 @router.post("/saglik/ekle")
 def saglik_ekle(veri: SaglikRaporuRequest):
     try:
         bitis = veri.bitis_tarihi if veri.bitis_tarihi else veri.baslangic_tarihi
+        cakisan = cakisan_rapor_kontrol(veri.personel_ad, veri.baslangic_tarihi, bitis)
+        if cakisan:
+            c_bas = format_tr_tarih(cakisan["baslangic"])
+            c_bit = format_tr_tarih(cakisan["bitis"])
+            tarih_mesaji = c_bas if c_bas == c_bit else f"{c_bas} - {c_bit}"
+            return {
+                "basarili": False,
+                "cakisma": True,
+                "mesaj": f"Bu tarihlerde zaten rapor girişi var! {cakisan['personel_ad']} için {tarih_mesaji} tarihlerinde kayıtlı bir sağlık raporu bulunmaktadır. Yeni rapor eklenemez."
+            }
+
         db.cursor.execute(
             "INSERT INTO saglik_raporlari (personel_ad, baslangic_tarihi, bitis_tarihi, gun_sayisi, aciklama) VALUES (?, ?, ?, ?, ?)",
             (veri.personel_ad, veri.baslangic_tarihi, bitis, veri.gun_sayisi, veri.aciklama)
@@ -113,6 +174,17 @@ def personel_raporlari(personel_ad: str):
 def saglik_duzenle(id: int, veri: SaglikRaporuRequest):
     try:
         bitis = veri.bitis_tarihi if veri.bitis_tarihi else veri.baslangic_tarihi
+        cakisan = cakisan_rapor_kontrol(veri.personel_ad, veri.baslangic_tarihi, bitis, haric_id=id)
+        if cakisan:
+            c_bas = format_tr_tarih(cakisan["baslangic"])
+            c_bit = format_tr_tarih(cakisan["bitis"])
+            tarih_mesaji = c_bas if c_bas == c_bit else f"{c_bas} - {c_bit}"
+            return {
+                "basarili": False,
+                "cakisma": True,
+                "mesaj": f"Bu tarihlerde zaten rapor girişi var! {cakisan['personel_ad']} için {tarih_mesaji} tarihlerinde kayıtlı başka bir sağlık raporu bulunmaktadır."
+            }
+
         db.cursor.execute(
             "UPDATE saglik_raporlari SET baslangic_tarihi = ?, bitis_tarihi = ?, gun_sayisi = ?, aciklama = ? WHERE id = ?",
             (veri.baslangic_tarihi, bitis, veri.gun_sayisi, veri.aciklama, id)
@@ -125,8 +197,11 @@ def saglik_duzenle(id: int, veri: SaglikRaporuRequest):
 
 import io
 import PyPDF2
+from datetime import datetime, timedelta
+import re
 from fastapi import File, UploadFile, HTTPException
 
+@router.post("/saglik/pdf-oku")
 @router.post("/pdf-oku")
 async def saglik_pdf_oku(dosya: UploadFile = File(...)):
     try:
@@ -134,37 +209,146 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
         pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
         text = ""
         for page in pdf_reader.pages:
-            text += page.extract_text()
-            
-        import re
-        
-        # Regex ile bilgileri çekelim
-        ad_soyad_match = re.search(r'G\s*\.\s*S\s*:\s*([\w\sÇÖŞİĞÜçöşiğü]+?)(?=\s+Tarih|\n|$)', text, re.IGNORECASE)
-        ad_soyad = ad_soyad_match.group(1).strip() if ad_soyad_match else ""
-        
-        sure_match = re.search(r'Süresi\s*:\s*(\d+)', text, re.IGNORECASE)
-        gun_sayisi = int(sure_match.group(1)) if sure_match else 0
-        
-        baslangic_match = re.search(r'Başlama\s+Tarihi\s*:\s*(\d{1,2}\.\d{1,2}\.\d{4})', text, re.IGNORECASE)
-        baslangic = ""
-        if baslangic_match:
-            b_parts = baslangic_match.group(1).split('.')
-            if len(b_parts) == 3:
-                baslangic = f"{b_parts[2]}-{b_parts[1].zfill(2)}-{b_parts[0].zfill(2)}"
+            t = page.extract_text()
+            if t:
+                text += t + "\n"
                 
-        bitis_match = re.search(r'Göreve\s+Başlama\s+Tarihi\s*:\s*(\d{1,2}\.\d{1,2}\.\d{4})', text, re.IGNORECASE)
+        if not text.strip():
+            return {
+                "basarili": False,
+                "mesaj": "PDF belgesinde okunabilir metin bulunamadı (Taranmış/Resim tabanlı PDF olabilir). Lütfen bilgileri elle giriniz."
+            }
+
+        # 1. Personel Adı Eşleştirme
+        ad_soyad = ""
+        # Öncelik 1: Sistemdeki kayıtlı personelleri tarayalım
+        try:
+            db.cursor.execute("SELECT ad_soyad FROM personel ORDER BY LENGTH(ad_soyad) DESC")
+            kayitli_personeller = [r[0] for r in db.cursor.fetchall()]
+        except Exception:
+            kayitli_personeller = []
+
+        text_upper = text.upper().replace('İ', 'I').replace('Ğ', 'G').replace('Ü', 'U').replace('Ş', 'S').replace('Ö', 'O').replace('Ç', 'C')
+        for p_ad in kayitli_personeller:
+            p_clean = p_ad.upper().replace('İ', 'I').replace('Ğ', 'G').replace('Ü', 'U').replace('Ş', 'S').replace('Ö', 'O').replace('Ç', 'C')
+            if p_clean in text_upper:
+                ad_soyad = p_ad
+                break
+
+        # Öncelik 2: Regex ile arama
+        if not ad_soyad:
+            ad_soyad_patterns = [
+                r'G\s*\.\s*S\s*:\s*([\w\sÇÖŞİĞÜçöşiğü]+?)(?=\s+Tarih|\s+TC|\s+T\.C|\n|\r|$)',
+                r'(?:Sigortalının\s+Adı\s+Soyadı|Adı\s+Soyadı|Hasta\s+Adı\s+Soyadı|Adı\s+ve\s+Soyadı)\s*:\s*([\w\sÇÖŞİĞÜçöşiğü]+?)(?=\s+Tarih|\s+TC|\s+T\.C|\n|\r|$)',
+                r'Adı\s*:\s*([\w\sÇÖŞİĞÜçöşiğü]+?)\s+Soyadı\s*:\s*([\w\sÇÖŞİĞÜçöşiğü]+?)(?=\n|\r|$)'
+            ]
+            for pat in ad_soyad_patterns:
+                m = re.search(pat, text, re.IGNORECASE)
+                if m:
+                    if len(m.groups()) == 2:
+                        ad_soyad = f"{m.group(1)} {m.group(2)}".strip()
+                    else:
+                        ad_soyad = m.group(1).strip()
+                    break
+
+        # 2. Başlangıç Tarihi
+        baslangic = ""
+        bas_patterns = [
+            r'(?:[İiIı]stirahat\s+)?Ba[şs]la(?:ma|ng[ıi][çc])\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
+            r'Rapor\s+Ba[şs]lang[ıi][çc]\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
+            r'Ba[şs]lama\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})'
+        ]
+        for pat in bas_patterns:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                d, m_ay, y = m.groups()
+                baslangic = f"{y}-{m_ay.zfill(2)}-{d.zfill(2)}"
+                break
+
+        # 3. Bitiş Tarihi
         bitis = ""
-        if bitis_match:
-            bt_parts = bitis_match.group(1).split('.')
-            if len(bt_parts) == 3:
-                bitis = f"{bt_parts[2]}-{bt_parts[1].zfill(2)}-{bt_parts[0].zfill(2)}"
-        
+        bit_patterns = [
+            r'(?:[İiIı]stirahat\s+)?Biti[şs]\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
+            r'Rapor\s+Biti[şs]\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})'
+        ]
+        for pat in bit_patterns:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                d, m_ay, y = m.groups()
+                bitis = f"{y}-{m_ay.zfill(2)}-{d.zfill(2)}"
+                break
+
+        # Eğer doğrudan bitiş yoksa göreve başlama tarihinden bir önceki gün bitiş kabul edilir
+        if not bitis:
+            m_gorev = re.search(r'(?:[Gg][öo]reve\s+Ba[şs]lama|[Ççc]al[ıi][şs]abilece[gğ]i)\s+Tarih(?:i)?\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})', text, re.IGNORECASE)
+            if m_gorev:
+                d, m_ay, y = m_gorev.groups()
+                try:
+                    dt_gorev = datetime(int(y), int(m_ay), int(d))
+                    dt_bitis = dt_gorev - timedelta(days=1)
+                    bitis = dt_bitis.strftime("%Y-%m-%d")
+                except Exception:
+                    pass
+
+        # 4. Gün Sayısı
+        gun_sayisi = 0
+        sure_patterns = [
+            r'(?:[İiIı]stirahat\s+)?S[üu]resi\s*:\s*(\d+)',
+            r'G[üu]n\s+Say[ıi]s[ıi]\s*:\s*(\d+)',
+            r'(\d+)\s*\(\s*\w+\s*\)\s*g[üu]n'
+        ]
+        for pat in sure_patterns:
+            m = re.search(pat, text, re.IGNORECASE)
+            if m:
+                gun_sayisi = int(m.group(1))
+                break
+
+        # Gün sayısı bulunamadıysa tarihlerden hesaplayalım
+        if gun_sayisi <= 0 and baslangic and bitis:
+            try:
+                d1 = datetime.strptime(baslangic, "%Y-%m-%d")
+                d2 = datetime.strptime(bitis, "%Y-%m-%d")
+                gun_sayisi = (d2 - d1).days + 1
+            except Exception:
+                gun_sayisi = 1
+
+        # Eğer gün sayısı var ama bitiş tarihi yoksa
+        if gun_sayisi > 0 and baslangic and not bitis:
+            try:
+                d1 = datetime.strptime(baslangic, "%Y-%m-%d")
+                d2 = d1 + timedelta(days=gun_sayisi - 1)
+                bitis = d2.strftime("%Y-%m-%d")
+            except Exception:
+                bitis = baslangic
+
+        if not bitis and baslangic:
+            bitis = baslangic
+
+        if not ad_soyad and not baslangic:
+            return {
+                "basarili": False,
+                "mesaj": "PDF'ten sağlık raporuna ait personel veya tarih bilgileri okunamadı. Lütfen formu elle doldurunuz."
+            }
+
+        # Çakışma kontrolü (aynı veya çakışan tarihlerde rapor var mı?)
+        if ad_soyad and baslangic:
+            cakisan = cakisan_rapor_kontrol(ad_soyad, baslangic, bitis)
+            if cakisan:
+                c_bas = format_tr_tarih(cakisan["baslangic"])
+                c_bit = format_tr_tarih(cakisan["bitis"])
+                tarih_mesaji = c_bas if c_bas == c_bit else f"{c_bas} - {c_bit}"
+                return {
+                    "basarili": False,
+                    "cakisma": True,
+                    "mesaj": f"Bu tarihlerde zaten rapor girişi var! {cakisan['personel_ad']} için {tarih_mesaji} tarihlerinde kayıtlı bir sağlık raporu bulunmaktadır. Yükleme işleme koyulmadı."
+                }
+
         return {
             "basarili": True,
             "ad_soyad": ad_soyad,
-            "gun_sayisi": gun_sayisi,
+            "gun_sayisi": max(1, gun_sayisi),
             "baslangic": baslangic,
             "bitis": bitis
         }
     except Exception as e:
-        return {"basarili": False, "mesaj": str(e)}
+        return {"basarili": False, "mesaj": f"PDF okuma hatası: {str(e)}"}

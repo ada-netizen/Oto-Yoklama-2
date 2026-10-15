@@ -151,6 +151,91 @@ function saglikGunHesapla(selectedDates) {
     document.getElementById('lbl_saglik_gun').textContent = `(${diffDays} Gün)`;
 }
 
+async function saglikPdfYukle(event) {
+    const dosya = event.target.files ? event.target.files[0] : null;
+    if (!dosya) return;
+    
+    const formData = new FormData();
+    formData.append("dosya", dosya);
+    
+    if (typeof yuklemeGoster === 'function') {
+        yuklemeGoster("Sağlık raporu PDF'i çözümleniyor...");
+    }
+    
+    try {
+        const res = await fetch(`${API}/saglik/pdf-oku`, {
+            method: 'POST',
+            body: formData
+        });
+        const data = await res.json();
+        
+        if (typeof yuklemeGizle === 'function') {
+            yuklemeGizle();
+        }
+        
+        if (data.basarili) {
+            // Modali ac (eger acik degilse)
+            saglikModalAc();
+            
+            // Personel adini sec
+            if (data.ad_soyad) {
+                const select = document.getElementById('saglik_personel_sec');
+                let eslesenValue = "";
+                
+                const hedefClean = data.ad_soyad.toLocaleUpperCase('tr-TR').replace(/[\s\.]/g, '');
+                for (let i = 0; i < select.options.length; i++) {
+                    const optText = select.options[i].text.toLocaleUpperCase('tr-TR').replace(/[\s\.]/g, '');
+                    if (optText === hedefClean || optText.includes(hedefClean) || hedefClean.includes(optText)) {
+                        eslesenValue = select.options[i].value;
+                        break;
+                    }
+                }
+                
+                if (eslesenValue) {
+                    select.value = eslesenValue;
+                }
+            }
+            
+            // Tarih araligini takvime aktar
+            if (data.baslangic) {
+                const dates = [data.baslangic];
+                if (data.bitis && data.bitis !== data.baslangic) {
+                    dates.push(data.bitis);
+                }
+                if (saglikFlatpickr) {
+                    saglikFlatpickr.setDate(dates, true);
+                } else {
+                    document.getElementById('saglik_tarih_range').value = dates.join(' - ');
+                }
+            }
+            
+            // Gun sayisini guncelle
+            const gunSayisi = data.gun_sayisi || 1;
+            document.getElementById('saglik_gun').value = gunSayisi;
+            const lblGun = document.getElementById('lbl_saglik_gun');
+            if (lblGun) lblGun.textContent = `(${gunSayisi} Gün)`;
+            
+            bildirimGoster(`Sağlık raporu PDF'ten okundu: ${data.ad_soyad || 'Personel'} (${gunSayisi} Gün). Lütfen kontrol edip kaydedin.`, "basarili");
+        } else {
+            if (data.cakisma) {
+                // Çakışan rapor varsa modalı doldurma, işleme koyma ve uyarı ver
+                bildirimGoster(data.mesaj, "uyari");
+                return;
+            }
+            saglikModalAc();
+            bildirimGoster(data.mesaj || "PDF'ten rapor bilgileri otomatik okunamadı. Lütfen formu elle doldurunuz.", "uyari");
+        }
+    } catch (e) {
+        if (typeof yuklemeGizle === 'function') yuklemeGizle();
+        bildirimGoster("PDF yüklenirken bağlantı hatası oluştu: " + e.message, "hata");
+    } finally {
+        if (event && event.target) {
+            event.target.value = '';
+        }
+    }
+}
+window.saglikPdfYukle = saglikPdfYukle;
+
 async function saglikKaydet() {
     const personel = document.getElementById('saglik_personel_sec').value;
     const tarihDegeri = document.getElementById('saglik_tarih_range').value;
@@ -162,12 +247,18 @@ async function saglikKaydet() {
         return;
     }
     
-    let bas = tarihDegeri;
-    let bit = tarihDegeri;
-    if (tarihDegeri.includes(' to ')) {
-        const parcalar = tarihDegeri.split(' to ');
-        bas = parcalar[0];
-        bit = parcalar[1];
+    let bas = "";
+    let bit = "";
+    if (saglikFlatpickr && saglikFlatpickr.selectedDates && saglikFlatpickr.selectedDates.length > 0) {
+        const d1 = saglikFlatpickr.selectedDates[0];
+        const d2 = saglikFlatpickr.selectedDates.length > 1 ? saglikFlatpickr.selectedDates[1] : d1;
+        const pad = n => String(n).padStart(2, '0');
+        bas = `${d1.getFullYear()}-${pad(d1.getMonth() + 1)}-${pad(d1.getDate())}`;
+        bit = `${d2.getFullYear()}-${pad(d2.getMonth() + 1)}-${pad(d2.getDate())}`;
+    } else {
+        const parcalar = tarihDegeri.split(/\s+(?:to|-|—)\s+/i);
+        bas = parcalar[0].trim();
+        bit = (parcalar.length > 1 ? parcalar[1] : parcalar[0]).trim();
     }
     
     try {
@@ -184,7 +275,7 @@ async function saglikKaydet() {
             saglikModalKapat();
             saglikYukle();
         } else {
-            bildirimGoster('Rapor eklenemedi: ' + response.mesaj, 'hata');
+            bildirimGoster(response.mesaj || 'Rapor eklenemedi.', response.cakisma ? 'uyari' : 'hata');
         }
     } catch (e) {
         bildirimGoster('Bir hata oluştu.', 'hata');
@@ -310,12 +401,18 @@ async function saglikGuncelle() {
         return;
     }
     
-    let bas = tarihDegeri;
-    let bit = tarihDegeri;
-    if (tarihDegeri.includes(' to ')) {
-        const parcalar = tarihDegeri.split(' to ');
-        bas = parcalar[0];
-        bit = parcalar[1];
+    let bas = "";
+    let bit = "";
+    if (duzenleFlatpickr && duzenleFlatpickr.selectedDates && duzenleFlatpickr.selectedDates.length > 0) {
+        const d1 = duzenleFlatpickr.selectedDates[0];
+        const d2 = duzenleFlatpickr.selectedDates.length > 1 ? duzenleFlatpickr.selectedDates[1] : d1;
+        const pad = n => String(n).padStart(2, '0');
+        bas = `${d1.getFullYear()}-${pad(d1.getMonth() + 1)}-${pad(d1.getDate())}`;
+        bit = `${d2.getFullYear()}-${pad(d2.getMonth() + 1)}-${pad(d2.getDate())}`;
+    } else {
+        const parcalar = tarihDegeri.split(/\s+(?:to|-|—)\s+/i);
+        bas = parcalar[0].trim();
+        bit = (parcalar.length > 1 ? parcalar[1] : parcalar[0]).trim();
     }
     
     try {
@@ -333,7 +430,7 @@ async function saglikGuncelle() {
             saglikDetayGoster(personelAd); // refresh modal
             saglikYukle(); // refresh main table
         } else {
-            bildirimGoster('Güncellenemedi: ' + response.mesaj, 'hata');
+            bildirimGoster(response.mesaj || 'Güncellenemedi.', response.cakisma ? 'uyari' : 'hata');
         }
     } catch (e) {
         bildirimGoster('Bir hata oluştu.', 'hata');

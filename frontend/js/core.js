@@ -39,8 +39,13 @@ const API = 'http://127.0.0.1:8000';
             if(!mesaj) return;
             if(!tur) tur = 'bilgi';
             
-            // Hata ise kırmızı, bilgi ise yeşil tonları
-            const bgColor = tur === 'hata' ? 'linear-gradient(to right, #EF4444, #DC2626)' : 'linear-gradient(to right, #10B981, #059669)';
+            // Hata ise kırmızı, uyari ise turuncu/amber, bilgi/basarili ise yeşil tonları
+            let bgColor = 'linear-gradient(to right, #10B981, #059669)';
+            if (tur === 'hata') {
+                bgColor = 'linear-gradient(to right, #EF4444, #DC2626)';
+            } else if (tur === 'uyari') {
+                bgColor = 'linear-gradient(to right, #F59E0B, #D97706)';
+            }
             
             Toastify({
                 text: mesaj,
