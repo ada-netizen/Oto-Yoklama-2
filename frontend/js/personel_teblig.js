@@ -794,6 +794,9 @@ function personelProfilAc(personelVerisi) {
     const elGrup = document.getElementById('pp_grup');
     if (elGrup) elGrup.value = p.grup || 'Kadrolu';
 
+    const elBtnSil = document.getElementById('pp_btn_sil');
+    if (elBtnSil) elBtnSil.style.display = 'inline-flex';
+
     ppFormuStatuyaGoreAyarla();
 
     modalAc('personel_profil_modal');
@@ -859,6 +862,9 @@ function personelYeniEkleModalAc() {
     if (elGrup) elGrup.value = 'Kadrolu';
     const elPasif = document.getElementById('pp_gorevlendirildi_pasif');
     if (elPasif) elPasif.checked = false;
+
+    const elBtnSil = document.getElementById('pp_btn_sil');
+    if (elBtnSil) elBtnSil.style.display = 'none';
 
     // Adım 1: Tür seçim ekranını aç, Form alanını gizle
     const elSecim = document.getElementById('pp_adim_statu_secimi');
@@ -943,4 +949,50 @@ function personelProfilKaydet() {
     .finally(() => yuklemeGizle());
 }
 window.personelProfilKaydet = personelProfilKaydet;
+
+async function ppMevcutPersoneliSil() {
+    const elAd = document.getElementById('pp_ad_soyad');
+    const ad = elAd ? elAd.value.trim() : '';
+    if (!ad) {
+        if (typeof bildirimGoster === 'function') bildirimGoster("Silinecek personel bulunamadı.", "uyari");
+        return;
+    }
+
+    let onay = true;
+    if (typeof modernOnayGoster === 'function') {
+        onay = await modernOnayGoster("Personel Silme Onayı", `"${ad}" adlı personeli silmek istediğinize emin misiniz?`, "uyari");
+    } else {
+        onay = confirm(`"${ad}" adlı personeli silmek istediğinize emin misiniz?`);
+    }
+    if (!onay) return;
+
+    if (typeof yuklemeGoster === 'function') yuklemeGoster();
+    fetch(`${API}/personel-sil/${encodeURIComponent(ad)}`, {
+        method: 'DELETE'
+    })
+    .then(r => r.json())
+    .then(res => {
+        if (res.basarili) {
+            if (typeof bildirimGoster === 'function') bildirimGoster(res.mesaj || `${ad} silindi.`, "bilgi");
+            if (typeof modalKapat === 'function') modalKapat('personel_profil_modal');
+            
+            if (window.tumPersoneller) {
+                window.tumPersoneller = window.tumPersoneller.filter(p => p.ad !== ad);
+            }
+            if (typeof personelleriYukle === 'function') {
+                personelleriYukle();
+            }
+            window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
+        } else {
+            if (typeof bildirimGoster === 'function') bildirimGoster(res.mesaj || "Silme işlemi başarısız.", "hata");
+        }
+    })
+    .catch(err => {
+        if (typeof bildirimGoster === 'function') bildirimGoster("Bağlantı hatası: " + err.message, "hata");
+    })
+    .finally(() => {
+        if (typeof yuklemeGizle === 'function') yuklemeGizle();
+    });
+}
+window.ppMevcutPersoneliSil = ppMevcutPersoneliSil;
 

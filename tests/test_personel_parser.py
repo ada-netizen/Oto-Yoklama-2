@@ -125,8 +125,8 @@ def test_personel_profil_guncelle():
     assert bulunan is not None
     assert bulunan["tc_no"] == "99988877766"
     assert bulunan["unvan"] == "Öğretmen"
-    assert bulunan["gorev"] == "MÜDÜR YARDIMCISI"
-    assert bulunan["brans"] == "FİZİK"
+    assert bulunan["gorev"] == "Müdür Yardımcısı"
+    assert bulunan["brans"] == "Fizik"
     assert bulunan["kariyer"] == "Uzman Öğretmen"
     assert bulunan["grup"] == "Sözleşmeli"
     assert bulunan["kan_grubu"] == "0 Rh(+)"
@@ -239,4 +239,26 @@ def test_yeni_personel_profil_ekle_dogrudan():
     assert bulunan["aktif"] == 1
 
 
+def test_personel_dogal_harf_bicimi_korunur():
+    # Doğal yazımlı personel ekle
+    client.post("/personel-ekle", json={"ad": "Ahmet Yılmaz", "unvan": "Öğretmen", "gorev": "Müdür Yardımcısı", "brans": "Tarih"})
 
+    # Başka kuruma görevlendirildi (pasif) olarak güncelle
+    res = client.post("/personel-profil-guncelle", json={
+        "ad_soyad": "Ahmet Yılmaz",
+        "tc_no": "12312312312",
+        "unvan": "Öğretmen",
+        "gorev": "Müdür Yardımcısı",
+        "brans": "Tarih",
+        "aktif": 0
+    })
+    assert res.status_code == 200
+    assert res.json()["basarili"] is True
+
+    # Adın büyük harfe (AHMET YILMAZ) dönüşmediğini, doğal yazımını koruduğunu doğrula
+    tum = client.get("/personeller").json()["personeller"]
+    bulunan = next((p for p in tum if p["ad"] == "Ahmet Yılmaz"), None)
+    assert bulunan is not None
+    assert bulunan["ad"] == "Ahmet Yılmaz"
+    assert bulunan["gorev"] == "Müdür Yardımcısı"
+    assert bulunan["aktif"] == 0

@@ -227,57 +227,39 @@
             <div style="padding: 18px 20px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 16px;">
                 <input type="hidden" id="pp_id" value="">
 
-                <!-- Mevzuat ve Statü Bilgi Şeridi (Dinamik) -->
-                <div id="pp_mevzuat_bilgi_kutusu" style="padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(2, 132, 199, 0.3); background: rgba(2, 132, 199, 0.05); display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <span id="pp_mevzuat_kanun_badge" style="font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: #0284c7; color: white;">657 Sayılı DMK</span>
-                            <span id="pp_mevzuat_statu_baslik" style="font-size: 12.5px; font-weight: 700; color: var(--fg-main);">Eğitim-Öğretim Hizmetleri Sınıfı</span>
-                        </div>
-                        <span id="pp_mevzuat_calisma_badge" style="font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3);">Tam Zamanlı</span>
-                    </div>
-                    <div id="pp_mevzuat_izin_metni" style="font-size: 11.5px; color: var(--fg-sub); line-height: 1.4;">
-                        Yaz ve dinlenme tatillerinde izinli sayılır (Md. 103). Branş ve Öğretmenlik Kariyer Basamağı geçerlidir.
-                    </div>
-                    <div id="pp_mevzuat_yaptirim_metni" style="font-size: 11px; font-weight: 600; color: #d97706; display: flex; align-items: center; gap: 6px;">
-                        <i data-lucide="alert-triangle" height="13" width="13"></i>
-                        <span id="pp_mevzuat_yaptirim_span">Özürsüz devamsızlık durumunda kanuni yaptırımlar uygulanır.</span>
-                    </div>
-                </div>
-
                 <!-- 1. Bölüm: Görev ve Kadro Bilgileri -->
                 <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px;">
                     <div style="font-size: 13px; font-weight: 700; color: #0284c7; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
                         <i data-lucide="briefcase" height="15" width="15"></i> Görev ve Kadro Bilgileri
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-                        <div>
+                    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Ad Soyad *</label>
-                            <input type="text" id="pp_ad_soyad" class="input-modern" placeholder="Ad Soyad" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_ad_soyad" class="input-modern" placeholder="Ad Soyad" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Unvanı</label>
-                            <input type="text" id="pp_unvan" oninput="ppUnvanGorevDegisti()" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_unvan" oninput="ppUnvanGorevDegisti()" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Görevi</label>
-                            <input type="text" id="pp_gorev" oninput="ppUnvanGorevDegisti()" class="input-modern" placeholder="Örn: Temizlik, Bakım, Nöbet vb." style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_gorev" oninput="ppUnvanGorevDegisti()" class="input-modern" placeholder="Örn: Temizlik, Bakım, Nöbet vb." style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_brans_kapsayici">
+                        <div id="pp_brans_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Bakanlık Atama Alanı / Branş</label>
-                            <input type="text" id="pp_brans" class="input-modern" placeholder="Örn: Bilişim Teknolojileri, Sınıf Öğretmenliği" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_brans" class="input-modern" placeholder="Örn: Bilişim Teknolojileri" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_kariyer_kapsayici">
+                        <div id="pp_kariyer_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kariyer Basamağı</label>
-                            <input type="text" id="pp_kariyer" class="input-modern" placeholder="Örn: Uzman Öğretmen, Başöğretmen" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kariyer" class="input-modern" placeholder="Örn: Uzman Öğretmen" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_kademe_derece_kapsayici">
+                        <div id="pp_kademe_derece_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Durumu / Kademe - Derece</label>
-                            <input type="text" id="pp_kademe_derece" class="input-modern" placeholder="Örn: 1-4, 3-2" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kademe_derece" class="input-modern" placeholder="Örn: 1-4, 3-2" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_ogrenim_kapsayici">
+                        <div id="pp_ogrenim_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Öğrenim Durumu</label>
-                            <input type="text" id="pp_ogrenim_durumu" class="input-modern" placeholder="Örn: Lisans, Yüksek Lisans, Lise" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_ogrenim_durumu" class="input-modern" placeholder="Örn: Lisans, Yüksek Lisans" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
                     </div>
                 </div>
@@ -287,38 +269,38 @@
                     <div style="font-size: 13px; font-weight: 700; color: #0284c7; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
                         <i data-lucide="building-2" height="15" width="15"></i> Kurum ve Program Kayıtları
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-                        <div>
+                    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Bulunduğu İl / İlçe</label>
-                            <input type="text" id="pp_il_ilce" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_il_ilce" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Çalıştığı Kurum Adı</label>
-                            <input type="text" id="pp_kurum_adi" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kurum_adi" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kurum Kodu</label>
-                            <input type="text" id="pp_kurum_kodu" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kurum_kodu" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kurumda / Programa Başlama Tarihi</label>
-                            <input type="text" id="pp_kurumda_baslama" class="input-modern" placeholder="GG/AA/YYYY" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kurumda_baslama" class="input-modern" placeholder="GG/AA/YYYY" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_goreve_baslama_kapsayici">
+                        <div id="pp_goreve_baslama_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">İlk Göreve Başlama Tarihi</label>
-                            <input type="text" id="pp_goreve_baslama" class="input-modern" placeholder="GG/AA/YYYY" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_goreve_baslama" class="input-modern" placeholder="GG/AA/YYYY" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_kurum_sicil_kapsayici">
+                        <div id="pp_kurum_sicil_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kurum / SGK Sicil No</label>
-                            <input type="text" id="pp_kurum_sicil_no" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kurum_sicil_no" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_emekli_sicil_kapsayici">
+                        <div id="pp_emekli_sicil_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Emekli Sicil No</label>
-                            <input type="text" id="pp_emekli_sicil_no" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_emekli_sicil_no" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div id="pp_arsiv_no_kapsayici">
+                        <div id="pp_arsiv_no_kapsayici" style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Arşiv No</label>
-                            <input type="text" id="pp_arsiv_no" class="input-modern" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_arsiv_no" class="input-modern" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
                     </div>
                 </div>
@@ -328,38 +310,38 @@
                     <div style="font-size: 13px; font-weight: 700; color: #0284c7; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
                         <i data-lucide="user" height="15" width="15"></i> Kişisel ve İletişim Bilgileri
                     </div>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
-                        <div>
+                    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px;">
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">TC Kimlik No</label>
-                            <input type="text" id="pp_tc_no" class="input-modern" maxlength="11" placeholder="11 haneli TC No" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; font-family: monospace; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_tc_no" class="input-modern" maxlength="11" placeholder="11 haneli TC No" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; font-family: monospace; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Doğum Tarihi</label>
-                            <input type="text" id="pp_dogum_tarihi" class="input-modern" placeholder="GG/AA/YYYY" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_dogum_tarihi" class="input-modern" placeholder="GG/AA/YYYY" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Cinsiyet</label>
-                            <select id="pp_cinsiyet" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
+                            <select id="pp_cinsiyet" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none; cursor: pointer;">
                                 <option value="">Seçiniz</option>
                                 <option value="E">Erkek (E)</option>
                                 <option value="K">Kadın (K)</option>
                             </select>
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kan Grubu</label>
-                            <input type="text" id="pp_kan_grubu" class="input-modern" placeholder="Örn: 0 Rh(+), A Rh(+)" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_kan_grubu" class="input-modern" placeholder="Örn: 0 Rh(+), A Rh(+)" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Telefon</label>
-                            <input type="text" id="pp_telefon" class="input-modern" placeholder="05xx xxx xx xx" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="text" id="pp_telefon" class="input-modern" placeholder="05xx xxx xx xx" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">E-posta</label>
-                            <input type="email" id="pp_eposta" class="input-modern" placeholder="ornek@meb.k12.tr" style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px;">
+                            <input type="email" id="pp_eposta" class="input-modern" placeholder="ornek@meb.k12.tr" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
                         </div>
-                        <div style="grid-column: 1 / -1;">
+                        <div style="grid-column: 1 / -1; display: flex; flex-direction: column; gap: 4px;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">İdareci Özel Notları / Program Açıklamaları</label>
-                            <textarea id="pp_notlar" rows="2" class="input-modern" placeholder="Personele veya programa dair kurum içi özel notlar, nöbet/rapor durumları vb..." style="width: 100%; padding: 7px 10px; margin-top: 3px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; resize: vertical;"></textarea>
+                            <textarea id="pp_notlar" rows="2" class="input-modern" placeholder="Personele veya programa dair kurum içi özel notlar, nöbet/rapor durumları vb..." style="box-sizing: border-box; width: 100%; padding: 8px 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; resize: vertical; min-height: 54px; outline: none;"></textarea>
                         </div>
                     </div>
                 </div>
@@ -367,8 +349,14 @@
 
             <!-- Modal Alt Çubuğu (Footer) -->
             <div style="padding: 12px 20px; border-top: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
-                <div style="font-size: 11px; color: var(--fg-sub);">
-                    * Bu ekrandan yapılan değişiklikler anında veritabanına kaydedilir.
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button id="pp_btn_sil" class="btn btn-kirmizi" onclick="ppMevcutPersoneliSil()" style="padding: 7px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px; background-color: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;" title="Bu personeli sistemden tamamen sil">
+                        <i data-lucide="trash-2" height="14" width="14"></i>
+                        <span>Personeli Sil</span>
+                    </button>
+                    <span style="font-size: 11px; color: var(--fg-sub);">
+                        * Değişiklikler anında veritabanına kaydedilir.
+                    </span>
                 </div>
                 <div style="display: flex; gap: 8px;">
                     <button class="btn btn-temizle" onclick="modalKapat('personel_profil_modal')" style="padding: 7px 16px; font-size: 12px;">Vazgeç</button>

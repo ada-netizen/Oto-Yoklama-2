@@ -293,12 +293,12 @@ async def personel_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadF
 
 @router.post("/personel-ekle")
 def personel_ekle(veri: PersonelRequest):
-    ad = VeriAraclari.tr_upper(veri.ad).strip()
+    ad = str(veri.ad or "").strip()
     if not ad:
         return {"basarili": False, "mesaj": "Ad Soyad boş bırakılamaz!"}
     unvan = str(veri.unvan).strip() if veri.unvan else "-"
-    gorev = VeriAraclari.tr_upper(veri.gorev or "-").strip()
-    brans = VeriAraclari.tr_upper(veri.brans or "-").strip()
+    gorev = str(veri.gorev or "-").strip()
+    brans = str(veri.brans or "-").strip()
     grup = veri.grup or _personel_grup_tahmin_et(gorev)
 
     db.cursor.execute("PRAGMA table_info(personel)")
@@ -324,12 +324,12 @@ def personel_sil(ad: str):
 
 @router.put("/personel-guncelle/{eski_ad}")
 def personel_guncelle(eski_ad: str, veri: PersonelRequest):
-    yeni_ad = VeriAraclari.tr_upper(veri.ad).strip()
+    yeni_ad = str(veri.ad or "").strip()
     if not yeni_ad:
         return {"basarili": False, "mesaj": "Ad Soyad boş bırakılamaz!"}
     unvan = str(veri.unvan).strip() if veri.unvan else "-"
-    gorev = VeriAraclari.tr_upper(veri.gorev or "-").strip()
-    brans = VeriAraclari.tr_upper(veri.brans or "-").strip()
+    gorev = str(veri.gorev or "-").strip()
+    brans = str(veri.brans or "-").strip()
     grup = veri.grup or _personel_grup_tahmin_et(gorev)
 
     db.cursor.execute("UPDATE personel SET ad_soyad=?, unvan=?, brans=?, gorev=?, grup=? WHERE ad_soyad=?", (yeni_ad, unvan, brans, gorev, grup, eski_ad))
@@ -353,14 +353,14 @@ def personel_guncelle(eski_ad: str, veri: PersonelRequest):
 @router.post("/personel-profil-guncelle")
 def personel_profil_guncelle(veri: PersonelGuncelleRequest):
     try:
-        ad = VeriAraclari.tr_upper(veri.ad_soyad).strip()
+        ad = str(veri.ad_soyad or "").strip()
         if not ad:
             return {"basarili": False, "mesaj": "Ad Soyad boş bırakılamaz!"}
             
         tc = str(veri.tc_no or "").strip()
         unvan = str(veri.unvan or "-").strip()
-        brans = VeriAraclari.tr_upper(veri.brans or "-").strip()
-        gorev = VeriAraclari.tr_upper(veri.gorev or "-").strip()
+        brans = str(veri.brans or "-").strip()
+        gorev = str(veri.gorev or "-").strip()
         grup = str(veri.grup or "Kadrolu").strip()
         kariyer = str(veri.kariyer or "-").strip()
 

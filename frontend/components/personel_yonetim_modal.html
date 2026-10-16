@@ -59,14 +59,14 @@
 <table id="personel_tablosu" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
 <thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
 <tr>
-<th style="width: 40%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('ad')">
+<th style="width: 45%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('ad')">
     <span style="font-weight: 700; color: var(--fg-main);" x-text="'Ad Soyad' + (siralamaSutun === 'ad' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
 </th>
-<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('brans')">
-    <span style="font-weight: 700; color: var(--fg-main);" x-text="'Branşı' + (siralamaSutun === 'brans' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
-</th>
-<th style="width: 20%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('gorev')">
+<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('gorev')">
     <span style="font-weight: 700; color: var(--fg-main);" x-text="'Görevi' + (siralamaSutun === 'gorev' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
+</th>
+<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('aktif')">
+    <span style="font-weight: 700; color: var(--fg-main);" x-text="'Durum' + (siralamaSutun === 'aktif' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
 </th>
 <th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">İşlemler</th>
 </tr>
@@ -74,23 +74,25 @@
 <tbody id="personel_govde">
     <template x-for="p in gosterilecekPersoneller" :key="p.ad">
         <tr>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight:bold;">
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span x-text="p.ad"></span>
-                        <span x-show="p.aktif === 0" style="font-size: 10px; padding: 1px 6px; background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 4px; font-weight: 700;">Başka Kurumda</span>
-                    </div>
-                    <button class="btn-icon-soft" style="color: #0284c7; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 6px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;" @click.stop="profilAc(p)" title="Personel Detaylı Profil Kartı">
-                        <i data-lucide="id-card" width="13" height="13"></i>
-                        <span>Profil</span>
-                    </button>
-                </div>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight: bold;">
+                <span x-text="p.ad"></span>
             </td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);" x-text="p.brans"></td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size:11px;" x-text="p.gorev"></td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size: 11.5px;" x-text="p.gorev"></td>
             <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center;">
-                <button class="icon-btn" style="color:var(--tree-sel);" @click="profilAc(p)" title="Profili Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
-                <button class="icon-btn" style="color:#EF4444;" @click="sil(p.ad)" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
+                <span x-show="p.aktif === 0" style="font-size: 10.5px; padding: 2px 8px; background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <i data-lucide="building-2" width="12" height="12"></i>
+                    <span>Başka Kurumda</span>
+                </span>
+                <span x-show="p.aktif !== 0" style="font-size: 10.5px; padding: 2px 8px; background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                    <i data-lucide="check" width="12" height="12"></i>
+                    <span>Aktif</span>
+                </span>
+            </td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center;">
+                <button class="btn-icon-soft" style="color: #0284c7; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;" @click.stop="profilAc(p)" title="Personel Detaylı Profil Kartı">
+                    <i data-lucide="id-card" width="13" height="13"></i>
+                    <span>Profil</span>
+                </button>
             </td>
         </tr>
     </template>
