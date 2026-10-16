@@ -51,20 +51,28 @@ document.addEventListener('alpine:init', () => {
             });
 
             window.personelDrawerAc = () => {
-                this.baslik = 'Yeni Personel Ekle';
-                this.eskiAd = ''; this.ad = ''; this.brans = ''; this.gorev = '';
-                if(this.gruplar.length > 0) this.grup = this.gruplar[0];
-                this.acik = true;
-                setTimeout(() => { let el = document.getElementById('drawer_ad_alpine'); if(el) el.focus(); }, 100);
+                if (window.personelYeniEkleModalAc) {
+                    window.personelYeniEkleModalAc();
+                } else {
+                    this.baslik = 'Yeni Personel Ekle';
+                    this.eskiAd = ''; this.ad = ''; this.brans = ''; this.gorev = '';
+                    if(this.gruplar.length > 0) this.grup = this.gruplar[0];
+                    this.acik = true;
+                    setTimeout(() => { let el = document.getElementById('drawer_ad_alpine'); if(el) el.focus(); }, 100);
+                }
             };
             
             window.personelDuzenleBaslat = (pAd) => {
-                const p = (window.tumPersoneller || []).find(x => x.ad === pAd);
-                if(!p) return;
-                this.baslik = 'Personeli Düzenle';
-                this.eskiAd = p.ad; this.ad = p.ad; this.brans = p.brans; this.gorev = p.gorev; this.grup = p.grup;
-                this.acik = true;
-                setTimeout(() => { let el = document.getElementById('drawer_ad_alpine'); if(el) el.focus(); }, 100);
+                if (window.personelProfilAc) {
+                    window.personelProfilAc(pAd);
+                } else {
+                    const p = (window.tumPersoneller || []).find(x => x.ad === pAd);
+                    if(!p) return;
+                    this.baslik = 'Personeli Düzenle';
+                    this.eskiAd = p.ad; this.ad = p.ad; this.brans = p.brans; this.gorev = p.gorev; this.grup = p.grup;
+                    this.acik = true;
+                    setTimeout(() => { let el = document.getElementById('drawer_ad_alpine'); if(el) el.focus(); }, 100);
+                }
             };
             
             window.personelDrawerKapat = () => { this.acik = false; };

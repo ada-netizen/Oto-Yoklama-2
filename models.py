@@ -26,15 +26,67 @@ class PdfVeliFormuRequest(BaseModel):
 
 class PersonelRequest(BaseModel):
     ad: str
+    unvan: Optional[str] = "-"
     gorev: Optional[str] = "-"
     brans: Optional[str] = "-"
     grup: Optional[str] = None
+    aktif: Optional[int] = 1
 
 class PersonelModel(BaseModel):
+    model_config = ConfigDict(extra="allow")
     ad: str
+    unvan: Optional[str] = "-"
     gorev: Optional[str] = "-"
     brans: Optional[str] = "-"
     grup: Optional[str] = "-"
+    id: Optional[int] = None
+    tc_no: Optional[str] = ""
+    il_ilce: Optional[str] = ""
+    kurum_adi: Optional[str] = ""
+    kurum_kodu: Optional[str] = ""
+    kurumda_baslama: Optional[str] = ""
+    kariyer: Optional[str] = "-"
+    kademe_derece: Optional[str] = ""
+    ogrenim_durumu: Optional[str] = ""
+    cinsiyet: Optional[str] = ""
+    kan_grubu: Optional[str] = ""
+    dogum_tarihi: Optional[str] = ""
+    goreve_baslama: Optional[str] = ""
+    kurum_sicil_no: Optional[str] = ""
+    emekli_sicil_no: Optional[str] = ""
+    arsiv_no: Optional[str] = ""
+    telefon: Optional[str] = ""
+    eposta: Optional[str] = ""
+    notlar: Optional[str] = ""
+    aktif: Optional[int] = 1
+
+class PersonelGuncelleRequest(BaseModel):
+    model_config = ConfigDict(extra="allow")
+    id: Optional[int] = None
+    ad_soyad: str
+    tc_no: Optional[str] = ""
+    unvan: Optional[str] = "-"
+    brans: Optional[str] = "-"
+    gorev: Optional[str] = "-"
+    grup: Optional[str] = "Kadrolu"
+    il_ilce: Optional[str] = ""
+    kurum_adi: Optional[str] = ""
+    kurum_kodu: Optional[str] = ""
+    kurumda_baslama: Optional[str] = ""
+    kariyer: Optional[str] = "-"
+    kademe_derece: Optional[str] = ""
+    ogrenim_durumu: Optional[str] = ""
+    cinsiyet: Optional[str] = ""
+    kan_grubu: Optional[str] = ""
+    dogum_tarihi: Optional[str] = ""
+    goreve_baslama: Optional[str] = ""
+    kurum_sicil_no: Optional[str] = ""
+    emekli_sicil_no: Optional[str] = ""
+    arsiv_no: Optional[str] = ""
+    telefon: Optional[str] = ""
+    eposta: Optional[str] = ""
+    notlar: Optional[str] = ""
+    aktif: Optional[int] = 1
     
 class TebligBireyselRequest(BaseModel):
     kurum: Optional[str] = ""

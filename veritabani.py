@@ -28,14 +28,37 @@ class VeritabaniYoneticisi:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_tarih ON devamsizliklar (tarih)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_tur ON devamsizliklar (tur)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS personel (ad_soyad TEXT, brans TEXT, gorev TEXT, grup TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS personel (id INTEGER PRIMARY KEY AUTOINCREMENT, ad_soyad TEXT, tc_no TEXT, unvan TEXT, brans TEXT, gorev TEXT, grup TEXT, il_ilce TEXT, kurum_adi TEXT, kurum_kodu TEXT, kurumda_baslama TEXT, kariyer TEXT, kademe_derece TEXT, ogrenim_durumu TEXT, cinsiyet TEXT, kan_grubu TEXT, dogum_tarihi TEXT, goreve_baslama TEXT, kurum_sicil_no TEXT, emekli_sicil_no TEXT, arsiv_no TEXT, telefon TEXT, eposta TEXT, notlar TEXT, aktif INTEGER DEFAULT 1)")
         cursor.execute("CREATE TABLE IF NOT EXISTS saglik_raporlari (id INTEGER PRIMARY KEY AUTOINCREMENT, personel_ad TEXT, baslangic_tarihi TEXT, bitis_tarihi TEXT, gun_sayisi INTEGER, aciklama TEXT)")
         cursor.execute("CREATE TABLE IF NOT EXISTS personel_rapor_kesinti (personel_ad TEXT PRIMARY KEY, onceden_kesilen_gun INTEGER)")
         
-        try:
-            cursor.execute("ALTER TABLE personel ADD COLUMN grup TEXT")
-        except sqlite3.OperationalError:
-            pass
+        personel_kolonlar = [
+            ("tc_no", "TEXT"),
+            ("unvan", "TEXT"),
+            ("il_ilce", "TEXT"),
+            ("kurum_adi", "TEXT"),
+            ("kurum_kodu", "TEXT"),
+            ("kurumda_baslama", "TEXT"),
+            ("kariyer", "TEXT"),
+            ("kademe_derece", "TEXT"),
+            ("ogrenim_durumu", "TEXT"),
+            ("cinsiyet", "TEXT"),
+            ("kan_grubu", "TEXT"),
+            ("dogum_tarihi", "TEXT"),
+            ("goreve_baslama", "TEXT"),
+            ("kurum_sicil_no", "TEXT"),
+            ("emekli_sicil_no", "TEXT"),
+            ("arsiv_no", "TEXT"),
+            ("telefon", "TEXT"),
+            ("eposta", "TEXT"),
+            ("notlar", "TEXT"),
+            ("aktif", "INTEGER DEFAULT 1")
+        ]
+        for col_name, col_type in personel_kolonlar:
+            try:
+                cursor.execute(f"ALTER TABLE personel ADD COLUMN {col_name} {col_type}")
+            except sqlite3.OperationalError:
+                pass
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
         cursor.execute("CREATE TABLE IF NOT EXISTS uretilen_evraklar (id INTEGER PRIMARY KEY AUTOINCREMENT, tur TEXT, personel_ad TEXT, brans TEXT, tarih TEXT)")
         

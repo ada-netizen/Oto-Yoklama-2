@@ -2,11 +2,38 @@
 <div class="modal-content" style="width: 850px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main);">
 <div class="modal-header">
 <h2 style="margin:0; color: var(--tree-sel); font-size: 16px; display:flex; align-items:center; gap:8px;">
-<i data-lucide="users" height="16" width="16"></i> Personel Yönetimi (Alpine.js)
+<i data-lucide="users" height="16" width="16"></i> Personel Yönetimi
                 </h2>
 <div style="display: flex; gap: 8px; align-items: center;">
 <button class="btn btn-kirmizi" onclick="personelPdfIndir()" style="padding: 5px 12px; display:flex; align-items:center; gap:5px;"><i data-lucide="file-text" height="16" width="16"></i> PDF</button>
-<button class="btn btn-ogr" onclick="personelExcelIndir()" style="padding: 5px 12px; display:flex; align-items:center; gap:5px;"><i data-lucide="bar-chart" height="16" width="16"></i> Excel</button>
+<div class="dropdown-wrapper" style="position: relative; display: inline-block;">
+    <button class="btn btn-ogr" id="btn_personel_excel_menu" onclick="personelExcelMenuToggle(event)" style="padding: 5px 12px; display:flex; align-items:center; gap:6px;" title="Excel Format Seçenekleri">
+        <i data-lucide="file-spreadsheet" height="16" width="16"></i> 
+        <span>Excel</span>
+        <i data-lucide="chevron-down" height="13" width="13"></i>
+    </button>
+    <div id="personel_excel_secenek_menusu" class="dropdown-menu-custom" style="display: none; position: absolute; right: 0; top: calc(100% + 6px); background: var(--bg-card, #ffffff); border: 1px solid var(--border, #e2e8f0); border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.18), 0 8px 10px -6px rgba(0,0,0,0.1); width: 280px; z-index: 1050; padding: 6px; overflow: hidden;">
+        <div onclick="personelExcelIndirSecim('tam')" style="padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s; display: flex; align-items: flex-start; gap: 10px; margin-bottom: 4px;" onmouseover="this.style.background='var(--hover-bg, #f1f5f9)'" onmouseout="this.style.background='transparent'">
+            <div style="background: rgba(2, 132, 199, 0.12); color: #0284c7; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                <i data-lucide="database" height="18" width="18"></i>
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 13px; color: var(--fg-main, #0f172a);">Veritabanı Tam Yedeği</div>
+                <div style="font-size: 11px; color: var(--fg-sub, #64748b); line-height: 1.3; margin-top: 2px;">24 alanın tümü (TC, Branş, Kademe, Sicil vb.). Geri yüklenebilir tam yedek.</div>
+            </div>
+        </div>
+        <div style="height: 1px; background: var(--border, #e2e8f0); margin: 4px 6px;"></div>
+        <div onclick="personelExcelIndirSecim('ozet')" style="padding: 10px 12px; border-radius: 6px; cursor: pointer; transition: background 0.15s; display: flex; align-items: flex-start; gap: 10px;" onmouseover="this.style.background='var(--hover-bg, #f1f5f9)'" onmouseout="this.style.background='transparent'">
+            <div style="background: rgba(16, 185, 129, 0.12); color: #059669; padding: 6px; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-top: 2px;">
+                <i data-lucide="table" height="18" width="18"></i>
+            </div>
+            <div>
+                <div style="font-weight: 700; font-size: 13px; color: var(--fg-main, #0f172a);">Özet Personel Listesi</div>
+                <div style="font-size: 11px; color: var(--fg-sub, #64748b); line-height: 1.3; margin-top: 2px;">Mevcut 4 sütunlu liste (Ad Soyad, Branş, Görev, Grup).</div>
+            </div>
+        </div>
+    </div>
+</div>
 <button class="icon-btn" onclick="modalKapat('personel_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
 </div>
 </div>
@@ -25,7 +52,7 @@
 </div>
 <div style="display: flex; gap: 10px;">
 <button class="btn btn-dev" onclick="personelGrupYonetimiAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="users" height="16" width="16"></i> Grupları Yönet</button>
-<button class="btn btn-ogr" onclick="personelDrawerAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="plus" height="16" width="16"></i> Yeni Personel</button>
+<button class="btn btn-ogr" onclick="personelYeniEkleModalAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="user-plus" height="16" width="16"></i> Yeni Personel</button>
 </div>
 </div>
 <div class="tree-card" style="margin: 0 20px 20px 20px; flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-card); border-radius: 6px;">
@@ -47,11 +74,22 @@
 <tbody id="personel_govde">
     <template x-for="p in gosterilecekPersoneller" :key="p.ad">
         <tr>
-            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight:bold;" x-text="p.ad"></td>
-            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);" x-text="p.brans"></td>
-            <td style="padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size:11px;" x-text="p.gorev"></td>
-            <td style="padding: 12px; border-bottom: 1px solid var(--border); text-align: center;">
-                <button class="icon-btn" style="color:var(--tree-sel);" @click="duzenle(p.ad)" title="Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight:bold;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <span x-text="p.ad"></span>
+                        <span x-show="p.aktif === 0" style="font-size: 10px; padding: 1px 6px; background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 4px; font-weight: 700;">Başka Kurumda</span>
+                    </div>
+                    <button class="btn-icon-soft" style="color: #0284c7; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 6px; padding: 3px 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;" @click.stop="profilAc(p)" title="Personel Detaylı Profil Kartı">
+                        <i data-lucide="id-card" width="13" height="13"></i>
+                        <span>Profil</span>
+                    </button>
+                </div>
+            </td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);" x-text="p.brans"></td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size:11px;" x-text="p.gorev"></td>
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center;">
+                <button class="icon-btn" style="color:var(--tree-sel);" @click="profilAc(p)" title="Profili Düzenle"><i data-lucide="edit" width="16" height="16"></i></button>
                 <button class="icon-btn" style="color:#EF4444;" @click="sil(p.ad)" title="Sil"><i data-lucide="trash-2" width="16" height="16"></i></button>
             </td>
         </tr>
@@ -84,10 +122,15 @@ document.addEventListener('alpine:init', () => {
                 this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             });
             
-            if (!window.tumPersonelGruplari) {
+            const STANDART_8_GRUP = ['Kadrolu', 'Görevlendirme', 'Ücretli', 'Sözleşmeli', 'Sürekli İşçi', 'TYP', 'İUP', 'Hizmet Alımı'];
+            if (!window.tumPersonelGruplari || window.tumPersonelGruplari.length <= 3) {
                 fetch(`${window.API || 'http://127.0.0.1:8000'}/ayarlar-getir`).then(r => r.json()).then(v => {
                     let ayar = v.ayarlar || {};
-                    window.tumPersonelGruplari = ayar.personel_gruplari || ['İdare', 'Öğretmenler', 'Diğer Personel'];
+                    let gruplar = ayar.personel_gruplari;
+                    if (!gruplar || gruplar.length <= 3) {
+                        gruplar = STANDART_8_GRUP;
+                    }
+                    window.tumPersonelGruplari = gruplar;
                     this.gruplarVerisi = [...window.tumPersonelGruplari];
                     window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
                 }).catch(e => console.error(e));
@@ -133,6 +176,12 @@ document.addEventListener('alpine:init', () => {
         
         duzenle(ad) {
             if(window.personelDuzenleBaslat) window.personelDuzenleBaslat(ad);
+        },
+
+        profilAc(p) {
+            if (window.personelProfilAc) {
+                window.personelProfilAc(p);
+            }
         },
         
         async sil(ad) {

@@ -316,3 +316,185 @@ class ExcelMotoru:
             return kalemler, ""
         except Exception as e:
             return None, str(e)
+
+    @staticmethod
+    def mebbis_mi_kontrol_et(dosya_yolu):
+        """Dosyanın MEBBİS Personel Listesi olup olmadığını tespit eder."""
+        try:
+            import re
+            df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
+            if df.empty:
+                return False
+            for idx in range(min(30, len(df))):
+                satir = " ".join([str(x) for x in df.iloc[idx].values if pd.notna(x)])
+                if "PERSONEL LİSTESİ" in satir.upper() or "PERSONEL LISTESI" in satir.upper():
+                    return True
+                # Parantez içinde TC kimlik numarası kalıbı (AD SOYAD (12345678901))
+                if re.search(r'\(\d{10,11}\)', satir):
+                    return True
+            return False
+        except Exception:
+            return False
+
+    @staticmethod
+    def mebbis_personel_oku(dosya_yolu):
+        """
+        MEBBİS'ten indirilen düzensiz, kayan satır/sütunlu 'Personel Listesi (Özet Bilgiler)'
+        Excel dosyasını semantik kalıp tanıma (regex) yöntemiyle sıfır kayıpla ayrıştırır.
+        """
+        import re
+        from araclar import VeriAraclari
+        from utils import _personel_grup_tahmin_et
+
+        df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
+        if df.empty:
+            return []
+
+        re_kan = re.compile(r'\b(A|B|AB|0)\s*Rh\s*\([+-]\)', re.IGNORECASE)
+        re_tarih_iso = re.compile(r'\b(\d{4}-\d{2}-\d{2})\b')
+        re_tarih_tr = re.compile(r'\b(\d{2}/\d{2}/\d{4})\b')
+        re_ogrenim = re.compile(r'(Lisans|Ön Lisans|Yüksek Lisans|Doktora|Ortaöğretim|İlköğretim)', re.IGNORECASE)
+        re_kademe = re.compile(r'Görevde\s*(\d+[-/]\d+)', re.IGNORECASE)
+
+        personeller = []
+        current_person = None
+
+        for idx, row in df.iterrows():
+            row_cells = [str(val).strip() for val in row.values if pd.notna(val) and str(val).strip() != '']
+            
+            # Bu satır yeni bir personel başlangıcı mı? (AD SOYAD (TC))
+            m_name_tc = None
+            for cell in row_cells:
+                m = re.search(r'([A-ZÇĞİÖŞÜa-zçğıöşü\s]+)\s*\((\d{10,11})\)', cell)
+                if m and len(m.group(1).strip()) > 2:
+                    m_name_tc = (m.group(1).strip(), m.group(2).strip(), cell)
+                    break
+                    
+            if m_name_tc:
+                if current_person:
+                    personeller.append(current_person)
+                ad_soyad, tc, raw_cell = m_name_tc
+                current_person = {
+                    'ad_soyad': VeriAraclari.tr_format_ad_soyad(ad_soyad),
+                    'tc_no': tc,
+                    'il_ilce': '',
+                    'kurum_adi': '',
+                    'kurum_kodu': '',
+                    'kurumda_baslama': '',
+                    'unvan': '-',
+                    'gorev': '-',
+                    'brans': '-',
+                    'kariyer': '-',
+                    'kademe_derece': '-',
+                    'ogrenim_durumu': '-',
+                    'kurum_sicil_no': '',
+                    'emekli_sicil_no': '',
+                    'arsiv_no': '',
+                    'cinsiyet': '',
+                    'kan_grubu': '',
+                    'dogum_tarihi': '',
+                    'goreve_baslama': '',
+                    'telefon': '',
+                    'eposta': '',
+                    'notlar': '',
+                    'grup': 'Kadrolu',
+                    'raw_cells': list(row_cells)
+                }
+                row_items = [(c_idx, str(val).strip()) for c_idx, val in row.items() if pd.notna(val) and str(val).strip() != '']
+                
+                # 1. Kurum Bilgisi
+                for c_idx, cell in row_items:
+                    if '/' in cell and any(w in cell for w in ['Lisesi', 'Ortaokulu', 'İlkokulu', 'Kurumu', 'Müdürlüğü', 'Okulu', 'Merkezi']):
+                        current_person['kurum_bilgi'] = cell
+                        k_parts = [p.strip() for p in cell.split('/')]
+                        current_person['kurum_adi'] = k_parts[0]
+                        if len(k_parts) > 1: current_person['kurum_kodu'] = k_parts[1]
+                        t_match = re_tarih_tr.search(cell)
+                        if t_match:
+                            current_person['kurumda_baslama'] = t_match.group(1)
+                        break
+
+                # 2. İl / İlçe
+                for c_idx, cell in row_items:
+                    if c_idx <= 2 and '/' in cell and cell != current_person.get('kurum_bilgi'):
+                        if not re_tarih_tr.search(cell) and not re_tarih_iso.search(cell):
+                            current_person['il_ilce'] = cell
+                            break
+
+                # 3. Unvan / Görev ve Branş / Kariyer (Sütun sırasına göre)
+                slash_hucreleri = []
+                for c_idx, cell in row_items:
+                    if '/' in cell and cell != raw_cell and cell != current_person.get('kurum_bilgi') and cell != current_person.get('il_ilce'):
+                        if not re_tarih_tr.search(cell) and not re_tarih_iso.search(cell):
+                            slash_hucreleri.append((c_idx, cell))
+
+                slash_hucreleri.sort(key=lambda x: x[0])
+
+                if len(slash_hucreleri) >= 2:
+                    ug_str = slash_hucreleri[0][1]
+                    bk_str = slash_hucreleri[1][1]
+                    
+                    ug_parts = [p.strip() for p in ug_str.split('/')]
+                    current_person['unvan'] = ug_parts[0] if ug_parts[0] else '-'
+                    current_person['gorev'] = ug_parts[1] if (len(ug_parts) > 1 and ug_parts[1]) else current_person['unvan']
+
+                    bk_parts = [p.strip() for p in bk_str.split('/')]
+                    current_person['brans'] = bk_parts[0] if bk_parts[0] else '-'
+                    current_person['kariyer'] = bk_parts[1] if (len(bk_parts) > 1 and bk_parts[1]) else '-'
+                elif len(slash_hucreleri) == 1:
+                    h_str = slash_hucreleri[0][1]
+                    h_parts = [p.strip() for p in h_str.split('/')]
+                    first = h_parts[0].upper()
+                    if any(k in first for k in ['ÖĞRETMEN', 'MEMUR', 'MÜDÜR', 'VHKİ', 'HİZMETLİ', 'TEKNİSYEN', 'ŞEF']):
+                        current_person['unvan'] = h_parts[0] if h_parts[0] else '-'
+                        current_person['gorev'] = h_parts[1] if (len(h_parts) > 1 and h_parts[1]) else current_person['unvan']
+                    else:
+                        current_person['brans'] = h_parts[0] if h_parts[0] else '-'
+                        current_person['kariyer'] = h_parts[1] if (len(h_parts) > 1 and h_parts[1]) else '-'
+            elif current_person:
+                current_person['raw_cells'].extend(row_cells)
+
+        if current_person:
+            personeller.append(current_person)
+
+        # Semantik zenginleştirme (Kayan sütunlardan bağımsız tip eşleme)
+        for p in personeller:
+            tarihler = []
+            sayilar = []
+            for cell in p['raw_cells']:
+                kan_m = re_kan.search(cell)
+                if kan_m:
+                    p['kan_grubu'] = kan_m.group(0)
+                elif cell in ['E', 'K']:
+                    p['cinsiyet'] = cell
+                elif 'Görevde' in cell:
+                    kad_m = re_kademe.search(cell)
+                    p['kademe_derece'] = kad_m.group(1) if kad_m else cell.replace('Görevde', '').strip()
+                elif re_ogrenim.search(cell):
+                    p['ogrenim_durumu'] = cell
+                elif re_tarih_iso.search(cell):
+                    tarihler.append(re_tarih_iso.search(cell).group(1))
+                elif cell.isdigit() and 3 <= len(cell) <= 9 and cell != p['tc_no']:
+                    sayilar.append(cell)
+                elif re.match(r'^[A-Z0-9\-]{2,7}$', cell) and cell not in ['E', 'K', 'AB', 'A', 'B', '0'] and not p['arsiv_no']:
+                    p['arsiv_no'] = cell
+
+            if len(tarihler) >= 2:
+                tarihler_sorted = sorted(tarihler)
+                p['dogum_tarihi'] = tarihler_sorted[0]
+                p['goreve_baslama'] = tarihler_sorted[1]
+            elif len(tarihler) == 1:
+                p['dogum_tarihi'] = tarihler[0]
+                
+            if len(sayilar) == 1:
+                p['kurum_sicil_no'] = sayilar[0]
+            elif len(sayilar) >= 2:
+                p['kurum_sicil_no'] = sayilar[0]
+                p['emekli_sicil_no'] = sayilar[1]
+            if len(sayilar) >= 3 and not p['arsiv_no']:
+                p['arsiv_no'] = sayilar[2]
+
+            p['grup'] = _personel_grup_tahmin_et(f"{p['unvan']} {p['gorev']}")
+            p.pop('raw_cells', None)
+
+        return personeller

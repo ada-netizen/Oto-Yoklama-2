@@ -1,45 +1,12 @@
-<div class="modal-overlay" id="personel_grup_yonetim_modal" style="z-index: 2100;" x-data="{
-    yeniAd: '',
-    gruplar: [...(window.tumPersonelGruplari || [])],
-    
-    init() {
-        window.addEventListener('personeller-guncellendi', () => {
-            this.gruplar = [...(window.tumPersonelGruplari || [])];
-        });
-    },
-
-    ekle() {
-        let ad = this.yeniAd.trim();
-        if (!ad) return;
-        if (this.gruplar.includes(ad)) {
-            bildirimGoster('Bu grup zaten mevcut!', 'hata');
-            return;
-        }
-        if (!window.tumPersonelGruplari) window.tumPersonelGruplari = [];
-        window.tumPersonelGruplari.push(ad);
-        personelGrubuKaydet().then(() => {
-            personelGruplariCiz();
-            bildirimGoster('Grup eklendi', 'bilgi');
-        });
-        this.yeniAd = '';
-    },
-    
-    async sil(grup) {
-        const onay = await modernOnayGoster("Grup Silme Onayı", `'${grup}' grubunu silmek istediğinize emin misiniz?`, "uyari");
-        if(!onay) return;
-        window.tumPersonelGruplari = window.tumPersonelGruplari.filter(g => g !== grup);
-        if(window.aktifPersonelFiltresi === grup) window.aktifPersonelFiltresi = 'Tümü';
-        personelGrubuKaydet().then(() => personelGruplariCiz());
-    }
-}">
+<div class="modal-overlay" id="personel_grup_yonetim_modal" style="z-index: 2500;" x-data="personelGrupYonetimComponent()">
 <div class="modal-content" style="width: 450px; max-width: 95vw; background-color: var(--bg-main); display: flex; flex-direction: column; padding: 0;">
 <div class="modal-header">
-<h3 style="margin:0; color: var(--tree-sel); font-size: 15px;"><i data-lucide="users" height="16" width="16"></i> Personel Gruplarını Yönet (Alpine.js)</h3>
+<h3 style="margin:0; color: var(--tree-sel); font-size: 15px;"><i data-lucide="users" height="16" width="16"></i> Personel Gruplarını Yönet</h3>
 <button class="icon-btn" onclick="modalKapat('personel_grup_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
 </div>
 <div style="padding: 20px; display: flex; flex-direction: column; gap: 15px;">
 <div style="display: flex; gap: 10px;">
-<input x-model="yeniAd" @keydown.enter="ekle()" placeholder="Yeni Grup Adı (Örn: Temizlik Görevlileri)" style="flex:1; padding: 8px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;" type="text"/>
+<input x-model="yeniAd" @keydown.enter="ekle()" placeholder="Yeni Grup Adı (Örn: Güvenlik Görevlileri)" style="flex:1; padding: 8px; background: var(--bg-card); color: var(--fg-main); border: 1px solid var(--border); border-radius: 4px; outline:none;" type="text"/>
 <button class="btn btn-ogr" @click="ekle()" style="padding: 8px 15px;">Ekle</button>
 </div>
 <div style="border: 1px solid var(--border); border-radius: 6px; overflow: hidden;">
@@ -62,3 +29,51 @@
 </div>
 </div>
 </div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('personelGrupYonetimComponent', () => ({
+        yeniAd: '',
+        gruplar: [...(window.tumPersonelGruplari || [])],
+        
+        init() {
+            window.addEventListener('personeller-guncellendi', () => {
+                this.gruplar = [...(window.tumPersonelGruplari || [])];
+                this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+            });
+            if (this.gruplar.length === 0 && window.tumPersonelGruplari) {
+                this.gruplar = [...window.tumPersonelGruplari];
+            }
+        },
+
+        ekle() {
+            let ad = this.yeniAd.trim();
+            if (!ad) return;
+            if (this.gruplar.includes(ad)) {
+                bildirimGoster('Bu grup zaten mevcut!', 'hata');
+                return;
+            }
+            if (!window.tumPersonelGruplari) window.tumPersonelGruplari = [];
+            window.tumPersonelGruplari.push(ad);
+            this.gruplar = [...window.tumPersonelGruplari];
+            personelGrubuKaydet().then(() => {
+                personelGruplariCiz();
+                bildirimGoster('Grup eklendi', 'bilgi');
+            });
+            this.yeniAd = '';
+        },
+        
+        async sil(grup) {
+            const onay = await modernOnayGoster("Grup Silme Onayı", `'${grup}' grubunu silmek istediğinize emin misiniz?`, "uyari");
+            if (!onay) return;
+            window.tumPersonelGruplari = (window.tumPersonelGruplari || []).filter(g => g !== grup);
+            this.gruplar = [...window.tumPersonelGruplari];
+            if (window.aktifPersonelFiltresi === grup) window.aktifPersonelFiltresi = 'Tümü';
+            personelGrubuKaydet().then(() => {
+                personelGruplariCiz();
+                bildirimGoster(`'${grup}' grubu silindi.`, 'bilgi');
+            });
+        }
+    }));
+});
+</script>

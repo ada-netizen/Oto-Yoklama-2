@@ -1783,9 +1783,17 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
         function personelMasterSecim(durum) {
             document.querySelectorAll('.chk-personel').forEach(cb => {
-                cb.checked = durum;
                 let p = tumPersoneller.find(x => x.ad === cb.value);
-                if(p) { p.secili = durum; p.manuelEklendi = durum; }
+                if(p) {
+                    if (durum && p.aktif === 0) {
+                        cb.checked = false;
+                        p.secili = false;
+                    } else {
+                        cb.checked = durum;
+                        p.secili = durum;
+                        p.manuelEklendi = durum;
+                    }
+                }
             });
             personelTablosunuDoldur();
         }

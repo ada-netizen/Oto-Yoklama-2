@@ -138,16 +138,26 @@ def pdf_klasoru_hazirla():
 
 def _personel_grup_tahmin_et(gorev):
     g = str(gorev).upper()
-    if "ÖĞRETMEN" in g:
-        return "Öğretmenler"
-    if g in ["OKUL MÜDÜRÜ", "MÜDÜR YARDIMCISI", "MÜDÜR BAŞYARDIMCISI", "VHKİ", "MEMUR"]:
-        return "İdare"
-    return "Diğer Personel"
+    if any(k in g for k in ["SÖZLEŞMELİ", "SOZLESMELI"]):
+        return "Sözleşmeli"
+    if any(k in g for k in ["ÜCRETLİ", "UCRETLI"]):
+        return "Ücretli"
+    if any(k in g for k in ["GÖREVLENDİRME", "GOREVLENDIRME"]):
+        return "Görevlendirme"
+    if any(k in g for k in ["SÜREKLİ İŞÇİ", "SUREKLI ISCI", "İŞÇİ", "ISCI"]):
+        return "Sürekli İşçi"
+    if "TYP" in g:
+        return "TYP"
+    if "İUP" in g or "IUP" in g:
+        return "İUP"
+    if any(k in g for k in ["HİZMET ALIMI", "HIZMET ALIMI"]):
+        return "Hizmet Alımı"
+    return "Kadrolu"
 
 
 def _excel_sutunu_bul(sutunlar, adaylar):
     """Excel başlıklarındaki boşluk ve Türkçe büyük/küçük harf farklarını tolere eder."""
-    normalize = lambda deger: re.sub(r"[^A-ZÇĞİÖŞÜ0-9]", "", str(deger).strip().upper())
+    normalize = lambda deger: re.sub(r"[^A-ZÇĞIÖŞÜ0-9]", "", str(deger).strip().upper().replace('İ', 'I'))
     aday_seti = {normalize(aday) for aday in adaylar}
     for sutun in sutunlar:
         if normalize(sutun) in aday_seti:

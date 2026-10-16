@@ -1,8 +1,12 @@
 {
   "mcpServers": {
+    "belge-okuyucu": {
+      "command": "npx.cmd",
+      "args": ["-y", "@sylphx/anymd", "mcp"]
+    },
     "sqlite-veri": {
       "command": "mcp-server-sqlite",
-      "args": ["--db-path", "C:\\Users\\Halil İbrahim\\YoklamaOtomasyonuVerileri\\yoklama_veritabani.db"]
+      "args": ["--db-path", "C:\\Users\\HP\\YoklamaOtomasyonuVerileri\\yoklama_veritabani.db"]
     },
     "puppeteer-tarayici": {
       "command": "npx.cmd",
@@ -14,7 +18,7 @@
     },
     "dosya-sistemi": {
       "command": "npx.cmd",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\Halil İbrahim\\YoklamaOtomasyonuVerileri", "C:\\Users\\Halil İbrahim\\Desktop\\Oto-Yoklama-2"]
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:\\Users\\HP\\YoklamaOtomasyonuVerileri", "C:\\Users\\HP\\Downloads\\Oto-Yoklama-2-guncel"]
     },
     "hafiza-memory": {
       "command": "npx.cmd",
@@ -23,6 +27,13 @@
     "ardisik-dusunme": {
       "command": "npx.cmd",
       "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    },
+    "perplexity": {
+      "command": "npx.cmd",
+      "args": ["-y", "@perplexity-ai/mcp-server"],
+      "env": {
+        "PERPLEXITY_API_KEY": "YOUR_PERPLEXITY_API_KEY_HERE"
+      }
     }
   }
 }
