@@ -1017,6 +1017,10 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
 
         function esikSayilariniGuncelle() {
             let sayiTumu = ogrenciListesi.length;
+            let sayiArtarda = 0;
+            let sayiTebligat5 = 0;
+            let sayiTebligat15 = 0;
+            let sayiTebligat25 = 0;
             let sayiRamak = 0;
             let sayiAsan = 0;
             let sayiMektup = 0;
@@ -1029,6 +1033,11 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 const ozrl = Math.round((ogr.ozurlu || 0) * 10) / 10;
                 const toplam = Math.round((ozsz + ozrl) * 10) / 10;
 
+                if (ogr.art_arda_2gun) sayiArtarda++;
+                if (ogr.tebligat_asamasi === '5_gun') sayiTebligat5++;
+                else if (ogr.tebligat_asamasi === '15_gun') sayiTebligat15++;
+                else if (ogr.tebligat_asamasi === '25_gun') sayiTebligat25++;
+
                 if (ozsz >= 8.5 && ozsz < 10.0) sayiRamak++;
                 if (ozsz >= 10.0) sayiAsan++;
                 if (ozsz >= 4.5 && ozsz <= 5.0) sayiMektup++;
@@ -1037,10 +1046,26 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 if (ozrl > 0) sayiRaporlu++;
             });
 
+            // Üst bardaki tebligat bildirim rozetini güncelle
+            const toplamBildirim = sayiArtarda + sayiTebligat5 + sayiTebligat15 + sayiTebligat25;
+            const badgeEl = document.getElementById('badge_tebligat_toplam');
+            if (badgeEl) {
+                if (toplamBildirim > 0) {
+                    badgeEl.innerText = toplamBildirim;
+                    badgeEl.style.display = 'inline-block';
+                } else {
+                    badgeEl.style.display = 'none';
+                }
+            }
+
             const combo = document.getElementById('combo_esik_filtre');
             if (combo) {
                 const optMap = {
                     'tumu': `🔵 Tümü (${sayiTumu} Öğrenci)`,
+                    'artarda_2gun': `⚡ Art Arda 2G Özürsüz (${sayiArtarda} Öğrenci)`,
+                    'tebligat_5': `📬 5G Resmi Tebligat (${sayiTebligat5} Öğrenci)`,
+                    'tebligat_15': `📨 15G Resmi Tebligat (${sayiTebligat15} Öğrenci)`,
+                    'tebligat_25': `🚨 25G Nihai Tebligat (${sayiTebligat25} Öğrenci)`,
                     'ramakkala_10': `🚨 10G Ramak Kala (${sayiRamak} Öğrenci)`,
                     'asanlar_10': `⛔ 10G+ Aşanlar (${sayiAsan} Öğrenci)`,
                     'mektup_5': `📬 5G 1. Veli Mektubu (${sayiMektup} Öğrenci)`,
@@ -1068,6 +1093,13 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             tabloyuDoldur();
         }
 
+        function tebligatBildirimModaliAc() {
+            const modal = document.getElementById('tebligat_bildirim_modal');
+            if (modal) modal.style.display = 'flex';
+            if (window.tebligatBildirimVerileriniYenile) window.tebligatBildirimVerileriniYenile();
+        }
+        window.tebligatBildirimModaliAc = tebligatBildirimModaliAc;
+
         function tabloyuDoldur() {
             const arama = document.getElementById('ent_arama') ? document.getElementById('ent_arama').value.toLocaleUpperCase('tr-TR') : "";
             const subeFiltre = document.getElementById('combo_arama_sube') ? document.getElementById('combo_arama_sube').value : "Tümü";
@@ -1082,7 +1114,15 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 if (arama && arama !== "NUMARA VEYA AD SOYAD" && !ogr.ad_soyad.toLocaleUpperCase('tr-TR').includes(arama) && !ogr.no.includes(arama)) return false;
 
                 // Dinamik Hızlı Eşik Çipleri Filtresi
-                if (aktifEsikFiltresi === 'ramakkala_10') {
+                if (aktifEsikFiltresi === 'artarda_2gun') {
+                    if (!ogr.art_arda_2gun) return false;
+                } else if (aktifEsikFiltresi === 'tebligat_5') {
+                    if (ogr.tebligat_asamasi !== '5_gun') return false;
+                } else if (aktifEsikFiltresi === 'tebligat_15') {
+                    if (ogr.tebligat_asamasi !== '15_gun') return false;
+                } else if (aktifEsikFiltresi === 'tebligat_25') {
+                    if (ogr.tebligat_asamasi !== '25_gun') return false;
+                } else if (aktifEsikFiltresi === 'ramakkala_10') {
                     if (!(ogr.ozsz >= 8.5 && ogr.ozsz < 10.0)) return false;
                 } else if (aktifEsikFiltresi === 'asanlar_10') {
                     if (!(ogr.ozsz >= 10.0)) return false;
@@ -1124,7 +1164,20 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                     document.querySelectorAll('#tree_govde tr').forEach(row => row.classList.remove('tr-secili'));
                     tr.classList.add('tr-secili'); ogrenciSec(ogr.no, ogr.ad_soyad, ogr.temizSube, ogr.ozsz, ogr.ozrl); sagTikMenuAc(e, ogr.no, ogr.ad_soyad);
                 };
-                tr.innerHTML = `<td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.temizSube}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.no}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ad_soyad}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ozszStr}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ozrl} Gün</td>`;
+
+                let badgesHtml = '';
+                if (ogr.art_arda_2gun) {
+                    badgesHtml += `<span title="Art arda 2 gün özürsüz devamsızlık (${ogr.art_arda_tarihler || ''}) - Veliye derhal bildirim yapılmalı (MEB Md. 36/4)" style="display:inline-flex; align-items:center; background:#EF4444; color:#FFFFFF; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px; margin-left:4px;">⚡2G</span>`;
+                }
+                if (ogr.tebligat_asamasi === '5_gun') {
+                    badgesHtml += `<span title="5. Gün Resmi Veli Tebligatı Eşiği (MEB Md. 36/4)" style="display:inline-flex; align-items:center; background:#F59E0B; color:#FFFFFF; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px; margin-left:4px;">📬5G</span>`;
+                } else if (ogr.tebligat_asamasi === '15_gun') {
+                    badgesHtml += `<span title="15. Gün Resmi Veli Tebligatı Eşiği (MEB Md. 36/4)" style="display:inline-flex; align-items:center; background:#EA580C; color:#FFFFFF; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px; margin-left:4px;">📨15G</span>`;
+                } else if (ogr.tebligat_asamasi === '25_gun') {
+                    badgesHtml += `<span title="25. Gün Resmi Nihai Tebligatı (Sınıf Tekrarı Öncesi Son Tebligat - MEB Md. 36/4)" style="display:inline-flex; align-items:center; background:#DC2626; color:#FFFFFF; font-size:9px; font-weight:700; padding:1px 4px; border-radius:3px; margin-left:4px;">🚨25G</span>`;
+                }
+
+                tr.innerHTML = `<td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.temizSube}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.no}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ad_soyad}${badgesHtml}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ozszStr}</td><td style="padding: 5px 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ogr.ozrl} Gün</td>`;
                 fragment.appendChild(tr);
             });
             govde.appendChild(fragment);
@@ -2067,6 +2120,9 @@ function geriBildirimGonder() {
                 const elPer = document.getElementById('teshis_per_sayisi');
                 if (elPer) elPer.textContent = (vb.personel_sayisi ?? 0).toLocaleString();
 
+                const elEvrak = document.getElementById('teshis_evrak_sayisi');
+                if (elEvrak) elEvrak.textContent = (vb.evrak_sayisi ?? 0).toLocaleString();
+
                 const elBoyut = document.getElementById('teshis_db_boyut');
                 if (elBoyut) elBoyut.textContent = (vb.boyut_kb ?? 0) + ' KB';
 
@@ -2126,6 +2182,7 @@ Tarih: ${sis.zaman || new Date().toLocaleString()}
 - Kayıtlı Öğrenci : ${vb.ogrenci_sayisi ?? 0}
 - Devamsızlık     : ${vb.devamsizlik_sayisi ?? 0}
 - Kayıtlı Personel: ${vb.personel_sayisi ?? 0}
+- Üretilen Evrak  : ${vb.evrak_sayisi ?? 0}
 ==============================================`;
 
             try {

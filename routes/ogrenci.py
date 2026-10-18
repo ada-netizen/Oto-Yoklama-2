@@ -13,6 +13,7 @@ import logging
 from araclar import VeriAraclari
 from dependencies import db, yollar, ayarlar, islem_logla, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari
 from utils import *
+from mevzuat_kurallari import ogrenci_tebligat_ve_artarda_analiz
 
 def ogrenci_isleme_gorevi(temp_yol, job_id):
     try:
@@ -106,14 +107,99 @@ def ogrencileri_getir():
         ogr_no = str(ogr['no']).strip()
         ogr_devleri = gruplu_devamsizlik.get(ogr_no, [])
         ozsz, ozrl = VeriAraclari.hesapla_devamsizlik(ogr_no, ogr_devleri, [])
+        anal = ogrenci_tebligat_ve_artarda_analiz(ogr_devleri, ozsz, ozrl)
         sonuclar.append({
             "no": ogr_no,
             "ad_soyad": ogr['ad_soyad'],
             "sube": ogr['sube'],
             "ozursuz": ozsz,
-            "ozurlu": ozrl
+            "ozurlu": ozrl,
+            "tebligat_asamasi": anal.get("tebligat_asamasi"),
+            "tebligat_etiketi": anal.get("tebligat_etiketi"),
+            "art_arda_2gun": anal.get("art_arda_2gun", False),
+            "art_arda_tarihler": anal.get("art_arda_tarihler", "")
         })
     return {"ogrenciler": sonuclar}
+
+
+@router.get("/tebligat-bildirimleri")
+def tebligat_bildirimleri_getir():
+    """
+    MEB Ortaöğretim Kurumları Yönetmeliği Madde 36 uyarınca:
+    - 5., 15. ve 25. gün resmi tebligat eşiklerini,
+    - Art arda 2 gün özürsüz devamsızlık durumunu (Hafta sonu dahil)
+    derleyip acil bildirim merkezine sunar.
+    """
+    try:
+        ogrenci_listesi, devamsizlik_listesi = db.yukle()
+        gruplu_devamsizlik = {}
+        for dev in devamsizlik_listesi:
+            no = str(dev['no']).strip()
+            gruplu_devamsizlik.setdefault(no, []).append(dev)
+
+        tebligat_5_list = []
+        tebligat_15_list = []
+        tebligat_25_list = []
+        artarda_2gun_list = []
+
+        for ogr in ogrenci_listesi:
+            ogr_no = str(ogr['no']).strip()
+            ogr_devleri = gruplu_devamsizlik.get(ogr_no, [])
+            ozsz, ozrl = VeriAraclari.hesapla_devamsizlik(ogr_no, ogr_devleri, [])
+            toplam = round(ozsz + ozrl, 1)
+
+            anal = ogrenci_tebligat_ve_artarda_analiz(ogr_devleri, ozsz, ozrl)
+
+            ogr_bilgi = {
+                "no": ogr_no,
+                "ad_soyad": ogr['ad_soyad'],
+                "sube": ogr['sube'],
+                "ozursuz": ozsz,
+                "ozurlu": ozrl,
+                "toplam": toplam,
+                "tebligat_asamasi": anal.get("tebligat_asamasi"),
+                "tebligat_etiketi": anal.get("tebligat_etiketi"),
+                "tebligat_aciklama": anal.get("tebligat_aciklama", ""),
+                "art_arda_2gun": anal.get("art_arda_2gun", False),
+                "art_arda_tarihler": anal.get("art_arda_tarihler", ""),
+                "art_arda_aciklama": anal.get("art_arda_aciklama", "")
+            }
+
+            if anal.get("art_arda_2gun"):
+                artarda_2gun_list.append(ogr_bilgi)
+
+            if anal.get("tebligat_asamasi") == "25_gun":
+                tebligat_25_list.append(ogr_bilgi)
+            elif anal.get("tebligat_asamasi") == "15_gun":
+                tebligat_15_list.append(ogr_bilgi)
+            elif anal.get("tebligat_asamasi") == "5_gun":
+                tebligat_5_list.append(ogr_bilgi)
+
+        artarda_2gun_list.sort(key=lambda x: x["ozursuz"], reverse=True)
+        tebligat_5_list.sort(key=lambda x: x["ozursuz"], reverse=True)
+        tebligat_15_list.sort(key=lambda x: x["toplam"], reverse=True)
+        tebligat_25_list.sort(key=lambda x: x["toplam"], reverse=True)
+
+        toplam_bildirim = len(artarda_2gun_list) + len(tebligat_5_list) + len(tebligat_15_list) + len(tebligat_25_list)
+
+        return {
+            "basarili": True,
+            "toplam_bildirim": toplam_bildirim,
+            "sayilar": {
+                "artarda_2gun": len(artarda_2gun_list),
+                "tebligat_5": len(tebligat_5_list),
+                "tebligat_15": len(tebligat_15_list),
+                "tebligat_25": len(tebligat_25_list)
+            },
+            "gruplar": {
+                "artarda_2gun": artarda_2gun_list,
+                "tebligat_5": tebligat_5_list,
+                "tebligat_15": tebligat_15_list,
+                "tebligat_25": tebligat_25_list
+            }
+        }
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
 
 
 @router.get("/ogrenci-detay/{ogr_no}")

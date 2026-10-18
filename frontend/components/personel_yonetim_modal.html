@@ -37,58 +37,187 @@
 <button class="icon-btn" onclick="modalKapat('personel_yonetim_modal')" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
 </div>
 </div>
-<div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-<div class="input-with-icon" style="width: 220px;">
-<i data-lucide="search" class="search-icon"></i>
-<input class="search-input" x-model="arama" placeholder="Personel Ara..." type="text"/>
-</div>
-<div id="personel_filtre_cipleri" style="display: flex; gap: 6px;">
-    <button class="filter-chip" :class="{'active': aktifFiltre === 'Tümü'}" @click="aktifFiltre = 'Tümü'">Tümü</button>
-    <template x-for="grup in gruplar" :key="grup">
-        <button class="filter-chip" :class="{'active': aktifFiltre === grup}" @click="aktifFiltre = grup" x-text="grup"></button>
-    </template>
-</div>
-</div>
-<div style="display: flex; gap: 10px;">
-<button class="btn btn-dev" onclick="personelGrupYonetimiAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="users" height="16" width="16"></i> Grupları Yönet</button>
-<button class="btn btn-ogr" onclick="personelYeniEkleModalAc()" style="padding: 6px 15px; border-radius: 16px; display:flex; align-items:center; gap:5px;"><i data-lucide="user-plus" height="16" width="16"></i> Yeni Personel</button>
-</div>
+<style>
+.detayli-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    user-select: none;
+    padding: 3px 8px 3px 10px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    transition: all 0.2s ease;
+}
+.detayli-switch-btn.active {
+    border-color: #0284c7;
+    background: rgba(2, 132, 199, 0.08);
+}
+.detayli-switch-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fg-main);
+    transition: color 0.2s ease;
+}
+.detayli-switch-btn.active .detayli-switch-label {
+    color: #0284c7;
+}
+.detayli-switch-track {
+    width: 38px;
+    height: 20px;
+    border-radius: 10px;
+    background-color: var(--border, #cbd5e1);
+    position: relative;
+    transition: background-color 0.25s ease, box-shadow 0.25s ease;
+    box-sizing: border-box;
+}
+.detayli-switch-btn.active .detayli-switch-track {
+    background-color: #0284c7;
+    box-shadow: 0 0 8px rgba(2, 132, 199, 0.35);
+}
+.detayli-switch-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(0);
+}
+.detayli-switch-btn.active .detayli-switch-thumb {
+    transform: translateX(18px);
+}
+</style>
+<div style="padding: 14px 20px; display: flex; flex-direction: column; gap: 10px;">
+    <!-- Satır 1: Eylemler (Sol) & Sağa Yaslı "Detaylı" Kayan Switch (Sağ) -->
+    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button class="btn btn-mor" onclick="personelYuklemeModaliAc()" style="padding: 6px 14px; border-radius: 16px; display:flex; align-items:center; gap:6px; background: linear-gradient(135deg, #7c3aed, #6366f1); color: white; border: none; font-size: 12px; font-weight: 600; cursor: pointer; box-shadow: 0 2px 6px rgba(124, 58, 237, 0.25);" title="MEBBİS & e-Okul Personel İçe Aktarma">
+                <i data-lucide="upload" height="15" width="15"></i> Personel Yükle
+            </button>
+            <button class="btn btn-dev" onclick="personelGrupYonetimiAc()" style="padding: 6px 14px; border-radius: 16px; display:flex; align-items:center; gap:6px; font-size: 12px;"><i data-lucide="users" height="15" width="15"></i> Grupları Yönet</button>
+            <button class="btn btn-ogr" onclick="personelYeniEkleModalAc()" style="padding: 6px 14px; border-radius: 16px; display:flex; align-items:center; gap:6px; font-size: 12px;"><i data-lucide="user-plus" height="15" width="15"></i> Yeni Personel</button>
+        </div>
+
+        <!-- Sağa Yaslı Gece/Gündüz Modu Stili Detaylı Switch (Kayan Düğme) -->
+        <div style="margin-left: auto;">
+            <div class="detayli-switch-btn" :class="{ 'active': detayliGorunum }" @click="detayliGorunum = !detayliGorunum" title="Detaylı personel görünümünü aç/kapat">
+                <span class="detayli-switch-label">Detaylı</span>
+                <div class="detayli-switch-track" role="switch" :aria-checked="detayliGorunum">
+                    <div class="detayli-switch-thumb"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Satır 2: Filtre Çipleri -->
+    <div id="personel_filtre_cipleri" style="display: flex; gap: 6px; align-items: center; overflow-x: auto; padding-bottom: 2px;">
+        <button class="filter-chip" :class="{'active': aktifFiltre === 'Tümü'}" @click="filtreSec('Tümü')">Tümü</button>
+        <template x-for="grup in gruplar" :key="grup">
+            <button class="filter-chip" :class="{'active': aktifFiltre === grup}" @click="filtreSec(grup)" x-text="grup"></button>
+        </template>
+    </div>
+
+    <!-- Satır 3: Arama Çubuğu -->
+    <div class="input-with-icon" style="width: 100%;">
+        <i data-lucide="search" class="search-icon"></i>
+        <input class="search-input" x-model="arama" placeholder="Personel Ara..." type="text" style="width: 100%; box-sizing: border-box;"/>
+    </div>
 </div>
 <div class="tree-card" style="margin: 0 20px 20px 20px; flex: 1; border: 1px solid var(--border); overflow-y: auto; background-color: var(--bg-card); border-radius: 6px;">
 <table id="personel_tablosu" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
 <thead style="position: sticky; top: 0; background-color: var(--bg-main); z-index: 1;">
 <tr>
-<th style="width: 45%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('ad')">
+<th style="width: 34%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('ad')">
     <span style="font-weight: 700; color: var(--fg-main);" x-text="'Ad Soyad' + (siralamaSutun === 'ad' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
 </th>
-<th style="width: 25%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('gorev')">
+<th style="width: 22%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('gorev')">
     <span style="font-weight: 700; color: var(--fg-main);" x-text="'Görevi' + (siralamaSutun === 'gorev' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
 </th>
-<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('aktif')">
+<th style="width: 16%; padding: 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('grup')">
+    <span style="font-weight: 700; color: var(--fg-main);" x-text="'Türü / Kadro' + (siralamaSutun === 'grup' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
+</th>
+<th style="width: 14%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub); cursor: pointer; user-select: none;" @click="sirala('aktif')">
     <span style="font-weight: 700; color: var(--fg-main);" x-text="'Durum' + (siralamaSutun === 'aktif' ? (siralamaYon === 1 ? ' ▲' : ' ▼') : ' ↕')"></span>
 </th>
-<th style="width: 15%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">İşlemler</th>
+<th style="width: 14%; padding: 12px; border-bottom: 1px solid var(--border); text-align: center; color: var(--fg-sub);">İşlemler</th>
 </tr>
 </thead>
 <tbody id="personel_govde">
     <template x-for="p in gosterilecekPersoneller" :key="p.ad">
-        <tr>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight: bold;">
+        <tr :style="detayliGorunum ? 'background: rgba(2, 132, 199, 0.02);' : ''">
+            <!-- 1. Sütun: Ad Soyad -->
+            <!-- Normal Görünüm Ad Soyad -->
+            <td x-show="!detayliGorunum" style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main); font-weight: bold;">
                 <span x-text="p.ad"></span>
             </td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size: 11.5px;" x-text="p.gorev"></td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center;">
-                <span x-show="p.aktif === 0" style="font-size: 10.5px; padding: 2px 8px; background: rgba(239, 68, 68, 0.12); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    <i data-lucide="building-2" width="12" height="12"></i>
-                    <span>Başka Kurumda</span>
-                </span>
-                <span x-show="p.aktif !== 0" style="font-size: 10.5px; padding: 2px 8px; background: rgba(16, 185, 129, 0.12); color: #059669; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                    <i data-lucide="check" width="12" height="12"></i>
-                    <span>Aktif</span>
-                </span>
+            <!-- Detaylı Görünüm Ad Soyad (Avatar + Ad + TC + Cinsiyet) -->
+            <td x-show="detayliGorunum" style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-main);">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #38bdf8); color: white; display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 800; flex-shrink: 0; box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);" x-text="p.ad ? p.ad.substring(0, 2).toLocaleUpperCase('tr-TR') : 'P'"></div>
+                    <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                        <span style="font-weight: 800; font-size: 13px; color: var(--fg-main);" x-text="p.ad"></span>
+                        <div style="display: flex; align-items: center; gap: 5px; flex-wrap: wrap;">
+                            <span x-show="p.tc_no" style="font-size: 9.5px; font-family: monospace; padding: 1px 5px; background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; color: var(--fg-sub);" x-text="'TC: ' + p.tc_no"></span>
+                            <template x-if="p.cinsiyet === 'E'">
+                                <span style="font-size: 9.5px; padding: 1px 6px; background: rgba(2, 132, 199, 0.12); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 6px; color: #0284c7; font-weight: 700;">Erkek</span>
+                            </template>
+                            <template x-if="p.cinsiyet === 'K'">
+                                <span style="font-size: 9.5px; padding: 1px 6px; background: rgba(219, 39, 119, 0.12); border: 1px solid rgba(219, 39, 119, 0.25); border-radius: 6px; color: #db2777; font-weight: 700;">Kadın</span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
             </td>
-            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center;">
+
+            <!-- 2. Sütun: Görevi -->
+            <!-- Normal Görünüm Görevi -->
+            <td x-show="!detayliGorunum" style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size: 11.5px;" x-text="p.gorev"></td>
+            <!-- Detaylı Görünüm Görevi (Unvan/Görev + Branş + Kariyer + Kademe) -->
+            <td x-show="detayliGorunum" style="padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--fg-sub); font-size: 11.5px;">
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-weight: 700; color: var(--fg-main);" x-text="(p.unvan && p.unvan !== '-' ? p.unvan : '') + (p.gorev && p.gorev !== '-' ? (p.unvan && p.unvan !== '-' ? ' / ' : '') + p.gorev : '')"></span>
+                    <div style="font-size: 10.5px; color: var(--fg-sub); display: flex; flex-direction: column; gap: 1px;">
+                        <span x-show="p.brans && p.brans !== '-'" x-text="'• Branş: ' + p.brans"></span>
+                        <span x-show="p.kariyer && p.kariyer !== '-'" x-text="'• ' + p.kariyer"></span>
+                        <span x-show="p.kademe_derece && p.kademe_derece !== '-'" x-text="'• Der/Kad: ' + p.kademe_derece"></span>
+                    </div>
+                </div>
+            </td>
+
+            <!-- 3. Sütun: Türü / Kadro (Görevi ile Durumu Arasında) -->
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle;">
+                <template x-if="p.grup === 'Kadrolu'">
+                    <span style="font-size: 10.5px; padding: 2px 8px; background: rgba(2, 132, 199, 0.12); border: 1px solid rgba(2, 132, 199, 0.28); border-radius: 8px; color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="award" width="12" height="12"></i>
+                        <span x-text="p.grup"></span>
+                    </span>
+                </template>
+                <template x-if="p.grup === 'Görevlendirme'">
+                    <span style="font-size: 10.5px; padding: 2px 8px; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; color: #d97706; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="briefcase" width="12" height="12"></i>
+                        <span x-text="p.grup"></span>
+                    </span>
+                </template>
+                <template x-if="p.grup && p.grup !== 'Kadrolu' && p.grup !== 'Görevlendirme'">
+                    <span style="font-size: 10.5px; padding: 2px 8px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; color: #6366f1; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        <i data-lucide="tag" width="12" height="12"></i>
+                        <span x-text="p.grup"></span>
+                    </span>
+                </template>
+            </td>
+
+            <!-- 4. Sütun: Durum Sütunu -->
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle;">
+                <span x-html="getDurumBadgeHtml(p.aktif)"></span>
+            </td>
+
+            <!-- 5. Sütun: İşlemler Sütunu -->
+            <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle;">
                 <button class="btn-icon-soft" style="color: #0284c7; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;" @click.stop="profilAc(p)" title="Personel Detaylı Profil Kartı">
                     <i data-lucide="id-card" width="13" height="13"></i>
                     <span>Profil</span>
@@ -96,6 +225,21 @@
             </td>
         </tr>
     </template>
+    
+    <!-- Boş Durum Satırı -->
+    <tr x-show="gosterilecekPersoneller.length === 0">
+        <td colspan="5" style="text-align: center; padding: 36px 16px; color: var(--fg-sub);">
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="info" width="28" height="28" style="color: #f59e0b; opacity: 0.85;"></i>
+                <span style="font-size: 13px; font-weight: 600; color: var(--fg-main);" 
+                      x-text="aktifFiltre !== 'Tümü' ? `Kurumda '${aktifFiltre}' türünde personel bulunmuyor.` : (arama ? 'Arama kriterine uygun personel bulunamadı.' : 'Henüz personel kaydı bulunmuyor.')">
+                </span>
+                <span x-show="aktifFiltre !== 'Tümü'" style="font-size: 11.5px; color: var(--fg-sub);">
+                    Tüm personelleri görüntülemek için 'Tümü' filtresine tıklayabilirsiniz.
+                </span>
+            </div>
+        </td>
+    </tr>
 </tbody>
 </table>
 </div>
@@ -106,6 +250,7 @@ document.addEventListener('alpine:init', () => {
     Alpine.data('personelYonetimComponent', () => ({
         arama: '',
         aktifFiltre: 'Tümü',
+        detayliGorunum: false,
         siralamaSutun: 'ad',
         siralamaYon: 1,
         personeller: [...(window.tumPersoneller || [])],
@@ -115,6 +260,9 @@ document.addEventListener('alpine:init', () => {
             window.addEventListener('personeller-guncellendi', () => {
                 this.personeller = [...(window.tumPersoneller || [])];
                 this.gruplarVerisi = [...(window.tumPersonelGruplari || [])];
+                this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+            });
+            this.$watch('detayliGorunum', () => {
                 this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             });
             this.$watch('aktifFiltre', () => {
@@ -144,6 +292,19 @@ document.addEventListener('alpine:init', () => {
                 this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
             }
         },
+
+        filtreSec(grup) {
+            this.aktifFiltre = grup;
+            if (grup !== 'Tümü') {
+                const sayi = this.personeller.filter(p => p.grup === grup).length;
+                if (sayi === 0) {
+                    if (window.bildirimGoster) {
+                        window.bildirimGoster(`Kurumda '${grup}' türünde personel bulunmuyor.`, 'uyari');
+                    }
+                }
+            }
+            this.$nextTick(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); });
+        },
         
         sirala(sutun) {
             if (this.siralamaSutun === sutun) {
@@ -158,6 +319,24 @@ document.addEventListener('alpine:init', () => {
         get gruplar() {
             return this.gruplarVerisi;
         },
+
+        getGorevKademesi(p) {
+            const gorevStr = ((p.gorev || '') + ' ' + (p.unvan || '')).toLocaleUpperCase('tr-TR').trim();
+            // 1. Kademe: Müdür (Okul Müdürü / Kurum Müdürü; Yardımcı veya Başyardımcı değilse)
+            if (gorevStr.includes('MÜDÜR') && 
+                !gorevStr.includes('YARDIMCI') && 
+                !gorevStr.includes('BAŞYARDIMCI') && 
+                !gorevStr.includes('YRD')) {
+                return 1;
+            }
+            // 2. Kademe: Müdür Yardımcısı / Müdür Başyardımcısı
+            if (gorevStr.includes('MÜDÜR') && 
+                (gorevStr.includes('YARDIMCI') || gorevStr.includes('BAŞYARDIMCI') || gorevStr.includes('YRD'))) {
+                return 2;
+            }
+            // 3. Kademe: Diğer tüm personeller (Öğretmen, Memur, vb.)
+            return 3;
+        },
         
         get gosterilecekPersoneller() {
             let filterText = this.arama.toLocaleUpperCase('tr-TR');
@@ -170,9 +349,22 @@ document.addEventListener('alpine:init', () => {
             });
 
             return filtered.sort((a, b) => {
-                let valA = (a[this.siralamaSutun] || '').toString();
-                let valB = (b[this.siralamaSutun] || '').toString();
-                return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * this.siralamaYon;
+                if (this.siralamaSutun === 'ad' || this.siralamaSutun === 'gorev') {
+                    // Kurumsal hiyerarşik sıralama: Müdür -> Müdür Yardımcıları -> Diğer Personeller
+                    const kademeA = this.getGorevKademesi(a);
+                    const kademeB = this.getGorevKademesi(b);
+                    if (kademeA !== kademeB) {
+                        return kademeA - kademeB;
+                    }
+                    // Aynı kademedeyse (örneğin birden fazla Müdür Yardımcısı varsa) alfabetik sıralanır
+                    let adA = (a.ad || '').toString();
+                    let adB = (b.ad || '').toString();
+                    return adA.localeCompare(adB, 'tr-TR', { sensitivity: 'base' }) * this.siralamaYon;
+                } else {
+                    let valA = (a[this.siralamaSutun] || '').toString();
+                    let valB = (b[this.siralamaSutun] || '').toString();
+                    return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * this.siralamaYon;
+                }
             });
         },
         
@@ -184,6 +376,13 @@ document.addEventListener('alpine:init', () => {
             if (window.personelProfilAc) {
                 window.personelProfilAc(p);
             }
+        },
+
+        getDurumBadgeHtml(aktif) {
+            if (typeof window.getPersonelDurumBadgeHtml === 'function') {
+                return window.getPersonelDurumBadgeHtml(aktif);
+            }
+            return `<span style="font-size: 10.5px; padding: 2px 8px; background: rgba(16, 185, 129, 0.12); color: #059669; border-radius: 12px; font-weight: 700;">Aktif</span>`;
         },
         
         async sil(ad) {

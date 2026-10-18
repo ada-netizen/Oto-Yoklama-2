@@ -178,49 +178,16 @@
         <!-- ============================================================== -->
         <div id="pp_adim_form_alani" style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
             
-            <!-- Profil Üst Bilgi Kartı (Banner) -->
-            <div style="padding: 14px 20px; background: linear-gradient(135deg, rgba(2, 132, 199, 0.08) 0%, rgba(56, 189, 248, 0.03) 100%); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
-                <div style="display: flex; align-items: center; gap: 14px;">
-                    <div id="pp_avatar" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #38bdf8); color: white; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 800; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);">
-                        AY
-                    </div>
-                    <div>
-                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <h3 id="pp_ad_soyad_baslik" style="margin: 0; font-size: 16px; font-weight: 800; color: var(--fg-main);">Personel Adı</h3>
-                            <span id="pp_tc_badge" style="font-size: 11px; font-family: monospace; padding: 2px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--fg-sub);">TC: -</span>
-                            <span id="pp_cinsiyet_badge" style="font-size: 11px; padding: 2px 7px; background: rgba(2, 132, 199, 0.1); border-radius: 10px; color: #0284c7; font-weight: 700;">-</span>
-                            <span id="pp_kan_badge" style="font-size: 11px; padding: 2px 7px; background: rgba(239, 68, 68, 0.1); border-radius: 10px; color: #ef4444; font-weight: 700;">-</span>
-                            <span id="pp_durum_badge" style="display: none; font-size: 11px; padding: 2px 8px; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 10px; color: #dc2626; font-weight: 800;">Başka Kurumda (Pasif)</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 10px; margin-top: 4px; font-size: 12px; color: var(--fg-sub);">
-                            <span id="pp_unvan_gorev_ozet">-</span>
-                            <span>•</span>
-                            <span id="pp_kurum_ozet">-</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Personel Grubu ve Başka Kuruma Görevlendirme Kontrolleri -->
-                <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <label style="font-size: 11px; font-weight: 700; color: var(--fg-sub);">Personel Grubu:</label>
-                        <select id="pp_grup" onchange="ppGrupDegisti(this.value)" style="padding: 6px 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid #0284c7; border-radius: 6px; font-size: 12px; font-weight: 700; outline: none; cursor: pointer;">
-                            <option value="Kadrolu">Kadrolu</option>
-                            <option value="Görevlendirme">Görevlendirme</option>
-                            <option value="Ücretli">Ücretli</option>
-                            <option value="Sözleşmeli">Sözleşmeli</option>
-                            <option value="Sürekli İşçi">Sürekli İşçi</option>
-                            <option value="TYP">TYP</option>
-                            <option value="İUP">İUP</option>
-                            <option value="Hizmet Alımı">Hizmet Alımı</option>
-                        </select>
-                    </div>
-                    
-                    <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; padding: 4px 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; transition: background 0.2s;">
-                        <input type="checkbox" id="pp_gorevlendirildi_pasif" style="width: 14px; height: 14px; accent-color: #dc2626; cursor: pointer;" onchange="ppGorevlendirmeDurumDegisti(this.checked)">
-                        <span style="font-size: 11px; font-weight: 700; color: #dc2626; user-select: none;">Başka kuruma görevlendirildi (Pasif)</span>
-                    </label>
-                </div>
+            <!-- Gizli Geriye Dönük Uyumluluk Elemanları -->
+            <div style="display: none;">
+                <div id="pp_avatar"></div>
+                <div id="pp_ad_soyad_baslik"></div>
+                <div id="pp_tc_badge"></div>
+                <div id="pp_cinsiyet_badge"></div>
+                <div id="pp_kan_badge"></div>
+                <div id="pp_durum_badge"></div>
+                <div id="pp_unvan_gorev_ozet"></div>
+                <div id="pp_kurum_ozet"></div>
             </div>
 
             <!-- Form Alanı (Kaydırılabilir İçerik) -->
@@ -236,6 +203,35 @@
                         <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Ad Soyad *</label>
                             <input type="text" id="pp_ad_soyad" class="input-modern" placeholder="Ad Soyad" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); border-radius: 6px; outline: none;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                            <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Personel Grubu / İstihdam Türü *</label>
+                            <select id="pp_grup" onchange="ppGrupDegisti(this.value)" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; font-weight: 700; background: var(--bg-main); color: var(--fg-main); border: 1px solid #0284c7; border-radius: 6px; outline: none; cursor: pointer;">
+                                <option value="Kadrolu">Kadrolu</option>
+                                <option value="Görevlendirme">Görevlendirme</option>
+                                <option value="Ücretli">Ücretli</option>
+                                <option value="Sözleşmeli">Sözleşmeli</option>
+                                <option value="Sürekli İşçi">Sürekli İşçi</option>
+                                <option value="TYP">TYP</option>
+                                <option value="İUP">İUP</option>
+                                <option value="Hizmet Alımı">Hizmet Alımı</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                            <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kurum İçi Görev / Çalışma Durumu *</label>
+                            <select id="pp_aktif_durum" onchange="ppAktifDurumDegisti(this.value)" style="box-sizing: border-box; width: 100%; height: 36px; padding: 0 10px; font-size: 12px; font-weight: 700; background: var(--bg-main); color: #059669; border: 1.5px solid #10b981; border-radius: 6px; outline: none; cursor: pointer; transition: all 0.2s;">
+                                <option value="1">🟢 Aktif (Kurumda Görevde)</option>
+                                <option value="0">🔴 Başka Kuruma Görevlendirildi (Pasif)</option>
+                                <option value="2">🟣 Uzun Süreli Sağlık İzninde (12-18 Ay - Md. 105)</option>
+                                <option value="3">🌸 Doğum / Analık İzninde (16 Hafta - Md. 104/A)</option>
+                                <option value="4">⏳ Aylıksız İzninde (Doğum / 5 Yıl - Md. 108)</option>
+                                <option value="5">🩺 Refakat İzninde (3-6 Ay - Md. 105)</option>
+                                <option value="6">🎖️ Askerlik Görevinde (Md. 108/G)</option>
+                                <option value="7">🎓 Yurtdışı / Lisansüstü Eğitim İzninde (Md. 78-79)</option>
+                                <option value="8">🏛️ Sendika Görevinde / İzninde (4688 SK Md. 18)</option>
+                            </select>
+                            <input type="checkbox" id="pp_gorevlendirildi_pasif" style="display: none;" onchange="ppGorevlendirmeDurumDegisti(this.checked)">
+                            <div id="pp_durum_aciklama" style="display: none; font-size: 10.5px; line-height: 1.3; margin-top: 2px;"></div>
                         </div>
                         <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
                             <label style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Unvanı</label>

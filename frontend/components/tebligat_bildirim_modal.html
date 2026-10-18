@@ -1,0 +1,346 @@
+<div class="modal-overlay" id="tebligat_bildirim_modal" x-data="tebligatBildirimComponent()" x-show="acik" style="display: none; z-index: 2100;" @keydown.escape.window="kapat()">
+    <div class="modal-content" style="width: 960px; max-width: 96vw; max-height: 92vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-xl); border: 1px solid var(--border);">
+        
+        <!-- MODAL HEADER -->
+        <div class="modal-header" style="padding: 16px 22px; border-bottom: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);">
+                    <i data-lucide="bell-ring" height="20" width="20"></i>
+                </div>
+                <div>
+                    <h2 style="margin: 0; color: var(--fg-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        Resmi Devamsızlık & Veli Tebligat Bildirimleri
+                        <span class="badge" style="background-color: #ef4444; color: white; font-size: 11px; padding: 2px 8px; border-radius: 9999px; font-weight: 700;" x-text="toplamSayi + ' Öğrenci'">0 Öğrenci</span>
+                    </h2>
+                    <div style="font-size: 11.5px; color: var(--fg-sub); margin-top: 2px;">
+                        MEB Ortaöğretim Kurumları Yönetmeliği Md. 36/4 & 36/5-a gereğince resmi bildirim ve tebligat gerektiren öğrenciler
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-temizle" @click="kapat()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                <i data-lucide="x" height="14" width="14"></i> Kapat
+            </button>
+        </div>
+
+        <!-- 4-SEKMELİ MEVZUAT KATEGORİ SEÇİCİ -->
+        <div style="padding: 10px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" 
+                    @click="aktifSekme = 'artarda_2gun'" 
+                    class="btn" 
+                    :style="aktifSekme === 'artarda_2gun' ? 'background: #EF4444; color: white; font-weight: 700;' : 'background: var(--bg-card-solid); color: var(--fg-main); border: 1px solid var(--border);'"
+                    style="padding: 8px 14px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                <i data-lucide="zap" height="14" width="14"></i>
+                <span>Art Arda 2G Özürsüz</span>
+                <span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;" x-text="sayilar.artarda_2gun">0</span>
+            </button>
+
+            <button type="button" 
+                    @click="aktifSekme = 'tebligat_5'" 
+                    class="btn" 
+                    :style="aktifSekme === 'tebligat_5' ? 'background: #F59E0B; color: white; font-weight: 700;' : 'background: var(--bg-card-solid); color: var(--fg-main); border: 1px solid var(--border);'"
+                    style="padding: 8px 14px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                <i data-lucide="mail" height="14" width="14"></i>
+                <span>5. Gün Tebligatı (1. Tebligat)</span>
+                <span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;" x-text="sayilar.tebligat_5">0</span>
+            </button>
+
+            <button type="button" 
+                    @click="aktifSekme = 'tebligat_15'" 
+                    class="btn" 
+                    :style="aktifSekme === 'tebligat_15' ? 'background: #EA580C; color: white; font-weight: 700;' : 'background: var(--bg-card-solid); color: var(--fg-main); border: 1px solid var(--border);'"
+                    style="padding: 8px 14px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                <i data-lucide="mail-check" height="14" width="14"></i>
+                <span>15. Gün Tebligatı (2. Tebligat)</span>
+                <span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;" x-text="sayilar.tebligat_15">0</span>
+            </button>
+
+            <button type="button" 
+                    @click="aktifSekme = 'tebligat_25'" 
+                    class="btn" 
+                    :style="aktifSekme === 'tebligat_25' ? 'background: #B91C1C; color: white; font-weight: 700;' : 'background: var(--bg-card-solid); color: var(--fg-main); border: 1px solid var(--border);'"
+                    style="padding: 8px 14px; font-size: 12px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; transition: all 0.2s;">
+                <i data-lucide="alert-octagon" height="14" width="14"></i>
+                <span>25. Gün Nihai Tebligat</span>
+                <span style="background: rgba(0,0,0,0.25); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;" x-text="sayilar.tebligat_25">0</span>
+            </button>
+        </div>
+
+        <!-- MEVZUAT UYARI & BİLGİLENDİRME BANT (DİNAMİK) -->
+        <div style="padding: 10px 20px; background-color: var(--bg-card-hover); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; min-width: 280px;">
+                <div style="font-size: 18px;" x-html="mevzuatIkonu()">⚡</div>
+                <div style="font-size: 12px; color: var(--fg-main); line-height: 1.4;" x-text="mevzuatMetni()"></div>
+            </div>
+            <!-- İÇ ARAMA -->
+            <div class="input-with-icon" style="width: 240px; margin: 0;">
+                <i data-lucide="search" class="search-icon"></i>
+                <input class="search-input" x-model="aramaMetni" placeholder="Bu sekmede ara..." type="text" style="font-size: 11.5px; padding: 6px 8px 6px 30px;"/>
+            </div>
+        </div>
+
+        <!-- ÖĞRENCİ LİSTESİ TABLOSU -->
+        <div style="padding: 12px 20px; flex: 1; overflow-y: auto; min-height: 320px;">
+            <template x-if="aktifListe().length === 0">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 260px; color: var(--fg-sub); gap: 10px; text-align: center;">
+                    <i data-lucide="check-circle" style="width: 48px; height: 48px; color: #10B981; opacity: 0.9;"></i>
+                    <div style="font-size: 14px; font-weight: 600; color: var(--fg-main);">Bu Kategoride Bildirim Bulunmuyor</div>
+                    <div style="font-size: 12px; max-width: 400px;">Seçili mevzuat kuralı kapsamında şu anda işlem yapılması gereken öğrenci bulunmamaktadır.</div>
+                </div>
+            </template>
+
+            <template x-if="aktifListe().length > 0">
+                <div class="tree-card" style="border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background-color: var(--bg-card); box-shadow: var(--shadow-sm);">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                        <thead style="background-color: var(--bg-card-solid); border-bottom: 1px solid var(--border);">
+                            <tr>
+                                <th style="width: 10%; padding: 10px 12px; color: var(--fg-main); font-weight: 700;">Sınıf</th>
+                                <th style="width: 10%; padding: 10px 12px; color: var(--fg-main); font-weight: 700;">No</th>
+                                <th style="width: 25%; padding: 10px 12px; color: var(--fg-main); font-weight: 700;">Öğrenci Adı Soyadı</th>
+                                <th style="width: 12%; padding: 10px 12px; color: var(--dev-ozursuz-fg); font-weight: 700;">Özürsüz</th>
+                                <th style="width: 12%; padding: 10px 12px; color: var(--fg-main); font-weight: 700;">Toplam</th>
+                                <th style="width: 15%; padding: 10px 12px; color: var(--fg-sub); font-weight: 600;">Durum / Tarihler</th>
+                                <th style="width: 16%; padding: 10px 12px; text-align: center; color: var(--fg-main); font-weight: 700;">Hızlı İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="ogr in aktifListe()" :key="ogr.no">
+                                <tr style="border-bottom: 1px solid var(--border); transition: background-color 0.15s;" onmouseover="this.style.backgroundColor='var(--bg-card-hover)'" onmouseout="this.style.backgroundColor='transparent'">
+                                    <td style="padding: 10px 12px; font-weight: 600;" x-text="ogr.sube"></td>
+                                    <td style="padding: 10px 12px; font-weight: 600;" x-text="ogr.no"></td>
+                                    <td style="padding: 10px 12px; font-weight: 700; color: var(--fg-main);">
+                                        <div style="display: flex; align-items: center; gap: 6px;">
+                                            <span x-text="ogr.ad_soyad"></span>
+                                            <template x-if="ogr.art_arda_2gun">
+                                                <span class="badge" style="background:#EF4444; color:white; font-size:9.5px; padding:1px 5px; border-radius:4px; font-weight:700;" title="Art arda 2 gün özürsüz devamsızlık">⚡ 2G</span>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td style="padding: 10px 12px;">
+                                        <span style="font-weight: 700; color: #EF4444;" x-text="ogr.ozursuz + ' Gün'"></span>
+                                    </td>
+                                    <td style="padding: 10px 12px;">
+                                        <span style="font-weight: 600; color: var(--fg-main);" x-text="ogr.toplam + ' Gün'"></span>
+                                    </td>
+                                    <td style="padding: 10px 12px;">
+                                        <div style="font-size: 11px; color: var(--fg-sub);" x-text="ogr.art_arda_tarihler ? ogr.art_arda_tarihler : (ogr.tebligat_etiketi || '-')"></div>
+                                    </td>
+                                    <td style="padding: 8px 12px; text-align: center;">
+                                        <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                                            <button type="button" 
+                                                    @click="ogrenciyeGit(ogr)" 
+                                                    class="btn btn-temizle" 
+                                                    title="Öğrenciyi seç ve takvim görünümüne git"
+                                                    style="padding: 5px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px;">
+                                                <i data-lucide="calendar" height="13" width="13"></i>
+                                                <span>Takvim</span>
+                                            </button>
+                                            <button type="button" 
+                                                    @click="bildirimMetniKopyala(ogr)" 
+                                                    class="btn" 
+                                                    title="Resmi veli WhatsApp/SMS bildirim metnini kopyala"
+                                                    style="background: #0284c7; color: white; padding: 5px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; border-radius: 6px; border: none; cursor: pointer;">
+                                                <i data-lucide="copy" height="13" width="13"></i>
+                                                <span>Mesaj</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
+        </div>
+
+        <!-- MODAL FOOTER -->
+        <div style="padding: 12px 22px; background-color: var(--bg-card-solid); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 12px; color: var(--fg-sub);">
+                Toplam <strong style="color: var(--fg-main);" x-text="aktifListe().length">0</strong> kayıt listeleniyor.
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-ogr" @click="verileriYenile()" style="padding: 6px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i data-lucide="refresh-cw" height="14" width="14"></i> Listeyi Güncelle
+                </button>
+                <button type="button" class="btn btn-temizle" @click="kapat()" style="padding: 6px 14px; font-size: 12px;">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('tebligatBildirimComponent', () => ({
+        acik: false,
+        aktifSekme: 'artarda_2gun',
+        aramaMetni: '',
+        sayilar: {
+            artarda_2gun: 0,
+            tebligat_5: 0,
+            tebligat_15: 0,
+            tebligat_25: 0
+        },
+        gruplar: {
+            artarda_2gun: [],
+            tebligat_5: [],
+            tebligat_15: [],
+            tebligat_25: []
+        },
+        toplamSayi: 0,
+
+        init() {
+            window.tebligatBildirimModaliAc = () => this.ac();
+            window.tebligatBildirimVerileriniYenile = () => this.verileriYenile();
+            // Sayfa yüklendiğinde arka planda sayıları çek
+            setTimeout(() => this.verileriYenile(), 800);
+        },
+
+        ac() {
+            this.acik = true;
+            const modalEl = document.getElementById('tebligat_bildirim_modal');
+            if (modalEl) modalEl.style.display = 'flex';
+            this.verileriYenile();
+            if (window.lucide && typeof lucide.createIcons === 'function') {
+                setTimeout(() => lucide.createIcons(), 50);
+            }
+        },
+
+        kapat() {
+            this.acik = false;
+            const modalEl = document.getElementById('tebligat_bildirim_modal');
+            if (modalEl) modalEl.style.display = 'none';
+        },
+
+        verileriYenile() {
+            const apiBase = window.API || 'http://127.0.0.1:8000';
+            fetch(`${apiBase}/tebligat-bildirimleri`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.basarili) {
+                        this.sayilar = data.sayilar || { artarda_2gun: 0, tebligat_5: 0, tebligat_15: 0, tebligat_25: 0 };
+                        this.gruplar = data.gruplar || { artarda_2gun: [], tebligat_5: [], tebligat_15: [], tebligat_25: [] };
+                        this.toplamSayi = data.toplam_bildirim || 0;
+
+                        // Ana ekrandaki bildirim butonundaki rozeti güncelle
+                        const badgeEl = document.getElementById('badge_tebligat_toplam');
+                        if (badgeEl) {
+                            if (this.toplamSayi > 0) {
+                                badgeEl.innerText = this.toplamSayi;
+                                badgeEl.style.display = 'inline-block';
+                            } else {
+                                badgeEl.style.display = 'none';
+                            }
+                        }
+                    }
+                    if (window.lucide && typeof lucide.createIcons === 'function') {
+                        setTimeout(() => lucide.createIcons(), 50);
+                    }
+                })
+                .catch(err => {
+                    console.error("Tebligat bildirimleri alınamadı:", err);
+                });
+        },
+
+        aktifListe() {
+            const hamListe = this.gruplar[this.aktifSekme] || [];
+            if (!this.aramaMetni || !this.aramaMetni.trim()) {
+                return hamListe;
+            }
+            const q = this.aramaMetni.toLocaleUpperCase('tr-TR').trim();
+            return hamListe.filter(o => {
+                return (o.ad_soyad && o.ad_soyad.toLocaleUpperCase('tr-TR').includes(q)) ||
+                       (o.no && String(o.no).includes(q)) ||
+                       (o.sube && o.sube.toLocaleUpperCase('tr-TR').includes(q));
+            });
+        },
+
+        mevzuatIkonu() {
+            if (this.aktifSekme === 'artarda_2gun') return '⚡';
+            if (this.aktifSekme === 'tebligat_5') return '📬';
+            if (this.aktifSekme === 'tebligat_15') return '📨';
+            if (this.aktifSekme === 'tebligat_25') return '🚨';
+            return 'ℹ️';
+        },
+
+        mevzuatMetni() {
+            if (this.aktifSekme === 'artarda_2gun') {
+                return 'MEB OÖKY Md. 36/4: Devamsızlık yapan öğrencinin durumu, art arda iki gün özürsüz devamsızlık yapması halinde veliye derhal posta, e-posta veya diğer iletişim araçlarıyla (SMS/Telefon) bildirilir ve okula davet edilir.';
+            }
+            if (this.aktifSekme === 'tebligat_5') {
+                return 'MEB OÖKY Md. 36/4 & 36/5-a: Toplam devamsızlığı 5 güne ulaşan öğrencinin velisine 1. resmi tebligat gönderilir ve öğrenci devamsızlık önleme ve müdahale komisyonuna sevk edilir.';
+            }
+            if (this.aktifSekme === 'tebligat_15') {
+                return 'MEB OÖKY Md. 36/4: Toplam devamsızlığı 15 güne ulaşan öğrencinin velisine 2. resmi iadeli taahhütlü tebligat gönderilir.';
+            }
+            if (this.aktifSekme === 'tebligat_25') {
+                return 'MEB OÖKY Md. 36/4: Toplam devamsızlığı 25 güne ulaşan öğrencinin velisine nihai/son resmi tebligat gönderilir. Toplam 30 gün sınırında ders kesiminde doğrudan sınıf tekrarı uygulanır.';
+            }
+            return '';
+        },
+
+        ogrenciyeGit(ogr) {
+            this.kapat();
+            if (window.ogrenciSec) {
+                const sube = window.sinifFormatla ? window.sinifFormatla(ogr.sube) : ogr.sube;
+                window.ogrenciSec(ogr.no, ogr.ad_soyad, sube, ogr.ozursuz, ogr.ozurlu);
+                
+                // Sol listede ilgili satırı bulup seçili yap
+                setTimeout(() => {
+                    const rows = document.querySelectorAll('#tree_govde tr');
+                    rows.forEach(r => {
+                        if (r.innerText.includes(String(ogr.no))) {
+                            r.classList.add('tr-secili');
+                            r.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        } else {
+                            r.classList.remove('tr-secili');
+                        }
+                    });
+                }, 100);
+            }
+        },
+
+        bildirimMetniKopyala(ogr) {
+            const bugun = new Date().toLocaleDateString('tr-TR');
+            let mesaj = '';
+
+            if (this.aktifSekme === 'artarda_2gun') {
+                mesaj = `Sayın Velimiz,\n\nMEB Ortaöğretim Kurumları Yönetmeliği Madde 36/4 gereğince;\n${ogr.sube} sınıfı, ${ogr.no} numaralı öğrenciniz ${ogr.ad_soyad}'in (${ogr.art_arda_tarihler || 'son günlerde'}) art arda 2 gün özürsüz devamsızlık yaptığı tespit edilmiştir.\n\nÖğrencinizin devamsızlık mazeretini bildirmek ve gerekli belgeleri teslim etmek üzere ivedilikle okul idaremize başvurmanız rica olunur.\n\nOkul İdaresi\nTarih: ${bugun}`;
+            } else if (this.aktifSekme === 'tebligat_5') {
+                mesaj = `Sayın Velimiz,\n\nMEB Ortaöğretim Kurumları Yönetmeliği Madde 36/4 ve 36/5-a gereğince;\n${ogr.sube} sınıfı, ${ogr.no} numaralı öğrenciniz ${ogr.ad_soyad}'in devamsızlığı 5. gün resmi tebligat sınırına ulaşmıştır (Özürsüz: ${ogr.ozursuz} Gün, Toplam: ${ogr.toplam} Gün).\n\n1. Resmi Tebligat kapsamında öğrencinizin durumu Devamsızlık Önleme ve Müdahale Komisyonuna iletilmiştir. Bilgilerinize rica olunur.\n\nOkul İdaresi\nTarih: ${bugun}`;
+            } else if (this.aktifSekme === 'tebligat_15') {
+                mesaj = `Sayın Velimiz,\n\nMEB Ortaöğretim Kurumları Yönetmeliği Madde 36/4 gereğince;\n${ogr.sube} sınıfı, ${ogr.no} numaralı öğrenciniz ${ogr.ad_soyad}'in toplam devamsızlık süresi 15 güne ulaşmıştır (Özürsüz: ${ogr.ozursuz} Gün, Toplam: ${ogr.toplam} Gün).\n\n2. Resmi Tebligat kapsamında öğrencinizin devamsızlık takibi ve mazeret belgelerinin ibrazı için okul idaremizle görüşmeniz önemle rica olunur.\n\nOkul İdaresi\nTarih: ${bugun}`;
+            } else if (this.aktifSekme === 'tebligat_25') {
+                mesaj = `Sayın Velimiz (ACİL & ÖNEMLİ),\n\nMEB Ortaöğretim Kurumları Yönetmeliği Madde 36/4 gereğince;\n${ogr.sube} sınıfı, ${ogr.no} numaralı öğrenciniz ${ogr.ad_soyad}'in toplam devamsızlığı 25 güne ulaşmıştır (Özürsüz: ${ogr.ozursuz} Gün, Toplam: ${ogr.toplam} Gün).\n\nToplam 30 gün devamsızlık sınırında ders kesiminde doğrudan sınıf tekrarı uygulanacağından bu son/nihai resmi tebligattır. Öğrencinin durumunu görüşmek üzere derhal okul idaremize gelmeniz gerekmektedir.\n\nOkul İdaresi\nTarih: ${bugun}`;
+            }
+
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(mesaj).then(() => {
+                    if (typeof bildirimGoster === 'function') {
+                        bildirimGoster(`✓ ${ogr.ad_soyad} için resmi bildirim metni panoya kopyalandı.`, "bilgi");
+                    }
+                }).catch(() => {
+                    this.fallbackKopyala(mesaj, ogr.ad_soyad);
+                });
+            } else {
+                this.fallbackKopyala(mesaj, ogr.ad_soyad);
+            }
+        },
+
+        fallbackKopyala(text, ad) {
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            if (typeof bildirimGoster === 'function') {
+                bildirimGoster(`✓ ${ad} için bildirim metni kopyalandı.`, "bilgi");
+            }
+        }
+    }));
+});
+</script>
+

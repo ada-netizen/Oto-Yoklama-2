@@ -1,0 +1,113 @@
+<!-- ================= RESMİ DEVAMSIZLIK MEKTUBU TAKİP MODALI ================= -->
+<div class="modal-overlay" id="mektup_takip_modal" style="display: none; z-index: 2200;" onclick="if(event.target === this) mektupTakipModalKapat();">
+    <div class="modal-content" style="width: 940px; max-width: 96vw; max-height: 92vh; display: flex; flex-direction: column; padding: 0; background-color: var(--bg-main); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-xl); border: 1px solid var(--border);">
+        
+        <!-- MODAL HEADER -->
+        <div class="modal-header" style="padding: 16px 22px; border-bottom: 1px solid var(--border); background-color: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #f59e0b, #d97706); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.3);">
+                    <i data-lucide="mail-warning" height="20" width="20"></i>
+                </div>
+                <div>
+                    <h2 id="mektup_modal_baslik" style="margin: 0; color: var(--fg-main); font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        Devamsızlık Mektubu Takip Çizelgesi
+                    </h2>
+                    <div id="mektup_modal_mevzuat" style="font-size: 11.5px; color: var(--fg-sub); margin-top: 2px;">
+                        MEB Ortaöğretim Kurumları Yönetmeliği Md. 36 gereğince veli tebligat mektubu takip çizelgesi
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-temizle" onclick="mektupTakipModalKapat()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                <i data-lucide="x" height="14" width="14"></i> Kapat
+            </button>
+        </div>
+
+        <!-- 3-SEKMELİ EŞİK DEĞİŞTİRİCİ VE HIZLI AKSİYON BARI -->
+        <div style="padding: 10px 20px; background: var(--bg-card); border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" id="btn_mektup_sekme_5" class="btn esik-filtre-btn" onclick="mektupModalSekmeDegistir('5_gun')" style="padding: 7px 12px; font-size: 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📬 5 Gün Eşiği</span>
+                    <span id="badge_mektup_sekme_5" style="background: rgba(0,0,0,0.2); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;">0</span>
+                </button>
+                <button type="button" id="btn_mektup_sekme_15" class="btn esik-filtre-btn" onclick="mektupModalSekmeDegistir('15_gun')" style="padding: 7px 12px; font-size: 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📨 15 Gün Eşiği</span>
+                    <span id="badge_mektup_sekme_15" style="background: rgba(0,0,0,0.2); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;">0</span>
+                </button>
+                <button type="button" id="btn_mektup_sekme_25" class="btn esik-filtre-btn" onclick="mektupModalSekmeDegistir('25_gun')" style="padding: 7px 12px; font-size: 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>🚨 25 Gün Eşiği</span>
+                    <span id="badge_mektup_sekme_25" style="background: rgba(0,0,0,0.2); padding: 1px 6px; border-radius: 10px; font-size: 10.5px;">0</span>
+                </button>
+            </div>
+
+            <!-- ARAMA VE TOPLU İŞLEMLER -->
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <div class="input-with-icon" style="width: 220px; margin: 0;">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input class="search-input" id="ent_mektup_modal_arama" oninput="mektupModalArama(this.value)" placeholder="Öğrenci veya Şube Ara..." type="text" style="font-size: 11.5px; padding: 6px 8px 6px 30px;"/>
+                </div>
+                <button type="button" class="btn btn-ogr" onclick="mektupModalTopluIsaretle(true)" title="Bu listedeki tüm öğrencileri 'Mektup Gönderildi' olarak işaretler" style="padding: 6px 10px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                    <i data-lucide="check-check" height="13" width="13"></i> Tümünü Gönderildi Yap
+                </button>
+                <button type="button" class="btn btn-temizle" onclick="mektupModalTopluIsaretle(false)" title="Tüm işaretleri kaldırır" style="padding: 6px 10px; font-size: 11px;">
+                    Temizle
+                </button>
+            </div>
+        </div>
+
+        <!-- BİLGİLENDİRME VE DURUM ROZETİ -->
+        <div style="padding: 8px 20px; background-color: var(--bg-card-hover); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+            <div id="mektup_modal_durum_metni" style="color: var(--fg-main); font-weight: 600;">
+                Yükleniyor...
+            </div>
+            <div id="mektup_modal_unlem_uyarisi" style="display: none; align-items: center; gap: 6px; color: #dc2626; font-weight: 700;">
+                <i data-lucide="alert-triangle" height="15" width="15"></i>
+                <span id="mektup_modal_unlem_metni">Uyarı: Devamsızlık mektubu gönderilmemiş öğrenci bulunmaktadır!</span>
+            </div>
+        </div>
+
+        <!-- ÖĞRENCİ LİSTESİ TABLOSU -->
+        <div style="padding: 12px 20px; flex: 1; overflow-y: auto; min-height: 320px;">
+            <div class="tree-card" style="border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; background-color: var(--bg-card); box-shadow: var(--shadow-sm);">
+                <table class="modern-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left;">
+                    <thead style="position: sticky; top: 0; background-color: var(--bg-card-solid); z-index: 1; border-bottom: 2px solid var(--border);">
+                        <tr>
+                            <th style="width: 7%; padding: 10px 8px; color: var(--fg-sub); font-weight: 700; text-align: center;">Sıra</th>
+                            <th style="width: 11%; padding: 10px 8px; color: var(--fg-sub); font-weight: 700;">Okul No</th>
+                            <th style="width: 25%; padding: 10px 8px; color: var(--fg-main); font-weight: 700;">Adı Soyadı</th>
+                            <th style="width: 12%; padding: 10px 8px; color: var(--fg-main); font-weight: 700;">Şube</th>
+                            <th style="width: 15%; padding: 10px 8px; color: var(--fg-main); font-weight: 700;">Devamsızlığı</th>
+                            <th style="width: 20%; padding: 10px 8px; color: #0284c7; font-weight: 700; text-align: center; background: rgba(2, 132, 199, 0.06);">
+                                <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                                    <input type="checkbox" id="chk_mektup_master" onchange="mektupModalMasterToggle(this.checked)" style="cursor: pointer; width: 14px; height: 14px;">
+                                    <span>Devamsızlık Mektubu Gönderildi mi?</span>
+                                </label>
+                            </th>
+                            <th style="width: 10%; padding: 10px 8px; text-align: center; color: var(--fg-sub); font-weight: 600;">Aksiyon</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mektup_modal_tbody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--fg-sub); padding: 25px;">Yükleniyor...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- MODAL FOOTER -->
+        <div style="padding: 12px 22px; background-color: var(--bg-card-solid); border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 11.5px; color: var(--fg-sub);">
+                İpucu: Onay kutusu işaretlendiğinde durum anında kaydedilir ve ana tablodaki uyarı ünlemi otomatik güncellenir.
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn btn-ogr" onclick="mektupModalVerileriniYenile()" style="padding: 6px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    <i data-lucide="refresh-cw" height="14" width="14"></i> Listeyi Yenile
+                </button>
+                <button type="button" class="btn btn-temizle" onclick="mektupTakipModalKapat()" style="padding: 6px 14px; font-size: 12px;">
+                    Kapat
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+

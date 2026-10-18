@@ -160,19 +160,6 @@ def son_islemi_geri_al():
     return sonuc
 
 
-def safe_float(val, default=0.0):
-    if pd.isna(val):
-        return default
-    try:
-        s = str(val).replace('₺', '').replace('$', '').strip()
-        if ',' in s and '.' not in s:
-            s = s.replace(',', '.')
-        elif ',' in s and '.' in s:
-            s = s.replace(',', '')
-        return float(s)
-    except:
-        return default
-
 
 @router.delete("/veritabani-sifirla")
 def veritabani_sifirla():
@@ -292,6 +279,7 @@ def sistem_teshis_getir():
         ogrenci_sayisi = 0
         devamsizlik_sayisi = 0
         personel_sayisi = 0
+        evrak_sayisi = 0
         try:
             db.cursor.execute("SELECT COUNT(*) FROM ogrenciler")
             ogrenci_sayisi = db.cursor.fetchone()[0]
@@ -299,6 +287,8 @@ def sistem_teshis_getir():
             devamsizlik_sayisi = db.cursor.fetchone()[0]
             db.cursor.execute("SELECT COUNT(*) FROM personel")
             personel_sayisi = db.cursor.fetchone()[0]
+            db.cursor.execute("SELECT COUNT(*) FROM uretilen_evraklar")
+            evrak_sayisi = db.cursor.fetchone()[0]
         except Exception as ce:
             logging.warning(f"Kayıt sayısı sorgu uyarısı: {ce}")
 
@@ -312,6 +302,7 @@ def sistem_teshis_getir():
                 "ogrenci_sayisi": ogrenci_sayisi,
                 "devamsizlik_sayisi": devamsizlik_sayisi,
                 "personel_sayisi": personel_sayisi,
+                "evrak_sayisi": evrak_sayisi,
                 "snapshot_var": getattr(db, "_son_snapshot", None) is not None
             },
             "sistem": {

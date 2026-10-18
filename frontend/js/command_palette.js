@@ -17,6 +17,18 @@
     const sistemKomutlari = [
         // --- 1. Kritik Eşik & Hızlı Filtreler ---
         {
+            id: 'eylem_tebligat_bildirimleri',
+            kategori: '⚡ Kritik Eşik & Hızlı Filtreler',
+            baslik: 'Resmi Veli Tebligatları & Devamsızlık Bildirimleri (MEB Md. 36/4)',
+            aciklama: '5., 15., 25. gün resmi tebligatları ve art arda 2 gün özürsüz bildirim paneli',
+            ikon: 'bell-ring',
+            renk: '#F59E0B',
+            anahtarlar: 'tebligat bildirim 5 gun 15 gun 25 gun art arda 2 gun veli mektup resmi komisyon',
+            aksiyon: () => {
+                if (window.tebligatBildirimModaliAc) window.tebligatBildirimModaliAc();
+            }
+        },
+        {
             id: 'esik_ramakkala_10',
             kategori: '⚡ Kritik Eşik & Hızlı Filtreler',
             baslik: '10 Gün Sınırına Yaklaşanlar (9.0 - 9.9 Gün)',

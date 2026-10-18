@@ -21,9 +21,16 @@ Bu belge, `Oto-Yoklama-2` projesinde uyulması gereken temel mimari kuralları, 
 ---
 
 ## 3. MEB Mevzuat Kuralları (Dokunulmaz Mantık)
-- **5 Geç Kalma = 0.5 Gün Özürsüz**: 5 adet Geç (G) devamsızlık kaydı tam olarak 0.5 gün Özürsüz devamsızlığa dönüşür (`hesapla_devamsizlik` fonksiyonu).
+- **Dayanak Mevzuat Kütüphanesi (`mevzuat/`)**: Program `mevzuat/` klasöründeki 33 resmi mevzuat belgesi (657 SK, 7528 SK Öğretmenlik Mesleği Kanunu, 1739 SK, 4857 SK, 4904 SK, MEB Ortaöğretim Kurumları Yönetmeliği, Yönetici Görevlendirme ve Kariyer Basamakları Yönetmeliği) referans alınarak çalışır.
+- **5 Geç Kalma = 0.5 Gün Özürsüz**: 5 adet Geç (G) devamsızlık kaydı tam olarak 0.5 gün Özürsüz devamsızlığa dönüşür (`hesapla_devamsizlik` fonksiyonu, MEB Ortaöğretim Kurumları Yönetmeliği Md. 35/1).
 - **Hafta Sonu Filtresi**: Cumartesi ve Pazar günlerine denk gelen devamsızlık kayıtları resmi devamsızlık toplamına dahil edilmez (`gun_farki_hesapla`).
-- **Yasal Devamsızlık Sınırları**: Özürsüz 10 gün, toplam 30 gün yasal sınırları kontrol edilir; bu sınırları aşan öğrenciler arayüzde yüksek kontrastlı uyarı rozetleriyle (`status-pill`) vurgulanır.
+- **Yasal Devamsızlık Sınırları**:
+  - Standart: Özürsüz 10 gün, toplam 30 gün aşılırsa sınıf tekrarı uygulanır (Md. 36/5-a).
+  - 1. Derece Yakın Vefatı: Özürsüz max 10 gün, toplam 40 gün (Md. 36/5-b - 22/2/2025 RG).
+  - Heyet Raporlu / Yatarak Tedavi / Tutuklu: Özürsüz max 10 gün, toplam 60 gün (Md. 36/5-b).
+  - Kaynaştırma / Bütünleştirme: Özürsüz max 20 gün, toplam 70 gün (Md. 36/5-b).
+- **Yasal Tebligat Eşikleri**: 5., 15. ve 25. günlerde veliye resmi tebligat gönderilir; art arda 2 gün devamsızlıkta veli derhal bilgilendirilir (Md. 36/4). Özür belgesi en geç 5 iş günü içinde teslim edilir (okulca 20 iş gününe kadar uzatılabilir - Md. 36/7).
+- **Kariyer ve Yönetici Hiyerarşisi**: 7528 sayılı Kanun uyarınca Uzman ve Başöğretmenlik +1 derece verir. Yöneticilik 657 SK Md. 88 ve 7528 SK Md. 21 uyarınca ikinci görevdir; listede Müdür (1), Müdür Başyardımcısı (2), Müdür Yardımcısı (3), Müdür Yetkili (4) sıralaması uygulanır.
 
 ---
 

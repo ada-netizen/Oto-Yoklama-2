@@ -61,6 +61,8 @@ class VeritabaniYoneticisi:
                 pass
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
         cursor.execute("CREATE TABLE IF NOT EXISTS uretilen_evraklar (id INTEGER PRIMARY KEY AUTOINCREMENT, tur TEXT, personel_ad TEXT, brans TEXT, tarih TEXT)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS devamsizlik_mektup_takip (ogrenci_no TEXT, esik_turu TEXT, gonderildi INTEGER DEFAULT 0, gonderilme_tarihi TEXT, PRIMARY KEY (ogrenci_no, esik_turu))")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mektup_esik ON devamsizlik_mektup_takip (esik_turu)")
         
         try:
             cursor.execute("PRAGMA user_version;")
@@ -164,11 +166,69 @@ class VeritabaniYoneticisi:
             logging.error(f"Canlı SQLite yedekleme hatası: {e}")
             return False, str(e)
 
+    def mektup_durumlari_getir(self, esik_turu=None):
+        try:
+            if esik_turu:
+                self.cursor.execute("SELECT ogrenci_no, esik_turu, gonderildi, gonderilme_tarihi FROM devamsizlik_mektup_takip WHERE esik_turu = ?", (str(esik_turu),))
+            else:
+                self.cursor.execute("SELECT ogrenci_no, esik_turu, gonderildi, gonderilme_tarihi FROM devamsizlik_mektup_takip")
+            sonuclar = {}
+            for r in self.cursor.fetchall():
+                key = (str(r[0]).strip(), str(r[1]).strip())
+                sonuclar[key] = {
+                    "gonderildi": bool(r[2]),
+                    "tarih": r[3] or ""
+                }
+            return sonuclar
+        except Exception as e:
+            logging.error(f"Mektup durumları okuma hatası: {e}")
+            return {}
+
+    def mektup_durumu_kaydet(self, ogrenci_no, esik_turu, gonderildi, tarih=None):
+        try:
+            import datetime
+            if tarih is None:
+                tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M") if gonderildi else ""
+            val_gonderildi = 1 if gonderildi else 0
+            self.cursor.execute("""
+                INSERT INTO devamsizlik_mektup_takip (ogrenci_no, esik_turu, gonderildi, gonderilme_tarihi)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(ogrenci_no, esik_turu) DO UPDATE SET 
+                    gonderildi=excluded.gonderildi,
+                    gonderilme_tarihi=excluded.gonderilme_tarihi
+            """, (str(ogrenci_no).strip(), str(esik_turu).strip(), val_gonderildi, tarih))
+            self.conn.commit()
+            return True, ""
+        except Exception as e:
+            logging.error(f"Mektup durumu kaydetme hatası: {e}")
+            return False, str(e)
+
+    def mektup_durumu_toplu_kaydet(self, ogrenci_nolar, esik_turu, gonderildi, tarih=None):
+        try:
+            import datetime
+            if tarih is None:
+                tarih = datetime.datetime.now().strftime("%d.%m.%Y %H:%M") if gonderildi else ""
+            val_gonderildi = 1 if gonderildi else 0
+            kayitlar = [(str(no).strip(), str(esik_turu).strip(), val_gonderildi, tarih) for no in ogrenci_nolar]
+            self.cursor.executemany("""
+                INSERT INTO devamsizlik_mektup_takip (ogrenci_no, esik_turu, gonderildi, gonderilme_tarihi)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(ogrenci_no, esik_turu) DO UPDATE SET 
+                    gonderildi=excluded.gonderildi,
+                    gonderilme_tarihi=excluded.gonderilme_tarihi
+            """, kayitlar)
+            self.conn.commit()
+            return True, ""
+        except Exception as e:
+            logging.error(f"Toplu mektup durumu kaydetme hatası: {e}")
+            return False, str(e)
+
     def sifirla(self):
         # Tüm tabloları temizler
         self.cursor.execute("DELETE FROM ogrenciler")
         self.cursor.execute("DELETE FROM devamsizliklar")
         self.cursor.execute("DELETE FROM uretilen_evraklar")
+        self.cursor.execute("DELETE FROM devamsizlik_mektup_takip")
         self.conn.commit()
 
     def kapat(self):

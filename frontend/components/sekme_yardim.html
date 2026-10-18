@@ -442,86 +442,150 @@
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
         <div>
             <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
-                <i data-lucide="scale" height="22" width="22" style="color: #F59E0B;"></i> MEB Devamsızlık Mevzuatı ve Yasal Sınırlar El Kitabı
+                <i data-lucide="scale" height="22" width="22" style="color: #F59E0B;"></i> MEB ve Kamu Personeli Mevzuat Bilgi Bankası
             </h2>
             <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
-                Milli Eğitim Bakanlığı Ortaöğretim ve Temel Eğitim Kurumları Yönetmeliği resmi kuralları
+                Program klasöründeki <code>mevzuat/</code> kütüphanesi dayanak alınarak hazırlanmış güncel kanun ve yönetmelik kuralları
             </p>
         </div>
         <span style="font-size: 11px; font-weight: 700; color: #F59E0B; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); padding: 4px 10px; border-radius: 9999px;">
-            MEB Mevzuat Uyumlu
+            7528 SK &amp; 2025/32821 RG Uyumlu
         </span>
     </div>
 
     <!-- Mevzuat Bilgilendirme Notu -->
     <div style="background: rgba(136, 19, 55, 0.08); border-left: 4px solid var(--meb-bordeaux); padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 24px;">
         <div style="font-size: 13px; font-weight: 700; color: var(--fg-main); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-            <i data-lucide="info" height="16" width="16" style="color: var(--meb-bordeaux-light);"></i> Yasal Dayanak: MEB Ortaöğretim Kurumları Yönetmeliği (Madde 36)
+            <i data-lucide="info" height="16" width="16" style="color: var(--meb-bordeaux-light);"></i> Dayanak Kütüphanesi: Program Klasörü <code>/mevzuat</code> (33 Resmi Belge)
         </div>
         <div style="font-size: 12px; color: var(--fg-sub); line-height: 1.5;">
-            Bu sayfada açıklanan tüm kurallar ve hesaplama katsayıları, Bakanlık mevzuatına uygun olarak programın çekirdek hesaplama motoruna (<code>hesapla_devamsizlik</code>) kodlanmıştır. Devamsızlık Excel'i yüklendiğinde ve veli mektubu basıldığında bu kurallar tam doğrulukla uygulanır.
+            Bu sayfada yer alan kurallar; 657 Sayılı DMK, 7528 Sayılı Öğretmenlik Mesleği Kanunu, MEB Ortaöğretim Kurumları Yönetmeliği (22/2/2025 tarihli 32821 sayılı RG değişikliği dahil), Yönetici Görevlendirme Yönetmeliği, 4857 Sayılı İş Kanunu ve İŞKUR TYP/İUP genelgelerine tam uyumlu olarak programın çekirdek motorlarına (<code>hesapla_devamsizlik</code> ve <code>mevzuat_kurallari.py</code>) kodlanmıştır.
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+    <!-- BÖLÜM 1: ÖĞRENCİ DEVAMSIZLIK VE TEBLİGAT MEVZUATI -->
+    <h3 style="font-size: 14px; font-weight: 700; color: var(--fg-main); margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="graduation-cap" height="18" width="18" style="color: #2563eb;"></i> 1. Öğrenci Devam-Devamsızlık ve Tebligat Kuralları (Ortaöğretim Yönetmeliği Md. 35 &amp; 36)
+    </h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
         <!-- Kart 1: 5 Geç = 0.5 Gün -->
-        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
-            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                <i data-lucide="clock" height="17" width="17" style="color: #38BDF8;"></i> 5 Geç Kalma = Yarım Gün Özürsüz Kuralı
-            </h3>
-            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 10px 0;">
-                Öğrencilerin ders saatleri içinde okula <b>5 defa geç kalması</b>, sistem tarafından tam olarak <b>0.5 gün özürsüz devamsızlık</b> olarak toplam devamsızlığa dahil edilir.
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="clock" height="16" width="16" style="color: #38BDF8;"></i> 5 Geç Kalma = Yarım Gün Özürsüz Kuralı (Md. 35/1)
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Öğrencilerin 1. ders saatinde okula <b>5 defa geç kalması</b>, tam olarak <b>0.5 gün özürsüz devamsızlık</b> olarak toplam devamsızlığa eklenir. Günlük ders saatinin 2/3'ü ve fazlasına katılmayanlar 1 gün, daha azına katılmayanlar ise 0.5 gün devamsız sayılır (Md. 36/2-b).
             </p>
-            <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 11.5px; color: var(--fg-main);">
-                <b>Örnek Uygulama:</b> 7 geç kaydı olan bir öğrencinin 5 geçi 0.5 gün özürsüze dönüşür, kalan 2 geç kaydı ise 'Geç' hanesinde takip edilmeye devam eder.
+            <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 11.5px; color: var(--fg-main);">
+                <b>Sosyal Sorumluluk Yaptırımı:</b> Özürsüz yapılan her devamsızlık günü için öğrencinin sosyal sorumluluk çalışmalarına +1 saat eklenir (Md. 36/5-a).
             </div>
         </div>
 
         <!-- Kart 2: Yasal Sınırlar -->
-        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
-            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                <i data-lucide="alert-octagon" height="17" width="17" style="color: #EF4444;"></i> Yasal Devamsızlık Sınırları &amp; Sınıf Tekrarı
-            </h3>
-            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-sub); line-height: 1.6;">
-                <li><b>Özürsüz Sınır (10 Gün):</b> Özürsüz devamsızlığı 10 günü aşan öğrenciler ders başarı puanları ne olursa olsun başarısız sayılır (sınıf tekrarı).</li>
-                <li><b>Toplam Sınır (30 Gün):</b> Özürlü (rapor/izin) ve özürsüz devamsızlık toplamı 30 günü aşamaz.</li>
-                <li><b>Ağır Tedavi &amp; Heyet Raporu:</b> Üniversite veya eğitim araştırma hastanesi heyet raporu olan öğrenciler için toplam süre <b>60 güne</b> kadar uzayabilir.</li>
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="alert-octagon" height="16" width="16" style="color: #EF4444;"></i> Güncel Devamsızlık Eşikleri (22/2/2025 RG)
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Standart Öğrenciler:</b> Özürsüz <b>10 gün</b>, toplamda <b>30 gün</b> aşıldığında öğrenci ders puanı ne olursa olsun başarısız sayılır (sınıf tekrarı).</li>
+                <li><b>1. Derece Yakın Vefatı:</b> Özürsüz 10 günü aşmamak şartıyla toplam devamsızlık sınırı <b>40 gün</b> olarak uygulanır (Md. 36/5-b).</li>
+                <li><b>Ağır Tedavi / Organ Nakli / Tutuklu:</b> Özürsüz 10 günü aşmamak şartıyla toplam sınır <b>60 gündür</b> (40 ve 55. günlerde ek tebligat).</li>
+                <li><b>Kaynaştırma / Özel Eğitim:</b> Özürsüz 20 günü aşmamak şartıyla toplam sınır <b>70 gündür</b> (40 ve 55. günlerde ek tebligat).</li>
             </ul>
         </div>
 
         <!-- Kart 3: Veli Bildirim Zorunluluğu -->
-        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
-            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                <i data-lucide="mail-warning" height="17" width="17" style="color: #F59E0B;"></i> Yasal Veli Bildirim Eşikleri
-            </h3>
-            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 10px 0;">
-                Mevzuat gereği okul idaresi belirlenen gün eşiklerinde öğrenci velisine resmi iadeli taahhütlü tebligat veya tebliğ belgesi ulaştırmakla yükümlüdür:
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="mail-warning" height="16" width="16" style="color: #F59E0B;"></i> Yasal Tebligat Günleri (Md. 36/4)
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Okul idaresi resmi mevzuat gereğince aşağıdaki günlerde öğrenci velisine resmi tebligat yapar:
             </p>
-            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;">
-                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(245, 158, 11, 0.1); border-radius: 4px; border: 1px solid rgba(245, 158, 11, 0.2);">
-                    <span><b>1. Bildirim Eşiği:</b> Özürsüz 5. gün</span>
-                    <span style="color: #F59E0B; font-weight: 700;">4.5 - 4.9 gün Erken Uyarı</span>
+            <div style="display: flex; flex-direction: column; gap: 5px; font-size: 11.5px;">
+                <div style="display: flex; justify-content: space-between; padding: 5px 8px; background: rgba(245, 158, 11, 0.1); border-radius: 4px;">
+                    <span><b>1. Tebligat &amp; Komisyon:</b> 5. Gün</span>
+                    <span style="color: #F59E0B; font-weight: 700;">Veli Okula Davet Edilir</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    <span><b>2. Bildirim Eşiği:</b> Toplam 15. gün</span>
-                    <span style="color: #EF4444; font-weight: 700;">2. Resmi Tebligat</span>
+                <div style="display: flex; justify-content: space-between; padding: 5px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px;">
+                    <span><b>2. Resmi Tebligat:</b> 15. Gün</span>
+                    <span style="color: #EF4444; font-weight: 700;">Yarı Devamsızlık Eşiği</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 6px 8px; background: rgba(136, 19, 55, 0.15); border-radius: 4px; border: 1px solid rgba(136, 19, 55, 0.3);">
-                    <span><b>3. Bildirim Eşiği:</b> Toplam 25. gün</span>
-                    <span style="color: #F43F5E; font-weight: 700;">Nihai Kritik Tebligat</span>
+                <div style="display: flex; justify-content: space-between; padding: 5px 8px; background: rgba(136, 19, 55, 0.15); border-radius: 4px;">
+                    <span><b>3. Nihai Tebligat:</b> 25. Gün</span>
+                    <span style="color: #F43F5E; font-weight: 700;">Sınıf Tekrarı Öncesi Son Uyarı</span>
                 </div>
             </div>
         </div>
 
-        <!-- Kart 4: Hafta Sonu ve Faaliyet Muafiyeti -->
-        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 18px;">
-            <h3 style="margin: 0 0 10px 0; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                <i data-lucide="shield-check" height="17" width="17" style="color: #10B981;"></i> Hafta Sonu &amp; Faaliyet Muafiyetleri
-            </h3>
-            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-sub); line-height: 1.6;">
-                <li><b>Hafta Sonu Filtresi:</b> Cumartesi ve Pazar günleri resmi izinli veya devamsız gün sayılmaz (<code>gun_farki_hesapla</code> algoritması bu günleri otomatik eler).</li>
-                <li><b>Resmi Faaliyet İzinleri:</b> MEB veya Gençlik ve Spor Bakanlığı onaylı ulusal/uluslararası spor, sanat ve bilim yarışmalarına katılan öğrencilerin izinleri devamsızlıktan sayılmaz.</li>
-                <li><b>İzin Dilekçesi:</b> Veli tarafından onaylanan mazeret izinleri en fazla 20 güne kadar özürlü devamsızlık olarak işlenebilir.</li>
+        <!-- Kart 4: Özür Belgesi ve Muafiyetler -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="shield-check" height="16" width="16" style="color: #10B981;"></i> Mazeret Belgesi &amp; Faaliyet Muafiyeti
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Belge Teslim Süresi:</b> Özür belgesi en geç <b>5 iş günü</b> içinde okula veli tarafından teslim edilir. Zorunlu hallerde okul yönetimince <b>20 iş gününe</b> kadar uzatılabilir (Md. 36/7).</li>
+                <li><b>Art Arda 2 Gün Devamsızlık:</b> Veliye derhal telefon, SMS veya posta ile bildirim yapılarak özür belgesi istenir (Md. 36/4).</li>
+                <li><b>Faaliyet İzinleri:</b> Resmî onaylı spor, sanat ve bilimsel faaliyetler devamsızlıktan sayılmaz (azami eğitim yılının 2/3'ü). Hafta sonları devamsızlığa dahil edilmez.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- BÖLÜM 2: PERSONEL İSTİHDAMI, KARİYER VE İZİN MEVZUATI -->
+    <h3 style="font-size: 14px; font-weight: 700; color: var(--fg-main); margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="briefcase" height="18" width="18" style="color: #10B981;"></i> 2. Personel Statüleri, İzin Hakları ve Yasal Yaptırımlar (657 SK, 7528 SK, 4857 SK)
+    </h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+        <!-- Kart 5: 657 ve 7528 Öğretmen & Yönetici -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="award" height="16" width="16" style="color: #8B5CF6;"></i> 7528 SK Kariyer Basamakları &amp; Yöneticilik
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Uzman Öğretmenlik:</b> En az 10 yıl öğretmenlik hizmeti + eğitim programı tamamlama + kademe durdurma cezası bulunmama şartıyla kazanılır. <b>+1 Kademe Derece verilir</b> (7528 SK Md. 18/3).</li>
+                <li><b>Başöğretmenlik:</b> Uzman öğretmenlikte 10 yıl hizmet (veya 18/10/2024'te görevde olanlar için 20 yıl öğretmenlik - Geçici Md. 1) ile kazanılır. <b>+1 Kademe Derece verilir</b>.</li>
+                <li><b>Yönetici Hiyerarşisi:</b> Yöneticilik ikinci görevdir (657 SK Md. 88 &amp; 7528 SK Md. 21). Sıralama: <b>1. Müdür, 2. Müdür Başyardımcısı, 3. Müdür Yardımcısı, 4. Müdür Yetkili Öğretmen</b>. Görev süresi 4 ders yılı, aynı kurumda azami 8 ders yılıdır.</li>
+            </ul>
+        </div>
+
+        <!-- Kart 6: İzin Hakları ve Disiplin Cezaları -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="file-text" height="16" width="16" style="color: #2563EB;"></i> Memur İzin Hakları &amp; Disiplin Yaptırımları
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Mazeret İzinleri (Md. 104):</b> Doğum 16 hafta (8+8), Babalık 10 gün, Evlilik 7 gün, Vefat 7 gün (eş, çocuk, anne, baba, kardeş), Engelli çocuk 10 gün, Süt izni ilk 6 ay günde 3 saat, 2. altı ay 1.5 saat.</li>
+                <li><b>Hastalık İzni (Md. 105):</b> 10 yıla kadar 12 ay, 10+ yıl 18 ay. Tek hekimden tek seferde en çok 10 gün, takvim yılında en çok 40 gün.</li>
+                <li><b>Disiplin Yaptırımları (Md. 125 &amp; 94):</b>
+                    <br>&bull; Özürsüz 1-2 gün devamsızlık: <b>Aylıktan Kesme</b>
+                    <br>&bull; Özürsüz kesintisiz 3-9 gün: <b>Kademe İlerlemesinin Durdurulması</b>
+                    <br>&bull; Kesintisiz 10 gün mazeretsiz: <b>Çekilmiş (Müstafi) Sayılma (Md. 94)</b>
+                    <br>&bull; Yılda toplam 20 gün özürsüz: <b>Devlet Memurluğundan Çıkarma (Md. 125/E-d)</b>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Kart 7: 4857 Sürekli İşçi & Sözleşmeli -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="users" height="16" width="16" style="color: #059669;"></i> 4857 Sürekli İşçi (4/D) ve 4/B Sözleşmeli
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>4/D Sürekli İşçi (4857 SK):</b> Yıllık izin kıdeme göre: 1-5 yıl: 14 gün, 5-15 yıl: 20 gün, 15+ yıl: 26 gün (50+ yaş ve 18 altı en az 20 gün). Evlilik 3, vefat 3, babalık 5 gün.</li>
+                <li><b>İşçi Fesih Riski (Md. 25/II-g):</b> Ardı ardına 2 işgünü veya tatil sonrası 2 işgünü ya da ayda toplam 3 işgünü mazeretsiz devamsızlıkta <b>Haklı Nedenle Bildirimsiz Fesih</b> uygulanır.</li>
+                <li><b>4/B Sözleşmeli Öğretmen:</b> 3 yıl çalışma süresi sonunda talep halinde kadroya atanır (Md. 18). Kesintisiz 3 iş günü veya bir dönemde 10 iş günü mazeretsiz devamsızlıkta sözleşme feshedilir.</li>
+            </ul>
+        </div>
+
+        <!-- Kart 8: İŞKUR TYP ve İUP Katılımcıları -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="alert-triangle" height="16" width="16" style="color: #DC2626;"></i> İŞKUR TYP ve İUP İstihdam Kuralları
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>TYP Katılımcısı:</b> Tam zamanlı azami 9 ay. Hafta tatili hariç azami 5 güne kadar ücretsiz mazeret izni kullanılabilir. <b>5 günlük süre aşıldığında ilişik derhal kesilir</b> (Yönetmelik Md. 11/4).</li>
+                <li><b>İUP Katılımcısı:</b> Yarı zamanlı (haftada 3 gün / 22.5 saat, azami 140 fiili gün). 6 aya kadar max 7 gün, 6 aydan uzun programda max 10 gün izin hakkı vardır.</li>
+                <li><b>İUP Kritik Yaptırım (Md. 23/2):</b> Okul yönetiminin onayı veya belgeye dayalı mücbir sebep olmaksızın <b>1 GÜN BİLE mazeretsiz devamsızlıkta İLİŞİK DERHAL KESİLİR</b>.</li>
             </ul>
         </div>
     </div>
@@ -627,7 +691,7 @@
     </div>
 
     <!-- Canlı Metrik Izgarası -->
-    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px;">
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px;">
         <!-- Kart 1: Kayıtlı Öğrenci -->
         <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 12px;">
             <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(56, 189, 248, 0.12); display: flex; align-items: center; justify-content: center; color: #38BDF8;">
@@ -658,6 +722,17 @@
             <div>
                 <div style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Kayıtlı Personel</div>
                 <div id="teshis_per_sayisi" style="font-size: 20px; font-weight: 800; color: var(--fg-main);">...</div>
+            </div>
+        </div>
+
+        <!-- Kart 4: Toplam Üretilen Evrak -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px; display: flex; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 8px; background: rgba(59, 130, 246, 0.12); display: flex; align-items: center; justify-content: center; color: #3B82F6;">
+                <i data-lucide="file-text" height="20" width="20"></i>
+            </div>
+            <div>
+                <div style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">Üretilen Evrak</div>
+                <div id="teshis_evrak_sayisi" style="font-size: 20px; font-weight: 800; color: var(--fg-main);">...</div>
             </div>
         </div>
     </div>

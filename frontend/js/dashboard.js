@@ -327,23 +327,23 @@ function dashboardYukle() {
 
         // 8. Kritik Eşik Erken Uyarı Verileri & Otomatik Akıllı Kategori Seçimi
         window.aktifKritikEsikler = data.kritik_esikler || {};
-        const k = window.aktifKritikEsikler;
-        
-        // Eğer şu an seçili olan kategori boşsa ve başka bir eşik doluysa, dolu olan öncelikli eşiği seç
-        const seciliSayi = (k[window.aktifKritikKategori] || []).length;
-        if (seciliSayi === 0) {
-            if ((k.asanlar_10 || []).length > 0) {
-                window.aktifKritikKategori = 'asanlar_10';
-            } else if ((k.ramakkala_10 || []).length > 0) {
-                window.aktifKritikKategori = 'ramakkala_10';
-            } else if ((k.mektup_siniri_5 || []).length > 0) {
-                window.aktifKritikKategori = 'mektup_siniri_5';
-            } else if ((k.toplam_risk_25 || []).length > 0) {
-                window.aktifKritikKategori = 'toplam_risk_25';
+        if (document.getElementById('dashboard_kritik_ogrenciler_body')) {
+            const k = window.aktifKritikEsikler;
+            // Eğer şu an seçili olan kategori boşsa ve başka bir eşik doluysa, dolu olan öncelikli eşiği seç
+            const seciliSayi = (k[window.aktifKritikKategori] || []).length;
+            if (seciliSayi === 0) {
+                if ((k.asanlar_10 || []).length > 0) {
+                    window.aktifKritikKategori = 'asanlar_10';
+                } else if ((k.ramakkala_10 || []).length > 0) {
+                    window.aktifKritikKategori = 'ramakkala_10';
+                } else if ((k.mektup_siniri_5 || []).length > 0) {
+                    window.aktifKritikKategori = 'mektup_siniri_5';
+                } else if ((k.toplam_risk_25 || []).length > 0) {
+                    window.aktifKritikKategori = 'toplam_risk_25';
+                }
             }
+            kritikEsikKategorisiDegistir(window.aktifKritikKategori);
         }
-        
-        kritikEsikKategorisiDegistir(window.aktifKritikKategori);
 
         // Grafikleri güvenli render et
         try {
@@ -436,6 +436,11 @@ function dashboardYukle() {
 
         // 11. Yeni Analitikler: Şampiyon Şubeler
         if (data.sampiyon_subeler) cizSampiyonSubeler(data.sampiyon_subeler);
+
+        // 12. Resmi Tebligat / Mektup Takip Çizelgesi (5., 15., 25. Gün)
+        if (data.mektup_takip) {
+            mektupTakipCizelgesiniDoldur(data.mektup_takip);
+        }
 
         // Dinamik yerleşim ve boyutlandırma ayarlarını uygula ve olayları bağla
         yukleDashboardYerlesimi();
@@ -601,7 +606,7 @@ window.dashboardDuzenlemeModu = false;
 
 const DASH_DEFAULT_LAYOUT = {
     order: [
-        'w_kritik_esikler',
+        'w_mektup_takip',
         'w_risk_piramidi',
         'w_chart_kademe',
         'w_gec_kalma_alarmi',
@@ -615,7 +620,7 @@ const DASH_DEFAULT_LAYOUT = {
         'w_riskli_ogrenciler'
     ],
     sizes: {
-        'w_kritik_esikler':    { flex: '0 0 100%', width: '100%', height: '' },
+        'w_mektup_takip':      { flex: '0 0 100%', width: '100%', height: '' },
         'w_risk_piramidi':     { flex: '0 0 calc(50% - 8px)', width: 'calc(50% - 8px)', height: '340px' },
         'w_chart_kademe':      { flex: '0 0 calc(50% - 8px)', width: 'calc(50% - 8px)', height: '340px' },
         'w_gec_kalma_alarmi':  { flex: '0 0 calc(50% - 8px)', width: 'calc(50% - 8px)', height: '340px' },
@@ -693,6 +698,9 @@ function yukleDashboardYerlesimi() {
     } catch(e) { console.error('Yerleşim yükleme hatası:', e); }
 
     const layout = saved || DASH_DEFAULT_LAYOUT;
+    if (layout.order && Array.isArray(layout.order) && !layout.order.includes('w_mektup_takip')) {
+        layout.order.unshift('w_mektup_takip');
+    }
 
     // Sıralamayı uygula
     if (layout.order && Array.isArray(layout.order)) {
@@ -876,39 +884,81 @@ function gecKalmaVeliMetniKopyala(no, ad, sube, gSayisi) {
     }
 }
 
-function cizSampiyonSubeler(sampiyonlar) {
+function cizSampiyonSubeler(sampiyonData) {
+    const tbody = document.getElementById('tbody_sampiyon_subeler');
     const container = document.getElementById('container_sampiyon_subeler');
-    if (!container || !Array.isArray(sampiyonlar)) return;
+    if (!tbody && !container) return;
 
-    if (sampiyonlar.length === 0) {
-        container.innerHTML = `<div style="text-align: center; color: var(--fg-sub); padding: 20px;">Şube devamsızlık verisi bulunamadı.</div>`;
+    let subeler = [];
+    let okulOrtalama = 0.0;
+
+    if (Array.isArray(sampiyonData)) {
+        subeler = sampiyonData;
+        if (subeler.length > 0) {
+            okulOrtalama = Math.round(subeler.reduce((acc, s) => acc + (s.ortalama || 0), 0) / subeler.length * 100) / 100;
+        }
+    } else if (sampiyonData && typeof sampiyonData === 'object') {
+        subeler = sampiyonData.subeler || sampiyonData.liste || [];
+        okulOrtalama = sampiyonData.okul_ortalama !== undefined ? sampiyonData.okul_ortalama : 0.0;
+    }
+
+    // Emsal değer çubuğunu güncelle
+    const elEmsal = document.getElementById('sampiyon_okul_ortalamasi');
+    const elEnIyi = document.getElementById('sampiyon_en_iyi_sube');
+    if (elEmsal) elEmsal.textContent = `${okulOrtalama} Gün`;
+    if (elEnIyi && subeler.length > 0) {
+        elEnIyi.innerHTML = `🏆 En Başarılı: <strong>${subeler[0].sube}</strong> (${subeler[0].ortalama}G)`;
+    }
+
+    if (!tbody) return;
+
+    if (subeler.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--fg-sub); padding: 25px; font-style: italic;">Şube devamsızlık verisi bulunamadı.</td></tr>`;
         return;
     }
 
-    const madalyalar = [
-        { icon: '🥇 1.', bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(217, 119, 6, 0.05))', border: '#f59e0b', color: '#d97706', rozet: 'Ayın Şampiyon Şubesi' },
-        { icon: '🥈 2.', bg: 'linear-gradient(135deg, rgba(148, 163, 184, 0.15), rgba(100, 116, 139, 0.05))', border: '#94a3b8', color: '#64748b', rozet: 'İkinci En Düzenli Şube' },
-        { icon: '🥉 3.', bg: 'linear-gradient(135deg, rgba(180, 83, 9, 0.15), rgba(146, 64, 14, 0.05))', border: '#b45309', color: '#92400e', rozet: 'Üçüncü En Düzenli Şube' }
-    ];
+    tbody.innerHTML = subeler.map((s, idx) => {
+        const siraNo = idx + 1;
+        let dereceBadge = '';
+        if (idx === 0) {
+            dereceBadge = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #d97706; font-weight: 800; font-size: 11px;">🥇 1.</span>`;
+        } else if (idx === 1) {
+            dereceBadge = `<span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #475569; font-weight: 800; font-size: 11px;">🥈 2.</span>`;
+        } else if (idx === 2) {
+            dereceBadge = `<span class="badge" style="background: rgba(180, 83, 9, 0.2); color: #92400e; font-weight: 800; font-size: 11px;">🥉 3.</span>`;
+        } else {
+            dereceBadge = `<span style="font-weight: 700; color: var(--fg-sub); font-size: 11.5px;">${siraNo}.</span>`;
+        }
 
-    container.innerHTML = sampiyonlar.map((s, idx) => {
-        const m = madalyalar[idx] || madalyalar[2];
+        // Emsale göre fark hesaplama
+        const fark = s.emsal_fark !== undefined ? s.emsal_fark : Math.round((s.ortalama - okulOrtalama) * 100) / 100;
+        let farkHtml = '';
+        if (fark < 0) {
+            farkHtml = `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; font-weight: 800; font-size: 10.5px;" title="Okul emsal ortalamasından ${Math.abs(fark)} gün daha az devamsızlık (Daha İyi)">${fark} G</span>`;
+        } else if (fark > 0) {
+            farkHtml = `<span class="badge" style="background: rgba(239, 68, 68, 0.12); color: #dc2626; font-weight: 700; font-size: 10.5px;" title="Okul emsal ortalamasından ${fark} gün daha fazla devamsızlık">+${fark} G</span>`;
+        } else {
+            farkHtml = `<span class="badge" style="background: rgba(148, 163, 184, 0.12); color: var(--fg-sub); font-size: 10.5px;">Emsal</span>`;
+        }
+
         return `
-        <div style="background: ${m.bg}; border: 1px solid ${m.border}; border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 20px; font-weight: 800;">${m.icon}</span>
-                <div>
-                    <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--fg-main);">${s.sube}</h4>
-                    <span style="font-size: 10.5px; color: ${m.color}; font-weight: 600;">${m.rozet} (${s.ogrenci_sayisi} Öğrenci)</span>
-                </div>
-            </div>
-            <div style="text-align: right;">
-                <span style="font-size: 15px; font-weight: 800; color: #10b981;">${s.ortalama} Gün</span>
-                <div style="font-size: 9.5px; color: var(--fg-sub);">Öğrenci Başına Ort.</div>
-            </div>
-        </div>
+            <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;">
+                <td style="text-align: center; padding: 7px 8px;">${dereceBadge}</td>
+                <td style="padding: 7px 8px; font-weight: 700; color: var(--fg-main);">${s.sube}</td>
+                <td style="text-align: center; padding: 7px 8px; color: var(--fg-sub); font-weight: 600;">${s.ogrenci_sayisi} Ögr</td>
+                <td style="text-align: center; padding: 7px 8px;">
+                    <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; font-weight: 800;">${s.ortalama} G</span>
+                </td>
+                <td style="text-align: right; padding: 7px 8px;">
+                    ${farkHtml}
+                </td>
+            </tr>
         `;
     }).join('');
+
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
 }
 
 function kartGenislikAyarla(btn, genislikOran) {
@@ -1178,5 +1228,455 @@ if (document.readyState === 'loading') {
 } else {
     baglaDashboardOlaylari();
 }
+
+// =============================================================================
+// MEB RESMİ DEVAMSIZLIK MEKTUBU & TEBLİGAT TAKİP ÇİZELGESİ (5, 15, 25 GÜN)
+// =============================================================================
+window.aktifMektupTakip = null;
+window.aktifMektupSekme = '5_gun';
+window.aktifMektupArama = '';
+
+/**
+ * Dashboard ana ekranındaki resmi tebligat takip çizelgesini doldurur.
+ * 5, 15 ve 25 gün eşiklerini listeler; gönderilmemiş mektup varsa sayının yanında
+ * animasyonlu uyarı ünlemi gösterir ve üzerine gelindiğinde kalan sayıyı bildirir.
+ */
+function mektupTakipCizelgesiniDoldur(data) {
+    if (!data) return;
+    window.aktifMektupTakip = data;
+
+    const tbody = document.getElementById('tbody_mektup_takip_cizelge');
+    if (!tbody) return;
+
+    const esikler = [
+        {
+            key: '5_gun',
+            baslik: '5 Gün Eşiği (1. Tebligat)',
+            icon: '📬',
+            color: '#f59e0b',
+            mevzuat: 'Özürsüz 5 gün devamsızlık ve komisyon bildirimi (MEB OÖKY Md. 36/4 & 36/5-a)'
+        },
+        {
+            key: '15_gun',
+            baslik: '15 Gün Eşiği (2. Tebligat)',
+            icon: '📨',
+            color: '#3b82f6',
+            mevzuat: 'Toplam 15 gün resmi iadeli taahhütlü veli tebligatı (MEB OÖKY Md. 36/4)'
+        },
+        {
+            key: '25_gun',
+            baslik: '25 Gün Eşiği (3. Nihai Tebligat)',
+            icon: '🚨',
+            color: '#ef4444',
+            mevzuat: 'Toplam 25 gün nihai tebligat; 30 gün aşımında sınıf tekrarı (MEB OÖKY Md. 36/4)'
+        }
+    ];
+
+    tbody.innerHTML = esikler.map(e => {
+        const info = data[e.key] || { toplam_ogrenci: 0, gonderilen_sayi: 0, kalan_sayi: 0, hepsi_gonderildi: false };
+        const toplam = info.toplam_ogrenci || 0;
+        const kalan = info.kalan_sayi !== undefined ? info.kalan_sayi : toplam;
+        const gonderilen = info.gonderilen_sayi || 0;
+
+        // Sayı ve Ünlem Göstergesi:
+        // Kullanıcı sayının üzerine geldiğinde altı çizili hale gelir, tıkladığında liste modalı açılır.
+        // Eğer gönderilmemiş mektup varsa sayının yanında ünlem işareti gösterilir.
+        let sayiVeUyariHtml = '';
+        if (toplam === 0) {
+            sayiVeUyariHtml = `<span class="tebligat-sayi-link" onclick="mektupTakipModalAc('${e.key}')" title="Listeyi açmak için tıklayın">0</span>`;
+        } else if (kalan > 0) {
+            sayiVeUyariHtml = `
+                <div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                    <span class="tebligat-sayi-link" onclick="mektupTakipModalAc('${e.key}')" title="${e.baslik} öğrenci listesini açmak için tıklayın">${toplam}</span>
+                    <span class="tebligat-unlem-badge" title="${kalan} adet öğrencinin devamsızlık mektubu gönderilmedi">⚠️</span>
+                </div>
+            `;
+        } else {
+            sayiVeUyariHtml = `
+                <div style="display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+                    <span class="tebligat-sayi-link" onclick="mektupTakipModalAc('${e.key}')" title="${e.baslik} öğrenci listesini açmak için tıklayın">${toplam}</span>
+                    <span title="Tüm öğrencilerin tebligat mektubu gönderildi" style="color: #10b981; font-weight: 800; font-size: 15px; margin-left: 2px;">✓</span>
+                </div>
+            `;
+        }
+
+        return `
+            <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;">
+                <td style="padding: 12px 14px; font-weight: 700;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 18px;">${e.icon}</span>
+                        <span style="color: ${e.color}; font-size: 13px;">${e.baslik}</span>
+                    </div>
+                </td>
+                <td style="padding: 12px 14px; text-align: center;">
+                    ${sayiVeUyariHtml}
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Dinamik eklenen elementler için Tippy ve Lucide ikonlarını yenile
+    if (typeof tippy === 'function') {
+        tbody.querySelectorAll('[title]').forEach(el => {
+            const titleText = el.getAttribute('title');
+            if (titleText && titleText !== 'Kapat') {
+                tippy(el, {
+                    content: titleText,
+                    placement: 'top',
+                    theme: 'dark-custom',
+                    delay: [150, 0],
+                    arrow: true,
+                    animation: 'shift-away'
+                });
+                el.removeAttribute('title');
+            }
+        });
+    }
+
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
+}
+
+/**
+ * Resmi devamsızlık mektubu modalını açar ve belirtilen sekmeyi yükler.
+ */
+async function mektupTakipModalAc(esik_turu = '5_gun') {
+    const modal = document.getElementById('mektup_takip_modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+    
+    window.aktifMektupSekme = esik_turu;
+    const aramaEl = document.getElementById('ent_mektup_modal_arama');
+    if (aramaEl) aramaEl.value = '';
+    window.aktifMektupArama = '';
+
+    // Eğer veriler henüz çekilmediyse arka plandan getir
+    if (!window.aktifMektupTakip) {
+        try {
+            const res = await apiFetch('/mektup-takip-ozet');
+            const data = (res && res.veriler) ? res.veriler : res;
+            if (data && !data.hata) {
+                window.aktifMektupTakip = data;
+                mektupTakipCizelgesiniDoldur(data);
+            }
+        } catch (e) {
+            console.error('Mektup takip özeti alınamadı:', e);
+        }
+    }
+
+    mektupModalSekmeDegistir(esik_turu);
+}
+
+/**
+ * Modalı kapatır.
+ */
+function mektupTakipModalKapat() {
+    const modal = document.getElementById('mektup_takip_modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+/**
+ * Modal içerisindeki 5, 15 veya 25 gün sekmeleri arasında geçiş yapar.
+ */
+function mektupModalSekmeDegistir(esik_turu) {
+    window.aktifMektupSekme = esik_turu;
+
+    const butonAyarlari = [
+        { id: 'btn_mektup_sekme_5', tur: '5_gun', border: '#f59e0b', color: '#d97706', bg: 'rgba(245, 158, 11, 0.15)' },
+        { id: 'btn_mektup_sekme_15', tur: '15_gun', border: '#3b82f6', color: '#2563eb', bg: 'rgba(59, 130, 246, 0.15)' },
+        { id: 'btn_mektup_sekme_25', tur: '25_gun', border: '#ef4444', color: '#dc2626', bg: 'rgba(239, 68, 68, 0.15)' }
+    ];
+
+    butonAyarlari.forEach(b => {
+        const el = document.getElementById(b.id);
+        if (!el) return;
+        if (b.tur === esik_turu) {
+            el.classList.add('aktif');
+            el.style.background = b.bg;
+            el.style.color = b.color;
+            el.style.borderColor = b.border;
+            el.style.fontWeight = '700';
+        } else {
+            el.classList.remove('aktif');
+            el.style.background = 'var(--bg-main)';
+            el.style.color = 'var(--fg-main)';
+            el.style.borderColor = 'var(--border)';
+            el.style.fontWeight = '500';
+        }
+    });
+
+    mektupModalTabloyuDoldur();
+}
+
+/**
+ * Seçili eşiğe göre modal tablosunu doldurur ve sayaçları günceller.
+ */
+function mektupModalTabloyuDoldur() {
+    const seciliEsik = window.aktifMektupSekme || '5_gun';
+    const data = window.aktifMektupTakip || {};
+    const veri = data[seciliEsik] || { toplam_ogrenci: 0, gonderilen_sayi: 0, kalan_sayi: 0, ogrenciler: [] };
+
+    // Sekme sayaç rozetlerini güncelle
+    const b5 = document.getElementById('badge_mektup_sekme_5');
+    const b15 = document.getElementById('badge_mektup_sekme_15');
+    const b25 = document.getElementById('badge_mektup_sekme_25');
+    if (b5) b5.innerText = data['5_gun'] ? data['5_gun'].toplam_ogrenci : 0;
+    if (b15) b15.innerText = data['15_gun'] ? data['15_gun'].toplam_ogrenci : 0;
+    if (b25) b25.innerText = data['25_gun'] ? data['25_gun'].toplam_ogrenci : 0;
+
+    // Modal başlık ve mevzuat metni
+    const baslikEl = document.getElementById('mektup_modal_baslik');
+    const mevzuatEl = document.getElementById('mektup_modal_mevzuat');
+    if (baslikEl) {
+        if (seciliEsik === '5_gun') baslikEl.innerText = '5 Gün Devamsızlık Eşiği - 1. Veli Tebligatı';
+        else if (seciliEsik === '15_gun') baslikEl.innerText = '15 Gün Devamsızlık Eşiği - 2. Veli Tebligatı';
+        else if (seciliEsik === '25_gun') baslikEl.innerText = '25 Gün Devamsızlık Eşiği - 3. Nihai Veli Tebligatı';
+    }
+    if (mevzuatEl) {
+        mevzuatEl.innerText = veri.mevzuat || 'MEB Ortaöğretim Kurumları Yönetmeliği Md. 36 gereğince veli tebligat mektubu takip çizelgesi';
+    }
+
+    // Durum ve uyarı metni
+    const durumEl = document.getElementById('mektup_modal_durum_metni');
+    const unlemUyariEl = document.getElementById('mektup_modal_unlem_uyarisi');
+    const unlemMetinEl = document.getElementById('mektup_modal_unlem_metni');
+    const tbody = document.getElementById('mektup_modal_tbody');
+    const chkMaster = document.getElementById('chk_mektup_master');
+
+    if (!tbody) return;
+
+    if (durumEl) {
+        durumEl.innerHTML = `Toplam <b>${veri.toplam_ogrenci}</b> öğrenci &bull; <span style="color:#10b981; font-weight:700;">${veri.gonderilen_sayi} Gönderildi</span> &bull; <span style="color:${veri.kalan_sayi > 0 ? '#dc2626' : 'var(--fg-sub)'}; font-weight:700;">${veri.kalan_sayi} Gönderilmedi</span>`;
+    }
+
+    if (unlemUyariEl) {
+        if (veri.kalan_sayi > 0) {
+            unlemUyariEl.style.display = 'inline-flex';
+            if (unlemMetinEl) {
+                unlemMetinEl.innerText = `${veri.kalan_sayi} adet öğrencinin devamsızlık mektubu gönderilmedi!`;
+            }
+        } else {
+            unlemUyariEl.style.display = 'none';
+        }
+    }
+
+    if (chkMaster) {
+        chkMaster.disabled = (veri.toplam_ogrenci === 0);
+        chkMaster.checked = (veri.toplam_ogrenci > 0 && veri.kalan_sayi === 0);
+    }
+
+    let ogrenciler = veri.ogrenciler || [];
+
+    // Arama filtrelemesi
+    const arama = (window.aktifMektupArama || '').trim().toLowerCase();
+    if (arama) {
+        ogrenciler = ogrenciler.filter(o => 
+            String(o.no).toLowerCase().includes(arama) ||
+            String(o.ad_soyad).toLowerCase().includes(arama) ||
+            String(o.sube).toLowerCase().includes(arama)
+        );
+    }
+
+    if (ogrenciler.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; color: var(--fg-sub); padding: 30px; font-style: italic;">
+                    ${arama ? 'Arama kriterine uygun öğrenci bulunamadı.' : 'Bu eşikte kayıtlı öğrenci bulunmuyor. Harika!'}
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = ogrenciler.map((o, idx) => {
+        const siraNo = o.sira || (idx + 1);
+        const checked = o.mektup_gonderildi ? 'checked' : '';
+        const durumEtiketi = o.mektup_gonderildi
+            ? `<span style="display:inline-flex; align-items:center; gap:4px; color:#10b981; font-weight:700; font-size:11px;"><i data-lucide="check-circle" height="13" width="13"></i> Gönderildi</span>`
+            : `<span style="display:inline-flex; align-items:center; gap:4px; color:#dc2626; font-weight:700; font-size:11px;"><i data-lucide="alert-circle" height="13" width="13"></i> Gönderilmedi</span>`;
+
+        let tarihStr = '';
+        if (o.mektup_gonderildi && o.gonderilme_tarihi) {
+            tarihStr = `<div style="font-size:10px; color:var(--fg-sub); margin-top:2px;">${o.gonderilme_tarihi.substring(0, 10)}</div>`;
+        }
+
+        const adAttr = (o.ad_soyad || '').replace(/'/g, "\\'");
+
+        return `
+            <tr style="border-bottom: 1px solid var(--border); transition: background 0.15s;">
+                <td style="text-align: center; color: var(--fg-sub); font-weight: 600;">${siraNo}</td>
+                <td style="font-weight: 700; color: var(--fg-sub); font-family: monospace;">${o.no}</td>
+                <td style="font-weight: 700; color: var(--fg-main);">${o.ad_soyad}</td>
+                <td><span class="badge" style="background: rgba(2, 132, 199, 0.1); color: var(--tree-sel, #0284c7); font-weight: 700; font-size: 11.5px;">${o.sube}</span></td>
+                <td><span class="badge" style="background: ${seciliEsik === '25_gun' ? '#fee2e2' : (seciliEsik === '15_gun' ? '#ffedd5' : '#fef3c7')}; color: ${seciliEsik === '25_gun' ? '#b91c1c' : (seciliEsik === '15_gun' ? '#c2410c' : '#b45309')}; font-weight: 700;">${o.devamsizlik}</span></td>
+                <td style="text-align: center; background: rgba(2, 132, 199, 0.03);">
+                    <div style="display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;">
+                        <label style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; margin: 0;">
+                            <input type="checkbox" ${checked} onchange="mektupDurumDegistir('${o.no}', '${seciliEsik}', this.checked)" style="width: 17px; height: 17px; cursor: pointer; accent-color: #0284c7;">
+                            ${durumEtiketi}
+                        </label>
+                        ${tarihStr}
+                    </div>
+                </td>
+                <td style="text-align: center; white-space: nowrap;">
+                    <button type="button" class="btn btn-temizle" onclick="if (typeof yillikListeAc === 'function') yillikListeAc('${o.no}', '${adAttr}');" title="Devamsızlık Karnesini Aç" style="padding: 3px 8px; font-size: 11px;">
+                        <i data-lucide="eye" height="12" width="12"></i> İncele
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    if (window.lucide && typeof lucide.createIcons === 'function') {
+        lucide.createIcons();
+    }
+}
+
+/**
+ * Arama kutusu input olayı.
+ */
+function mektupModalArama(q) {
+    window.aktifMektupArama = (q || '').trim().toLowerCase();
+    mektupModalTabloyuDoldur();
+}
+
+/**
+ * Tek bir öğrencinin mektup gönderildi durumunu değiştirir ve sunucuya kaydeder.
+ * Dashboard ana tablosundaki uyarı ünlemi anında otomatik güncellenir.
+ */
+async function mektupDurumDegistir(ogrenci_no, esik_turu, gonderildi) {
+    if (!window.aktifMektupTakip || !window.aktifMektupTakip[esik_turu]) return;
+
+    const grup = window.aktifMektupTakip[esik_turu];
+    const ogrenci = (grup.ogrenciler || []).find(o => String(o.no) === String(ogrenci_no));
+    if (ogrenci) {
+        ogrenci.mektup_gonderildi = gonderildi;
+        ogrenci.gonderilme_tarihi = gonderildi ? new Date().toISOString() : '';
+    }
+
+    // Sayaçları güncelle
+    grup.gonderilen_sayi = grup.ogrenciler.filter(o => o.mektup_gonderildi).length;
+    grup.kalan_sayi = grup.toplam_ogrenci - grup.gonderilen_sayi;
+    grup.hepsi_gonderildi = (grup.kalan_sayi === 0 && grup.toplam_ogrenci > 0);
+
+    // Ana dashboard çizelgesini ve modalı anında güncelle
+    mektupTakipCizelgesiniDoldur(window.aktifMektupTakip);
+    mektupModalTabloyuDoldur();
+
+    try {
+        const resp = await apiFetch('/mektup-durumu-kaydet', {
+            method: 'POST',
+            body: {
+                ogrenci_no: String(ogrenci_no),
+                esik_turu: esik_turu,
+                gonderildi: gonderildi
+            }
+        });
+
+        if (resp && resp.basarili) {
+            if (typeof bildirimGoster === 'function') {
+                bildirimGoster(gonderildi ? `${ogrenci ? ogrenci.ad_soyad : ogrenci_no}: Devamsızlık mektubu gönderildi olarak kaydedildi.` : `${ogrenci ? ogrenci.ad_soyad : ogrenci_no}: Mektup işareti kaldırıldı.`, 'bilgi');
+            }
+        }
+    } catch (err) {
+        console.error('Mektup durumu kaydedilirken hata oluştu:', err);
+        if (typeof bildirimGoster === 'function') {
+            bildirimGoster('Mektup durumu kaydedilirken hata oluştu!', 'hata');
+        }
+    }
+}
+
+/**
+ * Mevcut eşikteki tüm öğrencileri topluca "Gönderildi" veya "Temizle" yapar.
+ */
+async function mektupModalTopluIsaretle(gonderildi) {
+    const esik_turu = window.aktifMektupSekme || '5_gun';
+    if (!window.aktifMektupTakip || !window.aktifMektupTakip[esik_turu]) return;
+
+    const grup = window.aktifMektupTakip[esik_turu];
+    const ogrenciler = grup.ogrenciler || [];
+    if (ogrenciler.length === 0) return;
+
+    const noListesi = ogrenciler.map(o => String(o.no));
+    const simdi = new Date().toISOString();
+
+    ogrenciler.forEach(o => {
+        o.mektup_gonderildi = gonderildi;
+        o.gonderilme_tarihi = gonderildi ? simdi : '';
+    });
+
+    grup.gonderilen_sayi = gonderildi ? ogrenciler.length : 0;
+    grup.kalan_sayi = grup.toplam_ogrenci - grup.gonderilen_sayi;
+    grup.hepsi_gonderildi = (grup.kalan_sayi === 0 && grup.toplam_ogrenci > 0);
+
+    mektupTakipCizelgesiniDoldur(window.aktifMektupTakip);
+    mektupModalTabloyuDoldur();
+
+    try {
+        const resp = await apiFetch('/mektup-durumu-toplu-kaydet', {
+            method: 'POST',
+            body: {
+                ogrenci_nolar: noListesi,
+                esik_turu: esik_turu,
+                gonderildi: gonderildi
+            }
+        });
+
+        if (resp && resp.basarili) {
+            if (typeof bildirimGoster === 'function') {
+                bildirimGoster(gonderildi ? `${ogrenciler.length} öğrencinin tümüne mektup gönderildi olarak kaydedildi.` : 'Tüm mektup işaretleri kaldırıldı.', 'bilgi');
+            }
+        }
+    } catch (err) {
+        console.error('Toplu mektup durumu kaydedilirken hata oluştu:', err);
+        if (typeof bildirimGoster === 'function') {
+            bildirimGoster('Toplu durum kaydedilirken sunucu hatası oluştu!', 'hata');
+        }
+    }
+}
+
+/**
+ * Tablo başlığındaki master checkbox kontrolü.
+ */
+function mektupModalMasterToggle(checked) {
+    mektupModalTopluIsaretle(checked);
+}
+
+/**
+ * Sunucudan güncel mektup verilerini yeniden çeker.
+ */
+async function mektupModalVerileriniYenile() {
+    try {
+        const res = await apiFetch('/mektup-takip-ozet');
+        const data = (res && res.veriler) ? res.veriler : res;
+        if (data && !data.hata) {
+            window.aktifMektupTakip = data;
+            mektupTakipCizelgesiniDoldur(data);
+            mektupModalTabloyuDoldur();
+            if (typeof bildirimGoster === 'function') {
+                bildirimGoster('Mektup takip verileri güncellendi.', 'bilgi');
+            }
+        }
+    } catch (err) {
+        console.error('Mektup verileri yenilenirken hata:', err);
+    }
+}
+
+// Global kapsam bağlamaları
+window.mektupTakipCizelgesiniDoldur = mektupTakipCizelgesiniDoldur;
+window.mektupTakipModalAc = mektupTakipModalAc;
+window.mektupTakipModalKapat = mektupTakipModalKapat;
+window.mektupModalSekmeDegistir = mektupModalSekmeDegistir;
+window.mektupModalTabloyuDoldur = mektupModalTabloyuDoldur;
+window.mektupModalArama = mektupModalArama;
+window.mektupDurumDegistir = mektupDurumDegistir;
+window.mektupModalTopluIsaretle = mektupModalTopluIsaretle;
+window.mektupModalMasterToggle = mektupModalMasterToggle;
+window.mektupModalVerileriniYenile = mektupModalVerileriniYenile;
+
 
 

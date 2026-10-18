@@ -81,6 +81,8 @@
 
     {% include 'components/raporlar_modal.html' %}
 {% include 'components/akilli_eslesme_modal.html' %}
+{% include 'components/tebligat_bildirim_modal.html' %}
+{% include 'components/mektup_takip_modal.html' %}
 
 
 
@@ -88,6 +90,8 @@
 {% include 'components/yillik_modal.html' %}
 <!-- ================= PERSONEL YÖNETİMİ MODERN ================= -->
 {% include 'components/personel_yonetim_modal.html' %}
+<!-- PERSONEL İÇE AKTARMA MERKEZİ (MEBBİS & E-OKUL) -->
+{% include 'components/personel_yukleme_modal.html' %}
 <!-- PERSONEL PROFİL PENCERESİ MODALI -->
 {% include 'components/personel_profil_modal.html' %}
 <!-- ÖĞRENCİ YÖNETİM MODALI -->
@@ -163,6 +167,10 @@
 <div class="esik-dropdown-kapsayici" style="width: 100%; display: flex; align-items: center; position: relative;">
     <select id="combo_esik_filtre" class="combo-esik-filtre" onchange="esikSelectFiltrele(this.value)" title="Eşik ve Durum Rozeti Filtresi">
         <option value="tumu">🔵 Tümü (0 Öğrenci)</option>
+        <option value="artarda_2gun">⚡ Art Arda 2G Özürsüz (0 Öğrenci)</option>
+        <option value="tebligat_5">📬 5G Resmi Tebligat (0 Öğrenci)</option>
+        <option value="tebligat_15">📨 15G Resmi Tebligat (0 Öğrenci)</option>
+        <option value="tebligat_25">🚨 25G Nihai Tebligat (0 Öğrenci)</option>
         <option value="ramakkala_10">🚨 10G Ramak Kala (0 Öğrenci)</option>
         <option value="asanlar_10">⛔ 10G+ Aşanlar (0 Öğrenci)</option>
         <option value="mektup_5">📬 5G 1. Veli Mektubu (0 Öğrenci)</option>
@@ -512,7 +520,7 @@
 </div>
 </div>
     <style>
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 20px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
         .kpi-card { background: var(--bg-card); border-radius: 12px; padding: 15px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
         .kpi-icon { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
@@ -553,6 +561,37 @@
         .modern-table td { padding: 8px; color: var(--fg-main); border-bottom: 1px solid var(--border); }
         .modern-table tr:last-child td { border-bottom: none; }
         .top-bar-dashboard { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: var(--bg-card); padding: 15px 20px; border-radius: 12px; border: 1px solid var(--border); }
+
+        .tebligat-sayi-link {
+            cursor: pointer;
+            font-weight: 800;
+            font-size: 15px;
+            color: var(--tree-sel, #0284c7);
+            text-decoration: none;
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: all 0.15s ease;
+        }
+        .tebligat-sayi-link:hover {
+            text-decoration: underline !important;
+            background-color: rgba(2, 132, 199, 0.12);
+            color: #0284c7;
+        }
+        .tebligat-unlem-badge {
+            cursor: help;
+            font-size: 15px;
+            margin-left: 5px;
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            filter: drop-shadow(0 1px 2px rgba(220, 38, 38, 0.3));
+            animation: unlem-nabiz 2s infinite ease-in-out;
+        }
+        @keyframes unlem-nabiz {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.22); }
+        }
     </style>
   
     <!-- KPI CARDS -->
@@ -569,42 +608,22 @@
             <div class="kpi-icon" style="background: linear-gradient(135deg, #10b981, #059669);"><i data-lucide="award"></i></div>
             <div class="kpi-info"><h4>0 Devamsızlık Yapan</h4><h2 id="kpi_sifir">0</h2></div>
         </div>
-        <div class="kpi-card">
-            <div class="kpi-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);"><i data-lucide="file-text"></i></div>
-            <div class="kpi-info"><h4>Toplam Üretilen Evrak</h4><h2 id="kpi_evrak">0</h2></div>
-        </div>
     </div>
 
 
     <!-- DİNAMİK SÜRÜKLENEBİLİR VE BOYUTLANDIRILABİLİR WIDGET PANELİ -->
     <div id="dashboard_widget_container" class="dashboard-widget-grid">
         
-        <!-- 1. KRİTİK EŞİK ERKEN UYARI WIDGET'I -->
-        <div id="w_kritik_esikler" data-widget-id="w_kritik_esikler" class="dash-card" style="width: 100%; flex: 0 0 100%;">
+        <!-- YENİ: RESMİ TEBLİGAT & DEVAMSIZLIK MEKTUBU TAKİP ÇİZELGESİ WIDGET'I -->
+        <div id="w_mektup_takip" data-widget-id="w_mektup_takip" class="dash-card" style="width: 100%; flex: 0 0 100%;">
             <div class="dash-card-header">
-                <div style="display: flex; align-items: center; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
-                    <i data-lucide="shield-alert" style="color: #ef4444; width: 18px; height: 18px;"></i>
-                    <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--fg-main);">Kritik Eşik Erken Uyarı Paneli</h3>
-                    <span style="font-size: 11px; color: var(--fg-sub);">(MEB Mevzuat Takip Asistanı)</span>
+                    <i data-lucide="mail-warning" style="color: #f59e0b; width: 18px; height: 18px;"></i>
+                    <h3 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--fg-main);">MEB Resmi Devamsızlık Mektubu ve Tebligat Takip Çizelgesi</h3>
+                    <span style="font-size: 11px; color: var(--fg-sub);">(5., 15. ve 25. Gün Resmi Veli Tebligatları)</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <!-- Eşik Filtreleme Butonları -->
-                    <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-                        <button id="btn_esik_ramakkala_10" class="btn esik-filtre-btn aktif" onclick="kritikEsikKategorisiDegistir('ramakkala_10')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600;">
-                            🚨 10G Yaklaşan <span id="sayi_ramakkala_10" style="background:#ef4444; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
-                        </button>
-                        <button id="btn_esik_asanlar_10" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('asanlar_10')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                            ⚠️ 10G Aşan <span id="sayi_asanlar_10" style="background:#dc2626; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
-                        </button>
-                        <button id="btn_esik_mektup_5" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('mektup_siniri_5')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                            📬 5G Mektup <span id="sayi_mektup_5" style="background:#f59e0b; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
-                        </button>
-                        <button id="btn_esik_toplam_25" class="btn esik-filtre-btn" onclick="kritikEsikKategorisiDegistir('toplam_risk_25')" style="font-size: 10.5px; padding: 4px 8px; border-radius: 6px; background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border);">
-                            ⏳ 25G+ Toplam <span id="sayi_toplam_25" style="background:#6366f1; color:white; border-radius:10px; padding:1px 5px; margin-left:3px; font-size:9.5px;">0</span>
-                        </button>
-                    </div>
-                    <!-- Boyutlandırma Butonları -->
+                <div style="display: flex; align-items: center; gap: 8px;">
                     <div class="dash-size-presets">
                         <button type="button" class="dash-size-btn" data-size="33%" onclick="kartGenislikAyarla(this, '33%')" title="Genişlik: 1/3">1/3</button>
                         <button type="button" class="dash-size-btn" data-size="50%" onclick="kartGenislikAyarla(this, '50%')" title="Genişlik: 1/2">1/2</button>
@@ -613,20 +632,19 @@
                     </div>
                 </div>
             </div>
-            <div style="overflow-x: auto; overflow-y: auto; min-height: 120px; flex: 1;">
-                <table class="modern-table" style="width: 100%; white-space: nowrap;">
-                    <thead style="position: sticky; top: 0; background: var(--bg-card-solid); z-index: 1;">
+            <div style="overflow-x: auto; overflow-y: auto;">
+                <table class="modern-table" style="width: 100%;">
+                    <thead>
                         <tr>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: left;">Sınıf/Şube</th>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: left;">Okul No</th>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: left;">Adı Soyadı</th>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: center;">Özürsüz Gün</th>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: center;">Özürlü Gün</th>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: center;">Toplam Gün</th>
-                            <th style="padding: 8px 10px; border-bottom: 2px solid var(--border); text-align: right;">Hızlı Aksiyon</th>
+                            <th style="padding: 10px 14px; color: var(--fg-main); font-weight: 700;">Tebligat Eşiği</th>
+                            <th style="padding: 10px 14px; text-align: center; color: var(--fg-main); font-weight: 700; width: 150px;">Öğrenci Sayısı</th>
                         </tr>
                     </thead>
-                    <tbody id="dashboard_kritik_ogrenciler_body"></tbody>
+                    <tbody id="tbody_mektup_takip_cizelge">
+                        <tr>
+                            <td colspan="2" style="text-align: center; padding: 15px; color: var(--fg-sub);">Yükleniyor...</td>
+                        </tr>
+                    </tbody>
                 </table>
             </div>
             <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
@@ -717,7 +735,7 @@
                 <div style="display: flex; align-items: center; gap: 6px;">
                     <span class="dash-drag-handle" title="Sürükleyip kartın yerini değiştirin"><i data-lucide="grip-vertical" height="15" width="15"></i></span>
                     <i data-lucide="trophy" style="color: #f59e0b;"></i>
-                    <h3 style="color: #d97706;">Şampiyon Şubeler</h3>
+                    <h3 style="color: #d97706;">Şampiyon Şubeler Sıralaması</h3>
                     <span style="font-size: 11px; color: var(--fg-sub);">(En Düşük Devamsızlık Ort.)</span>
                 </div>
                 <div class="dash-size-presets">
@@ -727,8 +745,31 @@
                     <button type="button" class="dash-size-btn" data-size="100%" onclick="kartGenislikAyarla(this, '100%')" title="Genişlik: Tam">Tam</button>
                 </div>
             </div>
-            <div id="container_sampiyon_subeler" style="flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px;">
-                <!-- JS ile podyum kartları render edilecek -->
+
+            <!-- Emsal Değer & Özet Bilgi Çubuğu -->
+            <div id="sampiyon_subeler_emsal_bari" style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin-bottom: 8px; font-size: 11px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="scale" height="14" width="14" style="color: #0284c7;"></i>
+                    <span style="color: var(--fg-sub);">Okul Şube Devamsızlık Ortalaması (Emsal):</span>
+                    <strong id="sampiyon_okul_ortalamasi" style="color: #0284c7; font-size: 12px;">0.0 Gün</strong>
+                </div>
+                <div id="sampiyon_en_iyi_sube" style="font-size: 11px; color: #10b981; font-weight: 700;"></div>
+            </div>
+
+            <!-- Kaydırılabilir Şube Tablosu -->
+            <div style="overflow-y: auto; flex: 1; min-height: 0;">
+                <table class="modern-table" style="width: 100%;">
+                    <thead style="position: sticky; top: 0; background: var(--bg-card-solid); z-index: 1;">
+                        <tr>
+                            <th style="width: 15%; text-align: center;">Derece</th>
+                            <th style="width: 25%;">Şube</th>
+                            <th style="width: 18%; text-align: center;">Öğrenci</th>
+                            <th style="width: 20%; text-align: center;">Ortalama</th>
+                            <th style="width: 22%; text-align: right;">Emsale Fark</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody_sampiyon_subeler"></tbody>
+                </table>
             </div>
             <div class="dash-corner-resizer" title="En ve boyu serbestçe değiştirmek için sürükleyin"><i data-lucide="chevrons-right-left" style="transform: rotate(45deg); width: 14px; height: 14px;"></i></div>
         </div>
@@ -1058,12 +1099,11 @@
                 <div class="settings-list-card">
                     <div class="settings-list-item">
                         <div class="settings-item-info">
-                            <span class="settings-item-name">Personel Excel'i İçe Aktar</span>
-                            <span class="settings-item-desc">MEBBİS üzerinden alınan personel listesi.</span>
+                            <span class="settings-item-name">Personel İçe Aktar (MEBBİS / e-Okul)</span>
+                            <span class="settings-item-desc">MEBBİS Kadrolu, Görevlendirme veya pano yapıştırma ile personel yükleme merkezi.</span>
                         </div>
                         <div class="settings-item-action">
-                            <input accept=".xlsx, .xls" id="f-personel" onchange="personelExcelYukle(event)" style="display: none;" type="file"/>
-                            <button class="btn btn-dev" onclick="document.getElementById('f-personel').click()"><i data-lucide="upload" height="14" width="14"></i> Yükle</button>
+                            <button class="btn btn-dev" onclick="personelYuklemeModaliAc()"><i data-lucide="upload" height="14" width="14"></i> İçe Aktar</button>
                         </div>
                     </div>
                     <div class="settings-list-item">

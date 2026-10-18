@@ -15,9 +15,13 @@ from dependencies import db, yollar, ayarlar, islem_logla, create_job, update_jo
 from utils import *
 from utils import _excel_sutunu_bul
 from utils import _personel_grup_tahmin_et
-from mevzuat_kurallari import ogretmen_mi, mevzuat_bilgisi_al
+from mevzuat_kurallari import ogretmen_mi, mevzuat_bilgisi_al, tum_mevzuat_ozeti, PERSONEL_DURUMLARI_REHBERI
 
 router = APIRouter()
+
+@router.get("/personel-durumlari")
+def personel_durumlari_getir():
+    return {"basarili": True, "durumlar": PERSONEL_DURUMLARI_REHBERI}
 
 @router.get("/personeller")
 def personelleri_getir():
@@ -57,7 +61,7 @@ def personelleri_getir():
                 'telefon': r[21] or "",
                 'eposta': r[22] or "",
                 'notlar': r[23] or "",
-                'aktif': 0 if (len(r) > 24 and r[24] == 0) else 1
+                'aktif': int(r[24]) if (len(r) > 24 and r[24] is not None) else 1
             })
         return {"personeller": personel_listesi}
     except Exception as e:
@@ -65,50 +69,150 @@ def personelleri_getir():
         return {"personeller": []}
 
 
-def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
-    """Hazırlanmış personel dosyasını okur ve tek transaction ile kaydeder."""
+def _personelleri_veritabanina_kaydet(liste, kaynak_adi="Personel"):
+    if not liste:
+        return {"basarili": False, "mesaj": "Kaydedilecek personel verisi bulunamadı."}
+
+    yedek_basarili, yedek_hatasi = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
+    if not yedek_basarili:
+        return {"basarili": False, "mesaj": f"Aktarım öncesi yedek alınamadı: {yedek_hatasi}"}
+
+    eklenen = 0
+    guncellenen = 0
     try:
-        # 1. MEBBİS Formatı Kontrolü (Düzensiz / Çok Satırlı / Kayan Sütunlar)
-        if ExcelMotoru.mebbis_mi_kontrol_et(temp_yol):
-            mebbis_liste = ExcelMotoru.mebbis_personel_oku(temp_yol)
-            if not mebbis_liste:
-                return {"basarili": False, "mesaj": "MEBBİS personel listesi boş veya okunamadı."}
+        db.cursor.execute("BEGIN TRANSACTION")
+        for p in liste:
+            ad = p.get('ad_soyad', '').strip()
+            if not ad:
+                continue
+            tc = p.get('tc_no', '').strip()
+            unvan = p.get('unvan', '-').strip() or '-'
+            brans = p.get('brans', '-').strip() or '-'
+            gorev = p.get('gorev', '-').strip() or '-'
+            grup = p.get('grup', 'Kadrolu').strip() or 'Kadrolu'
+            il_ilce = p.get('il_ilce', '').strip()
+            kurum_adi = p.get('kurum_adi', '').strip()
+            kurum_kodu = p.get('kurum_kodu', '').strip()
+            kurumda_baslama = p.get('kurumda_baslama', '').strip()
+            kariyer = p.get('kariyer', '-').strip() or '-'
+            kademe_derece = p.get('kademe_derece', '-').strip() or '-'
+            ogrenim_durumu = p.get('ogrenim_durumu', '-').strip() or '-'
+            cinsiyet = p.get('cinsiyet', '').strip()
+            kan_grubu = p.get('kan_grubu', '').strip()
+            dogum_tarihi = p.get('dogum_tarihi', '').strip()
+            goreve_baslama = p.get('goreve_baslama', '').strip()
+            kurum_sicil_no = p.get('kurum_sicil_no', '').strip()
+            emekli_sicil_no = p.get('emekli_sicil_no', '').strip()
+            arsiv_no = p.get('arsiv_no', '').strip()
+            telefon = p.get('telefon', '').strip()
+            eposta = p.get('eposta', '').strip()
+            notlar = p.get('notlar', '').strip()
+            aktif = int(p.get('aktif', 1))
 
-            yedek_basarili, yedek_hatasi = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
-            if not yedek_basarili:
-                return {"basarili": False, "mesaj": f"Aktarım öncesi yedek alınamadı: {yedek_hatasi}"}
+            mevcut_id = None
+            if tc:
+                db.cursor.execute("SELECT rowid FROM personel WHERE tc_no = ?", (tc,))
+                row = db.cursor.fetchone()
+                if row:
+                    mevcut_id = row[0]
+            if not mevcut_id and ad:
+                db.cursor.execute("SELECT rowid FROM personel WHERE ad_soyad = ?", (ad,))
+                row = db.cursor.fetchone()
+                if row:
+                    mevcut_id = row[0]
 
-            kayitlar = []
-            for p in mebbis_liste:
-                kayitlar.append((
-                    p['ad_soyad'], p.get('tc_no', ''), p.get('unvan', '-'), p.get('brans', '-'), p.get('gorev', '-'),
-                    p.get('grup', 'Kadrolu'), p.get('il_ilce', ''), p.get('kurum_adi', ''),
-                    p.get('kurum_kodu', ''), p.get('kurumda_baslama', ''), p.get('kariyer', '-'),
-                    p.get('kademe_derece', '-'), p.get('ogrenim_durumu', '-'), p.get('cinsiyet', ''),
-                    p.get('kan_grubu', ''), p.get('dogum_tarihi', ''), p.get('goreve_baslama', ''),
-                    p.get('kurum_sicil_no', ''), p.get('emekli_sicil_no', ''), p.get('arsiv_no', ''),
-                    p.get('telefon', ''), p.get('eposta', ''), p.get('notlar', '')
+            if mevcut_id:
+                db.cursor.execute("""
+                    UPDATE personel SET
+                        ad_soyad = COALESCE(NULLIF(?, ''), ad_soyad),
+                        tc_no = COALESCE(NULLIF(?, ''), tc_no),
+                        unvan = CASE WHEN ? != '-' AND ? != '' THEN ? ELSE unvan END,
+                        brans = CASE WHEN ? != '-' AND ? != '' THEN ? ELSE brans END,
+                        gorev = CASE WHEN ? != '-' AND ? != '' THEN ? ELSE gorev END,
+                        grup = COALESCE(NULLIF(?, ''), grup),
+                        il_ilce = COALESCE(NULLIF(?, ''), il_ilce),
+                        kurum_adi = COALESCE(NULLIF(?, ''), kurum_adi),
+                        kurum_kodu = COALESCE(NULLIF(?, ''), kurum_kodu),
+                        kurumda_baslama = COALESCE(NULLIF(?, ''), kurumda_baslama),
+                        kariyer = CASE WHEN ? != '-' AND ? != '' THEN ? ELSE kariyer END,
+                        kademe_derece = CASE WHEN ? != '-' AND ? != '' THEN ? ELSE kademe_derece END,
+                        ogrenim_durumu = CASE WHEN ? != '-' AND ? != '' THEN ? ELSE ogrenim_durumu END,
+                        cinsiyet = COALESCE(NULLIF(?, ''), cinsiyet),
+                        kan_grubu = COALESCE(NULLIF(?, ''), kan_grubu),
+                        dogum_tarihi = COALESCE(NULLIF(?, ''), dogum_tarihi),
+                        goreve_baslama = COALESCE(NULLIF(?, ''), goreve_baslama),
+                        kurum_sicil_no = COALESCE(NULLIF(?, ''), kurum_sicil_no),
+                        emekli_sicil_no = COALESCE(NULLIF(?, ''), emekli_sicil_no),
+                        arsiv_no = COALESCE(NULLIF(?, ''), arsiv_no),
+                        telefon = COALESCE(NULLIF(?, ''), telefon),
+                        eposta = COALESCE(NULLIF(?, ''), eposta),
+                        notlar = COALESCE(NULLIF(?, ''), notlar),
+                        aktif = ?
+                    WHERE rowid = ?
+                """, (
+                    ad, tc,
+                    unvan, unvan, unvan,
+                    brans, brans, brans,
+                    gorev, gorev, gorev,
+                    grup, il_ilce, kurum_adi, kurum_kodu, kurumda_baslama,
+                    kariyer, kariyer, kariyer,
+                    kademe_derece, kademe_derece, kademe_derece,
+                    ogrenim_durumu, ogrenim_durumu, ogrenim_durumu,
+                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama,
+                    kurum_sicil_no, emekli_sicil_no, arsiv_no,
+                    telefon, eposta, notlar, aktif, mevcut_id
                 ))
-
-            try:
-                db.cursor.execute("BEGIN TRANSACTION")
-                db.cursor.execute("DELETE FROM personel")
-                db.cursor.executemany("""
+                guncellenen += 1
+            else:
+                db.cursor.execute("""
                     INSERT INTO personel (
                         ad_soyad, tc_no, unvan, brans, gorev, grup, il_ilce, kurum_adi,
                         kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
                         cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
-                        emekli_sicil_no, arsiv_no, telefon, eposta, notlar
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, kayitlar)
-                db.conn.commit()
-            except Exception:
-                db.conn.rollback()
-                raise
+                        emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    ad, tc, unvan, brans, gorev, grup, il_ilce, kurum_adi,
+                    kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
+                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
+                    emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
+                ))
+                eklenen += 1
+        db.conn.commit()
+    except Exception as e:
+        db.conn.rollback()
+        raise
 
-            return {"basarili": True, "mesaj": f"{len(kayitlar)} personel MEBBİS listesinden tüm detaylarıyla başarıyla yüklendi."}
+    mesaj = f"{kaynak_adi}: {eklenen} yeni personel eklendi"
+    if guncellenen > 0:
+        mesaj += f", {guncellenen} mevcut personel güncellendi."
+    else:
+        mesaj += "."
+    return {"basarili": True, "mesaj": mesaj, "eklenen": eklenen, "guncellenen": guncellenen}
 
-        # 2. Standart Düz Tablo Formatı
+
+def _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=None):
+    """Hazırlanmış personel dosyasını okur ve UPSERT mantığıyla kaydeder."""
+    try:
+        # 1. MEBBİS Görevlendirme Formatı Kontrolü
+        if yukleme_tipi == 'mebbis_gorevlendirme' or ExcelMotoru.mebbis_gorevlendirme_mi(temp_yol):
+            mebbis_liste = ExcelMotoru.mebbis_gorevlendirme_personel_oku(temp_yol)
+            if not mebbis_liste:
+                return {"basarili": False, "mesaj": "MEBBİS Görevlendirme personel tablosu boş veya okunamadı."}
+            return _personelleri_veritabanina_kaydet(mebbis_liste, "MEBBİS Görevlendirme")
+
+        # 2. MEBBİS Kadrolu Formatı Kontrolü (Düzensiz / Çok Satırlı / Kayan Sütunlar)
+        if yukleme_tipi == 'mebbis_kadrolu' or ExcelMotoru.mebbis_mi_kontrol_et(temp_yol):
+            mebbis_liste = ExcelMotoru.mebbis_personel_oku(temp_yol)
+            if not mebbis_liste:
+                return {"basarili": False, "mesaj": "MEBBİS personel listesi boş veya okunamadı."}
+            return _personelleri_veritabanina_kaydet(mebbis_liste, "MEBBİS Kadrolu")
+
+        # 3. e-Okul Formatı
+        if yukleme_tipi == 'eokul':
+            return {"basarili": False, "mesaj": "e-Okul Personel Şablonu bir sonraki güncellemede eklenecektir."}
+
+        # 4. Standart Düz Tablo Formatı
         df_temp = ExcelMotoru.tabloyu_guvenli_oku(temp_yol, header=None)
         if df_temp.empty:
             return {"basarili": False, "mesaj": "Excel dosyası boş."}
@@ -152,8 +256,6 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
         notlar_sutunu = _excel_sutunu_bul(df.columns, ['NOTLAR', 'NOT', 'AÇIKLAMA', 'ACIKLAMA'])
         aktif_sutunu = _excel_sutunu_bul(df.columns, ['AKTİF DURUM (1:AKTİF, 0:PASİF)', 'AKTİF DURUM', 'AKTIF DURUM', 'AKTİF', 'AKTIF', 'DURUM', 'AKTİF Mİ', 'STATÜ DURUMU'])
 
-        tam_yedek_mi = bool(tc_sutunu or kariyer_sutunu or kademe_sutunu or kurum_adi_sutunu or tel_sutunu or kurum_sicil_sutunu)
-
         def _hucre_temizle(val, varsayilan=""):
             if pd.isna(val) or val is None:
                 return varsayilan
@@ -192,7 +294,8 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
 
             tc = _hucre_temizle(row[tc_sutunu]) if tc_sutunu else ""
             kariyer = _hucre_temizle(row[kariyer_sutunu], "-") if kariyer_sutunu else "-"
-            kademe_derece = _hucre_temizle(row[kademe_sutunu], "-") if kademe_sutunu else "-"
+            kademe_raw = row[kademe_sutunu] if kademe_sutunu else "-"
+            kademe_derece = ExcelMotoru.akilli_kademe_derece(kademe_raw)
             ogrenim_durumu = _hucre_temizle(row[ogrenim_sutunu], "-") if ogrenim_sutunu else "-"
             cinsiyet = _hucre_temizle(row[cinsiyet_sutunu]).upper() if cinsiyet_sutunu else ""
             kan_grubu = _hucre_temizle(row[kan_sutunu]) if kan_sutunu else ""
@@ -212,43 +315,63 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
             aktif = 1
             if aktif_sutunu:
                 val_aktif = _hucre_temizle(row[aktif_sutunu]).lower()
-                if val_aktif in ['0', 'pasif', 'hayır', 'hayir', 'false']:
+                if any(k in val_aktif for k in ['0', 'pasif', 'hayır', 'hayir', 'false', 'başka kurumda', 'baska kurumda', 'görevlendirme']):
                     aktif = 0
+                elif any(k in val_aktif for k in ['sağlık', 'saglik', 'raporlu', 'heyet', 'sıhhi']):
+                    aktif = 2
+                elif any(k in val_aktif for k in ['doğum', 'dogum', 'analık', 'analik']):
+                    aktif = 3
+                elif any(k in val_aktif for k in ['aylıksız', 'ayliksiz', 'ücretsiz', 'ucretsiz']):
+                    aktif = 4
+                elif any(k in val_aktif for k in ['refakat']):
+                    aktif = 5
+                elif any(k in val_aktif for k in ['asker', 'askerlik', 'terhis']):
+                    aktif = 6
+                elif any(k in val_aktif for k in ['yurtdışı', 'yurtdisi', 'eğitim', 'egitim', 'burslu']):
+                    aktif = 7
+                elif any(k in val_aktif for k in ['sendika', 'sendikal']):
+                    aktif = 8
+                elif val_aktif.isdigit() and int(val_aktif) in PERSONEL_DURUMLARI_REHBERI:
+                    aktif = int(val_aktif)
 
-            yeni_personeller.append((
-                ad, tc, unvan, brans, gorev, grup, il_ilce, kurum_adi,
-                kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
-                emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
-            ))
+            yeni_personeller.append({
+                'ad_soyad': ad,
+                'tc_no': tc,
+                'unvan': unvan,
+                'brans': brans,
+                'gorev': gorev,
+                'grup': grup,
+                'il_ilce': il_ilce,
+                'kurum_adi': kurum_adi,
+                'kurum_kodu': kurum_kodu,
+                'kurumda_baslama': kurumda_baslama,
+                'kariyer': kariyer,
+                'kademe_derece': kademe_derece,
+                'ogrenim_durumu': ogrenim_durumu,
+                'cinsiyet': cinsiyet,
+                'kan_grubu': kan_grubu,
+                'dogum_tarihi': dogum_tarihi,
+                'goreve_baslama': goreve_baslama,
+                'kurum_sicil_no': kurum_sicil_no,
+                'emekli_sicil_no': emekli_sicil_no,
+                'arsiv_no': arsiv_no,
+                'telefon': telefon,
+                'eposta': eposta,
+                'notlar': notlar,
+                'aktif': aktif
+            })
 
         if not yeni_personeller:
             return {"basarili": False, "mesaj": "Excel'de aktarılacak geçerli personel bulunamadı."}
 
-        yedek_basarili, yedek_hatasi = SistemMotoru.yedek_al(db.db_yolu, ayarlari_al(), yollar["YEDEK"])
-        if not yedek_basarili:
-            return {"basarili": False, "mesaj": f"Aktarım öncesi yedek alınamadı: {yedek_hatasi}"}
-
-        try:
-            db.cursor.execute("BEGIN TRANSACTION")
-            db.cursor.execute("DELETE FROM personel")
-            db.cursor.executemany("""
-                INSERT INTO personel (
-                    ad_soyad, tc_no, unvan, brans, gorev, grup, il_ilce, kurum_adi,
-                    kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
-                    emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, yeni_personeller)
-            db.conn.commit()
-        except Exception:
-            db.conn.rollback()
-            raise
-
-        if tam_yedek_mi:
-            return {"basarili": True, "mesaj": f"{len(yeni_personeller)} personel veritabanı tam yedeğinden (24 alan) eksiksiz geri yüklendi."}
-        else:
-            return {"basarili": True, "mesaj": f"{len(yeni_personeller)} personel yüklendi ve gruplandırıldı."}
+        res = _personelleri_veritabanina_kaydet(yeni_personeller, "Personel Tablosu")
+        if res.get("basarili"):
+            tam_yedek_mi = (tc_sutunu is not None and kariyer_sutunu is not None and kademe_sutunu is not None)
+            if tam_yedek_mi:
+                res["mesaj"] = f"{len(yeni_personeller)} personel veritabanı tam yedeğinden (24 alan) eksiksiz geri yüklendi."
+            elif not tc_sutunu and not kariyer_sutunu:
+                res["mesaj"] = f"{len(yeni_personeller)} personel yüklendi ve gruplandırıldı."
+        return res
 
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
@@ -260,16 +383,17 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti):
                 pass
 
 
-def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id):
+def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id, yukleme_tipi=None):
     try:
         update_job(job_id, durum="isleniyor", mesaj="Personel Excel okunuyor...", yuzde=30)
-        sonuc = _personel_excel_yukle_dogrudan(temp_yol, uzanti)
+        sonuc = _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=yukleme_tipi)
         if sonuc["basarili"]:
             update_job(job_id, durum="tamamlandi", mesaj=sonuc["mesaj"], yuzde=100)
         else:
             update_job(job_id, durum="hata", mesaj=sonuc["mesaj"], yuzde=100)
     except Exception as e:
         update_job(job_id, durum="hata", mesaj=str(e), yuzde=100)
+    finally:
         if os.path.exists(temp_yol):
             try:
                 os.remove(temp_yol)
@@ -278,7 +402,11 @@ def personel_excel_isleme_gorevi(temp_yol, uzanti, job_id):
 
 
 @router.post("/personel-excel-yukle")
-async def personel_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadFile = File(...)):
+async def personel_excel_yukle(
+    background_tasks: BackgroundTasks, 
+    dosya: UploadFile = File(...),
+    yukleme_tipi: Optional[str] = Form(None)
+):
     """Personel Excel aktarımını arka plana alır ve işlem kimliği döndürür."""
     uzanti, hata = excel_yukleme_dogrula(dosya)
     if hata:
@@ -287,8 +415,91 @@ async def personel_excel_yukle(background_tasks: BackgroundTasks, dosya: UploadF
     temp_yol = f"temp_personel_{job_id}{uzanti}"
     with open(temp_yol, "wb") as buffer:
         shutil.copyfileobj(dosya.file, buffer)
-    background_tasks.add_task(personel_excel_isleme_gorevi, temp_yol, uzanti, job_id)
+    background_tasks.add_task(personel_excel_isleme_gorevi, temp_yol, uzanti, job_id, yukleme_tipi)
     return {"basarili": True, "job_id": job_id}
+
+
+class PersonelPanoRequest(BaseModel):
+    icerik: str
+    yukleme_tipi: Optional[str] = "mebbis_gorevlendirme"
+
+
+@router.post("/personel-pano-yukle")
+def personel_pano_yukle(veri: PersonelPanoRequest):
+    """MEBBİS veya diğer kaynaklardan kopyalanan tablo metnini (HTML/TSV) doğrudan çözümler."""
+    try:
+        icerik = (veri.icerik or "").strip()
+        if not icerik:
+            return {"basarili": False, "mesaj": "Yapıştırılan içerik boş."}
+
+        yukleme_tipi = (veri.yukleme_tipi or "mebbis_gorevlendirme").lower()
+        if "gorev" in yukleme_tipi:
+            mebbis_liste = ExcelMotoru.mebbis_gorevlendirme_personel_oku(icerik)
+            tip_adi = "MEBBİS Görevlendirme"
+        elif "kadro" in yukleme_tipi:
+            mebbis_liste = ExcelMotoru.mebbis_personel_oku(icerik)
+            tip_adi = "MEBBİS Kadrolu"
+        else:
+            return {"basarili": False, "mesaj": "e-Okul Personel Şablonu bir sonraki güncellemede eklenecektir."}
+
+        if not mebbis_liste:
+            return {"basarili": False, "mesaj": f"{tip_adi} tablosu çözümlenemedi. Lütfen kopyalanan tablonun başlık ve verilerini içerdiğinden emin olun."}
+
+        return _personelleri_veritabanina_kaydet(mebbis_liste, tip_adi)
+    except Exception as e:
+        import logging
+        logging.error(f"personel_pano_yukle hatası: {e}", exc_info=True)
+        return {"basarili": False, "mesaj": f"Pano verisi çözümlenirken hata oluştu: {str(e)}"}
+
+
+@router.get("/personel-sablon-indir/gorevlendirme")
+def personel_sablon_indir_gorevlendirme():
+    """MEBBİS Görevlendirme Personel için önceden metne kilitlenmiş boş Excel şablonu üretir."""
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from fastapi.responses import Response
+    import io
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Görevlendirme Personel"
+
+    headers = [
+        'TC Kimlik No', 'Adı', 'Soyadı', 'İstihdam Tipi', 'Kariyer Basamağı',
+        'Ay.Der/Kad.', 'Emekli Sicil No', 'Kurum Sicil No', 'Kadro Ünvanı',
+        'Görevi', 'Alanı', 'Görev Yeri', 'İli', 'İlçesi', 'Durumu', 'Cinsiyeti'
+    ]
+    ws.append(headers)
+
+    header_fill = PatternFill(start_color="0284C7", end_color="0284C7", fill_type="solid")
+    header_font = Font(name="Segoe UI", size=11, bold=True, color="FFFFFF")
+
+    for col_num in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        col_letter = openpyxl.utils.get_column_letter(col_num)
+        ws.column_dimensions[col_letter].width = 18
+        ws.column_dimensions[col_letter].number_format = '@'
+
+    # Örnek satır ekle
+    sample_row = [
+        '12345678901', 'Ahmet', 'Yılmaz', 'Kadrolu', 'Uzman Öğretmen',
+        '1/4', '12345678', '1234', 'Öğretmen', 'Öğretmen', 'Matematik',
+        'Örnek Anadolu Lisesi', 'ESKİŞEHİR', 'ODUNPAZARI', 'Görevde', 'Erkek'
+    ]
+    ws.append(sample_row)
+
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+
+    return Response(
+        content=out.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=MEBBIS_Gorevlendirme_Personel_Sablonu.xlsx"}
+    )
 
 
 @router.post("/personel-ekle")
@@ -390,7 +601,11 @@ def personel_profil_guncelle(veri: PersonelGuncelleRequest):
         kurum_adi = str(veri.kurum_adi or "").strip()
         kurum_kodu = str(veri.kurum_kodu or "").strip()
         kurumda_baslama = str(veri.kurumda_baslama or "").strip()
-        aktif = 0 if veri.aktif == 0 else 1
+        try:
+            aktif_int = int(veri.aktif) if veri.aktif is not None else 1
+            aktif = aktif_int if aktif_int in PERSONEL_DURUMLARI_REHBERI else 1
+        except (ValueError, TypeError):
+            aktif = 1
 
         if veri.id:
             db.cursor.execute("""
@@ -447,6 +662,13 @@ def personel_profil_guncelle(veri: PersonelGuncelleRequest):
 def mevzuat_bilgisi_endpoint(grup: str, unvan: Optional[str] = None):
     try:
         return {"basarili": True, "veri": mevzuat_bilgisi_al(grup=grup, unvan=unvan)}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+@router.get("/mevzuat-ozeti")
+def tum_mevzuat_ozeti_endpoint():
+    try:
+        return {"basarili": True, "veri": tum_mevzuat_ozeti()}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
 

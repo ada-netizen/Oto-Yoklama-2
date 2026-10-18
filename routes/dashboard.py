@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from pydantic import BaseModel
+from typing import List, Optional
 from dependencies import db
 from collections import defaultdict
 import datetime
@@ -6,11 +8,138 @@ import re
 
 router = APIRouter()
 
+class MektupDurumRequest(BaseModel):
+    ogrenci_no: str
+    esik_turu: str
+    gonderildi: bool
+
+class TopluMektupDurumRequest(BaseModel):
+    ogrenci_nolar: List[str]
+    esik_turu: str
+    gonderildi: bool
+
 def kisa_sube(sube_adi):
     if not sube_adi:
         return ""
     from araclar import VeriAraclari
     return VeriAraclari.kisa_sube_adi(sube_adi)
+
+def mektup_takip_verilerini_hesapla():
+    """
+    5 gün, 15 gün ve 25 gün devamsızlık eşiklerini aşan öğrencileri ve
+    devamsızlık mektubu gönderim durumlarını hesaplayıp paketler.
+    """
+    from araclar import VeriAraclari
+    ogrenci_listesi, devamsizlik_listesi = db.yukle()
+
+    gruplu_dev = defaultdict(list)
+    for d in devamsizlik_listesi:
+        gruplu_dev[str(d.get('no', '')).strip()].append(d)
+
+    kayitli_durumlar = db.mektup_durumlari_getir()
+
+    liste_5 = []
+    liste_15 = []
+    liste_25 = []
+
+    for ogr in ogrenci_listesi:
+        no_key = str(ogr.get('no', '')).strip()
+        ad = ogr.get('ad_soyad', no_key)
+        sube = ogr.get('sube', '')
+        k_sube = kisa_sube(sube)
+
+        ozsz, ozrl = VeriAraclari.hesapla_devamsizlik(no_key, gruplu_dev.get(no_key, []), [])
+        ozsz = round(ozsz, 1)
+        ozrl = round(ozrl, 1)
+        topt = round(ozsz + ozrl, 1)
+
+        # 1. 5 Gün Eşiği (Özürsüz 5 gün ve üzeri)
+        if ozsz >= 5.0:
+            durum_5 = kayitli_durumlar.get((no_key, "5_gun"), {})
+            liste_5.append({
+                "no": no_key,
+                "ad_soyad": ad,
+                "sube": k_sube,
+                "ozursuz": ozsz,
+                "ozurlu": ozrl,
+                "toplam": topt,
+                "devamsizlik": f"{ozsz} Gün Özürsüz",
+                "mektup_gonderildi": durum_5.get("gonderildi", False),
+                "gonderilme_tarihi": durum_5.get("tarih", "")
+            })
+
+        # 2. 15 Gün Eşiği (Toplam 15 gün ve üzeri)
+        if topt >= 15.0:
+            durum_15 = kayitli_durumlar.get((no_key, "15_gun"), {})
+            liste_15.append({
+                "no": no_key,
+                "ad_soyad": ad,
+                "sube": k_sube,
+                "ozursuz": ozsz,
+                "ozurlu": ozrl,
+                "toplam": topt,
+                "devamsizlik": f"{topt} Gün Toplam ({ozsz}G Özürsüz)",
+                "mektup_gonderildi": durum_15.get("gonderildi", False),
+                "gonderilme_tarihi": durum_15.get("tarih", "")
+            })
+
+        # 3. 25 Gün Eşiği (Toplam 25 gün ve üzeri)
+        if topt >= 25.0:
+            durum_25 = kayitli_durumlar.get((no_key, "25_gun"), {})
+            liste_25.append({
+                "no": no_key,
+                "ad_soyad": ad,
+                "sube": k_sube,
+                "ozursuz": ozsz,
+                "ozurlu": ozrl,
+                "toplam": topt,
+                "devamsizlik": f"{topt} Gün Toplam (30G Sınırına 5G Kaldı!)",
+                "mektup_gonderildi": durum_25.get("gonderildi", False),
+                "gonderilme_tarihi": durum_25.get("tarih", "")
+            })
+
+    def sirala_ve_numaralandir(lst, key):
+        lst.sort(key=lambda x: x[key], reverse=True)
+        for i, item in enumerate(lst):
+            item["sira"] = i + 1
+        return lst
+
+    liste_5 = sirala_ve_numaralandir(liste_5, "ozursuz")
+    liste_15 = sirala_ve_numaralandir(liste_15, "toplam")
+    liste_25 = sirala_ve_numaralandir(liste_25, "toplam")
+
+    def paketle(esik_adi, mevzuat, liste):
+        toplam = len(liste)
+        gonderilen = sum(1 for o in liste if o["mektup_gonderildi"])
+        kalan = toplam - gonderilen
+        hepsi = (kalan == 0 and toplam > 0)
+        return {
+            "esik_adi": esik_adi,
+            "mevzuat": mevzuat,
+            "toplam_ogrenci": toplam,
+            "gonderilen_sayi": gonderilen,
+            "kalan_sayi": kalan,
+            "hepsi_gonderildi": hepsi,
+            "ogrenciler": liste
+        }
+
+    return {
+        "5_gun": paketle(
+            "5 Gün Eşiği (1. Tebligat)", 
+            "Özürsüz 5 gün devamsızlık ve komisyon bildirimi (MEB OÖKY Md. 36/4 & 36/5-a)", 
+            liste_5
+        ),
+        "15_gun": paketle(
+            "15 Gün Eşiği (2. Tebligat)", 
+            "Toplam 15 gün resmi iadeli taahhütlü tebligat (MEB OÖKY Md. 36/4)", 
+            liste_15
+        ),
+        "25_gun": paketle(
+            "25 Gün Eşiği (3. Nihai Tebligat)", 
+            "Toplam 25 gün nihai resmi tebligatı; 30 gün sınırında sınıf tekrarı (MEB OÖKY Md. 36/4)", 
+            liste_25
+        )
+    }
 
 @router.get("/istatistikler")
 def get_istatistikler():
@@ -215,12 +344,18 @@ def get_istatistikler():
             } for g in gun_sirasi
         ]
 
+        from mevzuat_kurallari import ogrenci_tebligat_ve_artarda_analiz
+
         # Kritik Eşik Erken Uyarı Verileri
         esik_kategorileri = {
             "ramakkala_10": [],    # 8.5 <= ozursuz < 10.0 (Kritik Eşik: Ramak Kala)
             "asanlar_10": [],      # ozursuz >= 10.0 (Sınıf Tekrarı Riski)
             "mektup_siniri_5": [], # 4.5 <= ozursuz <= 5.0 (1. Mektup Eşiği)
-            "toplam_risk_25": []   # toplam >= 25.0 (Toplam Sınır 30'a Yaklaşanlar)
+            "toplam_risk_25": [],  # toplam >= 25.0 (Toplam Sınır 30'a Yaklaşanlar)
+            "artarda_2gun": [],    # Art arda 2 gün özürsüz devamsızlık
+            "tebligat_5": [],      # 5. gün resmi tebligat eşiği
+            "tebligat_15": [],     # 15. gün resmi tebligat eşiği
+            "tebligat_25": []      # 25. gün resmi tebligat eşiği
         }
 
         for ogr in ogrenci_listesi:
@@ -231,13 +366,20 @@ def get_istatistikler():
             if topt == 0 and ozst == 0:
                 continue
 
+            ogr_devleri = gruplu_dev.get(no, [])
+            anal = ogrenci_tebligat_ve_artarda_analiz(ogr_devleri, ozst, ozlt)
+
             ogr_ozet = {
                 "no": no,
                 "ad": ogrenci_ad_map.get(no, no),
                 "sube": kisa_sube(ogrenci_sube_map.get(no, "")),
                 "ozursuz": ozst,
                 "ozurlu": ozlt,
-                "toplam": topt
+                "toplam": topt,
+                "art_arda_2gun": anal.get("art_arda_2gun", False),
+                "art_arda_tarihler": anal.get("art_arda_tarihler", ""),
+                "tebligat_asamasi": anal.get("tebligat_asamasi"),
+                "tebligat_etiketi": anal.get("tebligat_etiketi")
             }
 
             if 8.5 <= ozst < 10.0:
@@ -251,10 +393,24 @@ def get_istatistikler():
             if topt >= 25.0:
                 esik_kategorileri["toplam_risk_25"].append(ogr_ozet)
 
+            if anal.get("art_arda_2gun"):
+                esik_kategorileri["artarda_2gun"].append(ogr_ozet)
+
+            if anal.get("tebligat_asamasi") == "5_gun":
+                esik_kategorileri["tebligat_5"].append(ogr_ozet)
+            elif anal.get("tebligat_asamasi") == "15_gun":
+                esik_kategorileri["tebligat_15"].append(ogr_ozet)
+            elif anal.get("tebligat_asamasi") == "25_gun":
+                esik_kategorileri["tebligat_25"].append(ogr_ozet)
+
         esik_kategorileri["ramakkala_10"].sort(key=lambda x: x["ozursuz"], reverse=True)
         esik_kategorileri["asanlar_10"].sort(key=lambda x: x["ozursuz"], reverse=True)
         esik_kategorileri["mektup_siniri_5"].sort(key=lambda x: x["ozursuz"], reverse=True)
         esik_kategorileri["toplam_risk_25"].sort(key=lambda x: x["toplam"], reverse=True)
+        esik_kategorileri["artarda_2gun"].sort(key=lambda x: x["ozursuz"], reverse=True)
+        esik_kategorileri["tebligat_5"].sort(key=lambda x: x["ozursuz"], reverse=True)
+        esik_kategorileri["tebligat_15"].sort(key=lambda x: x["toplam"], reverse=True)
+        esik_kategorileri["tebligat_25"].sort(key=lambda x: x["toplam"], reverse=True)
 
         # 1. Devamsızlık Risk Piramidi & Dağılımı (Özürsüz Gün Aralıkları)
         piramit_sayilari = {
@@ -326,11 +482,31 @@ def get_istatistikler():
                 })
         g_esik_ogrenciler.sort(key=lambda x: x["g_sayisi"], reverse=True)
 
-        # 4. Şampiyon Şubeler (En Düşük Ortalama Devamsızlık Yapan İlk 3 Şube)
-        sampiyon_subeler = sorted(
-            [s for s in sube_ort_list if s.get("ogrenci_sayisi", 0) > 0],
-            key=lambda x: x["ortalama"]
-        )[:3]
+        # 4. Şampiyon Şubeler (Tüm Şubeler Sıralı & Emsal Okul Ortalaması)
+        gecerli_subeler = [s for s in sube_ort_list if s.get("ogrenci_sayisi", 0) > 0]
+        sirali_subeler = sorted(gecerli_subeler, key=lambda x: x["ortalama"])
+
+        # Emsal Değer: Okul Geneli Şube Devamsızlık Ortalaması (Ağırlıklı Ortalama)
+        toplam_ogr = sum(s.get("ogrenci_sayisi", 0) for s in sirali_subeler)
+        if toplam_ogr > 0:
+            okul_sube_ortalamasi = round(
+                sum(s["ortalama"] * s.get("ogrenci_sayisi", 0) for s in sirali_subeler) / toplam_ogr, 
+                2
+            )
+        elif sirali_subeler:
+            okul_sube_ortalamasi = round(sum(s["ortalama"] for s in sirali_subeler) / len(sirali_subeler), 2)
+        else:
+            okul_sube_ortalamasi = 0.0
+
+        for s in sirali_subeler:
+            fark = round(s["ortalama"] - okul_sube_ortalamasi, 2)
+            s["emsal_fark"] = fark
+
+        sampiyon_subeler = {
+            "subeler": sirali_subeler,
+            "okul_ortalama": okul_sube_ortalamasi,
+            "toplam_sube": len(sirali_subeler)
+        }
 
         return {
             "kpis": {
@@ -339,7 +515,11 @@ def get_istatistikler():
                 "sifir_hata": kpi_sifir,
                 "toplam_evrak": kpi_evrak,
                 "ramakkala_10_sayi": len(esik_kategorileri["ramakkala_10"]),
-                "mektup_5_sayi": len(esik_kategorileri["mektup_siniri_5"])
+                "mektup_5_sayi": len(esik_kategorileri["mektup_siniri_5"]),
+                "artarda_2gun_sayi": len(esik_kategorileri["artarda_2gun"]),
+                "tebligat_5_sayi": len(esik_kategorileri["tebligat_5"]),
+                "tebligat_15_sayi": len(esik_kategorileri["tebligat_15"]),
+                "tebligat_25_sayi": len(esik_kategorileri["tebligat_25"])
             },
             "sube_dev": [{"sube": k, "toplam": v} for k, v in sube_toplam.items()],
             "sube_ortalamalar": sube_ort_list,
@@ -359,7 +539,8 @@ def get_istatistikler():
                 "donusen_gun": round(donusen_toplam_gun, 1),
                 "esik_sayisi": len(g_esik_ogrenciler)
             },
-            "sampiyon_subeler": sampiyon_subeler
+            "sampiyon_subeler": sampiyon_subeler,
+            "mektup_takip": mektup_takip_verilerini_hesapla()
         }
     except Exception as e:
         import traceback
@@ -372,3 +553,31 @@ def get_kritik_esikler():
     if isinstance(stats, dict) and "kritik_esikler" in stats:
         return {"basarili": True, "veriler": stats["kritik_esikler"]}
     return {"basarili": False, "mesaj": stats.get("hata", "Veri alınamadı")}
+
+@router.get("/mektup-takip-ozet")
+def get_mektup_takip_ozet():
+    try:
+        ozet = mektup_takip_verilerini_hesapla()
+        return {"basarili": True, "veriler": ozet}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+@router.post("/mektup-durumu-kaydet")
+def mektup_durumu_kaydet_endpoint(req: MektupDurumRequest):
+    try:
+        basarili, hata = db.mektup_durumu_kaydet(req.ogrenci_no, req.esik_turu, req.gonderildi)
+        if not basarili:
+            return {"basarili": False, "mesaj": hata}
+        return {"basarili": True, "mesaj": "Mektup durumu güncellendi."}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}
+
+@router.post("/mektup-durumu-toplu-kaydet")
+def mektup_durumu_toplu_kaydet_endpoint(req: TopluMektupDurumRequest):
+    try:
+        basarili, hata = db.mektup_durumu_toplu_kaydet(req.ogrenci_nolar, req.esik_turu, req.gonderildi)
+        if not basarili:
+            return {"basarili": False, "mesaj": hata}
+        return {"basarili": True, "mesaj": "Toplu mektup durumu güncellendi."}
+    except Exception as e:
+        return {"basarili": False, "mesaj": str(e)}

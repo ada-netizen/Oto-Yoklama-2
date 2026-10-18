@@ -318,6 +318,334 @@ class ExcelMotoru:
             return None, str(e)
 
     @staticmethod
+    def akilli_kademe_derece(val):
+        """
+        Excel'in '1/4' derece/kademe bilgisini tarih (örn: 1 Nisan, 2026-04-01) 
+        olarak algılaması durumunda otomatik olarak gün ve ayı ayırıp 1/4'e geri dönüştürür.
+        """
+        if val is None or pd.isna(val) or val == '':
+            return '-'
+        from datetime import datetime, date
+        if isinstance(val, (datetime, date, pd.Timestamp)):
+            return f"{val.day}/{val.month}"
+        s = str(val).strip()
+        if s.lower() in ['nan', 'none', '<na>', 'nat', '-', '']:
+            return '-'
+        if ' 00:00:00' in s:
+            s = s.replace(' 00:00:00', '').strip()
+            
+        import re
+        # 1. ISO format: 2026-04-01 -> 1/4 (Yıl-Ay-Gün -> Gün/Ay)
+        m_iso = re.match(r'^\d{4}-(\d{1,2})-(\d{1,2})$', s)
+        if m_iso:
+            return f"{int(m_iso.group(2))}/{int(m_iso.group(1))}"
+            
+        # 2. Türkçe metin ayı formatı: 1-Nis, 1 Nisan, 1 Nis 2026
+        ay_map = {
+            'oca': 1, 'ocak': 1, 'sub': 2, 'şub': 2, 'şubat': 2, 'mar': 3, 'mart': 3,
+            'nis': 4, 'nisan': 4, 'may': 5, 'mayıs': 5, 'haz': 6, 'haziran': 6,
+            'tem': 7, 'temmuz': 7, 'agu': 8, 'ağu': 8, 'ağustos': 8, 'eyl': 9, 'eylül': 9,
+            'eki': 10, 'ekim': 10, 'kas': 11, 'kasım': 11, 'ara': 12, 'aralık': 12
+        }
+        m_word = re.match(r'^(\d{1,2})[\s\-./]+([a-zA-ZçğıöşüÇĞİÖŞÜ]+)', s)
+        if m_word:
+            day = int(m_word.group(1))
+            month_word = m_word.group(2).lower()[:3]
+            if month_word in ay_map:
+                return f"{day}/{ay_map[month_word]}"
+                
+        # 3. TR tarih formatı: 01.04.2026 veya 01/04/2026
+        m_tr_date = re.match(r'^0?(\d{1,2})[./\-]0?(\d{1,2})[./\-]\d{2,4}$', s)
+        if m_tr_date:
+            return f"{int(m_tr_date.group(1))}/{int(m_tr_date.group(2))}"
+            
+        # 4. Standart oran: 1/4, 1-4, 3/2
+        m_simple = re.match(r'^(\d{1,2})\s*[/\\-]\s*(\d{1,2})$', s)
+        if m_simple:
+            return f"{int(m_simple.group(1))}/{int(m_simple.group(2))}"
+            
+        return s
+
+    @staticmethod
+    def pano_metnini_tabloya_cevir(kaynak):
+        """
+        Kullanıcının panodan kopyalayıp yapıştırdığı (HTML veya TSV/metin) tablo verisini
+        satır/sütun sayısı uyumsuzluklarından (ragged rows, uneven tabs, ParserError) 
+        etkilenmeden güvenli, hizalanmış bir pandas DataFrame'e dönüştürür.
+        """
+        import io
+        import os
+        import re
+
+        if isinstance(kaynak, pd.DataFrame):
+            return kaynak
+        if not isinstance(kaynak, str):
+            return pd.DataFrame()
+
+        s = kaynak.strip()
+        if not s:
+            return pd.DataFrame()
+
+        # 1. HTML tablo denemesi
+        if '<table' in s.lower():
+            try:
+                df_list = pd.read_html(io.StringIO(s), header=None)
+                if df_list and not df_list[0].empty:
+                    return df_list[0]
+            except Exception:
+                pass
+
+        # 2. Satır bazlı TSV / metin çözümleme
+        lines = [l for l in s.splitlines() if l.strip()]
+        if not lines:
+            return pd.DataFrame()
+
+        sep = '\t' if '\t' in s else (';' if ';' in s else '\t')
+        raw_rows = [[c.strip() for c in l.split(sep)] for l in lines]
+        if not raw_rows:
+            return pd.DataFrame()
+
+        # Akıllı Kolon Hizalama (TC Sütununa Göre Ofset Tespiti)
+        # MEBBİS tablolarında bazen başlık satırında seçim/ikon sütunu kopyalanmazken
+        # veri satırlarında ilk sütun boş ('') olarak kopyalanır (23 başlığa karşılık 24 veri hücresi).
+        h0 = raw_rows[0]
+        tc_h_idx = next((i for i, c in enumerate(h0) if 'tc' in c.lower()), -1)
+        if tc_h_idx != -1 and len(raw_rows) > 1:
+            d_rows = raw_rows[1:]
+            tc_d_indices = [i for r in d_rows for i, c in enumerate(r) if c.isdigit() and len(c) == 11]
+            if tc_d_indices:
+                tc_d_idx = tc_d_indices[0]
+                if tc_d_idx > tc_h_idx:
+                    raw_rows[0] = [''] * (tc_d_idx - tc_h_idx) + raw_rows[0]
+
+        max_len = max(len(r) for r in raw_rows)
+        padded_rows = [r + [''] * (max_len - len(r)) for r in raw_rows]
+        return pd.DataFrame(padded_rows)
+
+    @staticmethod
+    def mebbis_gorevlendirme_mi(dosya_yolu_veya_df):
+        """Dosyanın veya metnin MEBBİS Görevlendirme Personel Tablosu olup olmadığını tespit eder."""
+        try:
+            import os
+            if isinstance(dosya_yolu_veya_df, pd.DataFrame):
+                df = dosya_yolu_veya_df
+            elif isinstance(dosya_yolu_veya_df, str) and not os.path.exists(dosya_yolu_veya_df):
+                df = ExcelMotoru.pano_metnini_tabloya_cevir(dosya_yolu_veya_df)
+            else:
+                df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu_veya_df, header=None, dtype=str)
+            if df.empty:
+                return False
+            tum_metin = " ".join([str(c) for c in df.columns]).upper()
+            for idx in range(min(15, len(df))):
+                satir = " ".join([str(x) for x in df.iloc[idx].values if pd.notna(x)])
+                tum_metin += " " + satir.upper()
+            if "AY.DER/KAD" in tum_metin or "AY.DER" in tum_metin or ("İSTİHDAM TİPİ" in tum_metin and "KADRO" in tum_metin) or ("GÖREV YERİ" in tum_metin and "KADRO" in tum_metin) or ("GÖREVLENDİRME" in tum_metin and "KADRO" in tum_metin):
+                return True
+            return False
+        except Exception:
+            return False
+
+    @staticmethod
+    def _mebbis_tablo_ayristir(df, varsayilan_grup="Görevlendirme"):
+        """
+        MEBBİS veya Excel'den kopyalanan tablo halindeki personel verilerini (web panosu veya Excel)
+        sütun adlarını esnek tespit ederek standart 24 alana dönüştürür.
+        """
+        import re
+        from araclar import VeriAraclari
+        from utils import _personel_grup_tahmin_et
+
+        if df.empty:
+            return []
+
+        # Başlık satırını bul
+        header_idx = -1
+        for i, row in df.iterrows():
+            satir_metni = " ".join([str(x).upper() for x in row.values if pd.notna(x)])
+            if ("TC" in satir_metni or "T.C." in satir_metni or "KİMLİK" in satir_metni or "KIMLIK" in satir_metni) and \
+               ("AD" in satir_metni or "SOYAD" in satir_metni or "AY.DER" in satir_metni or "UNVAN" in satir_metni or "ÜNVAN" in satir_metni or "BRANŞ" in satir_metni or "GÖREV" in satir_metni or "İSTİHDAM" in satir_metni):
+                header_idx = i
+                break
+
+        if header_idx == -1:
+            # Belirgin başlık bulunamadıysa ilk satırı dene
+            header_idx = 0
+
+        header_row = df.iloc[header_idx].values
+        df_veri = df.iloc[header_idx + 1:].copy()
+        col_names = []
+        counts = {}
+        for idx, x in enumerate(header_row):
+            name = str(x).strip() if pd.notna(x) and str(x).strip() else f"col_{idx}"
+            if name in counts:
+                counts[name] += 1
+                col_names.append(f"{name}_{counts[name]}")
+            else:
+                counts[name] = 1
+                col_names.append(name)
+        df_veri.columns = col_names
+
+        def _bul(desenler, excludes=[]):
+            for p in desenler:
+                for col in df_veri.columns:
+                    col_l = str(col).lower()
+                    if any(ex in col_l for ex in excludes):
+                        continue
+                    if p.lower() in col_l:
+                        return col
+            return None
+
+        c_tc = _bul(['TC Kimlik No', 'TC Kimlik', 'TC No', 'T.C. Kimlik No', 'T.C. No', 'T.C.', 'TC', 'Kimlik No', 'Kimlik'])
+        c_ad = _bul(['Adı', 'Adi', 'Ad'], excludes=['baba', 'soy', 'kurum', 'okul', 'yer'])
+        c_soyad = _bul(['Soyadı', 'Soyadi', 'Soyad'])
+        c_ad_soyad = _bul(['Ad Soyad', 'Adı Soyadı', 'Adi Soyadi', 'Personel Adı', 'Personel'])
+        c_kariyer = _bul(['Öğretmenlik Kariyer Basamağı', 'Kariyer Basamağı', 'Kariyer'])
+        c_kademe = _bul(['Ay.Der/Kad', 'Der/Kad', 'Derece / Kademe', 'Kadro Derece', 'Derece', 'Kademe', 'Kazanılmış Hak'])
+        c_sicil_em = _bul(['Emekli Sicil No', 'Emekli Sicil', 'Emekli', 'SGK No'])
+        c_sicil_kurum = _bul(['Kurum Sicil No', 'Kurum Sicil', 'Sicil No', 'Sicil'])
+        c_unvan = _bul(['Kadro Ünvanı', 'Kadro Unvanı', 'Kadro Unvani', 'Ünvan', 'Unvan', 'Kadro'])
+        c_gorev = _bul(['Görevi', 'Gorevi', 'Görev', 'Gorev'], excludes=['yeri', 'il', 'kurum'])
+        c_brans = _bul(['Alanı', 'Alani', 'Alan', 'Branşı', 'Bransı', 'Branş', 'Brans'])
+        c_yer = _bul(['Görev Yeri', 'Gorev Yeri', 'Kurum Adı', 'Kurum', 'Okul Adı', 'Okul'])
+        c_il = _bul(['İli', 'Ili', 'İl', 'Il'])
+        c_ilce = _bul(['İlçesi', 'Ilcesi', 'İlçe', 'Ilce'])
+        c_cinsiyet = _bul(['Cinsiyeti', 'Cinsiyet'])
+        c_arsiv = _bul(['Arşiv No', 'Arsiv No', 'Arşiv', 'Arsiv'])
+        c_durum = _bul(['Durumu', 'Durum', 'Statü Durumu', 'Aktif'])
+        c_dogum = _bul(['Doğum Yılı', 'Dogum Yili', 'Doğum Tarihi', 'Dogum Tarihi'])
+        c_grup = _bul(['Grup / Statü', 'Grup', 'İstihdam Tipi', 'İstihdam Türü', 'Statü', 'Personel Türü'])
+
+        personeller = []
+        for _, row in df_veri.iterrows():
+            if c_ad and c_soyad:
+                adi = str(row[c_ad]).strip() if pd.notna(row[c_ad]) else ''
+                soyadi = str(row[c_soyad]).strip() if pd.notna(row[c_soyad]) else ''
+                ad_soyad = f"{adi} {soyadi}".strip()
+            elif c_ad_soyad:
+                ad_soyad = str(row[c_ad_soyad]).strip() if pd.notna(row[c_ad_soyad]) else ''
+            elif c_ad:
+                ad_soyad = str(row[c_ad]).strip() if pd.notna(row[c_ad]) else ''
+            else:
+                continue
+
+            if not ad_soyad or ad_soyad.lower() in ['nan', 'none', '-', '']:
+                continue
+
+            # Türkçe isim formatlama: İlk kelimeler ilk harf büyük, son kelime (soyad) tamamen BÜYÜK
+            ad_soyad = VeriAraclari.tr_format_ad_soyad(ad_soyad)
+
+            tc = str(row[c_tc]).strip() if (c_tc and pd.notna(row[c_tc])) else ''
+            if tc.endswith('.0') and tc[:-2].isdigit(): tc = tc[:-2]
+            if tc.lower() in ['nan', 'none']: tc = ''
+
+            kademe_val = row[c_kademe] if (c_kademe and pd.notna(row[c_kademe])) else '-'
+            kademe_derece = ExcelMotoru.akilli_kademe_derece(kademe_val)
+
+            unvan = str(row[c_unvan]).strip() if (c_unvan and pd.notna(row[c_unvan])) else '-'
+            if unvan.lower() in ['nan', 'none', '']: unvan = '-'
+
+            gorev = str(row[c_gorev]).strip() if (c_gorev and pd.notna(row[c_gorev])) else '-'
+            if gorev.lower() in ['nan', 'none', '']: gorev = unvan if unvan != '-' else '-'
+
+            brans = str(row[c_brans]).strip() if (c_brans and pd.notna(row[c_brans])) else '-'
+            if brans.lower() in ['nan', 'none', '']: brans = '-'
+
+            kariyer = str(row[c_kariyer]).strip() if (c_kariyer and pd.notna(row[c_kariyer])) else '-'
+            if kariyer.lower() in ['nan', 'none', '']: kariyer = '-'
+
+            kurum_adi = str(row[c_yer]).strip() if (c_yer and pd.notna(row[c_yer])) else ''
+            if kurum_adi.lower() in ['nan', 'none']: kurum_adi = ''
+
+            il = str(row[c_il]).strip() if (c_il and pd.notna(row[c_il])) else ''
+            ilce = str(row[c_ilce]).strip() if (c_ilce and pd.notna(row[c_ilce])) else ''
+            if il.lower() in ['nan', 'none']: il = ''
+            if ilce.lower() in ['nan', 'none']: ilce = ''
+            il_ilce = f"{il} / {ilce}".strip(" /") if (il or ilce) else ''
+
+            cins_raw = str(row[c_cinsiyet]).strip().upper() if (c_cinsiyet and pd.notna(row[c_cinsiyet])) else ''
+            cinsiyet = 'E' if 'ERK' in cins_raw or cins_raw == 'E' else ('K' if 'KAD' in cins_raw or cins_raw == 'K' else '')
+
+            arsiv_no = str(row[c_arsiv]).strip() if (c_arsiv and pd.notna(row[c_arsiv])) else ''
+            if arsiv_no.lower() in ['nan', 'none']: arsiv_no = ''
+
+            emekli_sicil = str(row[c_sicil_em]).strip() if (c_sicil_em and pd.notna(row[c_sicil_em])) else ''
+            if emekli_sicil.endswith('.0') and emekli_sicil[:-2].isdigit(): emekli_sicil = emekli_sicil[:-2]
+            if emekli_sicil.lower() in ['nan', 'none']: emekli_sicil = ''
+
+            kurum_sicil = str(row[c_sicil_kurum]).strip() if (c_sicil_kurum and pd.notna(row[c_sicil_kurum])) else ''
+            if kurum_sicil.endswith('.0') and kurum_sicil[:-2].isdigit(): kurum_sicil = kurum_sicil[:-2]
+            if kurum_sicil.lower() in ['nan', 'none']: kurum_sicil = ''
+
+            durum_raw = str(row[c_durum]).strip().lower() if (c_durum and pd.notna(row[c_durum])) else ''
+            aktif = 0 if any(k in durum_raw for k in ['ayrıl', 'pasif', 'hayır', 'hayir']) else 1
+
+            dogum = str(row[c_dogum]).strip() if (c_dogum and pd.notna(row[c_dogum])) else ''
+            if dogum.endswith('.0') and dogum[:-2].isdigit(): dogum = dogum[:-2]
+            if dogum.lower() in ['nan', 'none']: dogum = ''
+
+            # Grup belirleme
+            if varsayilan_grup == 'Görevlendirme':
+                grup = 'Görevlendirme'
+            elif varsayilan_grup == 'Kadrolu':
+                grup_raw = str(row[c_grup]).strip() if (c_grup and pd.notna(row[c_grup])) else ''
+                if grup_raw and grup_raw.lower() not in ['nan', 'none', '-', '']:
+                    grup = grup_raw
+                else:
+                    grup = _personel_grup_tahmin_et(f"{unvan} {gorev}") or 'Kadrolu'
+            else:
+                grup_raw = str(row[c_grup]).strip() if (c_grup and pd.notna(row[c_grup])) else ''
+                grup = grup_raw if (grup_raw and grup_raw.lower() not in ['nan', 'none', '-', '']) else varsayilan_grup
+
+            personeller.append({
+                'ad_soyad': ad_soyad,
+                'tc_no': tc,
+                'unvan': unvan,
+                'brans': brans,
+                'gorev': gorev,
+                'grup': grup,
+                'il_ilce': il_ilce,
+                'kurum_adi': kurum_adi,
+                'kurum_kodu': '',
+                'kurumda_baslama': '',
+                'kariyer': kariyer,
+                'kademe_derece': kademe_derece,
+                'ogrenim_durumu': '-',
+                'cinsiyet': cinsiyet,
+                'kan_grubu': '',
+                'dogum_tarihi': dogum,
+                'goreve_baslama': '',
+                'kurum_sicil_no': kurum_sicil,
+                'emekli_sicil_no': emekli_sicil,
+                'arsiv_no': arsiv_no,
+                'telefon': '',
+                'eposta': '',
+                'notlar': '',
+                'aktif': aktif
+            })
+
+        return personeller
+
+    @staticmethod
+    def mebbis_gorevlendirme_personel_oku(kaynak):
+        """
+        MEBBİS Görevlendirme Çalışan Personel tablosunu (Excel dosyası veya kopyalanan pano metni/HTML)
+        ayrıştırır ve her personeli standart 24 alana eşler.
+        """
+        import os
+
+        if isinstance(kaynak, pd.DataFrame):
+            df = kaynak
+        elif isinstance(kaynak, str) and not os.path.exists(kaynak):
+            df = ExcelMotoru.pano_metnini_tabloya_cevir(kaynak)
+        else:
+            df = ExcelMotoru.tabloyu_guvenli_oku(kaynak, header=None)
+
+        if df.empty:
+            return []
+
+        return ExcelMotoru._mebbis_tablo_ayristir(df, varsayilan_grup="Görevlendirme")
+
+    @staticmethod
     def mebbis_mi_kontrol_et(dosya_yolu):
         """Dosyanın MEBBİS Personel Listesi olup olmadığını tespit eder."""
         try:
@@ -340,13 +668,21 @@ class ExcelMotoru:
     def mebbis_personel_oku(dosya_yolu):
         """
         MEBBİS'ten indirilen düzensiz, kayan satır/sütunlu 'Personel Listesi (Özet Bilgiler)'
-        Excel dosyasını semantik kalıp tanıma (regex) yöntemiyle sıfır kayıpla ayrıştırır.
+        Excel dosyasını veya panodan yapıştırılan metni semantik kalıp tanıma (regex) yöntemiyle sıfır kayıpla ayrıştırır.
         """
+        import os
+        import io
         import re
         from araclar import VeriAraclari
         from utils import _personel_grup_tahmin_et
 
-        df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
+        if isinstance(dosya_yolu, pd.DataFrame):
+            df = dosya_yolu
+        elif isinstance(dosya_yolu, str) and not os.path.exists(dosya_yolu):
+            df = ExcelMotoru.pano_metnini_tabloya_cevir(dosya_yolu)
+        else:
+            df = ExcelMotoru.tabloyu_guvenli_oku(dosya_yolu, header=None, dtype=str)
+
         if df.empty:
             return []
 
@@ -456,6 +792,10 @@ class ExcelMotoru:
 
         if current_person:
             personeller.append(current_person)
+
+        if not personeller:
+            # Pano veya standart tablo halindeki MEBBİS verisini sütun bazlı ayrıştır
+            return ExcelMotoru._mebbis_tablo_ayristir(df, varsayilan_grup="Kadrolu")
 
         # Semantik zenginleştirme (Kayan sütunlardan bağımsız tip eşleme)
         for p in personeller:

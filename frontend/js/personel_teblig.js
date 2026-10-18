@@ -1,23 +1,102 @@
-        // --- PERSONEL YÖNETİMİ ---
-        function personelExcelYukle(event) {
+        // --- PERSONEL YÖNETİMİ & İÇE AKTARMA MERKEZİ ---
+        function personelYuklemeModaliAc() {
+            modalAc('personel_yukleme_modal');
+            setTimeout(() => { if (typeof lucide !== 'undefined') lucide.createIcons(); }, 50);
+        }
+        window.personelYuklemeModaliAc = personelYuklemeModaliAc;
+
+        function personelDosyaSecildi(event, tip) {
             const dosya = event.target.files[0]; if (!dosya) return;
             const formData = new FormData(); formData.append("dosya", dosya);
-            yuklemeGoster("Personel listesi işleniyor...");
+            if (tip) formData.append("yukleme_tipi", tip);
+
+            yuklemeGoster(tip === 'mebbis_gorevlendirme' ? "Görevlendirme personel listesi işleniyor..." : "Personel listesi işleniyor...");
             fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
-                if(v.basarili && v.job_id) {
-                    ilerlemeTakipEt(v.job_id, personelleriYukle);
+                if (v.basarili && v.job_id) {
+                    ilerlemeTakipEt(v.job_id, () => {
+                        modalKapat('personel_yukleme_modal');
+                        if (window.personelleriYukle) window.personelleriYukle();
+                    });
+                } else if (v.basarili) {
+                    bildirimGoster(v.mesaj || "Personeller başarıyla yüklendi.", "bilgi");
+                    modalKapat('personel_yukleme_modal');
+                    if (window.personelleriYukle) window.personelleriYukle();
                 } else {
                     bildirimGoster(v.mesaj, "hata");
                 }
-                if(event && event.target) event.target.value = '';
+                if (event && event.target) event.target.value = '';
             }).catch(err => { 
                 bildirimGoster(err.message || "Bağlantı hatası! Sunucuyu kontrol edin.", "hata"); 
             }).finally(() => yuklemeGizle());
         }
+        window.personelDosyaSecildi = personelDosyaSecildi;
+
+        function personelExcelYukle(event) {
+            personelDosyaSecildi(event, null);
+        }
+
+        async function personelPanoAktar(tip) {
+            const textareaId = (tip === 'mebbis_gorevlendirme' || tip === 'gorevlendirme') ? 'personel_gorevlendirme_pano_text' : 'personel_kadrolu_pano_text';
+            const el = document.getElementById(textareaId);
+            let metin = el ? el.value.trim() : '';
+
+            if (!metin) {
+                bildirimGoster("Lütfen yapıştırılmış tablo verisi girin veya 'Panoyu Al' butonuna tıklayın.", "uyari");
+                return;
+            }
+
+            yuklemeGoster("Pano verisi çözümleniyor...");
+            try {
+                const resp = await fetch(`${API}/personel-pano-yukle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ icerik: metin, yukleme_tipi: tip })
+                });
+                const v = await resp.json();
+                if (v.basarili) {
+                    bildirimGoster(v.mesaj || "Personeller başarıyla aktarıldı.", "bilgi");
+                    if (el) el.value = '';
+                    modalKapat('personel_yukleme_modal');
+                    if (window.personelleriYukle) window.personelleriYukle();
+                } else {
+                    bildirimGoster(v.mesaj || "Aktarım başarısız oldu.", "hata");
+                }
+            } catch (err) {
+                bildirimGoster(err.message || "Bağlantı hatası!", "hata");
+            } finally {
+                yuklemeGizle();
+            }
+        }
+        window.personelPanoAktar = personelPanoAktar;
+
+        async function personelPanodanOtomatikYapistir(tip) {
+            const textareaId = (tip === 'mebbis_gorevlendirme' || tip === 'gorevlendirme') ? 'personel_gorevlendirme_pano_text' : 'personel_kadrolu_pano_text';
+            const el = document.getElementById(textareaId);
+            if (!el) return;
+            try {
+                if (navigator.clipboard && navigator.clipboard.readText) {
+                    const text = await navigator.clipboard.readText();
+                    if (text && text.trim()) {
+                        el.value = text;
+                        bildirimGoster("Panodaki tablo verisi alana yapıştırıldı.", "bilgi");
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn("Clipboard API:", e);
+            }
+            el.focus();
+            bildirimGoster("Lütfen kutuya tıklayıp Ctrl + V ile yapıştırın.", "bilgi");
+        }
+        window.personelPanodanOtomatikYapistir = personelPanodanOtomatikYapistir;
+
+        function personelSablonIndir(tip) {
+            window.location.href = `${API}/personel-sablon-indir/${tip || 'gorevlendirme'}`;
+        }
+        window.personelSablonIndir = personelSablonIndir;
 
         function personelYonetimAc() { 
             modalAc('personel_yonetim_modal'); 
-            // yonetimPersonelTablosunuDoldur() iptal edildi (artık Alpine.js kullanılıyor)
         }
         function ogrenciYonetimAc() { modalAc('ogrenci_yonetim_modal'); if(window.verileriYukle) window.verileriYukle(); }
 
@@ -42,7 +121,7 @@ function filtreTumuDegisti() {
             checkboxes.forEach(cb => cb.checked = tumu);
             
             tumPersoneller.forEach(p => {
-                if (p.aktif === 0) {
+                if (p.aktif !== 1) {
                     p.secili = false;
                 } else {
                     p.secili = tumu;
@@ -71,7 +150,7 @@ function filtreTumuDegisti() {
                 let uyarMi = seciliGruplar.has(p.grup);
                 
                 if (uyarMi) {
-                    p.secili = (p.aktif !== 0);
+                    p.secili = (p.aktif === 1);
                 } else if (!p.manuelEklendi) {
                     p.secili = false;
                 }
@@ -120,8 +199,8 @@ function filtreTumuDegisti() {
                     (p.brans && p.brans.toLocaleUpperCase('tr-TR').includes(arama)) || 
                     (p.grup && p.grup.toLocaleUpperCase('tr-TR').includes(arama))
                 );
-                // Pasif personel başka kuruma görevlendirildiği için normal toplu listelerde gösterilmez (arama hariç)
-                if (p.aktif === 0 && !p.secili && !aramaUygun) return false;
+                // Pasif veya İzinli personel normal toplu listelerde gösterilmez (arama hariç)
+                if (p.aktif !== 1 && !p.secili && !aramaUygun) return false;
                 return p.secili || aramaUygun;
             });
 
@@ -143,7 +222,13 @@ function filtreTumuDegisti() {
                     if(p.secili) ekrandakiSeciliSayisi++;
                     const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
                     const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
-                    const adEk = (p.aktif === 0) ? ' <span style="font-size:10px; color:#dc2626; font-weight:700;">(Başka Kurumda)</span>' : '';
+                    let adEk = '';
+                    if (p.aktif !== 1) {
+                        const d = (typeof window.getPersonelDurumBilgisi === 'function') ? window.getPersonelDurumBilgisi(p.aktif) : null;
+                        if (d) {
+                            adEk = ` <span style="font-size:10px; color:${d.renk}; font-weight:700;">(${d.kisaEtiket})</span>`;
+                        }
+                    }
                     govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
                         <td><label for="chk_${i}" style="cursor:pointer; display:block;">${p.ad}${adEk}</label></td>
                         <td>${gorev}</td>
@@ -761,11 +846,17 @@ function personelProfilAc(personelVerisi) {
     setText('pp_unvan_gorev_ozet', `${p.unvan || '-'} / ${p.gorev || '-'} (${p.brans || '-'})`);
     setText('pp_kurum_ozet', `${p.kurum_adi || 'Kurum Belirtilmemiş'} ${p.kurum_kodu ? `(${p.kurum_kodu})` : ''}`);
 
-    const isPasif = (p.aktif === 0);
+    const valAktif = (p.aktif !== undefined && p.aktif !== null) ? parseInt(p.aktif) : 1;
+    const elAktifDurum = document.getElementById('pp_aktif_durum');
+    if (elAktifDurum) {
+        elAktifDurum.value = String(valAktif);
+        ppAktifDurumDegisti(String(valAktif));
+    }
+    const isPasif = (valAktif === 0);
     const elPasif = document.getElementById('pp_gorevlendirildi_pasif');
     if (elPasif) elPasif.checked = isPasif;
     const elDurumBadge = document.getElementById('pp_durum_badge');
-    if (elDurumBadge) elDurumBadge.style.display = isPasif ? 'inline-block' : 'none';
+    if (elDurumBadge) elDurumBadge.style.display = (valAktif !== 1) ? 'inline-block' : 'none';
 
     setVal('pp_id', p.id);
     setVal('pp_ad_soyad', p.ad);
@@ -806,9 +897,185 @@ function personelProfilAc(personelVerisi) {
 }
 window.personelProfilAc = personelProfilAc;
 
-function ppGorevlendirmeDurumDegisti(checked) {
+// ==============================================================================
+// PERSONEL GÖREV VE UZUN SÜRELİ İZİN DURUMLARI REHBERİ (CENTRAL STATUS REGISTRY)
+// ==============================================================================
+window.PERSONEL_DURUMLARI = {
+    1: {
+        kod: 1,
+        etiket: 'Aktif (Kurumda Görevde)',
+        kisaEtiket: 'Aktif',
+        renk: '#059669',
+        arkaplan: 'rgba(16, 185, 129, 0.12)',
+        kenarlik: 'rgba(16, 185, 129, 0.35)',
+        ikon: 'check-circle-2',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>',
+        fiilenGorevde: true,
+        yasalDayanak: 'Fiilen Görevde',
+        aciklama: 'Kurumda fiilen görev başındadır. İmza sirküsü ve resmi evrak listelerinde varsayılan olarak seçili gelir.'
+    },
+    0: {
+        kod: 0,
+        etiket: 'Başka Kuruma Görevlendirildi',
+        kisaEtiket: 'Başka Kurumda',
+        renk: '#dc2626',
+        arkaplan: 'rgba(239, 68, 68, 0.12)',
+        kenarlik: 'rgba(239, 68, 68, 0.35)',
+        ikon: 'building-2',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M8 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Ek Md. 8 / MEB Yön.',
+        aciklama: '⚠️ 657 SK Ek Md. 8 uyarınca başka bir kuruma görevlidir; genel imza sirküsü listelerinde varsayılan olarak seçili gelmez.'
+    },
+    2: {
+        kod: 2,
+        etiket: 'Uzun Süreli Sağlık İzninde',
+        kisaEtiket: 'Sağlık İzninde',
+        renk: '#7c3aed',
+        arkaplan: 'rgba(124, 58, 237, 0.12)',
+        kenarlik: 'rgba(124, 58, 237, 0.35)',
+        ikon: 'heart-pulse',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Md. 105',
+        aciklama: '🏥 657 SK Md. 105 uyarınca uzun süreli sağlık/heyet raporunda (12 veya 18 aya kadar) olduğu için fiilen görevde sayılmaz.'
+    },
+    3: {
+        kod: 3,
+        etiket: 'Doğum / Analık İzninde',
+        kisaEtiket: 'Doğum İzninde',
+        renk: '#db2777',
+        arkaplan: 'rgba(236, 72, 153, 0.12)',
+        kenarlik: 'rgba(236, 72, 153, 0.35)',
+        ikon: 'baby',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 15h8"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Md. 104/A',
+        aciklama: '🌸 657 SK Md. 104/A uyarınca 16 hafta (çoğul gebelikte 18 hafta) analık izinlidir; fiilen görevde sayılmaz.'
+    },
+    4: {
+        kod: 4,
+        etiket: 'Aylıksız İzninde (Doğum / 5 Yıl vb.)',
+        kisaEtiket: 'Aylıksız İzninde',
+        renk: '#d97706',
+        arkaplan: 'rgba(217, 119, 6, 0.12)',
+        kenarlik: 'rgba(217, 119, 6, 0.35)',
+        ikon: 'clock',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Md. 108',
+        aciklama: '⏳ 657 SK Md. 108 uyarınca (doğum sonrası 24 ay veya 5 yıla 1 yıl isteğe bağlı) aylıksız izinlidir; fiilen görevde bulunmaz.'
+    },
+    5: {
+        kod: 5,
+        etiket: 'Refakat İzninde',
+        kisaEtiket: 'Refakat İzninde',
+        renk: '#0891b2',
+        arkaplan: 'rgba(8, 145, 178, 0.12)',
+        kenarlik: 'rgba(8, 145, 178, 0.35)',
+        ikon: 'shield-alert',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Md. 105/Son',
+        aciklama: '🩺 657 SK Md. 105 son fıkrası uyarınca hayati tehlikesi/ağır hastalığı bulunan yakını için 3-6 ay refakat izinlidir.'
+    },
+    6: {
+        kod: 6,
+        etiket: 'Askerlik Görevinde / İzninde',
+        kisaEtiket: 'Askerlikte',
+        renk: '#4d7c0f',
+        arkaplan: 'rgba(77, 124, 15, 0.12)',
+        kenarlik: 'rgba(77, 124, 15, 0.35)',
+        ikon: 'shield',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Md. 108/G',
+        aciklama: '🎖️ 657 SK Md. 108/G uyarınca muvazzaf veya bedelli askerlik hizmetini ifa etmektedir.'
+    },
+    7: {
+        kod: 7,
+        etiket: 'Yurtdışı / Lisansüstü Eğitim İzninde',
+        kisaEtiket: 'Yurtdışı/Eğitim',
+        renk: '#4f46e5',
+        arkaplan: 'rgba(79, 70, 229, 0.12)',
+        kenarlik: 'rgba(79, 70, 229, 0.35)',
+        ikon: 'globe',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" x2="22" y1="12" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '657 SK Md. 78-79',
+        aciklama: '🎓 657 SK Md. 78-79 uyarınca lisansüstü eğitim veya bilgi-görgü artırma amacıyla yurt dışı/eğitim izinlidir.'
+    },
+    8: {
+        kod: 8,
+        etiket: 'Sendika Görevinde / İzninde',
+        kisaEtiket: 'Sendika İzninde',
+        renk: '#c026d3',
+        arkaplan: 'rgba(192, 38, 211, 0.12)',
+        kenarlik: 'rgba(192, 38, 211, 0.35)',
+        ikon: 'landmark',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" x2="21" y1="22" y2="22"/><line x1="6" x2="6" y1="18" y2="11"/><line x1="10" x2="10" y1="18" y2="11"/><line x1="14" x2="14" y1="18" y2="11"/><line x1="18" x2="18" y1="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>',
+        fiilenGorevde: false,
+        yasalDayanak: '4688 SK Md. 18',
+        aciklama: '🏛️ 4688 SK Md. 18 uyarınca sendika yönetim organlarında görevli olup sendikal izinlidir.'
+    }
+};
+
+window.getPersonelDurumBilgisi = function(kod) {
+    const val = (kod !== undefined && kod !== null) ? parseInt(kod) : 1;
+    return window.PERSONEL_DURUMLARI[val] || window.PERSONEL_DURUMLARI[1];
+};
+
+window.getPersonelDurumBadgeHtml = function(kod) {
+    const d = window.getPersonelDurumBilgisi(kod);
+    return `<span style="font-size: 10.5px; padding: 2px 8px; background: ${d.arkaplan}; color: ${d.renk}; border: 1px solid ${d.kenarlik}; border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="${d.yasalDayanak} - ${d.aciklama}">
+        ${d.svg}
+        <span>${d.kisaEtiket}</span>
+    </span>`;
+};
+
+function ppAktifDurumDegisti(val) {
+    const el = document.getElementById('pp_aktif_durum');
+    const elPasif = document.getElementById('pp_gorevlendirildi_pasif');
     const elDurumBadge = document.getElementById('pp_durum_badge');
-    if (elDurumBadge) elDurumBadge.style.display = checked ? 'inline-block' : 'none';
+    const elAciklama = document.getElementById('pp_durum_aciklama');
+    const valInt = (val !== undefined && val !== null) ? parseInt(val) : 1;
+    const durum = window.getPersonelDurumBilgisi(valInt);
+    
+    if (elPasif) elPasif.checked = (valInt === 0);
+    
+    if (el) {
+        el.style.borderColor = durum.renk;
+        el.style.color = durum.renk;
+    }
+
+    if (durum.fiilenGorevde) {
+        if (elDurumBadge) elDurumBadge.style.display = 'none';
+        if (elAciklama) elAciklama.style.display = 'none';
+    } else {
+        if (elDurumBadge) {
+            elDurumBadge.style.display = 'inline-flex';
+            elDurumBadge.style.alignItems = 'center';
+            elDurumBadge.style.gap = '4px';
+            elDurumBadge.innerHTML = `${durum.svg} <span>${durum.etiket}</span>`;
+            elDurumBadge.style.background = durum.arkaplan;
+            elDurumBadge.style.color = durum.renk;
+            elDurumBadge.style.borderColor = durum.kenarlik;
+        }
+        if (elAciklama) {
+            elAciklama.style.display = 'block';
+            elAciklama.style.color = durum.renk;
+            elAciklama.innerText = durum.aciklama;
+        }
+    }
+}
+window.ppAktifDurumDegisti = ppAktifDurumDegisti;
+
+function ppGorevlendirmeDurumDegisti(checked) {
+    const elAktif = document.getElementById('pp_aktif_durum');
+    if (elAktif) {
+        elAktif.value = checked ? '0' : '1';
+        ppAktifDurumDegisti(elAktif.value);
+    }
 }
 window.ppGorevlendirmeDurumDegisti = ppGorevlendirmeDurumDegisti;
 
@@ -862,6 +1129,13 @@ function personelYeniEkleModalAc() {
     if (elGrup) elGrup.value = 'Kadrolu';
     const elPasif = document.getElementById('pp_gorevlendirildi_pasif');
     if (elPasif) elPasif.checked = false;
+    const elAktifDurum = document.getElementById('pp_aktif_durum');
+    if (elAktifDurum) {
+        elAktifDurum.value = '1';
+        if (typeof ppAktifDurumDegisti === 'function') {
+            ppAktifDurumDegisti('1');
+        }
+    }
 
     const elBtnSil = document.getElementById('pp_btn_sil');
     if (elBtnSil) elBtnSil.style.display = 'none';
@@ -895,7 +1169,9 @@ function personelProfilKaydet() {
         return;
     }
 
+    const elAktifDurum = document.getElementById('pp_aktif_durum');
     const isPasif = document.getElementById('pp_gorevlendirildi_pasif') ? document.getElementById('pp_gorevlendirildi_pasif').checked : false;
+    const aktifVal = elAktifDurum ? parseInt(elAktifDurum.value) : (isPasif ? 0 : 1);
 
     const payload = {
         id: idVal ? parseInt(idVal) : null,
@@ -922,7 +1198,7 @@ function personelProfilKaydet() {
         telefon: getVal('pp_telefon'),
         eposta: getVal('pp_eposta'),
         notlar: getVal('pp_notlar'),
-        aktif: isPasif ? 0 : 1
+        aktif: isNaN(aktifVal) ? 1 : aktifVal
     };
 
     yuklemeGoster();

@@ -1,6 +1,7 @@
 import os
 import json
 import shutil
+import sqlite3
 from datetime import datetime
 import logging
 
@@ -49,7 +50,7 @@ class SistemMotoru:
 
     @staticmethod
     def yedek_al(db_yolu, ayarlar, varsayilan_yedek_klasoru):
-        """Veritabanını kopyalayarak yedekler ve eski çöpleri temizler."""
+        """Veritabanını SQLite Online Backup API ile WAL checkpoint yaparak kilitlenmeden, eksiksiz yedekler."""
         try:
             hedef_klasor = ayarlar.get("yedek_kayit_klasoru", varsayilan_yedek_klasoru)
             if not os.path.exists(hedef_klasor): os.makedirs(hedef_klasor)
@@ -57,18 +58,33 @@ class SistemMotoru:
             zaman = datetime.now().strftime("%Y%m%d_%H%M%S")
             hedef_dosya = os.path.join(hedef_klasor, f"veritabani_yedek_{zaman}.db")
             
-            shutil.copy(db_yolu, hedef_dosya)
+            # 1. SQLite Online Backup API ile canlı, tutarlı ve eksiksiz yedekleme
+            if os.path.exists(db_yolu):
+                kaynak_conn = sqlite3.connect(db_yolu, timeout=30.0)
+                try:
+                    kaynak_conn.execute("PRAGMA wal_checkpoint(TRUNCATE);")
+                except Exception as pe:
+                    logging.warning(f"Yedekleme öncesi WAL checkpoint uyarısı: {pe}")
+                    
+                yedek_conn = sqlite3.connect(hedef_dosya)
+                with yedek_conn:
+                    kaynak_conn.backup(yedek_conn)
+                yedek_conn.close()
+                kaynak_conn.close()
+            else:
+                return False, f"Veritabanı dosyası bulunamadı: {db_yolu}"
             
-            # Ayarları da yedekle
+            # 2. Ayarları da eşzamanlı yedekle
             ayarlar_yolu = os.path.join(os.path.dirname(db_yolu), "yoklama_ayarlar.json")
             if os.path.exists(ayarlar_yolu):
                 hedef_ayarlar_dosya = os.path.join(hedef_klasor, f"ayarlar_yedek_{zaman}.json")
                 shutil.copy(ayarlar_yolu, hedef_ayarlar_dosya)
             
-            # Yedek aldıktan sonra arkadan çöp toplayıcıyı çalıştır
+            # 3. Yedek aldıktan sonra eski yedek temizleyicisini çalıştır
             SistemMotoru.eski_yedekleri_temizle(ayarlar, varsayilan_yedek_klasoru)
             return True, ""
         except Exception as e:
+            logging.error(f"SistemMotoru.yedek_al hatası: {e}")
             return False, str(e)
 
     @staticmethod

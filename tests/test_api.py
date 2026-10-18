@@ -374,6 +374,7 @@ def test_sistem_teshis_endpoint():
     assert "ogrenci_sayisi" in data["veritabani"]
     assert "devamsizlik_sayisi" in data["veritabani"]
     assert "personel_sayisi" in data["veritabani"]
+    assert "evrak_sayisi" in data["veritabani"]
     assert "python_versiyon" in data["sistem"]
 
 
@@ -390,6 +391,7 @@ def test_yardim_sekmesinde_mevzuat_sss_ve_teshis_bilesenleri():
     assert "Sıkça Sorulan Sorular ve Hızlı Sorun Giderme" in html
     assert "Sistem Teşhisi ve Sağlık Kontrolü" in html
     assert "teshis_ogr_sayisi" in html
+    assert "teshis_evrak_sayisi" in html
     assert "teshis_db_butunluk" in html
 
 
