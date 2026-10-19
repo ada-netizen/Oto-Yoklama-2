@@ -2229,6 +2229,236 @@ body.light-theme .sidebar-rail:focus-within {
     background: #B91C1C;
 }
 
+/* =========================================================
+   PERSONEL TERFİ MODÜLÜ & 365 GÜNLÜK TAKVİM STİLLERİ
+   ========================================================= */
+.terfi-matris-tablo {
+    table-layout: fixed;
+    width: 100%;
+}
+
+.terfi-matris-tablo th {
+    background-color: #1E3A8A;
+    color: #FFFFFF;
+    padding: 6px 1px;
+    border: 1px solid var(--border);
+    font-weight: 700;
+    overflow: hidden;
+}
+
+.terfi-matris-tablo th.ay-baslik-th {
+    width: 65px !important;
+    min-width: 65px !important;
+    max-width: 65px !important;
+    text-align: center;
+}
+
+.terfi-matris-tablo td {
+    padding: 2px 1px;
+    height: 30px;
+    border: 1px solid var(--border);
+    transition: all 0.15s ease;
+    user-select: none;
+    overflow: hidden;
+}
+
+.terfi-matris-tablo td.ay-baslik {
+    background-color: var(--bg-card);
+    color: var(--fg-main);
+    font-weight: 700;
+    width: 65px !important;
+    min-width: 65px !important;
+    max-width: 65px !important;
+    text-align: center;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 10.5px;
+}
+
+.terfi-matris-tablo td.gecersiz-gun {
+    background-color: var(--bg-main);
+    opacity: 0.25;
+    cursor: not-allowed;
+}
+
+.terfi-matris-tablo td.hafta-sonu {
+    background-color: rgba(148, 163, 184, 0.12);
+}
+
+.terfi-matris-tablo tr.bu-ay-satiri {
+    background: linear-gradient(90deg, rgba(56, 189, 248, 0.08) 0%, rgba(56, 189, 248, 0.02) 100%);
+}
+
+.terfi-matris-tablo tr.bu-ay-satiri td {
+    border-top: 1px solid rgba(56, 189, 248, 0.35);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.terfi-matris-tablo td.ay-baslik.bu-ay-baslik {
+    background: linear-gradient(135deg, rgba(14, 165, 233, 0.22) 0%, rgba(56, 189, 248, 0.10) 100%) !important;
+    border-left: 3.5px solid #38BDF8 !important;
+    border-top: 1px solid rgba(56, 189, 248, 0.45) !important;
+    border-bottom: 1px solid rgba(56, 189, 248, 0.45) !important;
+    padding: 2px 4px !important;
+}
+
+.bu-ay-kapsayici {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5px;
+    width: 100%;
+}
+
+.bu-ay-ad {
+    color: #38BDF8 !important;
+    font-weight: 800;
+    font-size: 10.5px;
+    letter-spacing: 0.3px;
+    line-height: 1.1;
+}
+
+.bu-ay-rozet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    font-size: 7.5px;
+    font-weight: 800;
+    line-height: 1;
+    padding: 1.5px 4.5px;
+    border-radius: 9999px;
+    background: rgba(56, 189, 248, 0.22);
+    color: #38BDF8;
+    border: 1px solid rgba(56, 189, 248, 0.4);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    box-shadow: 0 1px 4px rgba(56, 189, 248, 0.2);
+}
+
+.bu-ay-nokta {
+    width: 3.5px;
+    height: 3.5px;
+    border-radius: 50%;
+    background-color: #38BDF8;
+    display: inline-block;
+    box-shadow: 0 0 5px #38BDF8;
+    animation: buAyNoktaPulse 2s infinite ease-in-out;
+}
+
+@keyframes buAyNoktaPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.35; transform: scale(0.75); }
+}
+
+.terfi-matris-tablo td.bu-ay-bugun {
+    position: relative;
+    background-color: rgba(56, 189, 248, 0.14) !important;
+}
+
+.terfi-matris-tablo td.bu-ay-bugun::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 3.5px;
+    height: 3.5px;
+    border-radius: 50%;
+    background-color: #38BDF8;
+    box-shadow: 0 0 4px #38BDF8;
+    pointer-events: none;
+}
+
+/* Light Mode / Açık Tema Uyumluluğu */
+body.light-theme .terfi-matris-tablo tr.bu-ay-satiri,
+:root[style*="--bg-main: #F8FAFC"] .terfi-matris-tablo tr.bu-ay-satiri {
+    background: linear-gradient(90deg, rgba(2, 132, 199, 0.08) 0%, rgba(2, 132, 199, 0.02) 100%);
+}
+
+body.light-theme .terfi-matris-tablo td.ay-baslik.bu-ay-baslik,
+:root[style*="--bg-main: #F8FAFC"] .terfi-matris-tablo td.ay-baslik.bu-ay-baslik {
+    background: linear-gradient(135deg, rgba(2, 132, 199, 0.15) 0%, rgba(56, 189, 248, 0.08) 100%) !important;
+    border-left-color: #0284C7 !important;
+}
+
+body.light-theme .bu-ay-ad,
+:root[style*="--bg-main: #F8FAFC"] .bu-ay-ad {
+    color: #0284C7 !important;
+}
+
+body.light-theme .bu-ay-rozet,
+:root[style*="--bg-main: #F8FAFC"] .bu-ay-rozet {
+    background: #0284C7;
+    color: #FFFFFF;
+    border-color: #0284C7;
+}
+
+body.light-theme .bu-ay-nokta,
+:root[style*="--bg-main: #F8FAFC"] .bu-ay-nokta {
+    background-color: #FFFFFF;
+    box-shadow: 0 0 4px #FFFFFF;
+}
+
+.terfi-matris-tablo td.terfi-gunu {
+    background-color: rgba(59, 130, 246, 0.15);
+    cursor: pointer;
+}
+
+.terfi-matris-tablo td.terfi-gunu:hover {
+    filter: brightness(1.15);
+    transform: scale(1.08);
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.terfi-hucre-rozet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.terfi-hucre-rozet.kademe {
+    background: #0284C7;
+    color: #FFFFFF;
+    border: 1px solid #0369A1;
+}
+
+.terfi-hucre-rozet.derece {
+    background: #7C3AED;
+    color: #FFFFFF;
+    border: 1px solid #6D28D9;
+}
+
+.terfi-hucre-rozet.karisik {
+    background: linear-gradient(90deg, #0284C7 50%, #7C3AED 50%);
+    color: #FFFFFF;
+    border: 1px solid #4F46E5;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.terfi-hucre-rozet.coklu {
+    background: #D97706;
+    color: #FFFFFF;
+    border: 1px solid #B45309;
+}
+
+.terfi-hucre-rozet.tavan {
+    background: #475569;
+    color: #FFFFFF;
+    border: 1px solid #334155;
+}
+
+
 
 
 

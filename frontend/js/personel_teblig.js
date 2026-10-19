@@ -103,61 +103,354 @@
         // --- <i data-lucide="brain" width="16" height="16"></i> GELİŞMİŞ AKILLI EŞLEŞTİRME MOTORU ---
         function akilliEslesmeModalAc() { if(tumPersoneller.length === 0) personelleriYukle().then(() => modalAc('akilli_eslesme_modal')); else modalAc('akilli_eslesme_modal'); }
 
-function dinamikTebligFiltreleriOlustur() {
-    const kapsayici = document.getElementById('dinamik_teblig_filtreleri');
-    if (!kapsayici) return;
-    let html = '<label class="chip-checkbox-wrapper" title="Tüm grupları seç/bırak"><input type="checkbox" id="grp_tumu" class="chip-checkbox" onchange="filtreTumuDegisti()"><span class="chip-label">Tümü</span></label>';
-    tumPersonelGruplari.forEach(grup => {
-        let sid = grup.replace(/[^a-zA-Z0-9]/g, '_');
-        html += `<label class="chip-checkbox-wrapper"><input type="checkbox" id="grp_${sid}" class="chip-checkbox dinamik-grp-checkbox" data-grup="${grup}" onchange="filtreleriHesapla()"><span class="chip-label">${grup}</span></label>`;
-    });
-    kapsayici.innerHTML = html;
-}
+        // =====================================================================
+        // PERSONEL TEBLİĞİ: 2 KATMANLI ÇAPRAZ FİLTRE & HEDEF KİTLE MİMARİSİ
+        // =====================================================================
+        let seciliTebligRolu = 'TUMU';      // 'TUMU', 'OGRETMEN', 'IDARECI', 'MEMUR', 'DESTEK'
+        let seciliTebligBransi = '';        // '' = Tüm Branşlar, veya 'Tarih', 'Matematik' vb.
+        window.seciliTebligRolu = seciliTebligRolu;
+        window.seciliTebligBransi = seciliTebligBransi;
+        window.sonTebligGosterilenler = [];
 
-function filtreTumuDegisti() {
-            const tumu = document.getElementById('grp_tumu') ? document.getElementById('grp_tumu').checked : false;
-            
-            const checkboxes = document.querySelectorAll('.dinamik-grp-checkbox');
-            checkboxes.forEach(cb => cb.checked = tumu);
-            
-            tumPersoneller.forEach(p => {
-                if (p.aktif !== 1) {
-                    p.secili = false;
-                } else {
-                    p.secili = tumu;
+        function trNormalize(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/İ/g, 'I').replace(/ı/g, 'I').replace(/i/g, 'I')
+                .replace(/Ğ/g, 'G').replace(/ğ/g, 'G')
+                .replace(/Ü/g, 'U').replace(/ü/g, 'U')
+                .replace(/Ş/g, 'S').replace(/ş/g, 'S')
+                .replace(/Ö/g, 'O').replace(/ö/g, 'O')
+                .replace(/Ç/g, 'C').replace(/ç/g, 'C')
+                .toUpperCase()
+                .trim();
+        }
+        window.trNormalize = trNormalize;
+
+        function getGorevKademesi(p) {
+            if (!p) return 3;
+            const gorevStr = ((p.gorev || '') + ' ' + (p.unvan || '')).toLocaleUpperCase('tr-TR').trim();
+            // 1. Kademe: Okul Müdürü / Kurum Müdürü (Yardımcı veya Başyardımcı değilse)
+            if (gorevStr.includes('MÜDÜR') && 
+                !gorevStr.includes('YARDIMCI') && 
+                !gorevStr.includes('BAŞYARDIMCI') && 
+                !gorevStr.includes('YRD')) {
+                return 1;
+            }
+            // 2. Kademe: Müdür Yardımcısı / Müdür Başyardımcısı
+            if (gorevStr.includes('MÜDÜR') && 
+                (gorevStr.includes('YARDIMCI') || gorevStr.includes('BAŞYARDIMCI') || gorevStr.includes('YRD'))) {
+                return 2;
+            }
+            // 3. Kademe: Öğretmen, Memur, Destek ve Diğer Personeller
+            return 3;
+        }
+        window.getGorevKademesi = getGorevKademesi;
+
+        function personelRolunuTespitEt(p) {
+            if (!p) return 'DIGER';
+            const u = trNormalize(p.unvan);
+            const g = trNormalize(p.gorev);
+            const grp = trNormalize(p.grup);
+            const b = (p.brans || '').trim();
+
+            // 1. İdareciler (Müdür, Müdür Başyardımcısı, Müdür Yardımcısı vb.)
+            if (g.includes('MUDUR') || u.includes('MUDUR')) {
+                return 'IDARECI';
+            }
+
+            // 2. Destek / İşçi Personeli (TYP, İUP, Sürekli İşçi, Hizmetli, Güvenlik vb.)
+            const destekGruplar = ['TYP', 'IUP', 'ISCI', 'HIZMET ALIMI'];
+            const destekKelimeler = ['TEMIZLIK', 'HIZMETLI', 'GUVENLIK', 'BAHCE', 'ASCI', 'SOFOR', 'TEKNISYEN', 'ISCI', 'TYP', 'IUP'];
+            if (destekGruplar.some(k => grp.includes(k)) || 
+                destekKelimeler.some(k => g.includes(k)) || 
+                destekKelimeler.some(k => u.includes(k))) {
+                return 'DESTEK';
+            }
+
+            // 3. Memurlar / Büro Personeli (Memur, VHKİ, Veri Hazırlama, Şef, Sayman vb.)
+            const memurKelimeler = ['MEMUR', 'V.H.K.I', 'VHKI', 'VERI HAZIRLAMA', 'SEF', 'SAYMAN', 'BURO', 'MUTEMET', 'BILGISAYAR ISLETMENI'];
+            if (memurKelimeler.some(k => g.includes(k)) || memurKelimeler.some(k => u.includes(k))) {
+                return 'MEMUR';
+            }
+
+            // 4. Öğretmenler (Kadrolu, Sözleşmeli, Ücretli, Görevlendirme fark etmeksizin)
+            if (g.includes('OGRETMEN') || u.includes('OGRETMEN') || 
+                (b && b !== '-' && b !== 'NaN') || 
+                grp === 'OGRETMENLER' || grp === 'UCRETLI') {
+                return 'OGRETMEN';
+            }
+
+            if (b && b !== '-' && b !== 'NaN') return 'OGRETMEN';
+            return 'DIGER';
+        }
+        window.personelRolunuTespitEt = personelRolunuTespitEt;
+
+        function tebligRolPresetleriGuncelle() {
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            const aktifler = persList.filter(p => p.aktif === 1);
+
+            const sayilar = {
+                'TUMU': aktifler.length,
+                'OGRETMEN': 0,
+                'IDARECI': 0,
+                'MEMUR': 0,
+                'DESTEK': 0
+            };
+
+            aktifler.forEach(p => {
+                const rol = personelRolunuTespitEt(p);
+                if (sayilar[rol] !== undefined) {
+                    sayilar[rol]++;
                 }
             });
+
+            const butonTanimlari = [
+                { id: 'btn_rol_tumu', metin: '👥 Tümü', sayi: sayilar['TUMU'] },
+                { id: 'btn_rol_ogretmen', metin: '🎓 Öğretmenler', sayi: sayilar['OGRETMEN'] },
+                { id: 'btn_rol_idareci', metin: '🏛️ İdareciler', sayi: sayilar['IDARECI'] },
+                { id: 'btn_rol_memur', metin: '📑 Memurlar', sayi: sayilar['MEMUR'] },
+                { id: 'btn_rol_destek', metin: '🧹 Destek / İşçi', sayi: sayilar['DESTEK'] }
+            ];
+
+            butonTanimlari.forEach(item => {
+                const btn = document.getElementById(item.id);
+                if (btn) {
+                    btn.innerHTML = `${item.metin} (${item.sayi})`;
+                    // Eğer o grupta sistemde 0 insan varsa filtrelerde gizlenir, sayı > 0 ise görünür
+                    btn.style.display = (item.sayi > 0 || item.id === 'btn_rol_tumu') ? 'inline-flex' : 'none';
+                }
+            });
+        }
+        window.tebligRolPresetleriGuncelle = tebligRolPresetleriGuncelle;
+
+        function tebligBransListesiniGuncelle() {
+            const sel = document.getElementById('teblig_brans_filtre');
+            if (!sel) return;
+
+            const bransSayilari = {};
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            persList.forEach(p => {
+                const b = (p.brans || '').trim();
+                if (b && b !== '-' && b !== 'NaN') {
+                    bransSayilari[b] = (bransSayilari[b] || 0) + 1;
+                }
+            });
+
+            const siraliBranslar = Object.keys(bransSayilari).sort((a, b) => a.localeCompare(b, 'tr-TR'));
+            const mevcutSecim = sel.value;
+            let html = '<option value="">Tüm Branşlar</option>';
+            siraliBranslar.forEach(b => {
+                const secili = (b === mevcutSecim) ? 'selected' : '';
+                html += `<option value="${b.replace(/"/g, '&quot;')}" ${secili}>${b} (${bransSayilari[b]})</option>`;
+            });
+            sel.innerHTML = html;
+        }
+        window.tebligBransListesiniGuncelle = tebligBransListesiniGuncelle;
+
+        function tebligBransFiltrele(bransDegeri) {
+            seciliTebligBransi = bransDegeri || '';
+            window.seciliTebligBransi = seciliTebligBransi;
             personelTablosunuDoldur();
         }
+        window.tebligBransFiltrele = tebligBransFiltrele;
+
+        function tebligRolSec(rolKodu) {
+            seciliTebligRolu = rolKodu || 'TUMU';
+            window.seciliTebligRolu = seciliTebligRolu;
+
+            // Buton UI aktifliği güncelle
+            document.querySelectorAll('.teblig-preset-btn').forEach(btn => btn.classList.remove('active'));
+            const btnId = {
+                'TUMU': 'btn_rol_tumu',
+                'OGRETMEN': 'btn_rol_ogretmen',
+                'IDARECI': 'btn_rol_idareci',
+                'MEMUR': 'btn_rol_memur',
+                'DESTEK': 'btn_rol_destek'
+            }[seciliTebligRolu];
+            const btn = document.getElementById(btnId);
+            if (btn) btn.classList.add('active');
+
+            // Branşlar SADECE öğretmenler seçildiğinde görünür olur
+            const bransKapsayici = document.getElementById('teblig_brans_kapsayici');
+            if (bransKapsayici) {
+                if (seciliTebligRolu === 'OGRETMEN') {
+                    bransKapsayici.style.display = 'flex';
+                } else {
+                    bransKapsayici.style.display = 'none';
+                    seciliTebligBransi = '';
+                    window.seciliTebligBransi = '';
+                    const bransSel = document.getElementById('teblig_brans_filtre');
+                    if (bransSel) bransSel.value = '';
+                }
+            }
+
+            // Hızlı Seçim Davranışı:
+            // Hedef kitle butonuna basıldığında o role ait AKTİF personelleri otomatik seç
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            let secilenSayi = 0;
+            if (rolKodu === 'TUMU') {
+                // Tümü tıklandığında filtre sıfırlanır, mevcut seçimler korunur
+            } else {
+                persList.forEach(p => {
+                    const rol = personelRolunuTespitEt(p);
+                    if (rol === rolKodu && p.aktif === 1) {
+                        p.secili = true;
+                        p.manuelEklendi = true;
+                        secilenSayi++;
+                    } else if (p.secili && !p.manuelEklendi) {
+                        p.secili = false;
+                    }
+                });
+                const rolBasliklari = {
+                    'OGRETMEN': 'Öğretmen',
+                    'IDARECI': 'İdareci',
+                    'MEMUR': 'Memur',
+                    'DESTEK': 'Destek/İşçi Personeli'
+                };
+                if (typeof bildirimGoster === 'function' && secilenSayi > 0) {
+                    bildirimGoster(`${secilenSayi} ${rolBasliklari[rolKodu] || 'personel'} seçildi.`, "bilgi");
+                }
+            }
+
+            personelTablosunuDoldur();
+        }
+        window.tebligRolSec = tebligRolSec;
+
+        function dinamikTebligFiltreleriOlustur() {
+            const kapsayici = document.getElementById('dinamik_teblig_filtreleri');
+            if (!kapsayici) return;
+            const gruplar = (window.tumPersonelGruplari && window.tumPersonelGruplari.length > 0) 
+                ? window.tumPersonelGruplari 
+                : ((typeof tumPersonelGruplari !== 'undefined' && tumPersonelGruplari.length > 0) ? tumPersonelGruplari : (window.STANDART_8_GRUP || ['Kadrolu', 'Görevlendirme', 'Ücretli', 'Sözleşmeli', 'Sürekli İşçi', 'TYP', 'İUP', 'Hizmet Alımı']));
+
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            const aktifler = persList.filter(p => p.aktif === 1);
+
+            // Her grup için aktif personel sayısını hesapla
+            const grupSayilari = {};
+            gruplar.forEach(g => { grupSayilari[g] = 0; });
+            aktifler.forEach(p => {
+                if (p.grup) {
+                    grupSayilari[p.grup] = (grupSayilari[p.grup] || 0) + 1;
+                }
+            });
+            
+            let html = `<label class="chip-checkbox-wrapper" title="Tüm grupları filtrele"><input type="checkbox" id="grp_tumu" class="chip-checkbox" onchange="filtreTumuDegisti()"><span class="chip-label">Tümü (${aktifler.length})</span></label>`;
+            gruplar.forEach(grup => {
+                const sayi = grupSayilari[grup] || 0;
+                // Eğer o grupta sistemde 0 insan varsa personel tebliği sayfasında filtrelerde gizlensin
+                if (sayi > 0) {
+                    let sid = grup.replace(/[^a-zA-Z0-9]/g, '_');
+                    html += `<label class="chip-checkbox-wrapper"><input type="checkbox" id="grp_${sid}" class="chip-checkbox dinamik-grp-checkbox" data-grup="${grup}" onchange="filtreleriHesapla()"><span class="chip-label">${grup} (${sayi})</span></label>`;
+                }
+            });
+            kapsayici.innerHTML = html;
+
+            // Rol buton sayılarını da eşzamanlı güncelle
+            tebligRolPresetleriGuncelle();
+        }
+        window.dinamikTebligFiltreleriOlustur = dinamikTebligFiltreleriOlustur;
+
+        function filtreTumuDegisti() {
+            const tumu = document.getElementById('grp_tumu') ? document.getElementById('grp_tumu').checked : false;
+            const checkboxes = document.querySelectorAll('.dinamik-grp-checkbox');
+            checkboxes.forEach(cb => cb.checked = tumu);
+            personelTablosunuDoldur();
+        }
+        window.filtreTumuDegisti = filtreTumuDegisti;
 
         function filtreleriHesapla() {
             const checkboxes = document.querySelectorAll('.dinamik-grp-checkbox');
-            let allChecked = true;
-            
-            const seciliGruplar = new Set();
+            let allChecked = checkboxes.length > 0;
             checkboxes.forEach(cb => {
-                if (cb.checked) {
-                    seciliGruplar.add(cb.getAttribute('data-grup'));
-                } else {
-                    allChecked = false;
-                }
+                if (!cb.checked) allChecked = false;
             });
-
-            if (document.getElementById('grp_tumu')) 
-                document.getElementById('grp_tumu').checked = allChecked;
-
-            tumPersoneller.forEach(p => {
-                let uyarMi = seciliGruplar.has(p.grup);
-                
-                if (uyarMi) {
-                    p.secili = (p.aktif === 1);
-                } else if (!p.manuelEklendi) {
-                    p.secili = false;
-                }
-            });
+            const grpTumu = document.getElementById('grp_tumu');
+            if (grpTumu) grpTumu.checked = allChecked;
 
             personelTablosunuDoldur();
         }
+        window.filtreleriHesapla = filtreleriHesapla;
+
+        function personelTumunuTemizle() {
+            seciliTebligRolu = 'TUMU';
+            seciliTebligBransi = '';
+            window.seciliTebligRolu = 'TUMU';
+            window.seciliTebligBransi = '';
+
+            // 1. Rol butonlarını sıfırla
+            document.querySelectorAll('.teblig-preset-btn').forEach(btn => btn.classList.remove('active'));
+            const btnTumu = document.getElementById('btn_rol_tumu');
+            if (btnTumu) btnTumu.classList.add('active');
+
+            // Branş kapsayıcısını gizle
+            const bransKapsayici = document.getElementById('teblig_brans_kapsayici');
+            if (bransKapsayici) bransKapsayici.style.display = 'none';
+
+            // 2. Statü çipleri sıfırla
+            document.querySelectorAll('.dinamik-grp-checkbox').forEach(cb => cb.checked = false);
+            const grpTumu = document.getElementById('grp_tumu');
+            if (grpTumu) grpTumu.checked = false;
+
+            // 3. Branş seçimi sıfırla
+            const bransSel = document.getElementById('teblig_brans_filtre');
+            if (bransSel) bransSel.value = '';
+
+            // 4. Arama kutusu sıfırla
+            const araKutu = document.getElementById('personel_ara');
+            if (araKutu) araKutu.value = '';
+
+            // 5. Seçimleri sıfırla
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            persList.forEach(p => {
+                p.secili = false;
+                p.manuelEklendi = false;
+            });
+
+            personelTablosunuDoldur();
+            if (typeof bildirimGoster === 'function') {
+                bildirimGoster("Tüm filtreler ve seçimler temizlendi.", "bilgi");
+            }
+        }
+        window.personelTumunuTemizle = personelTumunuTemizle;
+
+        function personelDurumDegistir(cbElement) {
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            let p = persList.find(x => x.ad === cbElement.value);
+            if(p) {
+                p.secili = cbElement.checked;
+                p.manuelEklendi = cbElement.checked;
+            }
+            personelTablosunuDoldur(); 
+        }
+        window.personelDurumDegistir = personelDurumDegistir;
+
+        function personelMasterSecim(durum) {
+            const gosterilenler = window.sonTebligGosterilenler || [];
+            gosterilenler.forEach(p => {
+                if(p) {
+                    if (durum && p.aktif === 0) {
+                        p.secili = false;
+                    } else {
+                        p.secili = durum;
+                        p.manuelEklendi = durum;
+                    }
+                }
+            });
+            personelTablosunuDoldur();
+        }
+        window.personelMasterSecim = personelMasterSecim;
+
+        function personelSayaciGuncelle() {
+            const persList = window.tumPersoneller || tumPersoneller || [];
+            let seciliSayi = persList.filter(p => p.secili).length;
+            const lbl = document.getElementById('lbl_secili_personel_sayisi');
+            if(lbl) { 
+                lbl.innerText = `Seçili: ${seciliSayi} Kişi`; 
+                lbl.style.color = seciliSayi > 0 ? '#10B981' : '#EF4444'; 
+            }
+        }
+        window.personelSayaciGuncelle = personelSayaciGuncelle;
 
         // --- 2. GÖREV VE BRANŞ İÇİN "ARAMA İÇİNDE FİLTRE" VE SÜTUN SIRALAMA MANTIĞI ---
         let personelSiralamaSutun = 'ad';
@@ -190,30 +483,77 @@ function filtreTumuDegisti() {
             const govde = document.getElementById('personel-govde');
             if(!govde) return;
             const araKutu = document.getElementById('personel_ara');
-            const arama = araKutu ? araKutu.value.toLocaleUpperCase('tr-TR') : "";
+            const arama = araKutu ? trNormalize(araKutu.value) : "";
 
-            const gosterilecekler = tumPersoneller.filter(p => {
-                const aramaUygun = arama !== "" && (
-                    p.ad.toLocaleUpperCase('tr-TR').includes(arama) || 
-                    (p.gorev && p.gorev.toLocaleUpperCase('tr-TR').includes(arama)) || 
-                    (p.brans && p.brans.toLocaleUpperCase('tr-TR').includes(arama)) || 
-                    (p.grup && p.grup.toLocaleUpperCase('tr-TR').includes(arama))
-                );
-                // Pasif veya İzinli personel normal toplu listelerde gösterilmez (arama hariç)
-                if (p.aktif !== 1 && !p.secili && !aramaUygun) return false;
-                return p.secili || aramaUygun;
+            const persList = window.tumPersoneller || tumPersoneller || [];
+
+            // Statü filtreleri
+            const seciliStatuler = Array.from(document.querySelectorAll('.dinamik-grp-checkbox:checked')).map(cb => cb.getAttribute('data-grup'));
+            const statuFiltresiAktif = seciliStatuler.length > 0;
+
+            const gosterilecekler = persList.filter(p => {
+                // Pasif veya başka kuruma görevlendirilmiş personeller:
+                // Sadece açıkça aranmışsa veya zaten seçiliyse gösterilir.
+                if (p.aktif !== 1 && !p.secili && arama === "") return false;
+
+                // 1. Rol Uygunluğu (TUMU değilse)
+                if (seciliTebligRolu && seciliTebligRolu !== 'TUMU') {
+                    const rol = personelRolunuTespitEt(p);
+                    if (rol !== seciliTebligRolu) return false;
+                }
+
+                // 2. Statü Uygunluğu (En az bir statü işaretlendiyse)
+                if (statuFiltresiAktif) {
+                    if (!seciliStatuler.includes(p.grup)) return false;
+                }
+
+                // 3. Branş Uygunluğu (Branş seçildiyse)
+                if (seciliTebligBransi && seciliTebligBransi !== '') {
+                    const pBrans = (p.brans || '').trim();
+                    if (pBrans !== seciliTebligBransi) return false;
+                }
+
+                // 4. Metin Arama Uygunluğu (Arama kutusu doluysa)
+                if (arama !== "") {
+                    const adNorm = trNormalize(p.ad);
+                    const gorevNorm = trNormalize(p.gorev);
+                    const unvanNorm = trNormalize(p.unvan);
+                    const bransNorm = trNormalize(p.brans);
+                    const grupNorm = trNormalize(p.grup);
+                    const eslesti = adNorm.includes(arama) || 
+                                   gorevNorm.includes(arama) || 
+                                   unvanNorm.includes(arama) || 
+                                   bransNorm.includes(arama) || 
+                                   grupNorm.includes(arama);
+                    if (!eslesti) return false;
+                }
+
+                return true;
             });
 
-            // Sütun başlığına göre aşağıdan yukarıya / yukarıdan aşağıya sıralama
+            window.sonTebligGosterilenler = gosterilecekler;
+
+            // Sütun başlığına göre sıralama (İdarecileri en üstte tutan kurumsal hiyerarşi)
             gosterilecekler.sort((a, b) => {
-                let valA = (a[personelSiralamaSutun] || '').toString();
-                let valB = (b[personelSiralamaSutun] || '').toString();
-                return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * personelSiralamaYon;
+                if (personelSiralamaSutun === 'ad' || personelSiralamaSutun === 'gorev') {
+                    const kademeA = getGorevKademesi(a);
+                    const kademeB = getGorevKademesi(b);
+                    if (kademeA !== kademeB) {
+                        return (kademeA - kademeB) * (personelSiralamaYon === 1 ? 1 : -1);
+                    }
+                    let valA = (a[personelSiralamaSutun] || '').toString();
+                    let valB = (b[personelSiralamaSutun] || '').toString();
+                    return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * personelSiralamaYon;
+                } else {
+                    let valA = (a[personelSiralamaSutun] || '').toString();
+                    let valB = (b[personelSiralamaSutun] || '').toString();
+                    return valA.localeCompare(valB, 'tr-TR', { sensitivity: 'base' }) * personelSiralamaYon;
+                }
             });
 
             govde.innerHTML = "";
             if(gosterilecekler.length === 0) {
-                govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:25px; color:var(--fg-sub); font-size:12px;'>Liste boş.<br>Grup kutularını işaretleyin veya personeli bulmak için arama yapın.</td></tr>";
+                govde.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:25px; color:var(--fg-sub); font-size:12px;'>Filtreye uyan personel bulunamadı.<br>Filtreleri gevşetin veya personeli aramak için arama kutusunu kullanın.</td></tr>";
                 const masterKutu = document.getElementById('chk_master_personel');
                 if(masterKutu) masterKutu.checked = false;
             } else {
@@ -222,6 +562,7 @@ function filtreTumuDegisti() {
                     if(p.secili) ekrandakiSeciliSayisi++;
                     const brans = (!p.brans || p.brans.trim() === '' || p.brans === 'NaN') ? '-' : p.brans;
                     const gorev = (!p.gorev || p.gorev.trim() === '' || p.gorev === 'NaN') ? '-' : p.gorev;
+                    
                     let adEk = '';
                     if (p.aktif !== 1) {
                         const d = (typeof window.getPersonelDurumBilgisi === 'function') ? window.getPersonelDurumBilgisi(p.aktif) : null;
@@ -229,11 +570,16 @@ function filtreTumuDegisti() {
                             adEk = ` <span style="font-size:10px; color:${d.renk}; font-weight:700;">(${d.kisaEtiket})</span>`;
                         }
                     }
+
+                    const grupBadge = (typeof window.getPersonelGrupBadgeHtml === 'function') 
+                        ? window.getPersonelGrupBadgeHtml(p.grup) 
+                        : p.grup;
+
                     govde.innerHTML += `<tr style="border-bottom: 1px solid var(--border);">
-                        <td><label for="chk_${i}" style="cursor:pointer; display:block;">${p.ad}${adEk}</label></td>
+                        <td><label for="chk_${i}" style="cursor:pointer; display:block; font-weight:500;">${p.ad}${adEk}</label></td>
                         <td>${gorev}</td>
                         <td>${brans}</td>
-                        <td>${p.grup}</td>
+                        <td>${grupBadge}</td>
                         <td style="text-align: center;"><input type="checkbox" class="chk-personel" id="chk_${i}" value="${p.ad}" onchange="personelDurumDegistir(this)" ${p.secili ? 'checked' : ''}></td>
                     </tr>`;
                 });
@@ -242,6 +588,7 @@ function filtreTumuDegisti() {
             }
             personelSayaciGuncelle();
         }
+        window.personelTablosunuDoldur = personelTablosunuDoldur;
 
         function otomatikPersonelSec(konuMetni) {
             if(!sistemAyarlari.oto_eslesmeler || sistemAyarlari.oto_eslesmeler.length === 0 || !konuMetni) return;
@@ -299,6 +646,7 @@ function filtreTumuDegisti() {
             tumPersonelGruplari = window.tumPersonelGruplari || tumPersonelGruplari;
             window.dispatchEvent(new CustomEvent('personeller-guncellendi'));
             dinamikTebligFiltreleriOlustur();
+            if (typeof tebligBransListesiniGuncelle === 'function') tebligBransListesiniGuncelle();
             if (typeof lucide !== 'undefined') {
                 setTimeout(() => lucide.createIcons(), 50);
             }
@@ -1025,13 +1373,107 @@ window.getPersonelDurumBilgisi = function(kod) {
     return window.PERSONEL_DURUMLARI[val] || window.PERSONEL_DURUMLARI[1];
 };
 
+// ==============================================================================
+// PERSONEL GRUP VE STATÜ ROZETLERİ REHBERİ (CENTRAL GROUP BADGE REGISTRY)
+// ==============================================================================
+window.PERSONEL_GRUP_ROZETLERI = {
+    'Kadrolu': {
+        grup: 'Kadrolu',
+        renk: '#0284c7',
+        arkaplan: 'rgba(2, 132, 199, 0.10)',
+        kenarlik: 'rgba(2, 132, 199, 0.28)',
+        ikon: 'award',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>'
+    },
+    'Sözleşmeli': {
+        grup: 'Sözleşmeli',
+        renk: '#0891b2',
+        arkaplan: 'rgba(8, 145, 178, 0.10)',
+        kenarlik: 'rgba(8, 145, 178, 0.28)',
+        ikon: 'scroll',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17V5a2 2 0 0 0-2-2H4"/><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1z"/><path d="M4 17a2 2 0 0 1 2-2h12"/></svg>'
+    },
+    'Ücretli': {
+        grup: 'Ücretli',
+        renk: '#7c3aed',
+        arkaplan: 'rgba(124, 58, 237, 0.10)',
+        kenarlik: 'rgba(124, 58, 237, 0.28)',
+        ikon: 'clock',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    },
+    'Görevlendirme': {
+        grup: 'Görevlendirme',
+        renk: '#d97706',
+        arkaplan: 'rgba(217, 119, 6, 0.10)',
+        kenarlik: 'rgba(217, 119, 6, 0.28)',
+        ikon: 'repeat',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>'
+    },
+    'İUP': {
+        grup: 'İUP',
+        renk: '#059669',
+        arkaplan: 'rgba(5, 150, 105, 0.10)',
+        kenarlik: 'rgba(5, 150, 105, 0.28)',
+        ikon: 'sparkles',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>'
+    },
+    'TYP': {
+        grup: 'TYP',
+        renk: '#ea580c',
+        arkaplan: 'rgba(234, 88, 12, 0.10)',
+        kenarlik: 'rgba(234, 88, 12, 0.28)',
+        ikon: 'hard-hat',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 18a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1H3a1 1 0 0 0-1 1v2z"/><path d="M10 10V5a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5"/><path d="M4 15v-3a8 8 0 0 1 16 0v3"/></svg>'
+    },
+    'Sürekli İşçi': {
+        grup: 'Sürekli İşçi',
+        renk: '#2563eb',
+        arkaplan: 'rgba(37, 99, 235, 0.10)',
+        kenarlik: 'rgba(37, 99, 235, 0.28)',
+        ikon: 'wrench',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>'
+    },
+    'Hizmet Alımı': {
+        grup: 'Hizmet Alımı',
+        renk: '#64748b',
+        arkaplan: 'rgba(100, 116, 139, 0.10)',
+        kenarlik: 'rgba(100, 116, 139, 0.28)',
+        ikon: 'truck',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18.5" r="2.5"/><circle cx="7" cy="18.5" r="2.5"/></svg>'
+    }
+};
+
+window.getPersonelGrupBadgeHtml = function(grupAdi) {
+    const g = (grupAdi || '').trim();
+    const config = window.PERSONEL_GRUP_ROZETLERI[g] || {
+        grup: g || 'Belirtilmemiş',
+        renk: '#64748b',
+        arkaplan: 'rgba(100, 116, 139, 0.10)',
+        kenarlik: 'rgba(100, 116, 139, 0.25)',
+        ikon: 'tag',
+        svg: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r=".5" fill="currentColor"/></svg>'
+    };
+
+    return `<span style="font-size: 10.5px; padding: 2.5px 8px; background: ${config.arkaplan}; border: 1px solid ${config.kenarlik}; border-radius: 8px; color: ${config.renk}; font-weight: 700; display: inline-flex; align-items: center; gap: 4.5px; white-space: nowrap;">
+        ${config.svg}
+        <span>${config.grup}</span>
+    </span>`;
+};
+
 window.getPersonelDurumBadgeHtml = function(kod) {
     const d = window.getPersonelDurumBilgisi(kod);
-    return `<span style="font-size: 10.5px; padding: 2px 8px; background: ${d.arkaplan}; color: ${d.renk}; border: 1px solid ${d.kenarlik}; border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;" title="${d.yasalDayanak} - ${d.aciklama}">
+    if (d.fiilenGorevde) {
+        return `<span style="font-size: 10.5px; padding: 2px 8px; background: rgba(22, 163, 74, 0.08); color: #15803d; border: 1px solid rgba(22, 163, 74, 0.22); border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;" title="${d.yasalDayanak} - ${d.aciklama}">
+            <span style="width: 6px; height: 6px; border-radius: 50%; background-color: #16a34a; display: inline-block;"></span>
+            <span>Aktif</span>
+        </span>`;
+    }
+    return `<span style="font-size: 10.5px; padding: 2px 8px; background: ${d.arkaplan}; color: ${d.renk}; border: 1px solid ${d.kenarlik}; border-radius: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;" title="${d.yasalDayanak} - ${d.aciklama}">
         ${d.svg}
         <span>${d.kisaEtiket}</span>
     </span>`;
 };
+
 
 function ppAktifDurumDegisti(val) {
     const el = document.getElementById('pp_aktif_durum');
@@ -1272,3 +1714,17 @@ async function ppMevcutPersoneliSil() {
 }
 window.ppMevcutPersoneliSil = ppMevcutPersoneliSil;
 
+// Personeller güncellendiğinde branş listesini ve tebliğ tablosunu otomatik tazele
+window.addEventListener('personeller-guncellendi', () => {
+    if (typeof tebligBransListesiniGuncelle === 'function') tebligBransListesiniGuncelle();
+    if (typeof dinamikTebligFiltreleriOlustur === 'function') dinamikTebligFiltreleriOlustur();
+    if (typeof personelTablosunuDoldur === 'function') personelTablosunuDoldur();
+});
+
+// Sayfa yüklendiğinde tebliğ filtrelerini ve branş listesini hazırla
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+        if (typeof tebligBransListesiniGuncelle === 'function') tebligBransListesiniGuncelle();
+        if (typeof dinamikTebligFiltreleriOlustur === 'function') dinamikTebligFiltreleriOlustur();
+    }, 100);
+});

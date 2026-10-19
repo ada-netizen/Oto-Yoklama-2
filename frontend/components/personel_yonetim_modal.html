@@ -191,24 +191,7 @@
 
             <!-- 3. Sütun: Türü / Kadro (Görevi ile Durumu Arasında) -->
             <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle;">
-                <template x-if="p.grup === 'Kadrolu'">
-                    <span style="font-size: 10.5px; padding: 2px 8px; background: rgba(2, 132, 199, 0.12); border: 1px solid rgba(2, 132, 199, 0.28); border-radius: 8px; color: #0284c7; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                        <i data-lucide="award" width="12" height="12"></i>
-                        <span x-text="p.grup"></span>
-                    </span>
-                </template>
-                <template x-if="p.grup === 'Görevlendirme'">
-                    <span style="font-size: 10.5px; padding: 2px 8px; background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 8px; color: #d97706; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                        <i data-lucide="briefcase" width="12" height="12"></i>
-                        <span x-text="p.grup"></span>
-                    </span>
-                </template>
-                <template x-if="p.grup && p.grup !== 'Kadrolu' && p.grup !== 'Görevlendirme'">
-                    <span style="font-size: 10.5px; padding: 2px 8px; background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px; color: #6366f1; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                        <i data-lucide="tag" width="12" height="12"></i>
-                        <span x-text="p.grup"></span>
-                    </span>
-                </template>
+                <span x-html="getGrupBadgeHtml(p.grup)"></span>
             </td>
 
             <!-- 4. Sütun: Durum Sütunu -->
@@ -216,9 +199,9 @@
                 <span x-html="getDurumBadgeHtml(p.aktif)"></span>
             </td>
 
-            <!-- 5. Sütun: İşlemler Sütunu -->
+            <!-- 5. Sütun: İşlemler Sütunu (Nötr Soft Buton) -->
             <td style="padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: center; vertical-align: middle;">
-                <button class="btn-icon-soft" style="color: #0284c7; background: rgba(2, 132, 199, 0.1); border: 1px solid rgba(2, 132, 199, 0.25); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s;" @click.stop="profilAc(p)" title="Personel Detaylı Profil Kartı">
+                <button class="btn-icon-soft" style="color: var(--fg-sub); background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.color='#0284c7'; this.style.borderColor='#0284c7'; this.style.background='rgba(2, 132, 199, 0.06)';" onmouseout="this.style.color='var(--fg-sub)'; this.style.borderColor='var(--border)'; this.style.background='var(--bg-card)';" @click.stop="profilAc(p)" title="Personel Detaylı Profil Kartı">
                     <i data-lucide="id-card" width="13" height="13"></i>
                     <span>Profil</span>
                 </button>
@@ -376,6 +359,13 @@ document.addEventListener('alpine:init', () => {
             if (window.personelProfilAc) {
                 window.personelProfilAc(p);
             }
+        },
+
+        getGrupBadgeHtml(grup) {
+            if (typeof window.getPersonelGrupBadgeHtml === 'function') {
+                return window.getPersonelGrupBadgeHtml(grup);
+            }
+            return `<span style="font-size: 10.5px; padding: 2.5px 8px; border-radius: 8px; background: rgba(100, 116, 139, 0.1); color: #64748b; font-weight: 700;">${grup || '-'}</span>`;
         },
 
         getDurumBadgeHtml(aktif) {

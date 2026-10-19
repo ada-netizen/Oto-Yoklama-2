@@ -117,6 +117,7 @@
         <div class="notebook-header" style="display: none;">
             <button class="tab-btn aktif" onclick="sekmeAc(event, 'sekme_izin')"><i data-lucide="calendar-check" height="17" width="17"></i> Öğrenci İzin ve Devamsızlık</button>
             <button class="tab-btn" onclick="sekmeAc(event, 'sekme_teblig')"><i data-lucide="users" height="17" width="17"></i> Personel Tebliğ</button>
+            <button class="tab-btn" onclick="sekmeAc(event, 'sekme_terfi'); if (typeof terfiYukle === 'function') terfiYukle();"><i data-lucide="award" height="17" width="17"></i> Personel Terfi</button>
             <button class="tab-btn" onclick="sekmeAc(event, 'sekme_ihale')"><i data-lucide="briefcase" height="17" width="17"></i> İhale Yönetimi</button>
             <button class="tab-btn" onclick="sekmeAc(event, 'sekme_dashboard'); dashboardYukle();"><i data-lucide="pie-chart" height="17" width="17"></i> İstatistikler</button>
             <button class="tab-btn" onclick="sekmeAc(event, 'sekme_saglik'); saglikYukle();"><i data-lucide="activity" height="17" width="17"></i> Personel Sağlık İzinleri</button>
@@ -362,50 +363,112 @@
 </div>
 <div style="flex: 1; position: relative; overflow: hidden; display: flex; flex-direction: column;">
 <div id="view_toplu_teblig" style="display: flex; flex-direction: column; height: 100%; gap: 15px;">
-<div style="background: var(--bg-card); padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-shrink: 0;">
-<div class="chip-container" style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-<style>
-                                        .chip-checkbox {
-                                            display: none;
-                                        }
+<div style="background: var(--bg-card); padding: 12px 15px; border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0;">
+    <style>
+        .chip-checkbox {
+            display: none;
+        }
+        .chip-label {
+            padding: 5px 11px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--fg-sub);
+            background-color: var(--bg-main);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .chip-checkbox:checked + .chip-label {
+            background-color: var(--tree-sel);
+            color: white;
+            border-color: var(--tree-sel);
+        }
+        .chip-label:hover {
+            filter: brightness(0.95);
+        }
+        .teblig-preset-btn {
+            padding: 5px 11px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--bg-main);
+            color: var(--fg-main);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        .teblig-preset-btn:hover {
+            filter: brightness(0.95);
+            border-color: var(--tree-sel);
+        }
+        .teblig-preset-btn.active {
+            background: var(--tree-sel) !important;
+            color: #ffffff !important;
+            border-color: var(--tree-sel) !important;
+            box-shadow: 0 2px 6px rgba(14, 165, 233, 0.35);
+        }
+    </style>
 
-                                        .chip-label {
-                                            padding: 6px 12px;
-                                            font-size: 11px;
-                                            font-weight: 600;
-                                            color: var(--fg-sub);
-                                            background-color: var(--bg-main);
-                                            border: 1px solid var(--border);
-                                            border-radius: 16px;
-                                            cursor: pointer;
-                                            transition: all 0.2s;
-                                            user-select: none;
-                                            display: flex;
-                                            align-items: center;
-                                            gap: 4px;
-                                        }
+    <!-- KATMAN 1: HIZLI HEDEF KİTLE / ROL PRESETLERİ -->
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border-bottom: 1px dashed var(--border); padding-bottom: 8px;">
+        <div id="teblig_rol_presetleri" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <button type="button" class="btn teblig-preset-btn active" id="btn_rol_tumu" onclick="tebligRolSec('TUMU')" title="Tüm personeli listeler">
+                👥 Tümü
+            </button>
+            <button type="button" class="btn teblig-preset-btn" id="btn_rol_ogretmen" onclick="tebligRolSec('OGRETMEN')" title="Kadrolu, Sözleşmeli, Ücretli veya Görevlendirme tüm branş öğretmenlerini seçer">
+                🎓 Öğretmenler
+            </button>
+            <button type="button" class="btn teblig-preset-btn" id="btn_rol_idareci" onclick="tebligRolSec('IDARECI')" title="Müdür ve Müdür Yardımcılarını seçer">
+                🏛️ İdareciler
+            </button>
+            <button type="button" class="btn teblig-preset-btn" id="btn_rol_memur" onclick="tebligRolSec('MEMUR')" title="Memur, V.H.K.İ., Şef ve büro personelini seçer">
+                📑 Memurlar
+            </button>
+            <button type="button" class="btn teblig-preset-btn" id="btn_rol_destek" onclick="tebligRolSec('DESTEK')" title="Sürekli İşçi (4/D), TYP, İUP ve Destek personelini seçer">
+                🧹 Destek / İşçi
+            </button>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+            <button type="button" class="btn btn-temizle" onclick="personelTumunuTemizle()" style="padding: 4px 12px; font-size: 11px; font-weight: 600; border-radius: var(--radius-sm); height: 28px; display: flex; align-items: center; gap: 4px;" title="Tüm filtreleri ve seçimleri sıfırla">
+                <i data-lucide="trash-2" height="13" width="13"></i> Temizle
+            </button>
+        </div>
+    </div>
 
-                                        .chip-checkbox:checked+.chip-label {
-                                            background-color: var(--tree-sel);
-                                            color: white;
-                                            border-color: var(--tree-sel);
-                                        }
+    <!-- KATMAN 2: STATÜ ÇİPLERİ, KOŞULLU BRANŞ VE ARAMA KUTUSU -->
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; min-width: 0;">
+            <!-- Statü Çipleri (Taşma Korumalı) -->
+            <div class="kapsayici-filter" id="dinamik_teblig_filtreleri" style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-height: 85px; overflow-y: auto;">
+                <!-- JS Tarafından doldurulacak (0 olanlar gizlenir) -->
+            </div>
 
-                                        .chip-label:hover {
-                                            filter: brightness(0.95);
-                                        }
-                                    </style>
-<div class="kapsayici-filter" id="dinamik_teblig_filtreleri" style="display: flex; flex-wrap: wrap; gap: 8px;">
-<!-- Filtreler JS tarafından oluşturulacak -->
-</div>
-</div>
-<div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 400px;">
-<div class="input-with-icon" style="flex: 1;">
-<i data-lucide="search" class="search-icon"></i>
-<input class="search-input" id="personel_ara" onkeyup="personelTablosunuDoldur()" placeholder="Personel Ara (Örn: Matematik, Müdür)..." type="text"/>
-</div>
-<button class="btn btn-temizle" onclick="personelTumunuTemizle()" style="padding: 0 12px; height: 34px; font-size: 11px; border-radius: var(--radius-sm);"><i data-lucide="trash-2" height="14" width="14"></i> Temizle</button>
-</div>
+            <!-- Dinamik Branş Dropdown'ı (Yalnızca Öğretmenler Seçildiğinde Görünür, Yazı Kesilmesi Düzeltilmiş) -->
+            <div id="teblig_brans_kapsayici" style="display: none; align-items: center; gap: 6px; flex-shrink: 0;">
+                <select id="teblig_brans_filtre" onchange="tebligBransFiltrele(this.value)" style="padding: 4px 10px; height: 32px; line-height: 1.3; font-size: 11.5px; font-weight: 600; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-main); color: var(--fg-main); cursor: pointer; min-width: 150px; max-width: 220px; box-sizing: border-box; outline: none;">
+                    <option value="">Tüm Branşlar</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Arama Kutusu -->
+        <div style="display: flex; gap: 8px; align-items: center; min-width: 200px; max-width: 280px; flex-shrink: 0;">
+            <div class="input-with-icon" style="flex: 1;">
+                <i data-lucide="search" class="search-icon"></i>
+                <input class="search-input" id="personel_ara" onkeyup="personelTablosunuDoldur()" placeholder="Personel Ara (Ad, Görev, Branş)..." type="text" style="height: 32px; font-size: 11px; box-sizing: border-box;"/>
+            </div>
+        </div>
+    </div>
 </div>
 <div class="tree-card" style="flex:1; border: 1px solid var(--border); border-radius: 8px; overflow-y: auto; background-color: var(--bg-main); box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
 <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
@@ -1243,6 +1306,7 @@
 </div>
 {% include 'components/sekme_yardim.html' %}
 {% include 'components/sekme_iletisim.html' %}
+{% include 'components/sekme_terfi.html' %}
     </main>
 </div> <!-- /app-layout -->
 {% include 'components/ihale_komisyon_modal.html' %}
@@ -1251,6 +1315,7 @@
 <script src="js/personel_teblig.js?ts={{ ts }}"></script>
 <script src="js/ihale.js?ts={{ ts }}"></script>
 <script src="js/saglik.js?ts={{ ts }}"></script>
+<script src="js/personel_terfi.js?ts={{ ts }}"></script>
 <script src="js/command_palette.js?ts={{ ts }}"></script>
 <script>
         lucide.createIcons();

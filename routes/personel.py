@@ -15,7 +15,7 @@ from dependencies import db, yollar, ayarlar, islem_logla, create_job, update_jo
 from utils import *
 from utils import _excel_sutunu_bul
 from utils import _personel_grup_tahmin_et
-from mevzuat_kurallari import ogretmen_mi, mevzuat_bilgisi_al, tum_mevzuat_ozeti, PERSONEL_DURUMLARI_REHBERI
+from mevzuat_kurallari import ogretmen_mi, mevzuat_bilgisi_al, tum_mevzuat_ozeti, PERSONEL_DURUMLARI_REHBERI, hesapla_personel_terfi_durumu
 
 router = APIRouter()
 
@@ -808,4 +808,238 @@ def personel_sifirla():
         return {"basarili": True, "mesaj": "Tüm personel silindi."}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
+
+
+@router.get("/personel-terfileri")
+def personel_terfileri_getir(yil: Optional[int] = None):
+    """
+    657 sayılı DMK kapsamında rutin derece/kademe terfisine tabi kadrolu personelin
+    hedef yıldaki terfi takvimini, T harfi koordinatlarını ve mevzuat dayanaklarını döner.
+    """
+    try:
+        hedef_yil = yil if yil is not None else datetime.now().year
+        
+        db.cursor.execute("""
+            SELECT rowid, ad_soyad, unvan, brans, gorev, grup, tc_no, il_ilce, kurum_adi, 
+                   kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu, 
+                   cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no, 
+                   emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif 
+            FROM personel
+        """)
+        satirlar = db.cursor.fetchall()
+        
+        personeller = []
+        takvim_haritasi = {}  # "ay-gun" -> [personel_ozeti]
+        
+        derece_sayisi = 0
+        kademe_sayisi = 0
+        tarih_eksik_sayisi = 0
+        yaklasan_sayisi = 0
+        tavan_sayisi = 0
+        
+        for r in satirlar:
+            # Personel durum kodu (1: Aktif, 0: Başka Kuruma Görevlendirildi, vb.)
+            aktif = int(r[24]) if (len(r) > 24 and r[24] is not None) else 1
+            grup = str(r[5] or "Kadrolu").strip()
+
+            # Kadrolu olmayan görevlendirme personellerinin terfisini biz takip etmeyiz
+            # Ancak kadrosu okulumuzda olan (Kadrolu) personelin başka kuruma görevlendirilmiş (aktif==0)
+            # olsa dahi terfisini bizim okulumuz takip eder!
+            baska_kurumda = (aktif == 0)
+                
+            p_dict = {
+                'id': r[0],
+                'ad': r[1],
+                'ad_soyad': r[1],
+                'unvan': r[2] or "-",
+                'brans': r[3] or "-",
+                'gorev': r[4] or "-",
+                'grup': grup,
+                'tc_no': r[6] or "",
+                'kurumda_baslama': r[10] or "",
+                'kariyer': r[11] or "-",
+                'kademe_derece': r[12] or "-",
+                'ogrenim_durumu': r[13] or "-",
+                'goreve_baslama': r[17] or "",
+                'aktif': aktif,
+                'baska_kurumda': baska_kurumda
+            }
+            
+            terfi_bilgi = hesapla_personel_terfi_durumu(p_dict, hedef_yil=hedef_yil)
+            if not terfi_bilgi.get("kapsam_ici", False):
+                continue
+                
+            p_full = {**p_dict, **terfi_bilgi}
+            personeller.append(p_full)
+            
+            if terfi_bilgi.get("tarih_eksik", False):
+                tarih_eksik_sayisi += 1
+            else:
+                is_tavan = terfi_bilgi.get("tavan_mi", False) or terfi_bilgi.get("terfi_turu") == "TAVAN"
+                
+                if is_tavan:
+                    tavan_sayisi += 1
+                else:
+                    if terfi_bilgi.get("yaklasan_mi", False):
+                        yaklasan_sayisi += 1
+                    if terfi_bilgi.get("terfi_turu") == "DERECE":
+                        derece_sayisi += 1
+                    elif terfi_bilgi.get("terfi_turu") == "KADEME":
+                        kademe_sayisi += 1
+                        
+                    # KULLANICI TALEBİ: Tavan derece/kademeye ulaşmış personeller artık takvimde gösterilmez!
+                    # Yalnızca aktif terfisi olan personeller takvim haritasına eklenir.
+                    ay = terfi_bilgi.get("ay_no")
+                    gun = terfi_bilgi.get("gun_no")
+                    if ay and gun:
+                        key = f"{ay}-{gun}"
+                        if key not in takvim_haritasi:
+                            takvim_haritasi[key] = []
+                        takvim_haritasi[key].append({
+                            "id": p_dict["id"],
+                            "ad_soyad": p_dict["ad_soyad"],
+                            "unvan": p_dict["unvan"],
+                            "brans": p_dict["brans"],
+                            "gorev": p_dict["gorev"],
+                            "mevcut_kademe_derece": terfi_bilgi["mevcut_kademe_derece"],
+                            "yeni_kademe_derece": terfi_bilgi["yeni_kademe_derece"],
+                            "terfi_turu": terfi_bilgi["terfi_turu"],
+                            "terfi_baslik": terfi_bilgi["terfi_baslik"],
+                            "mevzuat_maddesi": terfi_bilgi["mevzuat_maddesi"],
+                            "aciklama": terfi_bilgi["aciklama"],
+                            "terfi_tarihi": terfi_bilgi["terfi_tarihi"],
+                            "baslama_tarihi": terfi_bilgi["baslama_tarihi_kullanilan"],
+                            "yaklasan_mi": terfi_bilgi.get("yaklasan_mi", False),
+                            "tavan_mi": False,
+                            "baska_kurumda": baska_kurumda
+                        })
+                    
+        # Sıralama: Önce tarihi dolu olanlar terfi tarihine göre, sonra tarihi eksik olanlar alfabetik
+        personeller.sort(key=lambda x: (
+            1 if x.get("tarih_eksik") else 0,
+            x.get("terfi_iso") or "9999-99-99",
+            x.get("ad_soyad") or ""
+        ))
+        
+        istatistikler = {
+            "toplam_kadrolu": len(personeller),
+            "bu_yil_terfi_sayisi": max(0, len(personeller) - tarih_eksik_sayisi - tavan_sayisi),
+            "yaklasan_sayisi": yaklasan_sayisi,
+            "derece_sayisi": derece_sayisi,
+            "kademe_sayisi": kademe_sayisi,
+            "tavan_sayisi": tavan_sayisi,
+            "tarih_eksik_sayisi": tarih_eksik_sayisi
+        }
+        
+        return {
+            "basarili": True,
+            "yil": hedef_yil,
+            "istatistikler": istatistikler,
+            "personeller": personeller,
+            "takvim_haritasi": takvim_haritasi
+        }
+    except Exception as e:
+        logging.error(f"personel_terfileri_getir hatasi: {e}")
+        return {
+            "basarili": False,
+            "mesaj": str(e),
+            "personeller": [],
+            "takvim_haritasi": {},
+            "istatistikler": {}
+        }
+
+
+@router.get("/personel-terfi-excel")
+def personel_terfi_excel_indir(yil: Optional[int] = None):
+    """
+    Hedef yıla ait kadrolu personel terfi listesini resmi formatta Excel olarak indirir.
+    """
+    try:
+        hedef_yil = yil if yil is not None else datetime.now().year
+        sonuc = personel_terfileri_getir(yil=hedef_yil)
+        if not sonuc.get("basarili", False) or not sonuc.get("personeller"):
+            return JSONResponse(status_code=400, content={"basarili": False, "mesaj": "Terfi listesi boş veya alınamadı."})
+
+        ana_klasor, _ = pdf_klasoru_hazirla()
+        dosya_adi = f"Personel_Terfi_Takvimi_{hedef_yil}.xlsx"
+        yol = os.path.join(ana_klasor, dosya_adi)
+
+        excel_verisi = []
+        for idx, p in enumerate(sonuc["personeller"], 1):
+            excel_verisi.append({
+                "Sıra No": idx,
+                "Adı Soyadı": p.get("ad_soyad", "-"),
+                "Unvanı": p.get("unvan", "-"),
+                "Branşı": p.get("brans", "-"),
+                "Görevi": p.get("gorev", "-"),
+                "İlk Göreve Başlama": p.get("baslama_tarihi_kullanilan") or "Eksik",
+                "Mevcut D/K": p.get("mevcut_kademe_derece", "-"),
+                "Öngörülen Yeni D/K": p.get("yeni_kademe_derece", "-"),
+                "Terfi Tarihi": p.get("terfi_tarihi", "-"),
+                "Terfi Türü": p.get("terfi_baslik", "-"),
+                "Mevzuat Dayanağı": p.get("mevzuat_maddesi", "-"),
+                "Açıklama": p.get("aciklama", "-")
+            })
+
+        df = pd.DataFrame(excel_verisi)
+
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+
+        with pd.ExcelWriter(yol, engine='openpyxl') as writer:
+            sheet_name = f'Terfi_{hedef_yil}'
+            df.to_excel(writer, index=False, sheet_name=sheet_name)
+            ws = writer.sheets[sheet_name]
+
+            header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+            header_font = Font(name="Segoe UI", size=10, bold=True, color="FFFFFF")
+            thin_border = Border(
+                left=Side(style='thin', color='CBD5E1'),
+                right=Side(style='thin', color='CBD5E1'),
+                top=Side(style='thin', color='CBD5E1'),
+                bottom=Side(style='thin', color='CBD5E1')
+            )
+
+            ws.row_dimensions[1].height = 26
+            for col_num in range(1, len(df.columns) + 1):
+                cell = ws.cell(row=1, column=col_num)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+                cell.border = thin_border
+
+            data_font = Font(name="Segoe UI", size=9)
+            alt_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+
+            for r_idx in range(2, len(df) + 2):
+                ws.row_dimensions[r_idx].height = 20
+                is_alt = (r_idx % 2 == 1)
+                for col_num in range(1, len(df.columns) + 1):
+                    cell = ws.cell(row=r_idx, column=col_num)
+                    cell.font = data_font
+                    cell.border = thin_border
+                    if is_alt:
+                        cell.fill = alt_fill
+
+                    col_name = df.columns[col_num - 1]
+                    if col_name in ["Sıra No", "Mevcut D/K", "Öngörülen Yeni D/K", "Terfi Tarihi", "İlk Göreve Başlama"]:
+                        cell.alignment = Alignment(horizontal='center', vertical='center')
+                    else:
+                        cell.alignment = Alignment(horizontal='left', vertical='center')
+
+            for col_idx, col in enumerate(df.columns, 1):
+                max_len = max(df[col].astype(str).map(len).max(), len(col)) + 4
+                col_letter = get_column_letter(col_idx)
+                ws.column_dimensions[col_letter].width = min(max_len, 45)
+
+        islem_logla("bilgi", "Personel Terfi Excel İndirme", f"{hedef_yil} yılı terfi listesi Excel olarak üretildi.")
+        return FileResponse(
+            yol,
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            filename=dosya_adi
+        )
+    except Exception as e:
+        logging.error(f"personel_terfi_excel_indir hatasi: {e}")
+        return JSONResponse(status_code=500, content={"basarili": False, "mesaj": str(e)})
+
 

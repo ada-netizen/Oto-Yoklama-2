@@ -601,6 +601,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             
             if(sekmeId === 'sekme_izin') verileriYukle();
             if(sekmeId === 'sekme_teblig') personelleriYukle();
+            if(sekmeId === 'sekme_terfi' && typeof terfiYukle === 'function') terfiYukle();
             if(sekmeId === 'sekme_dashboard' && typeof dashboardYukle === 'function') dashboardYukle();
             if(sekmeId === 'sekme_ihale') {
                 const icerik = document.getElementById("ihale_icerik");
@@ -1811,14 +1812,11 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
 
         function personelTumunuTemizle() {
-            if(document.getElementById('grp_idare')) document.getElementById('grp_idare').checked = false;
-            if(document.getElementById('grp_ogretmenler')) document.getElementById('grp_ogretmenler').checked = false;
-            if(document.getElementById('grp_diger')) document.getElementById('grp_diger').checked = false;
-            document.querySelectorAll('.personel-filtre-panel input[type=checkbox]').forEach(cb => cb.checked = false);
-            
+            if (window.personelTumunuTemizle && window.personelTumunuTemizle !== personelTumunuTemizle) {
+                return window.personelTumunuTemizle();
+            }
             const araKutu = document.getElementById('personel_ara');
             if(araKutu) araKutu.value = '';
-            
             tumPersoneller.forEach(p => { p.secili = false; p.manuelEklendi = false; });
             personelTablosunuDoldur();
         }

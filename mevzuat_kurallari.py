@@ -770,6 +770,7 @@ PERSONEL_DURUMLARI_REHBERI: Dict[int, Dict[str, Any]] = {
 }
 
 
+
 def tum_mevzuat_ozeti() -> Dict[str, Any]:
     """
     Sistemdeki tüm güncel mevzuat kurallarını, dayanak belgeleri ve yasal sınırları tek bir sözlükte sunar.
@@ -782,3 +783,199 @@ def tum_mevzuat_ozeti() -> Dict[str, Any]:
         "kariyer_basamaklari": KARIYER_BASAMAKLARI_KURALLARI,
         "yonetici_hiyerarsisi": YONETICI_GOREVLERI_KURALLARI
     }
+
+
+# =====================================================================
+# 6. PERSONEL TERFİ VE KADEME/DERECE HESAPLAMA MOTORU (657 SK. MD. 64 & 68)
+# =====================================================================
+import re
+
+def _tarih_cozumle(tarih_str: str) -> Optional[datetime]:
+    """Farklı formatlardaki tarih stringlerini datetime nesnesine dönüştürür."""
+    if not tarih_str or not isinstance(tarih_str, str):
+        return None
+    t = tarih_str.strip()
+    if not t or t == "-":
+        return None
+    for fmt in ("%d.%m.%Y", "%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(t, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def hesapla_personel_terfi_durumu(personel: Dict[str, Any], hedef_yil: Optional[int] = None) -> Dict[str, Any]:
+    """
+    657 sayılı Devlet Memurları Kanunu Madde 64 (Kademe İlerlemesi) ve Madde 68 (Derece Yükselmesi)
+    hükümleri doğrultusunda personelin hedef yıldaki terfi tarihini, yeni derece/kademesini ve
+    yasal dayanak maddesini hesaplar.
+    
+    Yasal Kapsam:
+    - Yalnızca Kadrolu personeller (DMK 657) rutin kademe/derece terfisine tabidir.
+    - Sözleşmeli (4/B), İUP, TYP, Ücretli ve Geçici Görevlendirmeler kapsam dışıdır.
+    """
+    if hedef_yil is None:
+        hedef_yil = datetime.now().year
+
+    grup = str(personel.get("grup") or "Kadrolu").strip()
+    
+    # Kapsam Kontrolü: Yalnızca Kadrolu memurlar terfi eder
+    # Sözleşmeli, İUP, TYP, Ücretli, Görevlendirme vb. hariç tutulur
+    kapsam_disi_gruplar = {"Sözleşmeli", "İUP", "IUP", "TYP", "Ücretli", "Ucretli", "Görevlendirme", "Gorevlendirme", "Sürekli İşçi"}
+    if grup in kapsam_disi_gruplar or (grup != "Kadrolu" and not grup.startswith("Kadrolu")):
+        if grup in ["Görevlendirme", "Gorevlendirme"]:
+            neden = "Kurum dışından okulumuza görevlendirilen personeldir; kadro ve terfi takibi asıl kadrosunun bulunduğu kurumca yürütülür."
+        else:
+            neden = f"{grup} statüsündeki personel 657 DMK rutin kademe/derece terfisine tabi değildir."
+        return {
+            "kapsam_ici": False,
+            "kapsam_disi_nedeni": neden,
+            "ad_soyad": personel.get("ad_soyad") or personel.get("ad") or "-",
+            "grup": grup,
+            "tarih_eksik": False,
+            "terfi_turu": "KAPSAM_DISI"
+        }
+
+    # Tarih Çözümleme: İlk göreve başlama tarihi esas alınır, yoksa kurumda başlama kontrol edilir
+    baslama_str = str(personel.get("goreve_baslama") or "").strip()
+    kullanilan_tarih_turu = "goreve_baslama"
+    if not baslama_str:
+        baslama_str = str(personel.get("kurumda_baslama") or "").strip()
+        kullanilan_tarih_turu = "kurumda_baslama"
+
+    baslama_dt = _tarih_cozumle(baslama_str)
+    
+    # Derece ve Kademe Ayrıştırma (örn. "3/2", "9/1", "1/4")
+    kademe_derece_str = str(personel.get("kademe_derece") or "-").strip()
+    m_kd = re.search(r'(\d+)\s*[/.-]\s*(\d+)', kademe_derece_str)
+    
+    mevcut_derece = None
+    mevcut_kademe = None
+    yeni_kademe_derece = "-"
+    terfi_turu = "KADEME"
+    terfi_baslik = "Kademe İlerlemesi"
+    mevzuat_maddesi = "657 sayılı DMK Madde 64"
+    aciklama = ""
+    tavan_mi = False
+
+    if m_kd:
+        mevcut_derece = int(m_kd.group(1))
+        mevcut_kademe = int(m_kd.group(2))
+
+        # 657 SK Madde 36, 64 ve 68 kuralları:
+        if mevcut_derece == 1 and mevcut_kademe >= 4:
+            # 1. Derece 4. Kademe tavan baremdir
+            tavan_mi = True
+            terfi_turu = "TAVAN"
+            terfi_baslik = "Tavan Derece/Kademe (1/4)"
+            yeni_kademe_derece = "1/4"
+            mevzuat_maddesi = "657 sayılı DMK Madde 36 (Ortak Hükümler A Bendi)"
+            aciklama = "Personel 1. derecenin 4. kademesine (tavan barem) ulaşmıştır; rutin kademe ve derece ilerlemesi tamamlanmıştır."
+        elif mevcut_kademe < 3:
+            # Kademe İlerlemesi (657 SK Md. 64): Bulunduğu kademede en az bir yıl çalışan memur bir ileri kademeye ilerler
+            yeni_derece = mevcut_derece
+            yeni_kademe = mevcut_kademe + 1
+            yeni_kademe_derece = f"{yeni_derece}/{yeni_kademe}"
+            terfi_turu = "KADEME"
+            terfi_baslik = "Kademe İlerlemesi"
+            mevzuat_maddesi = "657 sayılı DMK Madde 64 (Kademe İlerlemesi)"
+            aciklama = f"Bulunduğu kademede 1 yılını dolduran personelin {mevcut_derece}/{mevcut_kademe}'den {yeni_kademe_derece}'e kademe ilerlemesi."
+        elif mevcut_kademe == 3:
+            if mevcut_derece > 1:
+                # Derece Yükselmesi (657 SK Md. 68): Bulunduğu derecede 3 yıl çalışıp 3. kademeyi tamamlayan memur bir üst dereceye yükselir
+                yeni_derece = mevcut_derece - 1
+                yeni_kademe = 1
+                yeni_kademe_derece = f"{yeni_derece}/{yeni_kademe}"
+                terfi_turu = "DERECE"
+                terfi_baslik = "Derece Yükselmesi"
+                mevzuat_maddesi = "657 sayılı DMK Madde 68 (Derece Yükselmesi)"
+                aciklama = f"Bulunduğu derecede 3 yıllık süreyi ve 3. kademeyi tamamlayan personelin {mevcut_derece}/3'ten üst derece olan {yeni_kademe_derece}'e derece yükselmesi."
+            else:
+                # 1. derecede 3. kademede ise 1/4'e geçer
+                yeni_derece = 1
+                yeni_kademe = 4
+                yeni_kademe_derece = "1/4"
+                terfi_turu = "KADEME"
+                terfi_baslik = "Kademe İlerlemesi (1/4 Tavan)"
+                mevzuat_maddesi = "657 sayılı DMK Madde 64 (1/4 Tavan Kademesi)"
+                aciklama = "1. derecenin 3. kademesinden memuriyetin tavan kademesi olan 1/4'e ilerleme."
+        else:
+            # Anormal kademe (örn. 2/4): bir üst derece 1. kademeye aktar
+            yeni_derece = max(1, mevcut_derece - 1)
+            yeni_kademe = 1
+            yeni_kademe_derece = f"{yeni_derece}/{yeni_kademe}"
+            terfi_turu = "DERECE"
+            terfi_baslik = "Derece Yükselmesi"
+            mevzuat_maddesi = "657 sayılı DMK Madde 68"
+            aciklama = f"Üst dereceye ({yeni_kademe_derece}) intibak/derece yükselmesi."
+    else:
+        terfi_turu = "BELIRSIZ"
+        terfi_baslik = "Derece/Kademe Belirsiz"
+        mevzuat_maddesi = "657 sayılı DMK Madde 64/68"
+        aciklama = "Personelin veritabanında derece ve kademe bilgisi kayıtlı değildir."
+
+    # Terfi Tarihini Belirleme
+    tarih_eksik = (baslama_dt is None)
+    terfi_tarihi_str = "-"
+    terfi_iso = None
+    ay_no = None
+    gun_no = None
+    gun_kaldi = None
+    yaklasan_mi = False
+    bu_yil_terfi_var_mi = False
+
+    if not tarih_eksik and baslama_dt:
+        ay_no = baslama_dt.month
+        gun_no = baslama_dt.day
+
+        # 29 Şubat kontrolü (artık yıl değilse 28 Şubat)
+        gun_hedef = gun_no
+        if ay_no == 2 and gun_no == 29:
+            import calendar
+            if not calendar.isleap(hedef_yil):
+                gun_hedef = 28
+
+        try:
+            terfi_dt = datetime(hedef_yil, ay_no, gun_hedef)
+            terfi_tarihi_str = terfi_dt.strftime("%d.%m.%Y")
+            terfi_iso = terfi_dt.strftime("%Y-%m-%d")
+            bu_yil_terfi_var_mi = True
+
+            bugun = datetime.now()
+            fark = (terfi_dt.date() - bugun.date()).days
+            gun_kaldi = fark
+            yaklasan_mi = (0 <= fark <= 30)
+        except Exception:
+            tarih_eksik = True
+
+    return {
+        "kapsam_ici": True,
+        "ad_soyad": personel.get("ad_soyad") or personel.get("ad") or "-",
+        "unvan": personel.get("unvan") or "-",
+        "brans": personel.get("brans") or "-",
+        "gorev": personel.get("gorev") or "-",
+        "grup": grup,
+        "tc_no": personel.get("tc_no") or "",
+        "mevcut_kademe_derece": kademe_derece_str,
+        "mevcut_derece": mevcut_derece,
+        "mevcut_kademe": mevcut_kademe,
+        "yeni_kademe_derece": yeni_kademe_derece,
+        "terfi_turu": terfi_turu,
+        "terfi_baslik": terfi_baslik,
+        "mevzuat_maddesi": mevzuat_maddesi,
+        "aciklama": aciklama,
+        "tavan_mi": tavan_mi,
+        "tarih_eksik": tarih_eksik,
+        "baslama_tarihi_kullanilan": baslama_str if not tarih_eksik else "",
+        "kullanilan_tarih_turu": kullanilan_tarih_turu,
+        "hedef_yil": hedef_yil,
+        "terfi_tarihi": terfi_tarihi_str,
+        "terfi_iso": terfi_iso,
+        "ay_no": ay_no,
+        "gun_no": gun_no,
+        "gun_kaldi": gun_kaldi,
+        "yaklasan_mi": yaklasan_mi,
+        "bu_yil_terfi_var_mi": bu_yil_terfi_var_mi
+    }
+

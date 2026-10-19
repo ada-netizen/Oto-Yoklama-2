@@ -10,13 +10,13 @@
 <div style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
 <div style="padding: 12px 14px; border-bottom: 1px solid var(--border); background-color: rgba(0,0,0,0.02); display: flex; align-items: center; justify-content: space-between;">
 <h3 style="margin: 0; font-size: 13px; font-weight: 700; color: var(--fg-main);"><i data-lucide="list" height="15" style="vertical-align: middle; margin-right: 5px;" width="15"></i> Rehber Konuları</h3>
-<span style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">11 Konu</span>
+<span style="font-size: 11px; color: var(--fg-sub); font-weight: 600;">13 Konu</span>
 </div>
-<!-- KILAVUZ İÇİ ANLIK ARAMA ÇUBUĞU (ÖNERİ 4) -->
+<!-- KILAVUZ İÇİ ANLIK ARAMA ÇUBUĞU -->
 <div style="padding: 10px 12px; border-bottom: 1px solid var(--border); background-color: var(--bg-main);">
     <div class="input-with-icon" style="width: 100%;">
         <i data-lucide="search" class="search-icon"></i>
-        <input type="text" id="yardim_konu_arama" class="search-input" placeholder="Konularda ara (örn: mevzuat, sss, yedek)..." oninput="yardimKonulariFiltrele(this.value)">
+        <input type="text" id="yardim_konu_arama" class="search-input" placeholder="Konularda ara (örn: terfi, mevzuat, tebliğ)..." oninput="yardimKonulariFiltrele(this.value)">
     </div>
 </div>
 <div id="yardim_menu_liste" style="flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px;">
@@ -27,10 +27,16 @@
 <i data-lucide="calendar" height="16" width="16"></i> Devamsızlık Yükleme
 </button>
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_teblig', this)">
-<i data-lucide="mail" height="16" width="16"></i> Yazı Tebliği
+<i data-lucide="mail" height="16" width="16"></i> Yazı Tebliği &amp; İmza Sirküsü
 </button>
-<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_yedekleme', this)">
-<i data-lucide="save" height="16" width="16"></i> Yedekleme &amp; Ayarlar
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_terfi', this)">
+<i data-lucide="award" height="16" width="16"></i> Personel Terfi Takibi (657 DMK)
+</button>
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_saglik', this)">
+<i data-lucide="activity" height="16" width="16"></i> Personel Sağlık İzinleri (40 Gün)
+</button>
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_personel', this)">
+<i data-lucide="user-cog" height="16" width="16"></i> Personel Yönetimi &amp; Profil
 </button>
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_dilekce', this)">
 <i data-lucide="printer" height="16" width="16"></i> İzin Dilekçesi Oluşturma
@@ -38,23 +44,20 @@
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_eslesme', this)">
 <i data-lucide="brain" height="16" width="16"></i> Akıllı Eşleşmeler
 </button>
-<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_personel', this)">
-<i data-lucide="user-cog" height="16" width="16"></i> Personel Düzenleme
+<button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_yedekleme', this)">
+<i data-lucide="save" height="16" width="16"></i> Yedekleme &amp; Ayarlar
 </button>
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_kisayollar', this)">
 <i data-lucide="keyboard" height="16" width="16"></i> Klavye Kısayolları
 </button>
-<!-- ÖNERİ 2: MEB DEVAMSIZLIK MEVZUATI -->
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_mevzuat', this)">
-<i data-lucide="scale" height="16" width="16"></i> Devamsızlık Mevzuatı
+<i data-lucide="scale" height="16" width="16"></i> Mevzuat Bilgi Bankası
 </button>
-<!-- ÖNERİ 3: SIKÇA SORULAN SORULAR -->
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_sss', this)">
 <i data-lucide="help-circle" height="16" width="16"></i> Sıkça Sorulan Sorular
 </button>
-<!-- ÖNERİ 5: SİSTEM TEŞHİSİ VE SAĞLIK -->
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_teshis', this); sistemTeshisVerileriniYukle();">
-<i data-lucide="activity" height="16" width="16"></i> Sistem Teşhisi &amp; Sağlık
+<i data-lucide="stethoscope" height="16" width="16"></i> Sistem Teşhisi &amp; Sağlık
 </button>
 <div id="yardim_arama_sonuc_yok" style="display: none; padding: 16px 8px; text-align: center; color: var(--fg-sub); font-size: 12px;">
     <i data-lucide="search-x" height="18" width="18" style="display: block; margin: 0 auto 6px auto; opacity: 0.6;"></i>
@@ -136,42 +139,212 @@
 </div>
 <!-- İçerik 3: Teblig -->
 <div class="yardim-icerik" id="y_teblig" style="display: none;">
-<h2 style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
-                        Yazı Tebliği ve İmza Sirküsü Rehberi</h2>
-<p style="color: var(--fg-main); line-height: 1.6; font-size: 14px; margin-bottom: 20px;">
-                        Personelinize DYS (Milli Eğitim Bakanlığı Doküman Yönetim Sistemi) üzerinden gelen resmi
-                        yazıları pratik bir şekilde tebliğ etmek için bu sekmeyi kullanabilirsiniz. İşlemler aşağıdaki
-                        gibi yapılır:
-                    </p>
-<h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="upload-cloud" height="18" style="vertical-align: middle; color: var(--fg-sub);" width="18"></i> 1. Otomatik Doldur
-                        Özelliği (Tavsiye Edilir)</h3>
-<div style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Gelen evraktaki bilgileri (Sayı, Konu, Kurum) tek tek elle yazmanıza gerek yoktur.<br/><br/>
-                        • Sol menüden <b>Yazı Tebliği</b> sekmesini açın.<br/>
-                        • Üstteki <b>DYS PDF Yükle (Otomatik Doldur)</b> butonuna tıklayın.<br/>
-                        • DYS'den indirdiğiniz PDF formatındaki üst yazıyı seçin. Program yapay zeka/analiz kullanarak
-                        Sayı, Konu ve Gönderen Kurum bilgilerini sizin yerinize saniyeler içinde alanlara dolduracaktır.
-                    </div>
-<h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="users" height="18" style="vertical-align: middle; color: var(--fg-sub);" width="18"></i> 2. Toplu Tebliğ Alınması</h3>
-<div style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Bir yazıyı okuldaki çok sayıda öğretmene veya personele okutacaksanız bu modu kullanın.<br/><br/>
-                        • Üstteki <b>Toplu Tebliğ</b> sekmesinin seçili olduğundan emin olun.<br/>
-                        • Listeden tebliğ edilecek personelleri işaretleyin.<br/>
-                        • <b>Toplu Tebliğ Belgesi Üret</b> butonuna bastığınızda, seçtiğiniz kişilerin isimlerinin alt
-                        alta dizildiği ve karşılarında imza satırının bulunduğu standart bir <b>İmza Sirküsü</b> belgesi
-                        Word formatında oluşturulur.
-                    </div>
-<h3 style="color: var(--fg-main); margin-top: 30px;"><i data-lucide="user-check" height="18" style="vertical-align: middle; color: var(--fg-sub);" width="18"></i> 3. Bireysel Tebliğ
-                        Alınması</h3>
-<div style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 14px;">
-                        Bir yazıyı sadece tek bir kişiye (örneğin özel bir görevlendirme, ceza veya resmi bilgilendirme)
-                        tebliğ edecekseniz bu modu kullanın.<br/><br/>
-                        • Üstteki <b>Bireysel Tebliğ</b> sekmesine geçiş yapın.<br/>
-                        • Açılır listeden tebellüğ eden (yazıyı alan) <b>Personeli</b> seçin.<br/>
-                        • Diğer listeden tebliğ eden <b>İdareciyi</b> seçin.<br/>
-                        • <b>Bireysel Tebliğ Belgesi Üret</b> butonuna bastığınızda, aynı A4 kağıdı üzerinde hem sizde
-                        hem personelde kalacak şekilde iki kopyalı (ortadan kesilebilir) resmi evrak oluşturulur.
-                    </div>
+    <h2 style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="mail" height="22" width="22"></i> Yazı Tebliği ve İmza Sirküsü Rehberi
+    </h2>
+    <p style="color: var(--fg-main); line-height: 1.6; font-size: 14px; margin-bottom: 20px;">
+        Personelinize DYS (Milli Eğitim Bakanlığı Doküman Yönetim Sistemi) üzerinden gelen resmi yazıları pratik bir şekilde tebliğ etmek, toplu imza sirküsü veya çift nüsha bireysel tebellüğ belgesi üretmek için bu masayı kullanabilirsiniz.
+    </p>
+
+    <!-- 1. DYS PDF Otomatik Doldurma -->
+    <h3 style="color: var(--fg-main); margin-top: 24px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="upload-cloud" height="18" width="18" style="color: #38BDF8;"></i> 1. DYS PDF Yükleme ve Akıllı OCR Ayrıştırma
+    </h3>
+    <div style="background-color: var(--bg-main); border-left: 4px solid #3B82F6; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 13.5px;">
+        Gelen evraktaki bilgileri (Sayı, Konu, Kurum) tek tek elle yazmanıza gerek yoktur.<br/><br/>
+        • Üstteki <b>DYS PDF Yükle (Otomatik Doldur)</b> butonuna tıklayın.<br/>
+        • DYS'den indirdiğiniz PDF formatındaki üst yazıyı seçin. Sistemimiz evrakı okuyarak Sayı, Konu ve Gönderen Kurum alanlarını anında doldurur. Ayrıca tanımlı <i>Akıllı Eşleşmeler</i> devredeyse ilgili hedef kitleyi (örn. matematik öğretmenleri, nöbetçi idareciler) otomatik seçer.
+    </div>
+
+    <!-- 2. Dinamik Filtreleme ve Hiyerarşik Sıralama -->
+    <h3 style="color: var(--fg-main); margin-top: 24px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="filter" height="18" width="18" style="color: #10B981;"></i> 2. Sadeleştirilmiş Filtreleme &amp; İdare Hiyerarşisi
+    </h3>
+    <div style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin: 15px 0; border-radius: 0 8px 8px 0; line-height: 1.6; color: var(--fg-main); font-size: 13.5px;">
+        • <b>Anlık Kişi Sayacı:</b> Filtre butonlarının yanında o grupta sistemde kayıtlı kaç aktif personel olduğu gösterilir (Örn: <code>Öğretmenler (18)</code>, <code>İdare (3)</code>).<br/>
+        • <b>Boş Grupları Gizleme:</b> Sistemde 0 kişi bulunan personel grupları filtre barını kalabalıklaştırmamak için otomatik gizlenir; yeni personel eklendiğinde filtre anında görünür hale gelir.<br/>
+        • <b>Dinamik Branş Filtresi:</b> "Öğretmenler" filtresi seçildiğinde branş seçici (Tarih, Matematik, Beden vb.) otomatik ortaya çıkar; böylece zümre bazlı tebliğler saniyeler içinde yapılır.<br/>
+        • <b>İdare Hiyerarşisi:</b> Personel listesinde okul idarecileri (Müdür, Müdür Başyardımcısı, Müdür Yardımcısı) mevzuat gereği en üstte listelenir.
+    </div>
+
+    <!-- 3. Toplu ve Bireysel Tebliğ Üretimi -->
+    <h3 style="color: var(--fg-main); margin-top: 24px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="file-check" height="18" width="18" style="color: #8B5CF6;"></i> 3. Belge Üretimi (Toplu İmza Sirküsü &amp; Bireysel Tebliğ)
+    </h3>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px;">
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+            <div style="font-weight: 700; color: var(--fg-main); font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="users" height="15" width="15" style="color: #38BDF8;"></i> Toplu İmza Sirküsü
+            </div>
+            <div style="font-size: 12px; color: var(--fg-sub); line-height: 1.5;">
+                Tüm öğretmen veya personele duyurulacak genel yazılar için kullanılır. Seçilen kişilerin ad-soyad, unvan, branş ve imza sütunlarının bulunduğu standart Word formatında resmi imza sirküsü üretir.
+            </div>
+        </div>
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 14px;">
+            <div style="font-weight: 700; color: var(--fg-main); font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="user-check" height="15" width="15" style="color: #F59E0B;"></i> Bireysel Tebliğ (Çift Nüsha)
+            </div>
+            <div style="font-size: 12px; color: var(--fg-sub); line-height: 1.5;">
+                Tek bir personele özel tebligatlarda kullanılır. Tek A4 sayfasına hem okul idaresinde kalacak hem de personele teslim edilecek çift nüshalı (ortadan kesilebilir) resmi tebellüğ belgesi hazırlar.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- İçerik: Personel Terfi Takibi (YENİ) -->
+<div class="yardim-icerik" id="y_terfi" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+        <div>
+            <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="award" height="22" width="22" style="color: #38BDF8;"></i> 657 Sayılı DMK Personel Terfi Takibi &amp; Yıllık Matris Rehberi
+            </h2>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
+                Devlet memurlarının kademe ilerlemesi ve derece yükselmelerinin 365 günlük takvimde kuşbakışı takibi
+            </p>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; color: #38BDF8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 9999px;">
+            657 SK. Md. 64 &amp; 68 Uyumlu
+        </span>
+    </div>
+
+    <!-- Mevzuat Bilgilendirme Kutusu -->
+    <div style="background: rgba(56, 189, 248, 0.08); border-left: 4px solid #38BDF8; padding: 14px 16px; border-radius: 0 8px 8px 0; margin-bottom: 20px; line-height: 1.6; font-size: 13px; color: var(--fg-main);">
+        <strong>📌 Yasal Dayanak ve Temel Kurallar:</strong>
+        <ul style="margin: 6px 0 0 0; padding-left: 20px; font-size: 12.5px; color: var(--fg-sub);">
+            <li><b>Kademe İlerlemesi (657 SK. Md. 64):</b> Bulunduğu derecede 1 hizmet yılını tamamlayan ve olumlu sicil alan memur bir üst kademeye ilerler (Örn: 9/1 &rarr; 9/2, 3/2 &rarr; 3/3).</li>
+            <li><b>Derece Yükselmesi (657 SK. Md. 68):</b> Bulunduğu derecenin 3. kademesinde 1 yılını tamamlayan memur, bir üst derecenin 1. kademesine yükseltilir (Örn: 9/3 &rarr; 8/1, 4/3 &rarr; 3/1).</li>
+            <li><b>Tavan Barem Koruması (657 SK. Md. 36):</b> Öğrenim durumuna göre ulaşılabilecek en üst dereceye (Örn: Lisans mezunları için 1/4) ulaşmış memurlar artık terfi etmez. Takvimde gereksiz kalabalık yaratmaması için takvimden gizlenir; dileyen idareciler <code>[ 🛡️ Tavan (1/4) ]</code> butonuyla kontrol edebilir.</li>
+        </ul>
+    </div>
+
+    <!-- Özellik Kartları (Grid) -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <!-- 1. Otomatik Tarih Hesabı -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="calendar" height="16" width="16" style="color: #38BDF8;"></i> 1. İlk Göreve Başlama Tarihi Esası
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Terfi yıldönümleri personelin memuriyete <b>ilk göreve başlama tarihi</b> (yoksa kurumda başlama tarihi) esas alınarak her yıl otomatik tespit edilir. Sekme her açıldığında idareye bilgilendirme uyarısı sunulur.
+            </p>
+            <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 8px; font-size: 11.5px; color: #EF4444;">
+                <i data-lucide="alert-triangle" height="13" width="13" style="vertical-align: middle;"></i> Tarihi boş olan personeller kırmızı uyarı bandında listelenir; <b>[ Tarih Gir ]</b> butonuyla tek tıkla tamamlanabilir.
+            </div>
+        </div>
+
+        <!-- 2. Kapsam ve Görevlendirme Ayrımı -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="shield-check" height="16" width="16" style="color: #10B981;"></i> 2. Kapsam ve Görevlendirme Kriteri
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Kapsam İçi:</b> Yalnızca 657'ye tabi <b>Kadrolu</b> memurlar (öğretmen, memur, hizmetli).</li>
+                <li><b>Başka Kuruma Görevlendirilenler (🏛️):</b> Kadrosu okulumuzda olup başka kuruma görevlendirilen kadrolu öğretmenlerimizin terfisini okulumuz takip eder; listeye dahil edilir.</li>
+                <li><b>Kapsam Dışı:</b> Sözleşmeli (4/B), İUP, TYP, Ücretli ve dışarıdan okulumuza gelen geçici görevlendirmeler terfi listesine dahil edilmez.</li>
+            </ul>
+        </div>
+
+        <!-- 3. 365 Günlük Takvim Matrisi ve Renkler -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="calendar-days" height="16" width="16" style="color: #8B5CF6;"></i> 3. 365 Günlük Matris &amp; Renk Kodları
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                12 Ay &times; 31 Günlük kuşbakışı takvimde terfi günleri <b>T</b> harfiyle gösterilir:
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 6px; font-size: 11.5px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #0284C7; color: #fff; font-weight: 800; font-size: 10px; padding: 1px 6px; border-radius: 3px;">T</span>
+                    <span style="color: var(--fg-main);"><b>Kademe İlerlemesi</b> (Mavi Rozet - Md. 64)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: #7C3AED; color: #fff; font-weight: 800; font-size: 10px; padding: 1px 6px; border-radius: 3px;">T</span>
+                    <span style="color: var(--fg-main);"><b>Derece Yükselmesi</b> (Mor Rozet - Md. 68)</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="background: linear-gradient(90deg, #0284C7 50%, #7C3AED 50%); color: #fff; font-weight: 800; font-size: 10px; padding: 1px 6px; border-radius: 3px;">T²</span>
+                    <span style="color: var(--fg-main);"><b>Aynı Gün Çift Terfi</b> (Yarı Mavi / Yarı Mor 50-50 Gradyan)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Modern Sky Blue Bu Ay Vurgusu -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="eye" height="16" width="16" style="color: #38BDF8;"></i> 4. "BU AY" Panoramik Vurgulama
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Göz yoran tekil vurgular yerine, içinde bulunulan aktif ay MEBBİS onay süreçlerini kolaylaştırmak için bütünsel olarak vurgulanır:
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 12px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Aylar Sütununda:</b> Canlı sol çizgi ve parlayan <code>● BU AY</code> mikro rozeti.</li>
+                <li><b>Satır Boyunca:</b> Günleri bölmeyen ferah, şeffaf Sky Blue gradyan.</li>
+                <li><b>Gün Hücresinde:</b> Bugünün ay içindeki tam konumunu gösteren parlayan alt gösterge noktası.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 5. İdareci İş Akışı ve Excel İndirme -->
+    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+        <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="file-spreadsheet" height="16" width="16" style="color: #10B981;"></i> 5. MEBBİS Onay Dönemi İçin Excel İndirme ve Canlı Filtreleme
+        </h4>
+        <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6;">
+            • <b>Hücreye Tıklama ile Filtreleme:</b> Takvimde herhangi bir terfi rozetine tıkladığınızda, aşağıdaki personel listesi otomatik olarak o güne odaklanır.<br/>
+            • <b>Tek Tıkla Excel Raporu:</b> Üst bardaki <b>[ Terfi Listesini İndir (Excel) ]</b> butonuna bastığınızda seçili yılın tüm terfi listesi renkli başlıklar, derece/kademe geçişleri ve mevzuat maddeleriyle biçimlendirilmiş resmi Excel formatında anında indirilir.
+        </div>
+    </div>
+</div>
+
+<!-- İçerik: Personel Sağlık İzinleri (YENİ) -->
+<div class="yardim-icerik" id="y_saglik" style="display: none;">
+    <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
+        <div>
+            <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="activity" height="22" width="22" style="color: #EF4444;"></i> Personel Sağlık İzinleri ve 40 Gün Takip Rehberi
+            </h2>
+            <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
+                657 Sayılı DMK Md. 105 ve MEB İzin Yönergesi kapsamında tek hekim rapor kotası ve resmi evrak üretimi
+            </p>
+        </div>
+        <span style="font-size: 11px; font-weight: 700; color: #EF4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 9999px;">
+            Yıllık Azami 40 Gün Tek Hekim
+        </span>
+    </div>
+
+    <div style="background-color: var(--bg-main); border-left: 4px solid #EF4444; padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 13.5px; line-height: 1.6;">
+        <strong>🏥 40 Gün Tek Hekim Rapor Sınırı Kuralı (MEB İzin Yönergesi Md. 10):</strong><br/>
+        Memurlara bir takvim yılı (1 Ocak - 31 Aralık) içinde tek hekim tarafından verilecek istirahat raporlarının toplamı <b>40 günü aşamaz</b>. Tek seferde en fazla 10 gün (kontrol muayenesiyle +10 gün daha) rapor verilebilir. Yıl içindeki tek hekim rapor toplamı 40 günü aştığında, 40 günü aşan sonraki tüm istirahat raporlarının mutlaka <b>Sağlık Kurulu (Heyet)</b> tarafından düzenlenmesi zorunludur.
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="gauge" height="16" width="16" style="color: #F59E0B;"></i> Canlı Kota İlerleme Çubukları
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Sistem, girilen her sağlık raporunu otomatik olarak personelin yıllık kotasına ekler:
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><span style="color: #10B981; font-weight: 700;">0 - 20 Gün:</span> Güvenli Bölge (Yeşil)</li>
+                <li><span style="color: #F59E0B; font-weight: 700;">21 - 35 Gün:</span> Dikkat Bölgesi (Sarı / Turuncu)</li>
+                <li><span style="color: #EF4444; font-weight: 700;">36 - 40 Gün:</span> Kritik Eşik (Kırmızı - Heyet Uyarısı)</li>
+            </ul>
+        </div>
+
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="file-text" height="16" width="16" style="color: #38BDF8;"></i> Resmi Evrak Üretimi (Tek Tıkla PDF)
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Rapor kaydedildikten sonra iki resmi belge saniyeler içinde üretilebilir:
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Hastalık İzni Onay Belgesi (PDF):</b> Okul müdürü onaylı, personelin izinli sayıldığına dair resmi form.</li>
+                <li><b>İlçe MEM Bildirim Yazısı (PDF):</b> İlçe Milli Eğitim Müdürlüğü'ne hitaben yazılan ve sağlık iznini bildiren resmi üst yazı.</li>
+            </ul>
+        </div>
+    </div>
 </div>
 <!-- İçerik 4: Yedekleme -->
 <div class="yardim-icerik" id="y_yedekleme" style="display: none;">
@@ -257,24 +430,77 @@
                         işaretler!
                     </div>
 </div>
-<!-- İçerik 7: Personel Düzenleme -->
+<!-- İçerik 7: Personel Düzenleme & Yönetimi -->
 <div class="yardim-icerik" id="y_personel" style="display: none;">
-<h2 style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px;">
-                        Personel Listesi Nasıl Düzenlenir?</h2>
-<div style="background-color: var(--bg-main); border-left: 4px solid #F59E0B; padding: 15px; margin: 20px 0; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 14px; line-height: 1.6;">
-                        Okulunuzdaki idareci, öğretmen ve diğer personelleri eklemek, silmek veya görev/branş
-                        bilgilerini güncellemek çok kolaydır:<br/><br/>
-<strong>1. Ayarlar Bölümü:</strong> Sol menüden <b>Ayarlar ve Yedekleme</b> sekmesini açın.<br/>
-<strong>2. Personel Düzeni:</strong> Sayfanın sağ tarafında bulunan <b>Okul Personelleri
-                            Düzenleme Listesi</b> bölümüne gelin.<br/>
-<strong>3. Personel Ekleme:</strong> Yeni bir personel eklemek için "Yeni Ekle" sekmesinden (Ad
-                        Soyad, Görev, Branş, Grup) doldurup "Kaydet"e basın.<br/>
-<strong>4. Personel Silme/Düzenleme:</strong> Listelenen personellerin sağındaki kırmızı "Sil"
-                        butonuna basarak kişiyi silebilirsiniz. Bir personeli yanlış gruba aldıysanız önce silip, sonra
-                        doğru bilgilerle yeniden ekleyebilirsiniz.<br/>
-<strong>5. Otomatik Güncelleme:</strong> Tüm bu işlemleriniz anında veritabanına kaydedilir,
-                        Yazı Tebliği ekranındaki personel ağacına otomatik yansır.
-                    </div>
+    <h2 style="color: var(--tree-sel); margin-top: 0; border-bottom: 2px solid var(--border); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="user-cog" height="22" width="22"></i> Personel Yönetimi, Dinamik Profil ve Excel Aktarımı Rehberi
+    </h2>
+    <p style="color: var(--fg-main); line-height: 1.6; font-size: 14px; margin-bottom: 20px;">
+        Okulunuzdaki tüm öğretmen, idareci ve destek personelinin özlük kayıtlarını yönetebilir, dinamik profil kartlarını düzenleyebilir ve Excel ile toplu içe/dışa aktarım yapabilirsiniz.
+    </p>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 20px;">
+        <!-- 1. Hızlı Erişim ve Yönetim Masası -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="layout" height="16" width="16" style="color: #38BDF8;"></i> 1. Personel Yönetim Masası (Ctrl + P)
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Sol navigasyon rayındaki butonla veya doğrudan <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 5px; border-radius:3px;">Ctrl + P</kbd> kısayolu ile hızlı yönetim penceresini açabilirsiniz:
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li>Hızlı personel arama (ad, unvan, branş, TC Kimlik).</li>
+                <li>İdare, Öğretmen, Memur ve Hizmetli gruplarına göre anlık süzme.</li>
+                <li>Tek tıkla aktif/pasif durumu ve kurum dışı görevlendirme takibi.</li>
+            </ul>
+        </div>
+
+        <!-- 2. Dinamik Profil Kartı -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="badge-check" height="16" width="16" style="color: #10B981;"></i> 2. Dinamik Profil ve 657 Barem Bilgileri
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Her personelin yanındaki <b>[ Profil ]</b> butonuna tıklandığında zengin mevzuat kartı açılır:
+            </p>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Hizmet Sınıfı:</b> EÖH (Eğitim), GİH (Genel İdare), YHS (Yardımcı Hizmetler), THS (Teknik).</li>
+                <li><b>Derece / Kademe:</b> 657 sayılı Kanuna tabi barem (Örn: 1/4, 3/2, 9/1).</li>
+                <li><b>Başlama Tarihleri:</b> İlk Göreve Başlama (terfi esası) ve Kurumda Başlama Tarihleri.</li>
+            </ul>
+        </div>
+
+        <!-- 3. Statü Rozetleri -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="tag" height="16" width="16" style="color: #8B5CF6;"></i> 3. 7 Farklı Personel Statü Rozeti
+            </h4>
+            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
+                Sistem tüm istihdam türlerini renkli etiketlerle birbirinden ayırt eder:
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px;">
+                <span style="background: rgba(59, 130, 246, 0.15); color: #3B82F6; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Kadrolu</span>
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Sözleşmeli (4/B)</span>
+                <span style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Görevlendirme</span>
+                <span style="background: rgba(139, 92, 246, 0.15); color: #8B5CF6; padding: 2px 7px; border-radius: 4px; font-weight: 700;">İUP</span>
+                <span style="background: rgba(236, 72, 153, 0.15); color: #EC4899; padding: 2px 7px; border-radius: 4px; font-weight: 700;">TYP</span>
+                <span style="background: rgba(20, 184, 166, 0.15); color: #14B8A6; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Ücretli</span>
+                <span style="background: rgba(100, 116, 139, 0.15); color: #94A3B8; padding: 2px 7px; border-radius: 4px; font-weight: 700;">Sürekli İşçi</span>
+            </div>
+        </div>
+
+        <!-- 4. Excel İçe / Dışa Aktarma -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="file-spreadsheet" height="16" width="16" style="color: #10B981;"></i> 4. Excel ile Toplu Aktarım ve Yedekleme
+            </h4>
+            <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <li><b>Excel Şablonu İndir:</b> Sistemle tam uyumlu sütun başlıklarını içeren boş Excel formatını tek tıkla edinin.</li>
+                <li><b>Excel'den Personel Aktar:</b> MEBBİS'ten aldığınız personel listesini şablona yapıştırıp saniyeler içinde topluca veritabanına yükleyin.</li>
+                <li><b>Personel Listesini İndir (Excel):</b> Mevcut personellerin tüm branş, statü ve derece bilgilerini anında Excel olarak yedekleyin.</li>
+            </ul>
+        </div>
+    </div>
 </div>
 <!-- İçerik 8: Klavye Kısayolları Rehberi -->
 <div class="yardim-icerik" id="y_kisayollar" style="display: none;">
@@ -588,11 +814,33 @@
                 <li><b>İUP Kritik Yaptırım (Md. 23/2):</b> Okul yönetiminin onayı veya belgeye dayalı mücbir sebep olmaksızın <b>1 GÜN BİLE mazeretsiz devamsızlıkta İLİŞİK DERHAL KESİLİR</b>.</li>
             </ul>
         </div>
+
+        <!-- Kart 9: 657 SK Md. 64 & 68 Terfi ve Kademe/Derece İlerlemesi -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px; grid-column: span 2;">
+            <h4 style="margin: 0 0 10px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <i data-lucide="award" height="16" width="16" style="color: #38BDF8;"></i> 657 SK Md. 64 &amp; 68 Personel Terfi (Kademe İlerlemesi &amp; Derece Yükselmesi)
+            </h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
+                <div>
+                    <strong style="color: var(--fg-main);">Kademe İlerlemesi (Madde 64):</strong>
+                    <br>&bull; Memurun bulunduğu kademede en az 1 yıl çalışmış olması şarttır.
+                    <br>&bull; İlerleme, olumlu değerlendirme sonucunda aynı derece içinde bir üst kademeye yapılır (Örn: 9/1 &rarr; 9/2, 4/2 &rarr; 4/3).
+                    <br>&bull; <i>Kıdem Kuralı:</i> Son 8 yıl içinde herhangi bir disiplin cezası almayan memurlara +1 kademe ilerlemesi uygulanır (Md. 64/4).
+                </div>
+                <div>
+                    <strong style="color: var(--fg-main);">Derece Yükselmesi (Madde 68):</strong>
+                    <br>&bull; Bulunduğu derecenin 3. kademesinde 1 yılını tamamlamış olmak (Örn: 9/3 veya 4/3).
+                    <br>&bull; Üst dereceden boş bir kadronun bulunması ve memurun niteliklerinin bu kadroya uygun olması.
+                    <br>&bull; Geçiş daima üst derecenin 1. kademesine yapılır (Örn: 9/3 &rarr; 8/1, 4/3 &rarr; 3/1).
+                    <br>&bull; <i>Tavan Koruması:</i> Lisans mezunu memurlar için nihai tavan 1/4'tür (Md. 36).
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <!-- ======================================================== -->
-<!-- İÇERİK: SIKÇA SORULAN SORULAR & HATA ÇÖZÜMLERİ (ÖNERİ 3) -->
+<!-- İÇERİK: SIKÇA SORULAN SORULAR & HATA ÇÖZÜMLERİ -->
 <!-- ======================================================== -->
 <div class="yardim-icerik" id="y_sss" style="display: none;">
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
@@ -605,7 +853,7 @@
             </p>
         </div>
         <span style="font-size: 11px; font-weight: 700; color: #38BDF8; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.3); padding: 4px 10px; border-radius: 9999px;">
-            5 Temel Soru &amp; Yanıt
+            8 Temel Soru &amp; Yanıt
         </span>
     </div>
 
@@ -662,6 +910,39 @@
             </div>
             <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
                 <b>Çözüm:</b> e-Okul şube listesinde veli telefon sütunu boş bırakılmış olabilir. Klavyeden <kbd style="background:var(--bg-card-solid); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:700;">Ctrl + O</kbd> kısayoluna basarak <b>Öğrenci Yönetimi</b> penceresini açabilir, ilgili öğrenciyi seçerek veli cep telefonunu ve adresini anında kaydedebilirsiniz.
+            </div>
+        </div>
+
+        <!-- Soru 6 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(56, 189, 248, 0.15); color: #38BDF8; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">6</span>
+                Personel terfi tarihleri neye göre hesaplanır ve tavan baremindeki (1/4) personeller neden takvimde görünmez?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> Terfi hesaplama motorumuz personelin memuriyete <b>İlk Göreve Başlama Tarihi</b>ni (yoksa Kurumda Başlama Tarihini) esas alır ve her takvim yılında aynı aya ve güne terfi yıldönümü atar. 657 sayılı DMK Md. 36 uyarınca öğrenim seviyesinin en üst baremi olan <b>1/4 tavan derecesine</b> ulaşmış memurlar aktif terfi olayı yaşamadıkları için takvimi kalabalıklaştırmamak adına takvimden gizlenir. Dileyen idareciler alttaki listede <code>[ 🛡️ Tavan (1/4) ]</code> butonuna basarak tavan personelleri inceleyebilir.
+            </div>
+        </div>
+
+        <!-- Soru 7 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(16, 185, 129, 0.15); color: #10B981; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">7</span>
+                Başka bir kuruma geçici görevlendirilen okulumuz kadrolu personelinin terfisini kim takip eder?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> Devlet memurluğunda özlük ve terfi takibi kadronun bulunduğu asıl kurum tarafından yürütülür. Okulumuz kadrosunda olup başka okula veya kuruma görevlendirilen öğretmen ve memurlarımızın terfisi okulumuzca takip edilir ve listede <code>🏛️ Başka Kurumda</code> rozetiyle yer alır. Dışarıdan okulumuza geçici gelen görevlendirme personelleri ise kendi asıl okulları takip ettiği için terfi listemize dahil edilmez.
+            </div>
+        </div>
+
+        <!-- Soru 8 -->
+        <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
+            <div style="font-size: 13.5px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <span style="background: rgba(245, 158, 11, 0.15); color: #F59E0B; border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800;">8</span>
+                Yazı Tebliği ekranında branş filtresi neden hemen görünmüyor ve gruplar nasıl sıralanıyor?
+            </div>
+            <div style="font-size: 12.5px; color: var(--fg-sub); line-height: 1.6; padding-left: 32px;">
+                <b>Çözüm:</b> Arayüz kalabalığını ve satır kaymalarını önlemek amacıyla branş filtresi yalnızca <b>"Öğretmenler"</b> butonu seçildiğinde akıllıca ortaya çıkar. Ayrıca tüm filtre butonlarının yanında parantez içinde güncel kişi sayısı yazılır (örn: <code>Öğretmenler (16)</code>) ve sistemde 0 kişi olan boş gruplar otomatik gizlenir. Tebliğ listesinde ise idare personeli (Müdür, Müdür Yardımcısı) mevzuat protokolü gereği daima listenin en üstünde yer alır.
             </div>
         </div>
     </div>

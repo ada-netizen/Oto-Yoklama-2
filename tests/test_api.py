@@ -387,6 +387,9 @@ def test_yardim_sekmesinde_mevzuat_sss_ve_teshis_bilesenleri():
     assert "y_mevzuat" in html
     assert "y_sss" in html
     assert "y_teshis" in html
+    assert "y_terfi" in html
+    assert "y_saglik" in html
+    assert "Personel Terfi Takibi" in html
     assert "5 Geç Kalma = Yarım Gün Özürsüz Kuralı" in html
     assert "Sıkça Sorulan Sorular ve Hızlı Sorun Giderme" in html
     assert "Sistem Teşhisi ve Sağlık Kontrolü" in html
