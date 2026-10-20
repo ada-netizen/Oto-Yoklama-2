@@ -194,23 +194,28 @@ def _personelleri_veritabanina_kaydet(liste, kaynak_adi="Personel"):
 def _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=None):
     """Hazırlanmış personel dosyasını okur ve UPSERT mantığıyla kaydeder."""
     try:
-        # 1. MEBBİS Görevlendirme Formatı Kontrolü
-        if yukleme_tipi == 'mebbis_gorevlendirme' or ExcelMotoru.mebbis_gorevlendirme_mi(temp_yol):
-            mebbis_liste = ExcelMotoru.mebbis_gorevlendirme_personel_oku(temp_yol)
-            if not mebbis_liste:
-                return {"basarili": False, "mesaj": "MEBBİS Görevlendirme personel tablosu boş veya okunamadı."}
-            return _personelleri_veritabanina_kaydet(mebbis_liste, "MEBBİS Görevlendirme")
+        # 0. Sistem Veritabanı Tam Yedeği Formatı (24 Sütunluk Kesintisiz Geri Yükleme)
+        if yukleme_tipi in ('veritabani_yedek', 'sistem_yedek'):
+            # MEBBİS kontrollerini atla, doğrudan tam 24 alanlı standart tablo okumasına geç
+            pass
+        else:
+            # 1. MEBBİS Görevlendirme Formatı Kontrolü
+            if yukleme_tipi == 'mebbis_gorevlendirme' or ExcelMotoru.mebbis_gorevlendirme_mi(temp_yol):
+                mebbis_liste = ExcelMotoru.mebbis_gorevlendirme_personel_oku(temp_yol)
+                if not mebbis_liste:
+                    return {"basarili": False, "mesaj": "MEBBİS Görevlendirme personel tablosu boş veya okunamadı."}
+                return _personelleri_veritabanina_kaydet(mebbis_liste, "MEBBİS Görevlendirme")
 
-        # 2. MEBBİS Kadrolu Formatı Kontrolü (Düzensiz / Çok Satırlı / Kayan Sütunlar)
-        if yukleme_tipi == 'mebbis_kadrolu' or ExcelMotoru.mebbis_mi_kontrol_et(temp_yol):
-            mebbis_liste = ExcelMotoru.mebbis_personel_oku(temp_yol)
-            if not mebbis_liste:
-                return {"basarili": False, "mesaj": "MEBBİS personel listesi boş veya okunamadı."}
-            return _personelleri_veritabanina_kaydet(mebbis_liste, "MEBBİS Kadrolu")
+            # 2. MEBBİS Kadrolu Formatı Kontrolü (Düzensiz / Çok Satırlı / Kayan Sütunlar)
+            if yukleme_tipi == 'mebbis_kadrolu' or ExcelMotoru.mebbis_mi_kontrol_et(temp_yol):
+                mebbis_liste = ExcelMotoru.mebbis_personel_oku(temp_yol)
+                if not mebbis_liste:
+                    return {"basarili": False, "mesaj": "MEBBİS personel listesi boş veya okunamadı."}
+                return _personelleri_veritabanina_kaydet(mebbis_liste, "MEBBİS Kadrolu")
 
-        # 3. e-Okul Formatı
-        if yukleme_tipi == 'eokul':
-            return {"basarili": False, "mesaj": "e-Okul Personel Şablonu bir sonraki güncellemede eklenecektir."}
+            # 3. e-Okul Formatı
+            if yukleme_tipi == 'eokul':
+                return {"basarili": False, "mesaj": "e-Okul Personel Şablonu bir sonraki güncellemede eklenecektir."}
 
         # 4. Standart Düz Tablo Formatı
         df_temp = ExcelMotoru.tabloyu_guvenli_oku(temp_yol, header=None)
@@ -367,7 +372,7 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=None):
         res = _personelleri_veritabanina_kaydet(yeni_personeller, "Personel Tablosu")
         if res.get("basarili"):
             tam_yedek_mi = (tc_sutunu is not None and kariyer_sutunu is not None and kademe_sutunu is not None)
-            if tam_yedek_mi:
+            if tam_yedek_mi or yukleme_tipi in ('veritabani_yedek', 'sistem_yedek'):
                 res["mesaj"] = f"{len(yeni_personeller)} personel veritabanı tam yedeğinden (24 alan) eksiksiz geri yüklendi."
             elif not tc_sutunu and not kariyer_sutunu:
                 res["mesaj"] = f"{len(yeni_personeller)} personel yüklendi ve gruplandırıldı."

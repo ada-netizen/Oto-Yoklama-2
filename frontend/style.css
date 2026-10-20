@@ -2462,3 +2462,73 @@ body.light-theme .bu-ay-nokta,
 
 
 
+
+
+/* ========================================================================== */
+/* PERSONEL İZİN MASASI & 365 GÜNLÜK TAKVİM MATRİSİ STİLLERİ                   */
+/* ========================================================================== */
+.izin-hucre-rozet {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.izin-hucre-rozet:hover {
+    transform: scale(1.15);
+    z-index: 10;
+}
+
+.izin-hucre-rozet.saglik {
+    background: #10B981;
+    color: #FFFFFF;
+    border: 1px solid #059669;
+}
+
+.izin-hucre-rozet.yillik {
+    background: #0284C7;
+    color: #FFFFFF;
+    border: 1px solid #0369A1;
+}
+
+.izin-hucre-rozet.mazeret {
+    background: #F59E0B;
+    color: #FFFFFF;
+    border: 1px solid #D97706;
+}
+
+.izin-hucre-rozet.idari {
+    background: #8B5CF6;
+    color: #FFFFFF;
+    border: 1px solid #7C3AED;
+}
+
+.izin-hucre-rozet.ayliksiz,
+.izin-hucre-rozet.diger {
+    background: #64748B;
+    color: #FFFFFF;
+    border: 1px solid #475569;
+}
+
+.izin-hucre-rozet.karisik {
+    background: linear-gradient(135deg, #10B981 50%, #0284C7 50%);
+    color: #FFFFFF;
+    border: 1px solid #059669;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+}
+
+.izin-hucre-rozet.idareci-cerceve {
+    border: 2px solid #F59E0B !important;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.5) !important;
+}
+
+.izin-hucre-rozet.isci-cerceve {
+    border: 2px dashed #38BDF8 !important;
+}

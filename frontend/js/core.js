@@ -602,6 +602,7 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
             if(sekmeId === 'sekme_izin') verileriYukle();
             if(sekmeId === 'sekme_teblig') personelleriYukle();
             if(sekmeId === 'sekme_terfi' && typeof terfiYukle === 'function') terfiYukle();
+            if(sekmeId === 'sekme_saglik' && typeof saglikYukle === 'function') saglikYukle();
             if(sekmeId === 'sekme_dashboard' && typeof dashboardYukle === 'function') dashboardYukle();
             if(sekmeId === 'sekme_ihale') {
                 const icerik = document.getElementById("ihale_icerik");

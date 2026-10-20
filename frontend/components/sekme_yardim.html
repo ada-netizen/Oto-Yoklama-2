@@ -33,7 +33,7 @@
 <i data-lucide="award" height="16" width="16"></i> Personel Terfi Takibi (657 DMK)
 </button>
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_saglik', this)">
-<i data-lucide="activity" height="16" width="16"></i> Personel Sağlık İzinleri (40 Gün)
+<i data-lucide="calendar-heart" height="16" width="16"></i> Personel İzin Masası &amp; 365 Günlük Takvim
 </button>
 <button class="yardim-menu-btn" onclick="yardimIcerikGoster('y_personel', this)">
 <i data-lucide="user-cog" height="16" width="16"></i> Personel Yönetimi &amp; Profil
@@ -296,52 +296,58 @@
     </div>
 </div>
 
-<!-- İçerik: Personel Sağlık İzinleri (YENİ) -->
+<!-- İçerik: Personel İzin Masası & 365 Günlük Takvim (GÜNCELLENDİ) -->
 <div class="yardim-icerik" id="y_saglik" style="display: none;">
     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--border); padding-bottom: 12px; margin-bottom: 20px;">
         <div>
             <h2 style="color: var(--fg-main); margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
-                <i data-lucide="activity" height="22" width="22" style="color: #EF4444;"></i> Personel Sağlık İzinleri ve 40 Gün Takip Rehberi
+                <i data-lucide="calendar-heart" height="22" width="22" style="color: #10B981;"></i> Personel İzin Masası &amp; 365 Günlük Kuşbakışı Takvim Rehberi
             </h2>
             <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--fg-sub);">
-                657 Sayılı DMK Md. 105 ve MEB İzin Yönergesi kapsamında tek hekim rapor kotası ve resmi evrak üretimi
+                657 Sayılı DMK (Md. 102, 103, 104, 105, 108, 152) ve 4857 Sayılı İş Kanunu kapsamında çoklu izin takibi
             </p>
         </div>
-        <span style="font-size: 11px; font-weight: 700; color: #EF4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 10px; border-radius: 9999px;">
-            Yıllık Azami 40 Gün Tek Hekim
+        <span style="font-size: 11px; font-weight: 700; color: #10B981; background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); padding: 4px 10px; border-radius: 9999px;">
+            Çoklu İzin Türü &amp; 365 Gün Takvim
         </span>
     </div>
 
-    <div style="background-color: var(--bg-main); border-left: 4px solid #EF4444; padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 13.5px; line-height: 1.6;">
-        <strong>🏥 40 Gün Tek Hekim Rapor Sınırı Kuralı (MEB İzin Yönergesi Md. 10):</strong><br/>
-        Memurlara bir takvim yılı (1 Ocak - 31 Aralık) içinde tek hekim tarafından verilecek istirahat raporlarının toplamı <b>40 günü aşamaz</b>. Tek seferde en fazla 10 gün (kontrol muayenesiyle +10 gün daha) rapor verilebilir. Yıl içindeki tek hekim rapor toplamı 40 günü aştığında, 40 günü aşan sonraki tüm istirahat raporlarının mutlaka <b>Sağlık Kurulu (Heyet)</b> tarafından düzenlenmesi zorunludur.
+    <div style="background-color: var(--bg-main); border-left: 4px solid #10B981; padding: 15px; margin-bottom: 20px; border-radius: 0 8px 8px 0; color: var(--fg-main); font-size: 13.5px; line-height: 1.6;">
+        <strong>📅 365 Günlük Kuşbakışı Takvim ve Rozet Sistemi:</strong><br/>
+        Kurumdaki tüm personelin aldığı izinler (Sağlık, Yıllık, Mazeret, İdari, Aylıksız) 12 ay &times; 31 günlük matriste harf ve renk kodlarıyla görselleştirilir:
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px;">
+            <span class="izin-hucre-rozet saglik" style="width: 20px; height: 20px; font-size: 11px;">S</span> <b>Sağlık İzni (Zümrüt Yeşili):</b> Tek hekim / kurul raporu.
+            <span class="izin-hucre-rozet yillik" style="width: 20px; height: 20px; font-size: 11px;">Y</span> <b>Yıllık İzin (Mavi):</b> Memur ve işçi yıllık izinleri.
+            <span class="izin-hucre-rozet mazeret" style="width: 20px; height: 20px; font-size: 11px;">M</span> <b>Mazeret İzni (Kehribar):</b> Babalık (10G), Evlilik (7G), Vefat (7G).
+            <span class="izin-hucre-rozet idari" style="width: 20px; height: 20px; font-size: 11px;">İ</span> <b>İdari İzin (Mor):</b> Genel veya özel idari izinler.
+            <span class="izin-hucre-rozet saglik idareci-cerceve" style="width: 20px; height: 20px; font-size: 11px;">👑</span> <b>İdareci İzni (Altın Kenarlık):</b> Okul yöneticilerinin izinleri altın çerçeve ile ayırt edilir.
+        </div>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px;">
         <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
             <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="gauge" height="16" width="16" style="color: #F59E0B;"></i> Canlı Kota İlerleme Çubukları
+                <i data-lucide="scale" height="16" width="16" style="color: #F59E0B;"></i> Mevzuat Kuralları &amp; Kesinti Koruması
             </h4>
-            <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
-                Sistem, girilen her sağlık raporunu otomatik olarak personelin yıllık kotasına ekler:
-            </p>
             <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
-                <li><span style="color: #10B981; font-weight: 700;">0 - 20 Gün:</span> Güvenli Bölge (Yeşil)</li>
-                <li><span style="color: #F59E0B; font-weight: 700;">21 - 35 Gün:</span> Dikkat Bölgesi (Sarı / Turuncu)</li>
-                <li><span style="color: #EF4444; font-weight: 700;">36 - 40 Gün:</span> Kritik Eşik (Kırmızı - Heyet Uyarısı)</li>
+                <li><b>Öğretmen Tatil Hakkı (657 SK Md. 103):</b> Öğretmenler yaz ve dinlenme tatillerinde izinlidir; yıllık izin hakları yoktur.</li>
+                <li><b>Memur Yıllık İzni (657 SK Md. 102):</b> 1-10 yıl için 20 gün; 10 yıldan fazla için 30 gün.</li>
+                <li><b>7 Gün Maaş Kesintisi Sınırı (Md. 152):</b> Yalnızca Sağlık İzinlerine uygulanır; Yıllık ve Mazeret izinleri kesintiye tabi değildir.</li>
+                <li><b>4/D Sürekli İşçiler (4857 SK):</b> Yıllık izin kıdeme göre (14, 20, 26 gün); mazeret evlilik/vefat 3 gün, babalık 5 gündür.</li>
             </ul>
         </div>
 
         <div style="background: var(--bg-main); border: 1px solid var(--border); border-radius: 8px; padding: 16px;">
             <h4 style="margin: 0 0 8px 0; font-size: 13.5px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="file-text" height="16" width="16" style="color: #38BDF8;"></i> Resmi Evrak Üretimi (Tek Tıkla PDF)
+                <i data-lucide="file-up" height="16" width="16" style="color: #38BDF8;"></i> Akıllı PDF İzin Formu Okuyucu
             </h4>
             <p style="font-size: 12px; color: var(--fg-sub); line-height: 1.5; margin: 0 0 8px 0;">
-                Rapor kaydedildikten sonra iki resmi belge saniyeler içinde üretilebilir:
+                MEB EBYS / DYS / Mebbis İzin Onay Belgesi veya hastane sağlık raporu PDF'leri yüklendiğinde:
             </p>
             <ul style="margin: 0; padding-left: 18px; font-size: 11.5px; color: var(--fg-sub); line-height: 1.6;">
-                <li><b>Hastalık İzni Onay Belgesi (PDF):</b> Okul müdürü onaylı, personelin izinli sayıldığına dair resmi form.</li>
-                <li><b>İlçe MEM Bildirim Yazısı (PDF):</b> İlçe Milli Eğitim Müdürlüğü'ne hitaben yazılan ve sağlık iznini bildiren resmi üst yazı.</li>
+                <li><b>İzin Türü:</b> Yıllık İzin, Mazeret İzni, İstirahat/Sağlık İzni veya İdari İzin otomatik tespit edilir.</li>
+                <li><b>Personel ve Tarihler:</b> Personel adı, başlangıç ve bitiş tarihleri, gün sayısı otomatik okunarak forma doldurulur.</li>
+                <li><b>Çakışma Kontrolü:</b> Aynı personelin aynı tarihte mükerrer izni varsa sistem önceden uyarır.</li>
             </ul>
         </div>
     </div>

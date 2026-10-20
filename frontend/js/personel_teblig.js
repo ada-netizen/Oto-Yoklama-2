@@ -10,7 +10,10 @@
             const formData = new FormData(); formData.append("dosya", dosya);
             if (tip) formData.append("yukleme_tipi", tip);
 
-            yuklemeGoster(tip === 'mebbis_gorevlendirme' ? "Görevlendirme personel listesi işleniyor..." : "Personel listesi işleniyor...");
+            let yuklemeMesaji = "Personel listesi işleniyor...";
+            if (tip === 'mebbis_gorevlendirme') yuklemeMesaji = "Görevlendirme personel listesi işleniyor...";
+            else if (tip === 'veritabani_yedek' || tip === 'sistem_yedek') yuklemeMesaji = "Personel veritabanı tam yedeği (24 alan) geri yükleniyor...";
+            yuklemeGoster(yuklemeMesaji);
             fetch(`${API}/personel-excel-yukle`, { method: 'POST', body: formData }).then(r => r.json()).then(v => {
                 if (v.basarili && v.job_id) {
                     ilerlemeTakipEt(v.job_id, () => {

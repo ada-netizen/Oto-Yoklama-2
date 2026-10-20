@@ -230,3 +230,24 @@ def test_ozet_excel_yukleme_uyumlulugu(isolated_database, tmp_path):
     isolated_database.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel")
     rows = isolated_database.cursor.fetchall()
     assert len(rows) == 3
+
+
+def test_veritabani_yedek_yukleme_secenegi(isolated_database, tmp_path):
+    """'veritabani_yedek' yukleme_tipi parametresiyle 24 alanlı yedeğin %100 eksiksiz geri yüklendiği doğrulanır."""
+    _ornek_personelleri_ekle(isolated_database)
+
+    resp = client.get("/personel-excel-indir?format=tam")
+    assert resp.status_code == 200
+    yedek_dosyasi = str(tmp_path / "ciktilar" / "Personel_Veritabani_Tam_Yedek.xlsx")
+
+    # Sıfırla
+    isolated_database.cursor.execute("DELETE FROM personel")
+    isolated_database.conn.commit()
+
+    # yukleme_tipi='veritabani_yedek' ile yükle
+    sonuc = _personel_excel_yukle_dogrudan(yedek_dosyasi, ".xlsx", yukleme_tipi="veritabani_yedek")
+    assert sonuc["basarili"] is True
+    assert "tam yedeğinden (24 alan) eksiksiz geri yüklendi" in sonuc["mesaj"]
+
+    isolated_database.cursor.execute("SELECT COUNT(*) FROM personel")
+    assert isolated_database.cursor.fetchone()[0] == 3
