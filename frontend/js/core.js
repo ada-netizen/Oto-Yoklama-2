@@ -37,6 +37,19 @@
 
 const API = 'http://127.0.0.1:8000';
 
+        function format_tr_tarih(tarihStr) {
+            if (!tarihStr) return "-";
+            try {
+                const temiz = String(tarihStr).split('T')[0].split(' ')[0].trim();
+                const parcalar = temiz.split('-');
+                if (parcalar.length === 3) {
+                    return `${parcalar[2].padStart(2, '0')}.${parcalar[1].padStart(2, '0')}.${parcalar[0]}`;
+                }
+            } catch (e) {}
+            return String(tarihStr);
+        }
+        window.format_tr_tarih = format_tr_tarih;
+
         // --- BİLDİRİM (TOAST) SİSTEMİ (TOASTIFY ENTEGRASYONU) ---
         function bildirimGoster(mesaj, tur) {
             if(!mesaj) return;
@@ -140,18 +153,38 @@ const API = 'http://127.0.0.1:8000';
             const opts = { ...options };
             opts.headers = { ...opts.headers };
 
-            if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
-                opts.headers['Content-Type'] = 'application/json';
-                opts.body = JSON.stringify(opts.body);
+            if (opts.body && !(opts.body instanceof FormData)) {
+                if (typeof opts.body === 'object') {
+                    opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+                    opts.body = JSON.stringify(opts.body);
+                } else if (typeof opts.body === 'string') {
+                    opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
+                }
             }
 
             try {
                 const res = await fetch(url, opts);
                 const contentType = res.headers.get('content-type') || '';
+                let data = null;
                 if (contentType.includes('application/json')) {
-                    return await res.json();
+                    data = await res.json();
+                } else {
+                    return res;
                 }
-                return res;
+
+                if (!res.ok && data && typeof data === 'object') {
+                    if (data.basarili === undefined) {
+                        data.basarili = false;
+                    }
+                    if (!data.mesaj && data.detail) {
+                        if (Array.isArray(data.detail)) {
+                            data.mesaj = data.detail.map(d => (d.loc ? d.loc.join('.') + ': ' : '') + d.msg).join(', ');
+                        } else if (typeof data.detail === 'string') {
+                            data.mesaj = data.detail;
+                        }
+                    }
+                }
+                return data;
             } catch (err) {
                 console.error(`apiFetch hatası (${url}):`, err);
                 throw err;

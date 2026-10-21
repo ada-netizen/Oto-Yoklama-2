@@ -310,6 +310,7 @@
 <div class="top-bar">
 <h2 class="top-bar-title"><i data-lucide="mail" height="20" width="20"></i> Yazı Tebliği</h2>
 <div class="top-bar-buttons">
+<button class="btn btn-dev" onclick="tebligGecmisiModalAc()" title="Geçmiş Tebliğ Kayıtları"><i data-lucide="history" height="15" width="15"></i> Tebliğ Geçmişi</button>
 <button class="btn btn-ayarlar" onclick="personelGrupYonetimiAc()" title="Personel Gruplarını Yönet"><i data-lucide="users" height="15" width="15"></i> Grupları Yönet</button>
 <button class="btn btn-ogr" onclick="personelDrawerAc()" title="Hızlı Personel Ekle"><i data-lucide="user-plus" height="15" width="15"></i> Yeni Personel</button>
 </div>
@@ -1460,6 +1461,7 @@
 {% include 'components/ihale_bilgi_girisi_modal.html' %}
 {% include 'components/yenilikler_modal.html' %}
 {% include 'components/saglik_modals.html' %}
+{% include 'components/teblig_gecmisi_modal.html' %}
 <script>
 // ============================================================
 // FLATPICKR - Türkçe Tarih Seçici Başlatma

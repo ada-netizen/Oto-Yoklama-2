@@ -465,3 +465,133 @@ def test_personel_tablosunda_olmayan_izinli_listede_gorunur(isolated_db):
     assert zehra is not None
     assert zehra["toplam"] == 5
     assert zehra["saglik_gun"] == 5
+
+def test_meb_dys_yillik_ve_mazeret_izin_tarihleri_ve_diger_secenegi(monkeypatch):
+    """MEB DYS Yıllık ve Mazeret izin belgelerindeki 'İzne Ayrıldığı Tarih' ve 'Mazeret Nedeni' tespitini doğrular."""
+    yillik_pdf_metin = """
+Say: E-95575730-903.05-173362630
+Konu: ERDAL ÇAM Yıllık İzin
+20.10.2026
+MÜDÜRLÜK MAKAMINA
+OLUR
+Murat SERTSÖZ İlçe Millî Eğitim Müdürü
+YILLIK İZİN ONAY BELGESİ
+T.C. Kimlik Numarası : 15800077626
+Adı Soyadı : ERDAL ÇAM
+Unvanı : Müdür
+Giriş Yeri : TEPEBAŞI Gazi Mustafa Kemal Anadolu Lisesi
+İZİN BİLGİLERİ
+İzin Süresi : 1
+İzne Ayrıldığı Tarih : 30.10.2026
+Göreve Başlama Tarihi : 31.10.2026
+İznini Geçireceği Adres : Antalya
+Telefon : 5063590564
+"""
+
+    mazeret_pdf_metin = """
+Say: E-95575730-903.05-173211466
+Konu: AYLA KULCANAY Mazeret İzni
+16.10.2026
+MÜDÜRLÜK MAKAMINA
+OLUR
+Murat SERTSÖZ İlçe Millî Eğitim Müdürü
+MAZERET İZNİ ONAY BELGESİ
+T.C. Kimlik Numarası : 42481188488
+Adı Soyadı : AYLA KULCANAY
+Unvanı : Öğretmen
+MAZERET İZNİ BİLGİLERİ
+Mazeret Nedeni : Diğer(İkinci 10 gün)
+Kullanılan İzin Süresi : 1 gün
+İzne Ayrıldığı Tarih : 19.10.2026
+Göreve Başlama Tarihi : 20.10.2026
+İznini Geçireceği Açık Adres : Eskişehir
+Telefon : 5054695072
+"""
+
+    class MockPage:
+        def __init__(self, t):
+            self._t = t
+        def extract_text(self):
+            return self._t
+
+    class MockReader:
+        def __init__(self, t):
+            self.pages = [MockPage(t)]
+
+    import PyPDF2
+
+    # 1. Yıllık İzin Testi
+    monkeypatch.setattr(PyPDF2, "PdfReader", lambda stream: MockReader(yillik_pdf_metin))
+    resp1 = client.post("/saglik/pdf-oku", files={"dosya": ("yillik.pdf", b"%PDF-1.4 mock", "application/pdf")})
+    assert resp1.status_code == 200
+    r1 = resp1.json()
+    assert r1["basarili"] is True
+    assert r1["ad_soyad"] == "ERDAL ÇAM"
+    assert r1["izin_turu"] == "YILLIK"
+    assert r1["gun_sayisi"] == 1
+    assert r1["baslangic"] == "2026-10-30"
+    assert r1["bitis"] == "2026-10-30"
+    assert r1["bitis"] >= r1["baslangic"], "Bitiş tarihi başlangıçtan önce olamaz!"
+
+    # 2. Mazeret İzni Testi
+    monkeypatch.setattr(PyPDF2, "PdfReader", lambda stream: MockReader(mazeret_pdf_metin))
+    resp2 = client.post("/saglik/pdf-oku", files={"dosya": ("mazeret.pdf", b"%PDF-1.4 mock", "application/pdf")})
+    assert resp2.status_code == 200
+    r2 = resp2.json()
+    assert r2["basarili"] is True
+    assert r2["ad_soyad"] == "AYLA KULCANAY"
+    assert r2["izin_turu"] == "MAZERET"
+    assert r2["gun_sayisi"] == 1
+    assert r2["baslangic"] == "2026-10-19"
+    assert r2["bitis"] == "2026-10-19"
+    assert r2["bitis"] >= r2["baslangic"], "Bitiş tarihi başlangıçtan önce olamaz!"
+    assert "Diğer" in r2.get("rapor_turu", "")
+
+def test_saglik_ekle_tarih_ve_gun_toleransi_ve_takvim_senkronu():
+    from dependencies import db
+    """Tarih normalizasyonu (DD.MM.YYYY -> ISO), ters tarih koruması, varsayılan gün sayısı ve takvim/liste senkronunu doğrular."""
+    test_ad = "TEST İZİNLİ PERSONEL"
+    
+    # 1. DD.MM.YYYY formatında ve ters tarih ile ekleme isteği (bitis < baslangic)
+    resp = client.post("/saglik/ekle", json={
+        "personel_ad": test_ad,
+        "baslangic_tarihi": "25.11.2026",
+        "bitis_tarihi": "20.11.2026",
+        "gun_sayisi": None,  # None gönderildiğinde model tolerans gösterip 1 almalı
+        "izin_turu": "YILLIK",
+        "aciklama": "Test Yıllık İzin",
+        "izin_adresi": "İzmir",
+        "rapor_turu": "Yıllık İzin"
+    })
+    assert resp.status_code == 200
+    r = resp.json()
+    assert r["basarili"] is True, f"Kayıt eklenemedi: {r}"
+
+    try:
+        # 2. Liste endpoint'inde personelin ve izninin yer aldığını doğrula
+        resp_liste = client.get("/saglik/liste?yil=2026")
+        assert resp_liste.status_code == 200
+        l_data = resp_liste.json()
+        assert l_data["basarili"] is True
+        bulunan = next((p for p in l_data["veri"] if p["personel_ad"] == test_ad), None)
+        assert bulunan is not None, f"'{test_ad}' /saglik/liste içinde bulunamadı!"
+        assert bulunan["yillik_gun"] >= 1
+
+        # 3. Takvim matrisinde ilgili tarihin boyandığını doğrula
+        resp_takvim = client.get("/saglik/takvim?yil=2026")
+        assert resp_takvim.status_code == 200
+        t_data = resp_takvim.json()
+        assert t_data["basarili"] is True
+        harita = t_data.get("takvim_haritasi", {})
+        # Tarihler 2026-11-20 ile 2026-11-25 arasında normalleştirilmiş olmalı
+        gun_bulundu = False
+        for tarih_anahtar, kayitlar in harita.items():
+            if any(k.get("personel_ad") == test_ad for k in kayitlar):
+                gun_bulundu = True
+                break
+        assert gun_bulundu is True, f"'{test_ad}' takvim haritasında bulunamadı!"
+    finally:
+        # Test sonrası temizlik
+        db.cursor.execute("DELETE FROM saglik_raporlari WHERE personel_ad = ?", (test_ad,))
+        db.conn.commit()
+

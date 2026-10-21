@@ -8,9 +8,10 @@ import io
 import re
 import calendar
 import PyPDF2
+import logging
 
 router = APIRouter()
-from dependencies import db
+from dependencies import db, islem_logla
 from araclar import VeriAraclari
 from mevzuat_kurallari import ogretmen_mi, yonetici_mi, PERSONEL_DURUMLARI_REHBERI
 
@@ -18,7 +19,7 @@ class SaglikRaporuRequest(BaseModel):
     personel_ad: str
     baslangic_tarihi: str
     bitis_tarihi: Optional[str] = None
-    gun_sayisi: int
+    gun_sayisi: Optional[int] = 1
     aciklama: Optional[str] = ""
     izin_turu: Optional[str] = "SAĞLIK"  # SAĞLIK, YILLIK, MAZERET, İDARİ, AYLIKSIZ, DİĞER
     mevzuat_maddesi: Optional[str] = ""
@@ -340,13 +341,27 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
 @router.post("/saglik/ekle")
 def saglik_ekle(veri: SaglikRaporuRequest):
     try:
-        bitis = veri.bitis_tarihi if veri.bitis_tarihi else veri.baslangic_tarihi
-        cakisan = cakisan_rapor_kontrol(veri.personel_ad, veri.baslangic_tarihi, bitis)
+        bas = (veri.baslangic_tarihi or "").strip()
+        bit = (veri.bitis_tarihi or veri.baslangic_tarihi or "").strip()
+        if "." in bas and len(bas.split(".")) == 3 and len(bas.split(".")[2]) == 4:
+            p = bas.split(".")
+            bas = f"{p[2]}-{p[1].zfill(2)}-{p[0].zfill(2)}"
+        if "." in bit and len(bit.split(".")) == 3 and len(bit.split(".")[2]) == 4:
+            p = bit.split(".")
+            bit = f"{p[2]}-{p[1].zfill(2)}-{p[0].zfill(2)}"
+        if bit < bas:
+            bas, bit = bit, bas
+
+        gun_sayisi = veri.gun_sayisi if (veri.gun_sayisi and veri.gun_sayisi > 0) else 1
+
+        logging.info(f"=== [İZİN EKLE İSTEĞİ] Personel: '{veri.personel_ad}', Tür: '{veri.izin_turu}', Tarih: {bas} - {bit}, Gün: {gun_sayisi} ===")
+        cakisan = cakisan_rapor_kontrol(veri.personel_ad, bas, bit)
         if cakisan:
             c_bas = format_tr_tarih(cakisan["baslangic"])
             c_bit = format_tr_tarih(cakisan["bitis"])
             tarih_mesaji = c_bas if c_bas == c_bit else f"{c_bas} - {c_bit}"
             tur_adi = cakisan.get("izin_turu", "izin")
+            logging.warning(f"[İZİN ÇAKIŞMA] {veri.personel_ad} için {tarih_mesaji} çakışan kayıt: {cakisan}")
             return {
                 "basarili": False,
                 "cakisma": True,
@@ -371,11 +386,22 @@ def saglik_ekle(veri: SaglikRaporuRequest):
             """INSERT INTO saglik_raporlari 
                (personel_ad, baslangic_tarihi, bitis_tarihi, gun_sayisi, aciklama, izin_turu, mevzuat_maddesi, belge_no, izin_adresi, rapor_turu) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (veri.personel_ad, veri.baslangic_tarihi, bitis, veri.gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "")
+            (veri.personel_ad, bas, bit, gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "")
         )
         db.conn.commit()
+        kayit_id = db.cursor.lastrowid
+        logging.info(f"[İZİN EKLENDİ] ID: {kayit_id}, Personel: {veri.personel_ad}, Tür: {izin_turu}, Gün: {gun_sayisi}")
+        try:
+            islem_logla("bilgi", "İzin Kaydı Ekleme", f"{veri.personel_ad} için {gun_sayisi} günlük {izin_turu} izni kaydedildi.")
+        except Exception:
+            pass
         return {"basarili": True, "mesaj": f"{izin_turu.capitalize()} kaydı başarıyla eklendi."}
     except Exception as e:
+        logging.error(f"[İZİN EKLEME HATASI] Personel: '{veri.personel_ad}', Hata: {e}", exc_info=True)
+        try:
+            islem_logla("hata", "İzin Kaydı Ekleme", f"{veri.personel_ad} izin kaydı eklenemedi: {e}")
+        except Exception:
+            pass
         return {"basarili": False, "mesaj": str(e)}
 
 @router.post("/saglik/kesinti-guncelle")
@@ -474,22 +500,36 @@ def saglik_duzenle(id: int, veri: SaglikRaporuRequest):
 async def saglik_pdf_oku(dosya: UploadFile = File(...)):
     try:
         content = await dosya.read()
+        logging.info(f"=== [PDF İZİN ÇÖZÜMLEME BAŞLADI] Dosya: '{dosya.filename}', Boyut: {len(content)} byte ===")
+        
         pdf_reader = PyPDF2.PdfReader(io.BytesIO(content))
         text = ""
-        for page in pdf_reader.pages:
+        for page_idx, page in enumerate(pdf_reader.pages):
             t = page.extract_text()
             if t:
                 text += t + "\n"
                 
         if not text.strip():
+            logging.warning(f"[PDF İZİN HATA] Dosyada okunabilir metin bulunamadı (Taranmış/Resim tabanlı PDF): '{dosya.filename}'")
             return {
                 "basarili": False,
                 "mesaj": "PDF belgesinde okunabilir metin bulunamadı (Taranmış/Resim tabanlı PDF olabilir). Lütfen bilgileri elle giriniz."
             }
 
-        text_clean = text.upper().replace('İ', 'I').replace('Ğ', 'G').replace('Ü', 'U').replace('Ş', 'S').replace('Ö', 'O').replace('Ç', 'C')
+        first_preview = "\n".join([line for line in text.splitlines() if line.strip()][:12])
+        logging.info(f"[PDF METİN ÖNİZLEME (İlk Satırlar)]:\n{first_preview}")
 
-        # 1. Konu Alanından İzin Türü Tespiti
+        text_clean = VeriAraclari.tr_normalize(text).upper()
+
+        # 1. İzin Türü Tespiti (Öncelik: Tablo İzin Çeşidi / Türü -> Konu Satırı -> Tüm Metin)
+        # MEB Ek-1 ve DYS belgelerinde: İznin Çeşidi / İzin Türü / Mazeret Türü satırları
+        m_tur_satiri = re.search(
+            r'(?:(?:İznin|İzin|Rapor)\s*(?:Çeşidi|Türü|Nedeni|Sebebi|Cinsi|Tipi)|Mazeret\s*(?:Türü|Nedeni|Sebebi))\s*[:=\t]\s*([^\r\n]+)',
+            text, re.IGNORECASE
+        )
+        tur_satir_metni = m_tur_satiri.group(1).strip() if m_tur_satiri else ""
+        tur_satir_clean = VeriAraclari.tr_normalize(tur_satir_metni) if tur_satir_metni else ""
+
         m_konu = re.search(r'Konu\s*:\s*([^\r\n]+)', text, re.IGNORECASE)
         konu_metni = m_konu.group(1).strip() if m_konu else ""
         konu_clean = VeriAraclari.tr_normalize(konu_metni) if konu_metni else ""
@@ -497,23 +537,34 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
         izin_turu = "SAĞLIK"
         mevzuat_maddesi = "657 sayılı DMK Madde 105 & 152"
 
-        hedef_ara_metin = konu_clean if konu_clean else text_clean
+        # Arama Havuzları (Öncelik sırasıyla)
+        hedef_kaynaklar = [tur_satir_clean, konu_clean, text_clean]
 
-        if any(k in hedef_ara_metin for k in ["HASTALIK", "SAGLIK", "RAPOR"]):
-            izin_turu = "SAĞLIK"
-            mevzuat_maddesi = "657 sayılı DMK Madde 105 & 152"
-        elif "YILLIK" in hedef_ara_metin:
-            izin_turu = "YILLIK"
-            mevzuat_maddesi = "657 sayılı DMK Madde 102"
-        elif any(k in hedef_ara_metin for k in ["MAZERET", "BABALIK", "EVLILIK", "VEFAT", "OLUM", "REFAKAT", "DOGUM"]):
-            izin_turu = "MAZERET"
-            mevzuat_maddesi = "657 sayılı DMK Madde 104"
-        elif any(k in hedef_ara_metin for k in ["AYLIKSIZ", "UCRETSIZ"]):
-            izin_turu = "AYLIKSIZ"
-            mevzuat_maddesi = "657 sayılı DMK Madde 108"
-        elif any(k in hedef_ara_metin for k in ["IDARI", "GOREV"]):
-            izin_turu = "İDARİ"
-            mevzuat_maddesi = "Genel İdari İzin"
+        for hedef in hedef_kaynaklar:
+            if not hedef:
+                continue
+            if any(k in hedef for k in ["YILLIK"]):
+                izin_turu = "YILLIK"
+                mevzuat_maddesi = "657 sayılı DMK Madde 102"
+                break
+            elif any(k in hedef for k in ["MAZERET", "BABALIK", "EVLILIK", "VEFAT", "OLUM", "REFAKAT", "DOGUM", "SUT IZNI", "ENGEL"]):
+                izin_turu = "MAZERET"
+                mevzuat_maddesi = "657 sayılı DMK Madde 104"
+                break
+            elif any(k in hedef for k in ["AYLIKSIZ", "UCRETSIZ"]):
+                izin_turu = "AYLIKSIZ"
+                mevzuat_maddesi = "657 sayılı DMK Madde 108"
+                break
+            elif any(k in hedef for k in ["IDARI", "GOREV IZNI"]):
+                izin_turu = "İDARİ"
+                mevzuat_maddesi = "Genel İdari İzin"
+                break
+            elif any(k in hedef for k in ["HASTALIK", "SAGLIK", "RAPOR", "ISTIRAHAT", "IS GOREMEZLIK", "HEKIM"]):
+                izin_turu = "SAĞLIK"
+                mevzuat_maddesi = "657 sayılı DMK Madde 105 & 152"
+                break
+
+        logging.info(f"[PDF İZİN TÜRÜ TESPİTİ] Tür: '{izin_turu}', Mevzuat: '{mevzuat_maddesi}' (Satır: '{tur_satir_metni}', Konu: '{konu_metni}')")
 
         # 2. Personel Adı Tespiti
         ad_soyad = ""
@@ -525,9 +576,9 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
             kayitli_personeller = []
 
         ad_soyad_patterns = [
-            # 1. MEB DYS / e-İçişleri satır başlığı kalıpları (iki nokta, tire, slaş veya tab)
+            # 1. MEB DYS / e-İçişleri satır başlığı kalıpları
             r'(?:Adı\s*(?:ve|/|-)?\s*Soyadı|Ad\s*Soyad)\s*[:=\t]\s*([^\r\n]+)',
-            r'(?:Sigortalının|Hasta|İlgilinin|Memurun)\s+Adı\s*(?:ve|/|-)?\s*Soyadı\s*[:=\t]\s*([^\r\n]+)',
+            r'(?:Sigortalının|Hasta|İlgilinin|Memurun|Personelin|İzin\s+İsteyenin)\s+Adı\s*(?:ve|/|-)?\s*Soyadı\s*[:=\t]\s*([^\r\n]+)',
             r'G\s*\.\s*S\s*[:=\t]\s*([^\r\n]+)',
             r'Adı\s*[:=\t]\s*([^\r\n]+?)\s+Soyadı\s*[:=\t]\s*([^\r\n]+)',
             # 2. Tablo yapısı (Adı Soyadı başlığı ve bir sonraki satırda isim)
@@ -556,7 +607,7 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
                         if norm_ham == norm_p:
                             ad_soyad = p_ad
                             break
-                    # 2. İkinci isim veya kızlık soyadı durumu (kelime kesişimi)
+                    # 2. İkinci isim veya kelime kesişimi
                     if not ad_soyad:
                         ham_words = set(VeriAraclari.tr_normalize(ham_ad).split())
                         for p_ad in kayitli_personeller:
@@ -568,8 +619,42 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
                         ad_soyad = ham_ad
                     break
 
-        # YALNIZCA hiçbir başlık kalıbıyla isim bulunamadıysa (ad_soyad tamamen boşsa) metin araması yap
-        # İmzacı yöneticilerin ve doktorların isimlerini hariç tut
+        # 2.1 Konu Satırında Parantez İçi İsim Tespiti (Örn: Konu: Mazeret İzni (Fatma YILMAZ))
+        if not ad_soyad and m_konu:
+            m_konu_ad = re.search(r'\(([^)]+)\)', konu_metni)
+            if m_konu_ad:
+                ham_konu_ad = m_konu_ad.group(1).strip()
+                norm_konu_ad = VeriAraclari.tr_normalize(ham_konu_ad).replace(" ", "")
+                for p_ad in kayitli_personeller:
+                    norm_p = VeriAraclari.tr_normalize(p_ad).replace(" ", "")
+                    if norm_konu_ad == norm_p:
+                        ad_soyad = p_ad
+                        break
+                if not ad_soyad and len(ham_konu_ad.split()) >= 2:
+                    ad_soyad = ham_konu_ad
+
+        # 2.2 Düz Yazı / Olur Metninden İsim Tespiti
+        if not ad_soyad:
+            prose_patterns = [
+                r'(?:Öğretmeni|Öğretmen|Memuru|Memur|Personeli|Personel)\s+([A-ZÇÖŞİĞÜa-zçöşiğü\s]{3,35}?)(?:\'n[ıi]n|\'in|\'un|\'ün|\'a|\'e|\s+adlı|\s+isimli|\s+\d)',
+                r'([A-ZÇÖŞİĞÜa-zçöşiğü\s]{3,35}?)(?:\'n[ıi]n|\'in|\'un|\'ün)\s+(?:\d{1,2}[./-]\d{1,2}[./-]\d{4}|\w+\s+tarih|yıllık|mazeret|izin)'
+            ]
+            for pat in prose_patterns:
+                m_prose = re.search(pat, text, re.IGNORECASE)
+                if m_prose:
+                    ham_prose = m_prose.group(1).strip()
+                    norm_prose = VeriAraclari.tr_normalize(ham_prose).replace(" ", "")
+                    for p_ad in kayitli_personeller:
+                        norm_p = VeriAraclari.tr_normalize(p_ad).replace(" ", "")
+                        if norm_prose == norm_p:
+                            ad_soyad = p_ad
+                            break
+                    if not ad_soyad and len(ham_prose.split()) >= 2:
+                        ad_soyad = ham_prose
+                    if ad_soyad:
+                        break
+
+        # 2.3 Belge İçi Güvenli Arama (Müdür / Yetkili ve doktor hariç)
         if not ad_soyad:
             lines = text.split('\n')
             safe_lines = [
@@ -585,45 +670,57 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
                     ad_soyad = p_ad
                     break
 
-        # 3. İzin Süresi (Öncelik: "Hastalık İzin Süresi:" / "İzin Süresi:")
-        gun_sayisi = 0
-        m_sure = re.search(r'(?:Hastalık\s+)?İzin\s+Süresi\s*:\s*(\d+)', text, re.IGNORECASE)
-        if m_sure:
-            gun_sayisi = int(m_sure.group(1))
-        else:
-            sure_patterns = [
-                r'G[üu]n\s+Say[ıi]s[ıi]\s*:\s*(\d+)',
-                r'(\d+)\s*\(\s*\w+\s*\)\s*g[üu]n',
-                r'(\d+)\s*g[üu]n'
-            ]
-            for pat in sure_patterns:
-                m = re.search(pat, text, re.IGNORECASE)
-                if m:
-                    gun_sayisi = int(m.group(1))
-                    break
+        logging.info(f"[PDF PERSONEL TESPİTİ] Sonuç: '{ad_soyad}'")
 
-        # 4. Başlangıç Tarihi (Öncelik: "Raporun Başlangıç Tarihi:" / "İznin Başlangıç Tarihi:")
+        # 3. İzin Süresi (Gün Sayısı) - MEB Yıllık, Mazeret ve Sağlık kalıpları
+        gun_sayisi = 0
+        sure_patterns = [
+            # 1. Resmi MEB başlıkları: "İznin Süresi : 10", "İzin Süresi : 5 Gün", "Kullanacağı İzin Süresi : 7"
+            r'(?:(?:Hastalık|Yıllık|Mazeret|Kullanacağı|Talep\s+Edilen|Verilen)\s+)?(?:İznin|İzin|Rapor)?\s*(?:Süresi|Gün\s+Sayısı)\s*(?:\([^)]*\))?\s*[:=\t]\s*(\d+)',
+            # 2. Genel gün sayısı etiketi
+            r'G[üu]n\s+Say[ıi]s[ıi]\s*[:=\t]\s*(\d+)',
+            r'S[üu]resi\s*[:=\t]\s*(\d+)',
+            # 3. Metin içi ifadeler: "10 (on) gün", "7 gün süreyle"
+            r'(\d+)\s*\(\s*\w+\s*\)\s*g[üu]n\s*(?:s[üu]reyle)?',
+            r'(\d+)\s*g[üu]n\s*(?:s[üu]reyle)?'
+        ]
+        for pat in sure_patterns:
+            m_s = re.search(pat, text, re.IGNORECASE)
+            if m_s:
+                gun_sayisi = int(m_s.group(1))
+                break
+
+        logging.info(f"[PDF GÜN SAYISI TESPİTİ] Sonuç: {gun_sayisi}")
+
+        # 4. Başlangıç Tarihi - MEB Yıllık/Mazeret: "İznin Başlama Tarihi", "Ayrılış Tarihi", "İzne Ayrıldığı Tarih"
         baslangic = ""
-        m_bas = re.search(r'(?:(?:Raporun|İznin)\s+)?Ba[şs]lang[ıi][çc]\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})', text, re.IGNORECASE)
-        if m_bas:
-            d, m_ay, y = m_bas.groups()
-            baslangic = f"{y}-{m_ay.zfill(2)}-{d.zfill(2)}"
-        else:
-            bas_patterns = [
-                r'(?:[İiIı]stirahat\s+|[İiIı]zin\s+)?Ba[şs]la(?:ma|ng[ıi][çc])\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
-                r'(?:Rapor|İzin)\s+Ba[şs]lang[ıi][çc]\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})',
-                r'Ba[şs]lama\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})'
-            ]
-            for pat in bas_patterns:
-                m = re.search(pat, text, re.IGNORECASE)
-                if m:
-                    d, m_ay, y = m.groups()
-                    baslangic = f"{y}-{m_ay.zfill(2)}-{d.zfill(2)}"
-                    break
+        bas_patterns = [
+            # 1. MEB İzne Ayrıldığı Tarih (DYS Formları)
+            r'(?:İzne\s+)?Ayr[ıi]ld[ıi][ğg][ıi]\s+Tarih\s*[:=\t]?\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})',
+            # 2. MEB ve SGK tam başlıkları
+            r'(?:(?:Raporun|Rapor|İznin|İzin|İzne|İstirahatin|İstirahat)\s+)?(?:Başlangıç|Ayrılış|Başlangıcı|Başlaması)\s*(?:Tarihi)?\s*[:=\t]?\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})',
+            # 3. Göreve başlama hariç bağımsız Başlama / Ayrılış Tarihi
+            r'(?<!G[öo]reve\s)(?<!G[öo]rev\s)(?:Ayrılış|Başlama|Başlangıç)\s+Tarihi\s*[:=\t]?\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})',
+            # 4. Düz yazı Olur metni: "14/10/2026 tarihinden itibaren / başlayarak"
+            r'(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})\s*(?:tarihinden\s+itibaren|tarihinden\s+ge[çc]erli|tarihinden\s+ba[şs]layarak|ba[şs]lamak\s+[üu]zere|tarihli)',
+            r'(?:tarihinden|itibaren)\s*[:=\t]?\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})'
+        ]
+        for pat in bas_patterns:
+            m_b = re.search(pat, text, re.IGNORECASE)
+            if m_b:
+                d, m_ay, y = m_b.groups()
+                baslangic = f"{y}-{m_ay.zfill(2)}-{d.zfill(2)}"
+                break
+
+        logging.info(f"[PDF BAŞLANGIÇ TARİHİ TESPİTİ] Sonuç: '{baslangic}'")
 
         # 5. Göreve Başlayacağı Tarih ve Bitiş Tarihi
         bitis = ""
-        m_gorev = re.search(r'G[öo]reve\s+Ba[şs]layaca[gğ][ıi]\s+Tarih(?:i)?\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})', text, re.IGNORECASE)
+        dt_gorev = None
+        m_gorev = re.search(
+            r'(?:Göreve\s+Başlayacağı|Göreve\s+Başlama|Görev\s+Başı|İş\s+Başı|İşbaşı)\s*(?:Tarih(?:i)?)?\s*[:=\t]?\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})',
+            text, re.IGNORECASE
+        )
         if m_gorev:
             d, m_ay, y = m_gorev.groups()
             try:
@@ -634,7 +731,10 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
                 pass
 
         if not bitis:
-            m_bit = re.search(r'(?:(?:Raporun|İznin)\s+)?Biti[şs]\s+Tarihi\s*:\s*(\d{1,2})[./-](\d{1,2})[./-](\d{4})', text, re.IGNORECASE)
+            m_bit = re.search(
+                r'(?:(?:Raporun|Rapor|İznin|İzin)\s+)?Biti[şs](?:i)?\s*(?:Tarihi)?\s*[:=\t]?\s*(\d{1,2})\s*[./-]\s*(\d{1,2})\s*[./-]\s*(\d{4})',
+                text, re.IGNORECASE
+            )
             if m_bit:
                 d, m_ay, y = m_bit.groups()
                 bitis = f"{y}-{m_ay.zfill(2)}-{d.zfill(2)}"
@@ -656,22 +756,60 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
             except Exception:
                 bitis = baslangic
 
+        # Eğer başlangıç okunamadıysa fakat göreve başlama ve gün sayısı biliniyorsa
+        if not baslangic and dt_gorev and gun_sayisi > 0:
+            baslangic = (dt_gorev - timedelta(days=gun_sayisi)).strftime("%Y-%m-%d")
+
+        # Ters tarih tespiti ve otomatik düzeltme (Bitiş başlangıçtan önce olamaz)
+        if baslangic and bitis and bitis < baslangic:
+            logging.warning(f"[PDF TARİH TERSLİĞİ DÜZELTİLİYOR] Başlangıç ({baslangic}) bitişten ({bitis}) sonra geldi. Düzeltiliyor.")
+            if dt_gorev and gun_sayisi > 0:
+                baslangic = (dt_gorev - timedelta(days=gun_sayisi)).strftime("%Y-%m-%d")
+                bitis = (dt_gorev - timedelta(days=1)).strftime("%Y-%m-%d")
+            else:
+                baslangic, bitis = bitis, baslangic
+
         if not bitis and baslangic:
             bitis = baslangic
 
+        logging.info(f"[PDF BİTİŞ VE GÜN] Bitiş: '{bitis}', Gün Sayısı: {gun_sayisi}")
+
         # 6. İznini Geçireceği Açık Adres
-        m_adres = re.search(r'[İiIı]znini\s+Ge[çc]irece[gğ]i\s+(?:A[çc][ıi]k\s+)?Adres\s*:\s*([^\r\n]+)', text, re.IGNORECASE)
+        m_adres = re.search(
+            r'(?:İznini|İzni|İzin|Tatil|Bulunacağı|İkametgah)\s*(?:Geçireceği)?\s*(?:Açık)?\s*Adres(?:i)?\s*[:=\t]?\s*([^\r\n]+)',
+            text, re.IGNORECASE
+        )
         izin_adresi = m_adres.group(1).strip() if m_adres else ""
 
-        # 7. Rapor Türü
-        m_rapor_turu = re.search(r'Rapor\s+T[üu]r[üu]\s*:\s*([^\r\n]+)', text, re.IGNORECASE)
+        # 7. Rapor / İzin Alt Türü / Mazeret Nedeni
+        m_rapor_turu = re.search(
+            r'(?:Rapor\s*T[üu]r[üu]|İzin\s*Alt\s*T[üu]r[üu]|Mazeret\s*(?:T[üu]r[üu]|Nedeni|Gerek[çc]esi))\s*[:=\t]?\s*([^\r\n]+)',
+            text, re.IGNORECASE
+        )
         rapor_turu = m_rapor_turu.group(1).strip() if m_rapor_turu else ""
+        if rapor_turu:
+            rapor_turu = re.sub(r'\s+', ' ', rapor_turu).strip()
 
+        # 8. Belge / Evrak Sayısı
+        m_sayi = re.search(r'(?:Sayı|Evrak\s+No|Belge\s+No)\s*[:=\t]\s*([^\r\n]+)', text, re.IGNORECASE)
+        belge_no = m_sayi.group(1).strip() if m_sayi else ""
+
+        # Ne ad ne tarih bulunamadıysa uyarı
         if not ad_soyad and not baslangic:
+            logging.warning(f"[PDF ÇÖZÜMLEME BAŞARISIZ] Ne personel ne de tarih bulunamadı! Belge metni:\n{text[:500]}...")
             return {
                 "basarili": False,
-                "mesaj": "PDF belgesinden personel veya izin tarih bilgileri okunamadı. Lütfen formu elle doldurunuz."
+                "mesaj": "PDF belgesinden personel veya izin tarih bilgileri tespit edilemedi. Belge taranmış resim olabilir veya farklı bir formatta düzenlenmiş olabilir. Lütfen bilgileri elle doldurunuz."
             }
+
+        # Kısmi başarı uyarısı
+        uyari_notu = ""
+        if ad_soyad and not baslangic:
+            uyari_notu = "Personel adı tespit edildi fakat izin başlangıç tarihi okunamadı. Lütfen takvimden tarihi seçiniz."
+            logging.warning(f"[PDF KISMİ UYARI] {uyari_notu} (Personel: {ad_soyad})")
+        elif not ad_soyad and baslangic:
+            uyari_notu = "İzin tarihleri tespit edildi fakat personel adı okunamadı. Lütfen personeli seçiniz."
+            logging.warning(f"[PDF KISMİ UYARI] {uyari_notu} (Tarih: {baslangic})")
 
         # Çakışma kontrolü
         if ad_soyad and baslangic:
@@ -681,11 +819,18 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
                 c_bit = format_tr_tarih(cakisan["bitis"])
                 tarih_mesaji = c_bas if c_bas == c_bit else f"{c_bas} - {c_bit}"
                 tur_adi = cakisan.get("izin_turu", "izin")
+                logging.warning(f"[PDF ÇAKIŞMA ENGELİ] {ad_soyad} için {tarih_mesaji} aralığında çakışan {tur_adi} kaydı var.")
                 return {
                     "basarili": False,
                     "cakisma": True,
                     "mesaj": f"Bu tarihlerde zaten kayıt var! {cakisan['personel_ad']} için {tarih_mesaji} tarihlerinde kayıtlı bir {tur_adi} bulunmaktadır. Yükleme işleme koyulmadı."
                 }
+
+        logging.info(f"=== [PDF İZİN ÇÖZÜMLEME BAŞARILI] Personel: '{ad_soyad}', Tür: '{izin_turu}', Gün: {gun_sayisi}, Başlangıç: '{baslangic}', Bitiş: '{bitis}' ===")
+        try:
+            islem_logla("bilgi", "PDF İzin Okuma", f"'{dosya.filename}' belgesinden {ad_soyad or 'Personel'} için {izin_turu} izni okundu ({gun_sayisi} gün).")
+        except Exception:
+            pass
 
         return {
             "basarili": True,
@@ -697,8 +842,14 @@ async def saglik_pdf_oku(dosya: UploadFile = File(...)):
             "bitis": bitis,
             "izin_adresi": izin_adresi,
             "rapor_turu": rapor_turu,
-            "konu": konu_metni
+            "belge_no": belge_no,
+            "konu": konu_metni,
+            "uyari_notu": uyari_notu
         }
     except Exception as e:
-        return {"basarili": False, "mesaj": f"PDF okuma hatası: {str(e)}"}
+        logging.error(f"[PDF OKUMA HATASI] Dosya: '{dosya.filename}', Hata: {e}", exc_info=True)
+        try:
+            islem_logla("hata", "PDF İzin Okuma", f"'{dosya.filename}' PDF okuma hatası: {e}")
+        except Exception:
+            pass
         return {"basarili": False, "mesaj": f"PDF okuma hatası: {str(e)}"}

@@ -798,21 +798,30 @@
             bas = parcalar[0].trim();
             bit = (parcalar.length > 1 ? parcalar[1] : parcalar[0]).trim();
         }
+        if (window.tarihFormatlaISO) {
+            bas = window.tarihFormatlaISO(bas);
+            bit = window.tarihFormatlaISO(bit);
+        }
+        if (bit < bas) {
+            const tmp = bas;
+            bas = bit;
+            bit = tmp;
+        }
 
         try {
             const response = await apiFetch('/saglik/ekle', {
                 method: 'POST',
-                body: JSON.stringify({
+                body: {
                     personel_ad: personel,
                     izin_turu: izinTuru,
                     baslangic_tarihi: bas,
                     bitis_tarihi: bit,
-                    gun_sayisi: parseInt(gun),
+                    gun_sayisi: (parseInt(gun, 10) > 0 ? parseInt(gun, 10) : 1),
                     aciklama: aciklama,
                     belge_no: belgeNo,
                     izin_adresi: izinAdresi,
                     rapor_turu: raporTuru
-                })
+                }
             });
 
             if (response.basarili) {
@@ -991,17 +1000,17 @@
         try {
             const response = await apiFetch(`/saglik/duzenle/${id}`, {
                 method: 'PUT',
-                body: JSON.stringify({
+                body: {
                     personel_ad: personelAd,
                     izin_turu: izinTuru,
                     baslangic_tarihi: bas,
                     bitis_tarihi: bit,
-                    gun_sayisi: parseInt(gun),
+                    gun_sayisi: (parseInt(gun, 10) > 0 ? parseInt(gun, 10) : 1),
                     aciklama: aciklama,
                     belge_no: belgeNo,
                     izin_adresi: adres,
                     rapor_turu: raporTuru
-                })
+                }
             });
 
             if (response.basarili) {
@@ -1023,10 +1032,10 @@
         try {
             const response = await apiFetch('/saglik/kesinti-guncelle', {
                 method: 'POST',
-                body: JSON.stringify({
+                body: {
                     personel_ad: personelAd,
                     onceden_kesilen: kesintiDegeri
-                })
+                }
             });
 
             if (response.basarili) {

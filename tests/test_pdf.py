@@ -140,3 +140,129 @@ def test_piyasa_fiyat_arastirmasi_tutanağı_adi_ve_onay_cumlesi_dogru_yazilir(t
     assert "PİYASA FİYAT ARAŞTIRMASI GÖREVLİSİ / GÖREVLİLERİ" in metin or "P İ Y A S A F İ Y A T A R A Ş T I R M A S I G Ö R E V L İ S İ / G Ö R E V L İ L E R İ" in metin
     assert "Tümünün Bu Kişi / Firmadan Alımı Uygun Görülmüştür." in metin
     assert "İstanbul" in metin or "Ankara" in metin or "İzmir" in metin or "Bursa" in metin
+
+def test_ihale_bilgi_girisi_verileri_pdfye_islenir(tmp_path):
+    """Bilgi Girişi modalından girilen resmi_baslik ve yazisma_kodu alanlarının PDF belgelerine aktarılmasını test eder."""
+    from ihale_motoru import uret_fiyat_isteme_pdf, uret_ozel_fiyat_isteme_pdf, uret_muayene_kabul_pdf
+    
+    veri = {
+        "resmi_baslik": "T.C.\nBİNGÖL VALİLİĞİ\n100. Yıl İlkokulu Müdürlüğü",
+        "yazisma_kodu": "12345678-903.02.01",
+        "ihale_konusu": "Kırtasiye Malzemesi Alımı",
+        "belge_tarihi": "2026-10-21",
+        "firmalar": ["Firma A", "Firma B", "Firma C"],
+        "firma_vergiler": ["1111111111", "2222222222", "3333333333"],
+        "firma_adresleri": ["Adres 1", "Adres 2", "Adres 3"],
+        "kalemler": [{"cins": "A4 Kağıt", "miktar": "20", "birim": "Paket", "fiyatlar": [100, 110, 105]}],
+        "komisyon": {
+            "ihale_kom_yaklasik_1": "Ali Yılmaz",
+            "ihale_kom_yaklasik_2": "Veli Kaya",
+            "ihale_kom_yaklasik_3": "Ayşe Demir"
+        }
+    }
+    
+    # 1. Fiyat İsteme PDF
+    fiyat_pdf = uret_fiyat_isteme_pdf(veri, str(tmp_path))
+    assert os.path.exists(fiyat_pdf)
+    fiyat_text = PdfReader(fiyat_pdf).pages[0].extract_text() or ""
+    assert "T.C." in fiyat_text
+    assert "BİNGÖL VALİLİĞİ" in fiyat_text
+    assert "100. Yıl İlkokulu Müdürlüğü" in fiyat_text
+    assert "12345678-903.02.01" in fiyat_text
+    
+    # 2. Özel Fiyat İsteme PDF
+    ozel_pdf = uret_ozel_fiyat_isteme_pdf(veri, str(tmp_path))
+    assert os.path.exists(ozel_pdf)
+    ozel_text = PdfReader(ozel_pdf).pages[0].extract_text() or ""
+    assert "T.C." in ozel_text
+    assert "BİNGÖL VALİLİĞİ" in ozel_text
+    assert "12345678-903.02.01" in ozel_text
+    
+    # 3. Muayene Kabul PDF
+    muayene_pdf = uret_muayene_kabul_pdf(veri, str(tmp_path))
+    assert os.path.exists(muayene_pdf)
+    muayene_text = PdfReader(muayene_pdf).pages[0].extract_text() or ""
+    assert "T.C." in muayene_text
+    assert "BİNGÖL VALİLİĞİ" in muayene_text
+    assert "100. Yıl İlkokulu Müdürlüğü" in muayene_text
+
+
+def test_ihale_tekli_belge_endpoint_resmi_baslik_ve_yazisma_kodu_korur():
+    """/ihale-tekli-belge endpoint'inin resmi_baslik ve yazisma_kodu alanlarını doğru işlediğini doğrular."""
+    from fastapi.testclient import TestClient
+    import api
+    app = api.app
+    from unittest.mock import patch
+
+    client = TestClient(app)
+    
+    istek_verisi = {
+        "resmi_baslik": "T.C.\nBİNGÖL VALİLİĞİ\nMerkez İlkokulu Müdürlüğü",
+        "yazisma_kodu": "98765432-805.01",
+        "ihale_konusu": "Temizlik Malzemesi",
+        "belge_tarihi": "2026-10-21",
+        "belge_tipi": "fiyat_isteme",
+        "format": "pdf",
+        "kalemler": [{"cins": "Sabun", "miktar": "10", "birim": "Adet"}]
+    }
+    
+    yakalanan_veri = {}
+    def mock_belge_uret(veri, yol):
+        yakalanan_veri.update(veri)
+        return "dummy_path.pdf"
+        
+    with patch("ihale_motoru.belge_uret", side_effect=mock_belge_uret):
+        with patch("os.path.exists", return_value=False):
+            resp = client.post("/ihale-tekli-belge", json=istek_verisi)
+            assert resp.status_code == 200
+            assert resp.json()["basarili"] is True
+            
+    assert yakalanan_veri.get("resmi_baslik") == "T.C.\nBİNGÖL VALİLİĞİ\nMerkez İlkokulu Müdürlüğü"
+    assert yakalanan_veri.get("yazisma_kodu") == "98765432-805.01"
+
+def test_toplu_teblig_imza_sirkusunde_idareciler_en_ustte_siralanir(tmp_path):
+    """Toplu tebliğ imza sirküsü tablosunda idarecilerin (Müdür, Müdür Yardımcısı) en üstte sıralandığını doğrular."""
+    from pdf_motoru import PDFYoneticisi
+    
+    motor = PDFYoneticisi({})
+    kayit_yeri = str(tmp_path / "toplu_sirkusu_test.pdf")
+    
+    personeller = [
+        {"ad": "Zeynep Çelik", "gorev": "Öğretmen", "unvan": "Öğretmen", "grup": "Öğretmenler"},
+        {"ad": "Mehmet Demir", "gorev": "Müdür Yardımcısı", "unvan": "Müdür Yardımcısı", "grup": "İdare"},
+        {"ad": "Ahmet Aslan", "gorev": "Öğretmen", "unvan": "Öğretmen", "grup": "Öğretmenler"},
+        {"ad": "Kemal Şahin", "gorev": "Okul Müdürü", "unvan": "Müdür", "grup": "İdare"},
+    ]
+    
+    motor.teblig_tebellug_ciz(
+        sayi="2026/100",
+        konu="Önemli Duyuru",
+        tarih="21.10.2026",
+        personeller=personeller,
+        kayit_yeri=kayit_yeri,
+        kurum="İlçe Milli Eğitim Müdürlüğü"
+    )
+    
+    assert os.path.exists(kayit_yeri)
+    pdf_metin = PdfReader(kayit_yeri).pages[0].extract_text() or ""
+    
+    # Sıralamayı metin akışındaki pozisyonlarına göre kontrol et
+    pos_kemal = pdf_metin.find("Kemal Şahin")
+    pos_mehmet = pdf_metin.find("Mehmet Demir")
+    pos_ahmet = pdf_metin.find("Ahmet Aslan")
+    pos_zeynep = pdf_metin.find("Zeynep Çelik")
+    
+    assert pos_kemal != -1, "Müdür Kemal Şahin PDF'te bulunamadı"
+    assert pos_mehmet != -1, "Müdür Yardımcısı Mehmet Demir PDF'te bulunamadı"
+    assert pos_ahmet != -1, "Ahmet Aslan PDF'te bulunamadı"
+    assert pos_zeynep != -1, "Zeynep Çelik PDF'te bulunamadı"
+    
+    # Hiyerarşi doğrulaması:
+    # 1. Okul Müdürü (Kemal Şahin)
+    # 2. Müdür Yardımcısı (Mehmet Demir)
+    # 3. Öğretmen Ahmet Aslan
+    # 4. Öğretmen Zeynep Çelik
+    assert pos_kemal < pos_mehmet, "Okul Müdürü (1. Kademe), Müdür Yardımcısından (2. Kademe) önce olmalıdır!"
+    assert pos_mehmet < pos_ahmet, "Müdür Yardımcısı (2. Kademe), Öğretmenlerden (3. Kademe) önce olmalıdır!"
+    assert pos_ahmet < pos_zeynep, "Öğretmenler kendi aralarında alfabetik olmalıdır (Ahmet < Zeynep)!"
+

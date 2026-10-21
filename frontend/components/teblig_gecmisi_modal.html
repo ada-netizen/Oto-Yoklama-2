@@ -1,0 +1,101 @@
+<!-- TEBLİĞ GEÇMİŞİ VE ARŞİV MODAL -->
+<div class="modal-overlay" id="modal_teblig_gecmisi" style="display: none; z-index: 2150;">
+    <div class="modal-content" style="width: 1050px; max-width: 96vw; max-height: 90vh; display: flex; flex-direction: column; padding: 0; background: var(--bg-card); border-radius: 12px; box-shadow: var(--shadow-xl); border: 1px solid var(--border); overflow: hidden;">
+        
+        <!-- MODAL HEADER -->
+        <div style="padding: 16px 22px; border-bottom: 1px solid var(--border); background: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #0284C7, #0369A1); display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);">
+                    <i data-lucide="history" height="20" width="20"></i>
+                </div>
+                <div>
+                    <h3 style="margin: 0; font-size: 16px; font-weight: 700; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                        Geçmiş Tebliğ Kayıtları
+                        <span class="badge" id="lbl_teblig_toplam_kayit" style="background: rgba(2, 132, 199, 0.15); color: #0284C7; font-size: 11.5px; padding: 2px 8px; border-radius: 9999px; font-weight: 700;">0 Kayıt</span>
+                    </h3>
+                    <div style="font-size: 11.5px; color: var(--fg-sub); margin-top: 2px;">
+                        Oluşturulan tüm toplu imza sirküleri ve bireysel tebellüğ belgelerinin kalıcı arşivi
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-temizle" onclick="tebligGecmisiModalKapat()" style="padding: 6px 12px; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+                <i data-lucide="x" height="15" width="15"></i> Kapat
+            </button>
+        </div>
+
+        <!-- FİLTRE VE ARAMA BARI -->
+        <div style="padding: 12px 20px; background: var(--bg-main); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 12px; font-weight: 600; color: var(--fg-sub);">Tür Filtresi:</span>
+                <button type="button" class="btn teblig-preset-btn active" id="btn_tg_filtre_tumu" onclick="tebligGecmisiFiltrele('TÜMÜ')" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px;">
+                    Tümü
+                </button>
+                <button type="button" class="btn teblig-preset-btn" id="btn_tg_filtre_toplu" onclick="tebligGecmisiFiltrele('Toplu Tebliğ')" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px;">
+                    👥 Toplu Tebliğ
+                </button>
+                <button type="button" class="btn teblig-preset-btn" id="btn_tg_filtre_bireysel" onclick="tebligGecmisiFiltrele('Bireysel Tebliğ')" style="font-size: 11.5px; padding: 4px 10px; border-radius: 6px;">
+                    👤 Bireysel Tebliğ
+                </button>
+            </div>
+            
+            <div class="input-with-icon" style="width: 320px; margin: 0;">
+                <i data-lucide="search" class="search-icon" style="left: 10px;"></i>
+                <input type="text" id="inp_teblig_gecmis_ara" oninput="tebligGecmisiAra()" placeholder="Kurum, sayı, konu veya personel ara..." style="width: 100%; box-sizing: border-box; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px 7px 32px; font-size: 12px; color: var(--fg-main); outline: none;">
+            </div>
+        </div>
+
+        <!-- TABLO ALANI -->
+        <div style="flex: 1; overflow-y: auto; padding: 16px 20px; min-height: 380px;">
+            <table class="modern-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                <thead>
+                    <tr style="background: var(--bg-card-solid); border-bottom: 2px solid var(--border); text-align: left;">
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700; width: 130px;">Tarih & Saat</th>
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700; width: 120px;">Tür</th>
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700;">Geldiği Kurum</th>
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700; width: 140px;">Evrak Sayı & Tarihi</th>
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700;">Konu</th>
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700; width: 160px;">Tebliğ Edilenler</th>
+                        <th style="padding: 10px 12px; color: var(--fg-main); font-weight: 700; text-align: right; width: 100px;">İşlemler</th>
+                    </tr>
+                </thead>
+                <tbody id="tbody_teblig_gecmisi">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 30px; color: var(--fg-sub);">Kayıtlar yükleniyor...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- MODAL ALT BİLGİ -->
+        <div style="padding: 10px 20px; border-top: 1px solid var(--border); background: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; color: var(--fg-sub);">
+            <div>
+                💡 İpucu: Listede bir tebliğ kaydının üzerine tıklayarak veya <i data-lucide="file-text" style="width: 12px; height: 12px; display: inline-block; vertical-align: middle;"></i> butonuna basarak üretilmiş PDF dosyasını açabilirsiniz.
+            </div>
+            <div>
+                <button class="btn btn-temizle" onclick="tebligGecmisiModalKapat()" style="padding: 5px 14px; font-size: 12px;">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TEBLİĞ EDİLENLER DETAY POPUP MODALI -->
+<div class="modal-overlay" id="modal_teblig_kisiler" style="display: none; z-index: 2200;">
+    <div class="modal-content" style="width: 550px; max-width: 94vw; max-height: 80vh; display: flex; flex-direction: column; padding: 0; background: var(--bg-card); border-radius: 10px; box-shadow: var(--shadow-xl); border: 1px solid var(--border); overflow: hidden;">
+        <div style="padding: 14px 18px; border-bottom: 1px solid var(--border); background: var(--bg-card-solid); display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: 700; font-size: 14px; color: var(--fg-main); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="users" height="16" width="16" style="color: #0284C7;"></i>
+                <span id="lbl_tk_baslik">Tebliğ Edilen Kişiler</span>
+            </div>
+            <button class="btn btn-temizle" onclick="document.getElementById('modal_teblig_kisiler').style.display='none'" style="padding: 4px 8px; font-size: 11px;">
+                <i data-lucide="x" height="14" width="14"></i>
+            </button>
+        </div>
+        <div id="div_teblig_kisiler_liste" style="padding: 16px; overflow-y: auto; max-height: 400px; display: flex; flex-direction: column; gap: 8px;">
+            <!-- Dinamik doldurulacak -->
+        </div>
+        <div style="padding: 10px 18px; border-top: 1px solid var(--border); background: var(--bg-card-solid); text-align: right;">
+            <button class="btn btn-temizle" onclick="document.getElementById('modal_teblig_kisiler').style.display='none'" style="padding: 5px 14px; font-size: 12px;">Tamam</button>
+        </div>
+    </div>
+</div>
+

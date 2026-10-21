@@ -76,6 +76,23 @@ class VeritabaniYoneticisi:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_saglik_baslangic ON saglik_raporlari (baslangic_tarihi)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_personel_ad ON personel (ad_soyad)")
         cursor.execute("CREATE TABLE IF NOT EXISTS uretilen_evraklar (id INTEGER PRIMARY KEY AUTOINCREMENT, tur TEXT, personel_ad TEXT, brans TEXT, tarih TEXT)")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tebligat_kayitlari (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                olusturma_tarihi TEXT,
+                kurum TEXT,
+                sayi TEXT,
+                evrak_tarihi TEXT,
+                konu TEXT,
+                teblig_turu TEXT,
+                teblig_eden TEXT,
+                teblig_edilenler TEXT,
+                kisi_sayisi INTEGER,
+                dosya_yolu TEXT
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tebligat_tarih ON tebligat_kayitlari (olusturma_tarihi)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tebligat_tur ON tebligat_kayitlari (teblig_turu)")
         cursor.execute("CREATE TABLE IF NOT EXISTS devamsizlik_mektup_takip (ogrenci_no TEXT, esik_turu TEXT, gonderildi INTEGER DEFAULT 0, gonderilme_tarihi TEXT, PRIMARY KEY (ogrenci_no, esik_turu))")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mektup_esik ON devamsizlik_mektup_takip (esik_turu)")
         
