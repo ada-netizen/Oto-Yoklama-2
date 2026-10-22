@@ -532,10 +532,30 @@ def personel_ekle(veri: PersonelRequest):
 
 @router.delete("/personel-sil/{ad}")
 def personel_sil(ad: str):
+    # Süper Yönetici veya aktif kullanıcı kartı koruması
+    try:
+        db.cursor.execute("""
+            SELECT k.id, k.kullanici_adi, k.super_admin_mi 
+            FROM kullanicilar k
+            JOIN personel p ON k.personel_id = p.rowid
+            WHERE p.ad_soyad = ?
+        """, (ad,))
+        k_row = db.cursor.fetchone()
+        if k_row:
+            if k_row[2]:  # super_admin_mi
+                return {
+                    "basarili": False, 
+                    "mesaj": f"'{ad}' sistemin ana Süper Yöneticisidir ve silinemez! Lütfen önce Admin Panelinden Süper Yöneticilik görevini devrediniz."
+                }
+            return {
+                "basarili": False,
+                "mesaj": f"'{ad}' personeline ait aktif bir kullanıcı hesabı ({k_row[1]}) mevcuttur. Lütfen önce Admin Panelinden kullanıcı hesabını kaldırınız."
+            }
+    except Exception:
+        pass
+
     db.cursor.execute("DELETE FROM personel WHERE ad_soyad = ?", (ad,))
     db.conn.commit()
-    
-    # Eşleşmeleri sil (ad silindiği için eski eşleşmeleri de temizlemek iyi olabilir, ama şimdilik bırakıyoruz)
     return {"basarili": True, "mesaj": f"{ad} silindi."}
 
 @router.put("/personel-guncelle/{eski_ad}")

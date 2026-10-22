@@ -35,7 +35,10 @@
             setTimeout(splashEkraniniKapat, 500);
         });
 
-const API = 'http://127.0.0.1:8000';
+const API = (window.location && window.location.origin && window.location.origin.startsWith('http')) 
+            ? window.location.origin 
+            : 'http://127.0.0.1:8000';
+window.API = API;
 
         function format_tr_tarih(tarihStr) {
             if (!tarihStr) return "-";
@@ -153,6 +156,12 @@ const API = 'http://127.0.0.1:8000';
             const opts = { ...options };
             opts.headers = { ...opts.headers };
 
+            // Oturum token'ı varsa başlığa ekle
+            const token = window.sessionStorage.getItem('oturum_token') || window.localStorage.getItem('oturum_token');
+            if (token && !opts.headers['Authorization']) {
+                opts.headers['Authorization'] = `Bearer ${token}`;
+            }
+
             if (opts.body && !(opts.body instanceof FormData)) {
                 if (typeof opts.body === 'object') {
                     opts.headers['Content-Type'] = opts.headers['Content-Type'] || 'application/json';
@@ -170,6 +179,14 @@ const API = 'http://127.0.0.1:8000';
                     data = await res.json();
                 } else {
                     return res;
+                }
+
+                if (res.status === 401) {
+                    if (!url.includes('/auth/kurulum-durumu') && !url.includes('/auth/giris') && !url.includes('/auth/ilk-kurulum')) {
+                        if (typeof window.authOturumGecersiz === 'function') {
+                            window.authOturumGecersiz(data ? data.detail || data.mesaj : '');
+                        }
+                    }
                 }
 
                 if (!res.ok && data && typeof data === 'object') {

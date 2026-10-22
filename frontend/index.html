@@ -104,6 +104,10 @@
 {% include 'components/command_palette.html' %}
 <!-- KLAVYE KISAYOLLARI REHBERİ (F1) -->
 {% include 'components/kisayollar_modal.html' %}
+<!-- KURUMSAL KİMLİK DOĞRULAMA (GİRİŞ & İLK KURULUM) -->
+{% include 'components/login_modal.html' %}
+<!-- KURUMSAL AĞ & YÖNETİCİ KONTROL PANELİ -->
+{% include 'components/admin_paneli.html' %}
 <!-- ================= 3-BÖLMELİ KOMUTA MERKEZİ DÜZENİ ================= -->
 <div class="app-layout">
     <!-- 1. SOL NAVİGASYON & DURUM RAYI (SIDEBAR RAIL - SIFIR İTMELİ AÇILIR OVERLAY) -->
@@ -1218,6 +1222,24 @@
     <div class="settings-container-scroll">
         <div class="settings-main-wrapper">
             
+            <!-- KURUMSAL KULLANICI & AĞ YÖNETİMİ (ADMIN MASASI) -->
+            <div class="settings-section" id="ayar_bolum_admin_masasi">
+                <h3 class="settings-section-title" style="color: #10b981;"><i data-lucide="shield-check" height="16" width="16"></i> Kurumsal Kullanıcı & Ağ Masası</h3>
+                <div class="settings-list-card" style="border-left: 4px solid #10b981;">
+                    <div class="settings-list-item">
+                        <div class="settings-item-info">
+                            <span class="settings-item-name" style="font-weight: 700;">Yönetici (Admin) Kontrol Masası</span>
+                            <span class="settings-item-desc">Tüm kurum kullanıcılarını, yetki rollerini, canlı oturumları ve yerel ağ (LAN) erişim bağlantısını yönetin.</span>
+                        </div>
+                        <div class="settings-item-action">
+                            <button class="btn btn-mor" onclick="adminPaneliAc()" style="display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10b981, #0284c7); color: white; font-weight: 600; padding: 8px 16px; border-radius: 8px;">
+                                <i data-lucide="shield-alert" height="15" width="15"></i> Admin Masasını Aç
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- KURUMSAL KİMLİK -->
             <div class="settings-section">
                 <h3 class="settings-section-title"><i data-lucide="school" height="16" width="16"></i> Kurumsal Kimlik</h3>
@@ -1446,6 +1468,8 @@
 </div> <!-- /app-layout -->
 {% include 'components/ihale_komisyon_modal.html' %}
 <script src="js/core.js?ts={{ ts }}"></script>
+<script src="js/auth.js?ts={{ ts }}"></script>
+<script src="js/admin.js?ts={{ ts }}"></script>
 <script src="js/dashboard.js?ts={{ ts }}"></script>
 <script src="js/personel_teblig.js?ts={{ ts }}"></script>
 <script src="js/ihale.js?ts={{ ts }}"></script>

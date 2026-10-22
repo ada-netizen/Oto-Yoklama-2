@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 import json
 import time
@@ -175,7 +175,7 @@ def sunucuyu_baslat() -> None:
     """
     global _sunucu
     try:
-        config  = uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="critical")
+        config  = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="critical")
         _sunucu = uvicorn.Server(config)
         _sunucu.run()
     except Exception as e:
@@ -246,7 +246,7 @@ def arayuzu_baslat() -> None:
     _son_durum["maximized"] = kayitli["maximized"]
 
     pencere = webview.create_window(
-        title='Elektronik Okul Sistemi V2',
+        title='Elektronik Okul Sistemi',
         url=f'http://127.0.0.1:8000/?t={int(time.time())}',
         width=kayitli["width"],
         height=kayitli["height"],

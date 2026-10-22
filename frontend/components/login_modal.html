@@ -1,0 +1,190 @@
+<!-- ===================================================================== -->
+<!-- KURUMSAL KİMLİK DOĞRULAMA & GİRİŞ BİLEŞENİ (login_modal.html)           -->
+<!-- ===================================================================== -->
+
+<!-- 1. ANA GİRİŞ & İLK KURULUM MODAL OVERLAY -->
+<div id="modal_auth_overlay" class="modal-overlay" style="display: none; z-index: 99999; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px); align-items: center; justify-content: center;">
+    
+    <!-- GİRİŞ FORMU KARTI -->
+    <div id="auth_giris_karti" style="display: flex; flex-direction: column; width: 420px; max-width: 92vw; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.45); overflow: hidden; animation: authFadeIn 0.3s ease;">
+        <!-- Kart Başlığı -->
+        <div style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(2, 132, 199, 0.15)); padding: 28px 24px 20px 24px; text-align: center; border-bottom: 1px solid var(--border);">
+            <div style="width: 54px; height: 54px; margin: 0 auto 12px auto; background: linear-gradient(135deg, #10b981, #0284c7); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.35);">
+                <i data-lucide="shield-check" height="28" width="28"></i>
+            </div>
+            <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--fg-main); letter-spacing: 0.3px;">ELEKTRONİK OKUL YÖNETİMİ</h2>
+            <p style="margin: 6px 0 0 0; font-size: 12.5px; color: var(--fg-sub);">Kurumsal Güvenli Giriş Paneli</p>
+        </div>
+
+        <!-- Hata / Bildirim Kutusu -->
+        <div id="auth_hata_kutusu" style="display: none; margin: 16px 24px 0 24px; padding: 10px 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 12.5px; line-height: 1.4;">
+        </div>
+
+        <!-- Form Alanları -->
+        <form id="form_giris" onsubmit="authGirisYap(event)" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="form-group" style="margin: 0;">
+                <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Kullanıcı Adı</label>
+                <div style="position: relative;">
+                    <i data-lucide="user" style="position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; color: var(--fg-sub);"></i>
+                    <input type="text" id="giris_kullanici_adi" class="form-control" placeholder="Örn: erdal.cam" required autofocus style="width: 100%; box-sizing: border-box; height: 42px; padding-left: 38px; border-radius: 8px; font-size: 13.5px;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+                <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--fg-sub); margin-bottom: 6px;">Şifre</label>
+                <div style="position: relative;">
+                    <i data-lucide="lock" style="position: absolute; left: 12px; top: 12px; width: 16px; height: 16px; color: var(--fg-sub);"></i>
+                    <input type="password" id="giris_sifre" class="form-control" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; height: 42px; padding-left: 38px; padding-right: 38px; border-radius: 8px; font-size: 13.5px;">
+                    <button type="button" onclick="authSifreGosterGizle('giris_sifre', this)" style="position: absolute; right: 10px; top: 10px; background: none; border: none; color: var(--fg-sub); cursor: pointer; padding: 4px;">
+                        <i data-lucide="eye" height="16" width="16"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Beni Hatırla -->
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--fg-main); user-select: none;">
+                    <input type="checkbox" id="giris_beni_hatirla" style="width: 15px; height: 15px; accent-color: #10b981; cursor: pointer;">
+                    <span>Beni Hatırla (30 Gün)</span>
+                </label>
+                <span style="color: var(--fg-sub); font-size: 11px;" title="Ortak bilgisayarlarda bu kutuyu işaretlemeyiniz.">Kişisel Cihaz</span>
+            </div>
+
+            <button type="submit" id="btn_giris_yap" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; height: 42px; font-size: 14px; font-weight: 700; border-radius: 8px; border: none; box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35); cursor: pointer; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="log-in" height="16" width="16"></i> Giriş Yap
+            </button>
+        </form>
+
+        <div style="background: var(--bg-main); padding: 12px 24px; text-align: center; font-size: 11.5px; color: var(--fg-sub); border-top: 1px solid var(--border);">
+            <span>🔒 Okul Yerel Ağı İçi Güvenli Oturum</span>
+        </div>
+    </div>
+
+    <!-- İLK KURULUM SİHİRBAZI KARTI -->
+    <div id="auth_kurulum_karti" style="display: none; flex-direction: column; width: 480px; max-width: 94vw; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.5); overflow: hidden; animation: authFadeIn 0.3s ease;">
+        <div style="background: linear-gradient(135deg, rgba(2, 132, 199, 0.18), rgba(16, 185, 129, 0.18)); padding: 26px 24px 20px 24px; text-align: center; border-bottom: 1px solid var(--border);">
+            <div style="width: 54px; height: 54px; margin: 0 auto 12px auto; background: linear-gradient(135deg, #0284c7, #10b981); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; box-shadow: 0 8px 20px rgba(2, 132, 199, 0.35);">
+                <i data-lucide="crown" height="28" width="28"></i>
+            </div>
+            <h2 style="margin: 0; font-size: 18px; font-weight: 700; color: var(--fg-main);">SİSTEME HOŞ GELDİNİZ!</h2>
+            <p style="margin: 6px 0 0 0; font-size: 12.5px; color: var(--fg-sub);">İlk Kurulum: Süper Yönetici Hesabınızı Belirleyiniz</p>
+        </div>
+
+        <div id="auth_kurulum_hata" style="display: none; margin: 16px 24px 0 24px; padding: 10px 14px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 12.5px;"></div>
+
+        <form id="form_kurulum" onsubmit="authIlkKurulumYap(event)" style="padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+            <!-- Personel Seçimi Dropdown -->
+            <div class="form-group" style="margin: 0;">
+                <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--fg-sub); margin-bottom: 5px;">Kurum Personelinden Seçin <span style="color: #10b981;">(Önerilen)</span></label>
+                <select id="kurulum_personel_sec" class="form-control" onchange="authKurulumPersonelSecildi(this)" style="width: 100%; height: 40px; font-size: 13px; border-radius: 8px;">
+                    <option value="">-- Personel Listesinden Seçiniz --</option>
+                </select>
+                <span style="font-size: 11px; color: var(--fg-sub); margin-top: 4px; display: block;">Listede adınız yoksa aşağıdaki kutulara doğrudan yazabilirsiniz.</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Ad Soyad</label>
+                    <input type="text" id="kurulum_ad_soyad" class="form-control" placeholder="Örn: Erdal ÇAM" required style="width: 100%; box-sizing: border-box; height: 38px; border-radius: 8px; font-size: 12.5px;">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Kurumsal Unvan</label>
+                    <input type="text" id="kurulum_unvan" class="form-control" placeholder="Örn: Okul Müdürü" required style="width: 100%; box-sizing: border-box; height: 38px; border-radius: 8px; font-size: 12.5px;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+                <label style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Kullanıcı Adı (Giriş İçin)</label>
+                <input type="text" id="kurulum_kullanici_adi" class="form-control" placeholder="Örn: erdal.cam" required style="width: 100%; box-sizing: border-box; height: 38px; border-radius: 8px; font-size: 12.5px;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Şifre Belirleyin *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="kurulum_sifre" class="form-control" placeholder="En az 4 karakter" required style="width: 100%; box-sizing: border-box; height: 38px; padding-right: 36px; border-radius: 8px; font-size: 12.5px;">
+                        <button type="button" onclick="authSifreGosterGizle('kurulum_sifre', this)" style="position: absolute; right: 8px; top: 8px; background: none; border: none; color: var(--fg-sub); cursor: pointer;" title="Şifreyi Göster/Gizle">
+                            <i data-lucide="eye" height="15" width="15"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                    <label style="display: block; font-size: 12px; font-weight: 600; color: var(--fg-sub); margin-bottom: 4px;">Şifre Tekrar *</label>
+                    <div style="position: relative;">
+                        <input type="password" id="kurulum_sifre_tekrar" class="form-control" placeholder="Şifrenizi tekrar yazın" required style="width: 100%; box-sizing: border-box; height: 38px; padding-right: 36px; border-radius: 8px; font-size: 12.5px;">
+                        <button type="button" onclick="authSifreGosterGizle('kurulum_sifre_tekrar', this)" style="position: absolute; right: 8px; top: 8px; background: none; border: none; color: var(--fg-sub); cursor: pointer;" title="Şifreyi Göster/Gizle">
+                            <i data-lucide="eye" height="15" width="15"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" id="btn_kurulum_yap" class="btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: white; height: 42px; font-size: 13.5px; font-weight: 700; border-radius: 8px; border: none; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); cursor: pointer; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i data-lucide="check-circle" height="16" width="16"></i> Süper Yöneticiyi Oluştur ve Başla
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- 2. KULLANICININ KENDİ ŞİFRESİNİ DEĞİŞTİRME MODALI (SELF-SERVICE) -->
+<div id="modal_sifre_degistir" class="modal-overlay" style="display: none; z-index: 99998; background: rgba(0,0,0,0.65); align-items: center; justify-content: center;">
+    <div class="modal-content" style="max-width: 420px; padding: 0; background: var(--bg-card); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.35);">
+        <div class="modal-header" style="background: linear-gradient(to right, rgba(2, 132, 199, 0.12), rgba(2, 132, 199, 0.04)); border-bottom: 1px solid var(--border); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <h2 style="color: #0284c7; font-size: 15px; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="key" height="18" width="18"></i> Şifremi Değiştir
+            </h2>
+            <button class="icon-btn" onclick="document.getElementById('modal_sifre_degistir').style.display='none'" style="color: var(--fg-main);" title="Kapat">
+                <i data-lucide="x" height="18" width="18"></i>
+            </button>
+        </div>
+        <form onsubmit="authKendiSifremiKaydet(event)" style="padding: 22px 24px; display: flex; flex-direction: column; gap: 14px;">
+            <div class="form-group" style="margin: 0;">
+                <label style="font-weight: 600; font-size: 12.5px; color: var(--fg-sub); margin-bottom: 5px; display: block;">Mevcut Şifreniz</label>
+                <input type="password" id="self_mevcut_sifre" class="form-control" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; height: 38px; border-radius: 8px; font-size: 13px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label style="font-weight: 600; font-size: 12.5px; color: var(--fg-sub); margin-bottom: 5px; display: block;">Yeni Şifreniz</label>
+                <input type="password" id="self_yeni_sifre" class="form-control" placeholder="En az 4 karakter" required style="width: 100%; box-sizing: border-box; height: 38px; border-radius: 8px; font-size: 13px;">
+            </div>
+            <div class="form-group" style="margin: 0;">
+                <label style="font-weight: 600; font-size: 12.5px; color: var(--fg-sub); margin-bottom: 5px; display: block;">Yeni Şifre Tekrar</label>
+                <input type="password" id="self_yeni_sifre_tekrar" class="form-control" placeholder="••••••••" required style="width: 100%; box-sizing: border-box; height: 38px; border-radius: 8px; font-size: 13px;">
+            </div>
+            <div style="text-align: right; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 4px; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn" onclick="document.getElementById('modal_sifre_degistir').style.display='none'" style="background: var(--bg-main); color: var(--fg-main); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px;">İptal</button>
+                <button type="submit" class="btn" style="background: #0284c7; color: white; padding: 8px 18px; font-weight: bold; border-radius: 8px; border: none;">Şifreyi Güncelle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 3. HAREKETSİZLİK OTURUM KİLİT EKRANI (TIMEOUT) -->
+<div id="modal_oturum_kilit" class="modal-overlay" style="display: none; z-index: 999999; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(16px); align-items: center; justify-content: center;">
+    <div style="width: 380px; max-width: 90vw; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.5); padding: 28px 24px; text-align: center;">
+        <div style="width: 50px; height: 50px; margin: 0 auto 14px auto; background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="lock" height="24" width="24"></i>
+        </div>
+        <h3 style="margin: 0; color: var(--fg-main); font-size: 17px; font-weight: 700;">Oturum Güvenlik Kilidi</h3>
+        <p style="margin: 8px 0 20px 0; font-size: 12px; color: var(--fg-sub); line-height: 1.45;">Uzun süre hareketsiz kaldığınız için verilerinizin güvenliği amacıyla oturumunuz kilitlenmiştir.</p>
+        
+        <div style="margin-bottom: 16px; font-size: 13px; font-weight: 600; color: var(--fg-main);" id="kilit_kullanici_ad">-</div>
+
+        <form onsubmit="authKilitAc(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="password" id="kilit_sifre" class="form-control" placeholder="Devam etmek için şifrenizi girin" required autofocus style="width: 100%; box-sizing: border-box; height: 40px; text-align: center; border-radius: 8px; font-size: 13.5px;">
+            <button type="submit" class="btn" style="background: linear-gradient(135deg, #10b981, #059669); color: white; height: 40px; font-weight: 700; border-radius: 8px; border: none; cursor: pointer;">
+                Kilidi Aç
+            </button>
+            <button type="button" onclick="oturumKapat()" class="btn" style="background: none; border: none; color: #ef4444; font-size: 12px; cursor: pointer; text-decoration: underline;">
+                Farklı bir hesapla giriş yap
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+@keyframes authFadeIn {
+    from { opacity: 0; transform: scale(0.96) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+</style>
+

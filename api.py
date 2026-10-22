@@ -29,7 +29,9 @@ logging.basicConfig(
 
 app = FastAPI(title="Elektronik Okul Sistemi API")
 
-from routes import ogrenci, personel, ihale, pdf, rapor, sistem, dashboard, saglik
+from routes import ogrenci, personel, ihale, pdf, rapor, sistem, dashboard, saglik, auth, admin
+app.include_router(auth.router)
+app.include_router(admin.router)
 app.include_router(ogrenci.router)
 app.include_router(personel.router)
 app.include_router(ihale.router)

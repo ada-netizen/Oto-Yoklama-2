@@ -1,6 +1,21 @@
 import sqlite3
 import threading
 import logging
+import hashlib
+import secrets
+
+def sifre_hashle(sifre: str, salt: str = None) -> tuple[str, str]:
+    if not salt:
+        salt = secrets.token_hex(16)
+    hash_obj = hashlib.pbkdf2_hmac("sha256", sifre.encode("utf-8"), salt.encode("utf-8"), 100000)
+    return hash_obj.hex(), salt
+
+def sifre_dogrula(sifre: str, sifre_hash: str, salt: str) -> bool:
+    try:
+        yeni_hash, _ = sifre_hashle(sifre, salt)
+        return secrets.compare_digest(yeni_hash, sifre_hash)
+    except Exception:
+        return False
 
 class VeritabaniYoneticisi:
     def __init__(self, db_yolu):
@@ -95,6 +110,56 @@ class VeritabaniYoneticisi:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_tebligat_tur ON tebligat_kayitlari (teblig_turu)")
         cursor.execute("CREATE TABLE IF NOT EXISTS devamsizlik_mektup_takip (ogrenci_no TEXT, esik_turu TEXT, gonderildi INTEGER DEFAULT 0, gonderilme_tarihi TEXT, PRIMARY KEY (ogrenci_no, esik_turu))")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_mektup_esik ON devamsizlik_mektup_takip (esik_turu)")
+
+        # Kullanıcılar, Oturumlar ve Denetim Kayıtları
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS kullanicilar (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                personel_id INTEGER,
+                kullanici_adi TEXT UNIQUE,
+                sifre_hash TEXT,
+                salt TEXT,
+                ad_soyad TEXT,
+                unvan TEXT,
+                rol TEXT DEFAULT 'MEMUR',
+                izinler TEXT,
+                super_admin_mi INTEGER DEFAULT 0,
+                aktif INTEGER DEFAULT 1,
+                son_giris TEXT,
+                son_islem TEXT
+            )
+        ''')
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_kullanici_adi ON kullanicilar (kullanici_adi)")
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS kullanici_oturumlar (
+                token TEXT PRIMARY KEY,
+                kullanici_id INTEGER,
+                ip_adresi TEXT,
+                cihaz_bilgisi TEXT,
+                beni_hatirla INTEGER DEFAULT 0,
+                olusturma_tarihi TEXT,
+                son_aktivite TEXT,
+                gecerlilik_tarihi TEXT
+            )
+        ''')
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_oturum_kullanici ON kullanici_oturumlar (kullanici_id)")
+
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS islem_denetim_kayitlari (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                kullanici_id INTEGER,
+                kullanici_adi TEXT,
+                ad_soyad TEXT,
+                modul TEXT,
+                islem TEXT,
+                detay TEXT,
+                ip_adresi TEXT,
+                tarih TEXT
+            )
+        ''')
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_denetim_tarih ON islem_denetim_kayitlari (tarih)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_denetim_kullanici ON islem_denetim_kayitlari (kullanici_adi)")
         
         try:
             cursor.execute("PRAGMA user_version;")
