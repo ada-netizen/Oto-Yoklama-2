@@ -106,14 +106,14 @@ def test_personel_excel_indir_tam_yedek(isolated_database, tmp_path):
     assert cikti_yolu.exists()
 
     df = pd.read_excel(str(cikti_yolu), dtype=str)
-    assert len(df.columns) == 24
+    assert len(df.columns) == 25
     assert len(df) == 3
 
     # Önemli sütunların varlığını kontrol et
     beklenen_sutunlar = [
         "Ad Soyad", "T.C. Kimlik No", "Unvan", "Branş", "Görev", "Grup / Statü",
         "Kariyer Basamağı", "Derece / Kademe", "Öğrenim Durumu", "Cinsiyet",
-        "Kan Grubu", "Doğum Tarihi", "Göreve Başlama", "Kurum Adı", "Kurum Kodu",
+        "Kan Grubu", "Doğum Tarihi", "Göreve Başlama", "Olağan Terfi Tarihi", "Kurum Adı", "Kurum Kodu",
         "İl / İlçe", "Kurumda Başlama", "Kurum Sicil No", "Emekli / SGK Sicil No",
         "Arşiv No", "Telefon", "E-Posta", "Notlar", "Aktif Durum (1:Aktif, 0:Pasif)"
     ]

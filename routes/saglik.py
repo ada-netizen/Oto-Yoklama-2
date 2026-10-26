@@ -79,12 +79,43 @@ def cakisan_rapor_kontrol(personel_ad: str, baslangic: str, bitis: str, haric_id
         
     return None
 
+def saglik_personel_isimlerini_senkronize_et():
+    """
+    saglik_raporlari tablosundaki kayitlarin isimlerini personel tablosundaki
+    resmi (kanonik) yazimlarla esitler (buyuk/kucuk harf ve karakter tutarsizliklarini giderir).
+    """
+    try:
+        db.cursor.execute("SELECT ad_soyad FROM personel")
+        personel_harita = {VeriAraclari.tr_normalize(r[0]): r[0] for r in db.cursor.fetchall()}
+        if not personel_harita:
+            return
+        
+        db.cursor.execute("SELECT DISTINCT personel_ad FROM saglik_raporlari")
+        distinct_adlar = [r[0] for r in db.cursor.fetchall()]
+        
+        degisiklik_var = False
+        for eski_ad in distinct_adlar:
+            if not eski_ad:
+                continue
+            norm = VeriAraclari.tr_normalize(eski_ad)
+            kanonik = personel_harita.get(norm)
+            if kanonik and kanonik != eski_ad:
+                db.cursor.execute("UPDATE saglik_raporlari SET personel_ad = ? WHERE personel_ad = ?", (kanonik, eski_ad))
+                degisiklik_var = True
+        
+        if degisiklik_var:
+            db.conn.commit()
+            logging.info("[IZIN MASASI] saglik_raporlari personel isimleri kanonik yazimlarla esitlendi.")
+    except Exception as e:
+        logging.warning(f"[IZIN MASASI] Isim senkronizasyonu atlandi: {e}")
+
 @router.get("/saglik/liste")
 def saglik_liste(yil: Optional[int] = None):
     try:
+        saglik_personel_isimlerini_senkronize_et()
         hedef_yil = str(yil or datetime.now().year)
 
-        # Personel listesini unvan, grup, brans bilgileriyle alalım
+        # Personel listesini unvan, grup, brans bilgileriyle alalim
         db.cursor.execute("""
             SELECT ad_soyad, COALESCE(unvan, ''), COALESCE(grup, 'Kadrolu'), COALESCE(brans, ''), COALESCE(gorev, '')
             FROM personel 
@@ -103,7 +134,7 @@ def saglik_liste(yil: Optional[int] = None):
         }
         personel_listesi = [r[0] for r in personel_rows]
 
-        # Seçili yılın tüm izin kayıtlarını alalım
+        # Secili yilin tum izin kayitlarini alalim
         db.cursor.execute("""
             SELECT personel_ad, baslangic_tarihi, bitis_tarihi, gun_sayisi, COALESCE(izin_turu, 'SAĞLIK') 
             FROM saglik_raporlari 
@@ -111,7 +142,7 @@ def saglik_liste(yil: Optional[int] = None):
         """, (f"{hedef_yil}-%", f"{hedef_yil}-%"))
         raporlar = db.cursor.fetchall()
 
-        # saglik_raporlari tablosunda kaydı olup personel tablosunda yer almayan personelleri de listeye dahil edelim
+        # saglik_raporlari tablosunda kaydi olup personel tablosunda yer almayan personelleri de listeye dahil edelim
         mevcut_normlar = {VeriAraclari.tr_normalize(p): p for p in personel_listesi}
         for r in raporlar:
             r_ad = (r[0] or "").strip()
@@ -130,7 +161,7 @@ def saglik_liste(yil: Optional[int] = None):
                     "ogretmen_mi": True
                 }
 
-        # Önceden kesilen günleri alalım
+        # Onceden kesilen gunleri alalim
         db.cursor.execute("SELECT personel_ad, onceden_kesilen_gun FROM personel_rapor_kesinti")
         kesintiler = {VeriAraclari.tr_normalize(row[0]): row[1] for row in db.cursor.fetchall()}
 
@@ -138,22 +169,25 @@ def saglik_liste(yil: Optional[int] = None):
         for p in personel_listesi:
             p_norm = VeriAraclari.tr_normalize(p)
             aylik_gunler = {str(i): 0 for i in range(1, 13)}
+            aylik_detay = {str(i): {"toplam": 0, "turler": {}} for i in range(1, 13)}
             toplam_gun = 0
             saglik_gun = 0
             yillik_gun = 0
             mazeret_gun = 0
             idari_gun = 0
+            ayliksiz_gun = 0
+            diger_gun = 0
+            tur_dagilimi = {}
             
             p_raporlar = [r for r in raporlar if VeriAraclari.tr_normalize(r[0]) == p_norm]
             for r in p_raporlar:
-                try:
-                    ay = str(int(r[1].split("-")[1])) # Extract month as string without leading zero
-                except Exception:
-                    continue
+                r_bas = r[1]
+                r_bit = r[2] or r[1]
                 gun = r[3]
                 tur = (r[4] or "SAĞLIK").upper()
-                aylik_gunler[ay] = aylik_gunler.get(ay, 0) + gun
+
                 toplam_gun += gun
+                tur_dagilimi[tur] = tur_dagilimi.get(tur, 0) + gun
 
                 if tur == "SAĞLIK":
                     saglik_gun += gun
@@ -161,16 +195,50 @@ def saglik_liste(yil: Optional[int] = None):
                     yillik_gun += gun
                 elif tur == "MAZERET":
                     mazeret_gun += gun
-                else:
+                elif tur in ("İDARİ", "IDARI"):
                     idari_gun += gun
+                elif tur == "AYLIKSIZ":
+                    ayliksiz_gun += gun
+                else:
+                    diger_gun += gun
+
+                try:
+                    dt_bas = datetime.strptime(r_bas, "%Y-%m-%d")
+                    dt_bit = datetime.strptime(r_bit, "%Y-%m-%d")
+                    if dt_bit < dt_bas:
+                        dt_bas, dt_bit = dt_bit, dt_bas
+                except Exception:
+                    try:
+                        ay = str(int(r_bas.split("-")[1]))
+                        aylik_gunler[ay] = aylik_gunler.get(ay, 0) + gun
+                        aylik_detay[ay]["toplam"] += gun
+                        aylik_detay[ay]["turler"][tur] = aylik_detay[ay]["turler"].get(tur, 0) + gun
+                    except Exception:
+                        pass
+                    continue
+
+                if dt_bas.month == dt_bit.month:
+                    ay = str(dt_bas.month)
+                    aylik_gunler[ay] = aylik_gunler.get(ay, 0) + gun
+                    aylik_detay[ay]["toplam"] += gun
+                    aylik_detay[ay]["turler"][tur] = aylik_detay[ay]["turler"].get(tur, 0) + gun
+                else:
+                    curr = dt_bas
+                    while curr <= dt_bit:
+                        if curr.year == int(hedef_yil):
+                            ay = str(curr.month)
+                            aylik_gunler[ay] = aylik_gunler.get(ay, 0) + 1
+                            aylik_detay[ay]["toplam"] += 1
+                            aylik_detay[ay]["turler"][tur] = aylik_detay[ay]["turler"].get(tur, 0) + 1
+                        curr += timedelta(days=1)
             
-            # 657 SK Md. 152: 7 günü aşan zam ve tazminat kesintisi YALNIZCA sağlık izinlerine uygulanır!
-            # Yıllık ve Mazeret izinleri kesinlikle 7 günlük sağlık kesintisine dahil edilmez!
+            # 657 SK Md. 152: 7 gunu asan zam ve tazminat kesintisi YALNIZCA saglik izinlerine uygulanir!
+            # Yillik ve Mazeret izinleri kesinlikle 7 gunluk saglik kesintisine dahil edilmez!
             p_info = personel_bilgi_haritasi.get(p, {})
             is_isci = (p_info.get("grup") == "Sürekli İşçi")
             
             if is_isci:
-                # 4/D Sürekli işçide SGK istirahat sistemi geçerlidir
+                # 4/D Surekli iscide SGK istirahat sistemi gecerlidir
                 yedi_gecen = 0
                 onceden_kesilen = 0
                 yeni_kesinti = 0
@@ -188,11 +256,15 @@ def saglik_liste(yil: Optional[int] = None):
                 "yonetici_mi": p_info.get("yonetici_mi", False),
                 "ogretmen_mi": p_info.get("ogretmen_mi", True),
                 "aylar": aylik_gunler,
+                "aylik_detay": aylik_detay,
                 "toplam": toplam_gun,
                 "saglik_gun": saglik_gun,
                 "yillik_gun": yillik_gun,
                 "mazeret_gun": mazeret_gun,
                 "idari_gun": idari_gun,
+                "ayliksiz_gun": ayliksiz_gun,
+                "diger_gun": diger_gun,
+                "tur_dagilimi": tur_dagilimi,
                 "yedi_gecen": yedi_gecen,
                 "onceden_kesilen": onceden_kesilen,
                 "yeni_kesinti": yeni_kesinti
@@ -218,7 +290,8 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
         personel_bilgileri = {}
         for r in db.cursor.fetchall():
             ad, unvan, grup, brans, gorev = r
-            personel_bilgileri[ad] = {
+            p_dict = {
+                "ad": ad,
                 "unvan": unvan,
                 "grup": grup,
                 "brans": brans,
@@ -226,6 +299,8 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
                 "yonetici_mi": yonetici_mi(unvan, gorev),
                 "ogretmen_mi": ogretmen_mi(grup, unvan, gorev)
             }
+            personel_bilgileri[ad] = p_dict
+            personel_bilgileri[VeriAraclari.tr_normalize(ad)] = p_dict
 
         # İzin kayıtları
         db.cursor.execute("""
@@ -245,15 +320,18 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
         yillik_gun_toplam = 0
         mazeret_gun_toplam = 0
         idari_gun_toplam = 0
+        ayliksiz_gun_toplam = 0
+        diger_gun_toplam = 0
         personel_saglik_gunleri = {}
 
         for row in kayitlar:
             r_id, p_ad, r_bas, r_bit, r_gun, r_acik, r_tur, r_mevzuat, r_belge, r_adres, r_rapor_turu = row
             tur = (r_tur or "SAĞLIK").upper()
 
-            p_info = personel_bilgileri.get(p_ad, {
+            p_info = personel_bilgileri.get(p_ad) or personel_bilgileri.get(VeriAraclari.tr_normalize(p_ad), {
                 "unvan": "", "grup": "Kadrolu", "brans": "", "gorev": "", "yonetici_mi": False, "ogretmen_mi": True
             })
+            p_gosterim_ad = p_info.get("ad", p_ad)
 
             # Filtreler
             if izin_turu and izin_turu != "TUMU" and tur != izin_turu.upper():
@@ -270,17 +348,21 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
                 elif personel_turu == "GOREVLENDIRME" and p_info.get("grup") != "Görevlendirme":
                     continue
 
-            izinli_personeller.add(p_ad)
+            izinli_personeller.add(p_gosterim_ad)
             toplam_izin_gunu += r_gun
             if tur == "SAĞLIK":
                 saglik_gun_toplam += r_gun
-                personel_saglik_gunleri[p_ad] = personel_saglik_gunleri.get(p_ad, 0) + r_gun
+                personel_saglik_gunleri[p_gosterim_ad] = personel_saglik_gunleri.get(p_gosterim_ad, 0) + r_gun
             elif tur == "YILLIK":
                 yillik_gun_toplam += r_gun
             elif tur == "MAZERET":
                 mazeret_gun_toplam += r_gun
-            else:
+            elif tur in ("İDARİ", "IDARI"):
                 idari_gun_toplam += r_gun
+            elif tur == "AYLIKSIZ":
+                ayliksiz_gun_toplam += r_gun
+            else:
+                diger_gun_toplam += r_gun
 
             # Başlangıç ve bitiş arasındaki tüm günleri takvim haritasına ekle
             try:
@@ -297,10 +379,10 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
                         takvim_haritasi[key] = []
                     
                     # Aynı personelin aynı gün mükerrer kaydını engelle
-                    if not any(x["id"] == r_id and x["personel_ad"] == p_ad for x in takvim_haritasi[key]):
+                    if not any(x["id"] == r_id and (x["personel_ad"] == p_ad or x["personel_ad"] == p_gosterim_ad) for x in takvim_haritasi[key]):
                         takvim_haritasi[key].append({
                             "id": r_id,
-                            "personel_ad": p_ad,
+                            "personel_ad": p_gosterim_ad,
                             "unvan": p_info.get("unvan", ""),
                             "grup": p_info.get("grup", "Kadrolu"),
                             "brans": p_info.get("brans", ""),
@@ -332,6 +414,8 @@ def saglik_takvim(yil: Optional[int] = None, izin_turu: Optional[str] = None, pe
                 "yillik_gun_toplam": yillik_gun_toplam,
                 "mazeret_gun_toplam": mazeret_gun_toplam,
                 "idari_gun_toplam": idari_gun_toplam,
+                "ayliksiz_gun_toplam": ayliksiz_gun_toplam,
+                "diger_gun_toplam": diger_gun_toplam,
                 "kesinti_siniri_asan": kesinti_siniri_asan
             }
         }
@@ -382,11 +466,16 @@ def saglik_ekle(veri: SaglikRaporuRequest):
             elif izin_turu == "İDARİ":
                 mevzuat_maddesi = "Genel İdari İzin"
 
+        # Personel tablosundaki resmi yazimi bulup kanonik adla kaydet
+        db.cursor.execute("SELECT ad_soyad FROM personel")
+        personel_harita = {VeriAraclari.tr_normalize(r[0]): r[0] for r in db.cursor.fetchall()}
+        kanonik_ad = personel_harita.get(VeriAraclari.tr_normalize(veri.personel_ad), veri.personel_ad)
+
         db.cursor.execute(
             """INSERT INTO saglik_raporlari 
                (personel_ad, baslangic_tarihi, bitis_tarihi, gun_sayisi, aciklama, izin_turu, mevzuat_maddesi, belge_no, izin_adresi, rapor_turu) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (veri.personel_ad, bas, bit, gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "")
+            (kanonik_ad, bas, bit, gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "")
         )
         db.conn.commit()
         kayit_id = db.cursor.lastrowid
@@ -432,12 +521,14 @@ def personel_raporlari(personel_ad: str, yil: Optional[int] = None):
                       COALESCE(mevzuat_maddesi, '') as mevzuat_maddesi,
                       COALESCE(belge_no, '') as belge_no,
                       COALESCE(izin_adresi, '') as izin_adresi,
-                      COALESCE(rapor_turu, '') as rapor_turu
+                      COALESCE(rapor_turu, '') as rapor_turu,
+                      personel_ad
                FROM saglik_raporlari 
-               WHERE personel_ad = ? AND (baslangic_tarihi LIKE ? OR bitis_tarihi LIKE ?) 
+               WHERE (baslangic_tarihi LIKE ? OR bitis_tarihi LIKE ?) 
                ORDER BY baslangic_tarihi DESC""",
-            (personel_ad, f"{hedef_yil}-%", f"{hedef_yil}-%")
+            (f"{hedef_yil}-%", f"{hedef_yil}-%")
         )
+        p_norm = VeriAraclari.tr_normalize(personel_ad)
         raporlar = [{
             "id": r[0], 
             "baslangic": r[1], 
@@ -449,7 +540,7 @@ def personel_raporlari(personel_ad: str, yil: Optional[int] = None):
             "belge_no": r[7],
             "izin_adresi": r[8],
             "rapor_turu": r[9]
-        } for r in db.cursor.fetchall()]
+        } for r in db.cursor.fetchall() if VeriAraclari.tr_normalize(r[10]) == p_norm]
         return {"basarili": True, "veri": raporlar}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}
@@ -484,12 +575,24 @@ def saglik_duzenle(id: int, veri: SaglikRaporuRequest):
             elif izin_turu == "İDARİ":
                 mevzuat_maddesi = "Genel İdari İzin"
 
-        db.cursor.execute(
-            """UPDATE saglik_raporlari 
-               SET baslangic_tarihi = ?, bitis_tarihi = ?, gun_sayisi = ?, aciklama = ?, izin_turu = ?, mevzuat_maddesi = ?, belge_no = ?, izin_adresi = ?, rapor_turu = ? 
-               WHERE id = ?""",
-            (veri.baslangic_tarihi, bitis, veri.gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "", id)
-        )
+        db.cursor.execute("SELECT ad_soyad FROM personel")
+        personel_harita = {VeriAraclari.tr_normalize(r[0]): r[0] for r in db.cursor.fetchall()}
+        kanonik_ad = personel_harita.get(VeriAraclari.tr_normalize(veri.personel_ad), veri.personel_ad) if veri.personel_ad else None
+
+        if kanonik_ad:
+            db.cursor.execute(
+                """UPDATE saglik_raporlari 
+                   SET personel_ad = ?, baslangic_tarihi = ?, bitis_tarihi = ?, gun_sayisi = ?, aciklama = ?, izin_turu = ?, mevzuat_maddesi = ?, belge_no = ?, izin_adresi = ?, rapor_turu = ? 
+                   WHERE id = ?""",
+                (kanonik_ad, veri.baslangic_tarihi, bitis, veri.gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "", id)
+            )
+        else:
+            db.cursor.execute(
+                """UPDATE saglik_raporlari 
+                   SET baslangic_tarihi = ?, bitis_tarihi = ?, gun_sayisi = ?, aciklama = ?, izin_turu = ?, mevzuat_maddesi = ?, belge_no = ?, izin_adresi = ?, rapor_turu = ? 
+                   WHERE id = ?""",
+                (veri.baslangic_tarihi, bitis, veri.gun_sayisi, veri.aciklama, izin_turu, mevzuat_maddesi, veri.belge_no or "", veri.izin_adresi or "", veri.rapor_turu or "", id)
+            )
         db.conn.commit()
         return {"basarili": True, "mesaj": "İzin kaydı güncellendi."}
     except Exception as e:

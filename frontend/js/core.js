@@ -40,6 +40,36 @@ const API = (window.location && window.location.origin && window.location.origin
             : 'http://127.0.0.1:8000';
 window.API = API;
 
+// --- EVRENSEL DOSYA AÇMA & İNDİRME YARDIMCILARI (KURUMSAL AĞ UYUMLU) ---
+window.dosyaIndirUrl = function(dosyaYolu, indir = false) {
+    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '';
+    const cleanYol = encodeURIComponent(dosyaYolu || '');
+    return `${window.API || ''}/dosya/indir?yol=${cleanYol}&indir=${indir ? 1 : 0}&token=${encodeURIComponent(token)}`;
+};
+
+window.dosyayiYeniSekmedeAc = function(dosyaYolu, dosyaAdi) {
+    if (!dosyaYolu) return;
+    const url = window.dosyaIndirUrl(dosyaYolu, false);
+    const win = window.open(url, '_blank');
+    if (!win || win.closed || typeof win.closed === 'undefined') {
+        if (typeof bildirimGoster === 'function') {
+            bildirimGoster('Belge hazırlandı! Açılır pencere engelleyicisi açıksa bildirimdeki butona tıklayabilirsiniz.', 'bilgi');
+        }
+    }
+};
+
+window.dosyayiIndir = function(dosyaYolu, dosyaAdi) {
+    if (!dosyaYolu) return;
+    const url = window.dosyaIndirUrl(dosyaYolu, true);
+    const a = document.createElement('a');
+    a.href = url;
+    if (dosyaAdi) a.download = dosyaAdi;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 500);
+};
+
+
         function format_tr_tarih(tarihStr) {
             if (!tarihStr) return "-";
             try {
@@ -1016,11 +1046,27 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 if(durum.durum === 'tamamlandi') {
                     yuklemeGizle();
 
-                    // İnteraktif Toast [Geri Al] Butonlu Bildirim (Manifesto Madde 5.2)
+                    // Otomatik olarak kullanıcının ekranında aç veya indir
+                    if (durum.yol) {
+                        const yolStr = String(durum.yol).toLowerCase();
+                        if (yolStr.endsWith('.pdf')) {
+                            window.dosyayiYeniSekmedeAc(durum.yol);
+                        } else if (yolStr.endsWith('.xlsx') || yolStr.endsWith('.xls') || yolStr.endsWith('.docx')) {
+                            window.dosyayiIndir(durum.yol);
+                        }
+                    }
+
+                    const cleanYol = durum.yol ? durum.yol.replace(/\\/g, '/') : '';
+                    const belgeAcBtn = cleanYol ? `<button onclick="window.dosyayiYeniSekmedeAc('${cleanYol}')" style="background:#10B981; color:#FFFFFF; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:11px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space:nowrap;">📄 Belgeyi Aç</button>` : '';
+
+                    // İnteraktif Toast [Belgeyi Aç / Geri Al] Butonlu Bildirim
                     Toastify({
                         text: `<div class="toast-content" style="display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%;">
                             <span>✓ ${durum.mesaj}</span>
-                            <button onclick="sonIslemiGeriAl()" style="background:#EF4444; color:#FFFFFF; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:11px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space:nowrap;">↩️ Geri Al</button>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                ${belgeAcBtn}
+                                <button onclick="sonIslemiGeriAl()" style="background:#EF4444; color:#FFFFFF; border:none; padding:4px 10px; border-radius:4px; font-weight:700; font-size:11px; cursor:pointer; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space:nowrap;">↩️ Geri Al</button>
+                            </div>
                         </div>`,
                         duration: 9000,
                         escapeMarkup: false,
@@ -1917,9 +1963,12 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
         }
 
         function topluTebligPdfAl() {
-            // YENİ: Artık ekrandaki tikleri değil, doğrudan hafızadaki seçili kişileri alıyoruz
-            const seciliPersoneller = tumPersoneller.filter(p => p.secili);
-            if(seciliPersoneller.length === 0) return bildirimGoster("Lütfen en az bir personel seçin!", "hata");
+            // Sadece o an filtrelenen/ekranda listelenen ve seçili olan personelleri al
+            const gosterilenler = (window.sonTebligGosterilenler && window.sonTebligGosterilenler.length > 0)
+                ? window.sonTebligGosterilenler
+                : tumPersoneller;
+            const seciliPersoneller = gosterilenler.filter(p => p.secili);
+            if(seciliPersoneller.length === 0) return bildirimGoster("Lütfen ekranda listelenen personeller arasından en az bir kişi seçin!", "hata");
             
            const veri = { 
                 sayi: document.getElementById('t-sayi').value, 

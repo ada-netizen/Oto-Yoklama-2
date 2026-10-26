@@ -111,10 +111,13 @@
 <!-- Geçmiş İzinler Detay Modal -->
 <div id="modal_saglik_detay" class="modal-overlay">
     <div class="modal-content" style="max-width: 820px; padding: 0; background: var(--bg-card); color: var(--fg-main); border-radius: 14px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
-        <div class="modal-header" style="background: linear-gradient(to right, rgba(56, 189, 248, 0.12), rgba(56, 189, 248, 0.04)); border-bottom: 1px solid var(--border); padding: 16px 20px;">
-            <h2 style="color: var(--fg-main); font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px;">
-                <i data-lucide="calendar-check" height="18" width="18" style="color: #38bdf8;"></i> <span id="detay_personel_ad"></span> - İzin Geçmişi
-            </h2>
+        <div class="modal-header" style="background: linear-gradient(to right, rgba(56, 189, 248, 0.12), rgba(56, 189, 248, 0.04)); border-bottom: 1px solid var(--border); padding: 14px 20px;">
+            <div>
+                <h2 style="color: var(--fg-main); font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="calendar-check" height="18" width="18" style="color: #38bdf8;"></i> <span id="detay_personel_ad"></span> - İzin Geçmişi
+                </h2>
+                <div id="detay_izin_ozet" style="font-size: 11.5px; color: var(--fg-sub); margin-top: 4px; font-weight: 500;"></div>
+            </div>
             <button class="icon-btn" onclick="document.getElementById('modal_saglik_detay').style.display='none'" style="color: var(--fg-main);" title="Kapat"><i data-lucide="x" height="16" width="16"></i></button>
         </div>
         <div style="padding: 20px;">

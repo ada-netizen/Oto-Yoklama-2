@@ -595,3 +595,101 @@ def test_saglik_ekle_tarih_ve_gun_toleransi_ve_takvim_senkronu():
         db.cursor.execute("DELETE FROM saglik_raporlari WHERE personel_ad = ?", (test_ad,))
         db.conn.commit()
 
+
+def test_tek_gun_manuel_izin_ekleme_ve_liste_takvim_dogrulama():
+    from dependencies import db
+    """Tek günlük manuel izin girişinin (baslangic == bitis, gun_sayisi=1) API ve takvim seviyesinde sorunsuz çalıştığını doğrular."""
+    test_ad = "TEK GÜN İZİN PERSONELİ"
+    test_tarih = "2026-05-12"
+
+    try:
+        # 1. Tek günlük izin ekleme isteği (bitis boş veya baslangic ile aynı)
+        resp = client.post("/saglik/ekle", json={
+            "personel_ad": test_ad,
+            "baslangic_tarihi": test_tarih,
+            "bitis_tarihi": test_tarih,
+            "gun_sayisi": 1,
+            "izin_turu": "MAZERET",
+            "aciklama": "Günübirlik Mazeret İzni",
+            "izin_adresi": "Kadıköy / İstanbul",
+            "rapor_turu": "Mazeret İzni"
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["basarili"] is True
+
+        # 2. Listede personelin 1 günlük mazeret izni görünmeli
+        l_resp = client.get("/saglik/liste?yil=2026")
+        assert l_resp.status_code == 200
+        l_json = l_resp.json()
+        assert l_json["basarili"] is True
+        kayit = next((p for p in l_json["veri"] if p["personel_ad"] == test_ad), None)
+        assert kayit is not None
+        assert kayit["mazeret_gun"] == 1
+        assert kayit["toplam"] == 1
+
+        # 3. Takvim haritasında tam olarak 2026-05-12 gününde olmalı
+        t_resp = client.get("/saglik/takvim?yil=2026")
+        assert t_resp.status_code == 200
+        t_json = t_resp.json()
+        harita = t_json.get("takvim_haritasi", {})
+        assert "5-12" in harita
+        gun_kayitlari = harita["5-12"]
+        assert any(k["personel_ad"] == test_ad for k in gun_kayitlari)
+
+    finally:
+        db.cursor.execute("DELETE FROM saglik_raporlari WHERE personel_ad = ?", (test_ad,))
+        db.conn.commit()
+
+
+def test_detay_raporlari_ve_turkce_casing_uyumu():
+    from dependencies import db
+    """Farklı büyük/küçük harf veya Türkçe karakterle (HALİL İBRAHİM ADA vs Halil İbrahim ADA) girilmiş izinlerin detay sorgusunda eksiksiz listelendiğini doğrular."""
+    kanonik_ad = "Test Halil İbrahim ADA"
+    buyuk_ad = "TEST HALİL İBRAHİM ADA"
+
+    try:
+        # Personel tablosuna ekle
+        db.cursor.execute("INSERT OR REPLACE INTO personel (ad_soyad, unvan, grup, brans, gorev) VALUES (?, 'Memur', 'Kadrolu', '', '')", (kanonik_ad,))
+        # İki farklı yazımla izin ekle
+        db.cursor.execute("""
+            INSERT INTO saglik_raporlari (personel_ad, baslangic_tarihi, bitis_tarihi, gun_sayisi, aciklama, izin_turu)
+            VALUES (?, '2026-03-01', '2026-03-03', 3, 'Sağlık Raporu', 'SAĞLIK')
+        """, (buyuk_ad,))
+        db.cursor.execute("""
+            INSERT INTO saglik_raporlari (personel_ad, baslangic_tarihi, bitis_tarihi, gun_sayisi, aciklama, izin_turu)
+            VALUES (?, '2026-03-10', '2026-03-11', 2, 'Yıllık İzin', 'YILLIK')
+        """, (kanonik_ad,))
+        db.conn.commit()
+
+        # Detay sorgusu: kanonik isimle sorgula
+        resp = client.get(f"/saglik/raporlar/{kanonik_ad}?yil=2026")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["basarili"] is True
+        assert len(data["veri"]) == 2, f"Beklenen 2 kayıt, gelen: {len(data['veri'])}"
+        toplam_gun = sum(r["gun"] for r in data["veri"])
+        assert toplam_gun == 5, f"Beklenen 5 gün, gelen: {toplam_gun}"
+
+        # Liste sorgusu: aylik_detay ve tur_dagilimi alanlarını doğrula
+        resp_l = client.get("/saglik/liste?yil=2026")
+        assert resp_l.status_code == 200
+        data_l = resp_l.json()
+        assert data_l["basarili"] is True
+        p_row = next((p for p in data_l["veri"] if p["personel_ad"] == kanonik_ad), None)
+        assert p_row is not None
+        assert "aylik_detay" in p_row
+        assert "tur_dagilimi" in p_row
+        assert p_row["aylik_detay"]["3"]["toplam"] == 5
+        assert p_row["aylik_detay"]["3"]["turler"]["SAĞLIK"] == 3
+        assert p_row["aylik_detay"]["3"]["turler"]["YILLIK"] == 2
+        assert p_row["tur_dagilimi"]["SAĞLIK"] == 3
+        assert p_row["tur_dagilimi"]["YILLIK"] == 2
+
+    finally:
+        db.cursor.execute("DELETE FROM saglik_raporlari WHERE personel_ad IN (?, ?)", (kanonik_ad, buyuk_ad))
+        db.cursor.execute("DELETE FROM personel WHERE ad_soyad = ?", (kanonik_ad,))
+        db.conn.commit()
+
+
+

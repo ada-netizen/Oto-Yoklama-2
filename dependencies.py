@@ -138,6 +138,8 @@ def get_aktif_kullanici(request: Request):
         token = request.headers.get("X-Session-Token").strip()
     elif request.cookies.get("session_token"):
         token = request.cookies.get("session_token").strip()
+    elif request.query_params.get("token"):
+        token = request.query_params.get("token").strip()
 
     if not token:
         raise HTTPException(status_code=401, detail="Oturum açmanız gerekmektedir.")
@@ -209,3 +211,12 @@ def yetki_gerekli(modul_adi: str):
             detail=f"Bu işlem için '{modul_adi}' modül yetkiniz bulunmamaktadır."
         )
     return _denetle
+
+
+def is_yerel_istek(request: Optional[Request]) -> bool:
+    """İsteğin ana bilgisayardan (localhost / masaüstü) mi yoksa ağdaki uzak istemciden mi geldiğini tespit eder."""
+    if not request or not request.client:
+        return True
+    host = request.client.host
+    return host in ("127.0.0.1", "localhost", "::1", "testclient")
+

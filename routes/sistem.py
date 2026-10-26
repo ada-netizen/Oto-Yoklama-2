@@ -1,4 +1,4 @@
-from fastapi import APIRouter, File, UploadFile, BackgroundTasks, Form, Body, HTTPException, Request
+from fastapi import APIRouter, File, UploadFile, BackgroundTasks, Form, Body, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -11,7 +11,7 @@ from excel_motoru import ExcelMotoru
 from pdf_motoru import PDFYoneticisi
 import logging
 from araclar import VeriAraclari
-from dependencies import db, yollar, ayarlar, islem_logla, islem_loglari, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari
+from dependencies import db, yollar, ayarlar, islem_logla, islem_loglari, create_job, update_job, get_job, GLOBAL_ISLEMLER, islem_durumlari, get_aktif_kullanici
 from utils import *
 
 router = APIRouter()
@@ -37,6 +37,56 @@ def versiyon_getir():
 @router.get("/islem-durumu/{job_id}")
 def islem_durumu(job_id: str):
     return get_job(job_id)
+
+
+@router.get("/dosya/indir")
+def dosya_indir(
+    yol: str, 
+    indir: Optional[bool] = False, 
+    dosya_adi: Optional[str] = None, 
+    aktif_kullanici = Depends(get_aktif_kullanici)
+):
+    """
+    Sistem tarafından üretilen PDF, Excel veya Word belgelerini istemciye sunar veya indirir.
+    Güvenlik: Yalnızca izin verilen veri ve çıktı dizinlerindeki dosyalara erişilebilir.
+    """
+    if not yol:
+        raise HTTPException(status_code=400, detail="Dosya yolu belirtilmedi.")
+
+    gercek_yol = os.path.normpath(os.path.abspath(yol))
+
+    ana_proje_dizini = os.path.normpath(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+    izin_verilen_dizinler = [
+        os.path.normpath(os.path.abspath(yollar.get("VERI_DIZINI", ""))),
+        os.path.normpath(os.path.abspath(yollar.get("PDF", ""))),
+        os.path.normpath(os.path.abspath(yollar.get("YEDEK", ""))),
+        os.path.normpath(os.path.abspath(tempfile.gettempdir())),
+        ana_proje_dizini
+    ]
+
+    guvenli = any(gercek_yol.startswith(dizin) for dizin in izin_verilen_dizinler if dizin)
+    if not guvenli or not os.path.isfile(gercek_yol):
+        raise HTTPException(status_code=404, detail="Belirtilen dosya bulunamadı veya erişim yetkiniz yok.")
+
+    uzanti = os.path.splitext(gercek_yol)[1].lower()
+    ad = dosya_adi or os.path.basename(gercek_yol)
+
+    media_type = "application/octet-stream"
+    if uzanti == ".pdf":
+        media_type = "application/pdf"
+    elif uzanti in (".xlsx", ".xls"):
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    elif uzanti in (".docx", ".doc"):
+        media_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+    disposition = "attachment" if (indir or uzanti != ".pdf") else "inline"
+
+    return FileResponse(
+        gercek_yol,
+        media_type=media_type,
+        filename=ad,
+        content_disposition_type=disposition
+    )
 
 @router.get("/loglar")
 def loglari_getir():

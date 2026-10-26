@@ -43,7 +43,7 @@ class VeritabaniYoneticisi:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_no ON devamsizliklar (no)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_tarih ON devamsizliklar (tarih)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_devamsizlik_tur ON devamsizliklar (tur)")
-        cursor.execute("CREATE TABLE IF NOT EXISTS personel (id INTEGER PRIMARY KEY AUTOINCREMENT, ad_soyad TEXT, tc_no TEXT, unvan TEXT, brans TEXT, gorev TEXT, grup TEXT, il_ilce TEXT, kurum_adi TEXT, kurum_kodu TEXT, kurumda_baslama TEXT, kariyer TEXT, kademe_derece TEXT, ogrenim_durumu TEXT, cinsiyet TEXT, kan_grubu TEXT, dogum_tarihi TEXT, goreve_baslama TEXT, kurum_sicil_no TEXT, emekli_sicil_no TEXT, arsiv_no TEXT, telefon TEXT, eposta TEXT, notlar TEXT, aktif INTEGER DEFAULT 1)")
+        cursor.execute("CREATE TABLE IF NOT EXISTS personel (id INTEGER PRIMARY KEY AUTOINCREMENT, ad_soyad TEXT, tc_no TEXT, unvan TEXT, brans TEXT, gorev TEXT, grup TEXT, il_ilce TEXT, kurum_adi TEXT, kurum_kodu TEXT, kurumda_baslama TEXT, kariyer TEXT, kademe_derece TEXT, ogrenim_durumu TEXT, cinsiyet TEXT, kan_grubu TEXT, dogum_tarihi TEXT, goreve_baslama TEXT, olagan_terfi_tarihi TEXT DEFAULT '', kurum_sicil_no TEXT, emekli_sicil_no TEXT, arsiv_no TEXT, telefon TEXT, eposta TEXT, notlar TEXT, aktif INTEGER DEFAULT 1)")
         cursor.execute("CREATE TABLE IF NOT EXISTS saglik_raporlari (id INTEGER PRIMARY KEY AUTOINCREMENT, personel_ad TEXT, baslangic_tarihi TEXT, bitis_tarihi TEXT, gun_sayisi INTEGER, aciklama TEXT, izin_turu TEXT DEFAULT 'SAĞLIK', mevzuat_maddesi TEXT DEFAULT '', belge_no TEXT DEFAULT '', izin_adresi TEXT DEFAULT '', rapor_turu TEXT DEFAULT '')")
         cursor.execute("CREATE TABLE IF NOT EXISTS personel_rapor_kesinti (personel_ad TEXT PRIMARY KEY, onceden_kesilen_gun INTEGER)")
         
@@ -61,6 +61,7 @@ class VeritabaniYoneticisi:
             ("kan_grubu", "TEXT"),
             ("dogum_tarihi", "TEXT"),
             ("goreve_baslama", "TEXT"),
+            ("olagan_terfi_tarihi", "TEXT DEFAULT ''"),
             ("kurum_sicil_no", "TEXT"),
             ("emekli_sicil_no", "TEXT"),
             ("arsiv_no", "TEXT"),

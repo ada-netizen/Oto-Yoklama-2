@@ -400,28 +400,90 @@
                 unvanBadge = `<span style="background: rgba(100, 116, 139, 0.15); color: var(--fg-sub); font-size: 10px; font-weight: 600; padding: 2px 5px; border-radius: 4px;">${p.grup}</span>`;
             }
 
-            // 1-12 Aylar sütunları
+            // 1-12 Aylar sütunları (Yıllık takvim matrisindeki renklerle uyumlu)
             let aylarHtml = '';
             for (let i = 1; i <= 12; i++) {
-                let gun = p.aylar[i] || 0;
+                const ayDetay = (p.aylik_detay && p.aylik_detay[i]) || null;
+                const gun = ayDetay ? ayDetay.toplam : (p.aylar[i] || 0);
+
                 if (gun > 0) {
-                    aylarHtml += `<td style="text-align: center;"><span class="badge" style="background-color: #10B981; color: white; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11.5px;">${gun} Gün</span></td>`;
+                    const turler = ayDetay ? Object.keys(ayDetay.turler || {}) : [];
+                    let badgeBg = '#10B981'; // Varsayılan Sağlık (Yeşil)
+                    let tooltipMetni = `${gun} Gün`;
+
+                    if (turler.length === 1) {
+                        const tekTur = turler[0].toUpperCase();
+                        if (tekTur === 'YILLIK') {
+                            badgeBg = '#0284C7'; // Yıllık İzin (Gök Mavisi)
+                            tooltipMetni = `${gun} Gün Yıllık İzin`;
+                        } else if (tekTur === 'MAZERET') {
+                            badgeBg = '#F59E0B'; // Mazeret İzni (Kehribar/Turuncu)
+                            tooltipMetni = `${gun} Gün Mazeret İzni`;
+                        } else if (tekTur === 'İDARİ' || tekTur === 'IDARI') {
+                            badgeBg = '#8B5CF6'; // İdari İzin (Mor)
+                            tooltipMetni = `${gun} Gün İdari İzin`;
+                        } else if (tekTur === 'AYLIKSIZ' || tekTur === 'DİĞER' || tekTur === 'DIGER') {
+                            badgeBg = '#64748B'; // Aylıksız / Diğer (Gri)
+                            tooltipMetni = `${gun} Gün ${tekTur === 'AYLIKSIZ' ? 'Aylıksız İzin' : 'Diğer İzin'}`;
+                        } else {
+                            badgeBg = '#10B981'; // Sağlık İzni
+                            tooltipMetni = `${gun} Gün Sağlık İzni`;
+                        }
+                    } else if (turler.length > 1) {
+                        const hasSaglik = turler.includes('SAĞLIK');
+                        const hasYillik = turler.includes('YILLIK');
+                        const hasMazeret = turler.includes('MAZERET');
+
+                        if (hasSaglik && hasYillik) {
+                            badgeBg = 'linear-gradient(135deg, #10B981 50%, #0284C7 50%)';
+                        } else if (hasSaglik && hasMazeret) {
+                            badgeBg = 'linear-gradient(135deg, #10B981 50%, #F59E0B 50%)';
+                        } else if (hasYillik && hasMazeret) {
+                            badgeBg = 'linear-gradient(135deg, #0284C7 50%, #F59E0B 50%)';
+                        } else {
+                            badgeBg = 'linear-gradient(135deg, #10B981 33%, #0284C7 33% 66%, #F59E0B 66%)';
+                        }
+
+                        const döküm = turler.map(t => `${ayDetay.turler[t]}G ${t}`).join(', ');
+                        tooltipMetni = `${gun} Gün (${döküm})`;
+                    }
+
+                    aylarHtml += `<td style="text-align: center;"><span class="badge" style="background: ${badgeBg}; color: white; padding: 3px 6px; border-radius: 4px; font-weight: bold; font-size: 11.5px; box-shadow: 0 1px 2px rgba(0,0,0,0.15); cursor: default;" title="${tooltipMetni}">${gun} Gün</span></td>`;
                 } else {
                     aylarHtml += `<td style="color: var(--fg-sub); text-align: center; opacity: 0.4;">-</td>`;
                 }
             }
 
-            // Sağlık / Diğer İzin Dağılımı
-            let dagilimHtml = `<div style="font-size: 11px; white-space: nowrap;">`;
-            if (p.saglik_gun > 0) {
-                dagilimHtml += `<span style="color: #059669; font-weight: 700;">🩺 ${p.saglik_gun}G Sağlık</span>`;
+            // İzin Türleri Dağılımı (Her türü ayrı ayrı ve renkli listele)
+            const turParcalari = [];
+            const turTanimlari = [
+                { key: "SAĞLIK", ad: "sağlık", emoji: "🩺", renk: "#059669", count: p.saglik_gun || 0 },
+                { key: "YILLIK", ad: "yıllık izin", emoji: "🏖️", renk: "#0284C7", count: p.yillik_gun || 0 },
+                { key: "MAZERET", ad: "mazeret", emoji: "📝", renk: "#D97706", count: p.mazeret_gun || 0 },
+                { key: "İDARİ", ad: "idari izin", emoji: "🏛️", renk: "#7C3AED", count: p.idari_gun || 0 },
+                { key: "AYLIKSIZ", ad: "aylıksız izin", emoji: "⏳", renk: "#475569", count: p.ayliksiz_gun || 0 },
+                { key: "DİĞER", ad: "diğer izin", emoji: "🏷️", renk: "#475569", count: p.diger_gun || 0 }
+            ];
+
+            turTanimlari.forEach(item => {
+                if (item.count > 0) {
+                    turParcalari.push(`<span style="color: ${item.renk}; font-weight: 700; white-space: nowrap;">${item.emoji} ${item.count} gün ${item.ad}</span>`);
+                }
+            });
+
+            if (p.tur_dagilimi) {
+                const bilinenler = new Set(["SAĞLIK", "YILLIK", "MAZERET", "İDARİ", "IDARI", "AYLIKSIZ", "DİĞER", "DIGER"]);
+                Object.entries(p.tur_dagilimi).forEach(([tur, sayi]) => {
+                    if (!bilinenler.has(tur.toUpperCase()) && sayi > 0) {
+                        turParcalari.push(`<span style="color: #64748B; font-weight: 700; white-space: nowrap;">📋 ${sayi} gün ${tur.toLowerCase()}</span>`);
+                    }
+                });
             }
-            const digerToplam = (p.yillik_gun || 0) + (p.mazeret_gun || 0) + (p.idari_gun || 0);
-            if (digerToplam > 0) {
-                if (p.saglik_gun > 0) dagilimHtml += ` / `;
-                dagilimHtml += `<span style="color: #0284C7; font-weight: 700;">🏖️ ${digerToplam}G Diğer</span>`;
-            }
-            if (p.saglik_gun === 0 && digerToplam === 0) {
+
+            let dagilimHtml = `<div style="font-size: 11px; line-height: 1.4;">`;
+            if (turParcalari.length > 0) {
+                dagilimHtml += turParcalari.join(", ");
+            } else {
                 dagilimHtml += `<span style="color: var(--fg-sub);">-</span>`;
             }
             dagilimHtml += `</div>`;
@@ -639,7 +701,12 @@
             altInput: true,
             altFormat: "d.m.Y",
             theme: "dark",
-            onChange: saglikGunHesapla
+            onChange: saglikGunHesapla,
+            onClose: function(selectedDates, dateStr, instance) {
+                if (selectedDates && selectedDates.length === 1) {
+                    instance.setDate([selectedDates[0], selectedDates[0]], true);
+                }
+            }
         });
 
         document.getElementById('modal_saglik_ekle').style.display = 'flex';
@@ -771,41 +838,68 @@
 
     // 10. İZİN KAYDET
     window.saglikKaydet = async function() {
-        const personel = document.getElementById('saglik_personel_sec').value;
-        const izinTuru = document.getElementById('saglik_izin_turu').value;
-        const tarihDegeri = document.getElementById('saglik_tarih_range').value;
-        const gun = document.getElementById('saglik_gun').value;
-        const aciklama = document.getElementById('saglik_aciklama').value;
+        const personel = document.getElementById('saglik_personel_sec')?.value || '';
+        const izinTuru = document.getElementById('saglik_izin_turu')?.value || '';
+        const tarihDegeri = document.getElementById('saglik_tarih_range')?.value || '';
+        const gunInput = document.getElementById('saglik_gun')?.value || '1';
+        const aciklama = document.getElementById('saglik_aciklama')?.value || '';
         const belgeNo = document.getElementById('saglik_belge_no') ? document.getElementById('saglik_belge_no').value : "";
         const izinAdresi = document.getElementById('saglik_izin_adresi') ? document.getElementById('saglik_izin_adresi').value.trim() : "";
         const raporTuru = document.getElementById('saglik_rapor_turu') ? document.getElementById('saglik_rapor_turu').value.trim() : "";
 
-        if (!personel || !tarihDegeri || !gun) {
-            bildirimGoster('Personel, İzin Türü ve Tarih Aralığı zorunludur.', 'uyari');
+        // 1. Ayrıştırılmış ve net alan kontrolleri
+        if (!personel) {
+            bildirimGoster('Lütfen listeden bir personel seçiniz.', 'uyari');
+            return;
+        }
+        if (!izinTuru) {
+            bildirimGoster('Lütfen izin türünü seçiniz.', 'uyari');
             return;
         }
 
+        // 2. Esnek Tarih Çözümleme (Tek gün veya tarih aralığı)
         let bas = "";
         let bit = "";
-        if (saglikFlatpickr && saglikFlatpickr.selectedDates && saglikFlatpickr.selectedDates.length > 0) {
-            const d1 = saglikFlatpickr.selectedDates[0];
-            const d2 = saglikFlatpickr.selectedDates.length > 1 ? saglikFlatpickr.selectedDates[1] : d1;
+        let secilenTarihler = (saglikFlatpickr && saglikFlatpickr.selectedDates) ? saglikFlatpickr.selectedDates : [];
+
+        if (secilenTarihler.length > 0) {
+            const d1 = secilenTarihler[0];
+            const d2 = secilenTarihler.length > 1 ? secilenTarihler[1] : d1;
             const pad = n => String(n).padStart(2, '0');
             bas = `${d1.getFullYear()}-${pad(d1.getMonth() + 1)}-${pad(d1.getDate())}`;
             bit = `${d2.getFullYear()}-${pad(d2.getMonth() + 1)}-${pad(d2.getDate())}`;
-        } else {
+        } else if (tarihDegeri) {
             const parcalar = tarihDegeri.split(/\s+(?:to|-|—)\s+/i);
             bas = parcalar[0].trim();
             bit = (parcalar.length > 1 ? parcalar[1] : parcalar[0]).trim();
         }
+
         if (window.tarihFormatlaISO) {
-            bas = window.tarihFormatlaISO(bas);
-            bit = window.tarihFormatlaISO(bit);
+            if (bas) bas = window.tarihFormatlaISO(bas);
+            if (bit) bit = window.tarihFormatlaISO(bit);
         }
+
+        if (!bas) {
+            bildirimGoster('Lütfen izin tarihini veya tarih aralığını seçiniz.', 'uyari');
+            return;
+        }
+        if (!bit) bit = bas;
         if (bit < bas) {
             const tmp = bas;
             bas = bit;
             bit = tmp;
+        }
+
+        // Gün sayısını hesapla / garantiye al
+        let gunSayisi = parseInt(gunInput, 10);
+        if (isNaN(gunSayisi) || gunSayisi <= 0) {
+            try {
+                const dt1 = new Date(bas);
+                const dt2 = new Date(bit);
+                gunSayisi = Math.ceil(Math.abs(dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
+            } catch (err) {
+                gunSayisi = 1;
+            }
         }
 
         try {
@@ -816,7 +910,7 @@
                     izin_turu: izinTuru,
                     baslangic_tarihi: bas,
                     bitis_tarihi: bit,
-                    gun_sayisi: (parseInt(gun, 10) > 0 ? parseInt(gun, 10) : 1),
+                    gun_sayisi: gunSayisi,
                     aciklama: aciklama,
                     belge_no: belgeNo,
                     izin_adresi: izinAdresi,
@@ -845,6 +939,9 @@
     // 11. DETAY VE GEÇMİŞ MODAL
     window.saglikDetayGoster = async function(personelAd) {
         document.getElementById('detay_personel_ad').textContent = personelAd;
+        const ozetEl = document.getElementById('detay_izin_ozet');
+        if (ozetEl) ozetEl.textContent = 'Yükleniyor...';
+
         const tbody = document.getElementById('tbody_saglik_detay');
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:16px;">Yükleniyor...</td></tr>';
         document.getElementById('modal_saglik_detay').style.display = 'flex';
@@ -855,10 +952,38 @@
                 tbody.innerHTML = '';
                 if (response.veri.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:16px;">Kayıtlı izin bulunamadı.</td></tr>';
+                    if (ozetEl) ozetEl.textContent = 'Kayıtlı izin bulunamadı.';
                 } else {
+                    let toplamDetayGun = 0;
+                    const turToplamlari = {};
+
+                    response.veri.forEach(r => {
+                        const gun = r.gun || 0;
+                        toplamDetayGun += gun;
+                        const t = (r.izin_turu || 'SAĞLIK').toUpperCase();
+                        turToplamlari[t] = (turToplamlari[t] || 0) + gun;
+                    });
+
+                    if (ozetEl) {
+                        const ozetParcalari = [];
+                        if (turToplamlari['SAĞLIK']) ozetParcalari.push(`🩺 ${turToplamlari['SAĞLIK']} gün sağlık`);
+                        if (turToplamlari['YILLIK']) ozetParcalari.push(`🏖️ ${turToplamlari['YILLIK']} gün yıllık izin`);
+                        if (turToplamlari['MAZERET']) ozetParcalari.push(`📝 ${turToplamlari['MAZERET']} gün mazeret`);
+                        if (turToplamlari['İDARİ'] || turToplamlari['IDARI']) ozetParcalari.push(`🏛️ ${(turToplamlari['İDARİ'] || 0) + (turToplamlari['IDARI'] || 0)} gün idari izin`);
+                        if (turToplamlari['AYLIKSIZ']) ozetParcalari.push(`⏳ ${turToplamlari['AYLIKSIZ']} gün aylıksız izin`);
+                        if (turToplamlari['DİĞER'] || turToplamlari['DIGER']) ozetParcalari.push(`🏷️ ${(turToplamlari['DİĞER'] || 0) + (turToplamlari['DIGER'] || 0)} gün diğer izin`);
+
+                        ozetEl.innerHTML = `<strong>Toplam ${toplamDetayGun} Gün İzin:</strong> <span style="color:var(--fg-main); font-weight: 600;">${ozetParcalari.join(', ')}</span>`;
+                    }
+
                     response.veri.forEach(r => {
                         const tr = document.createElement('tr');
-                        const turRenk = r.izin_turu === 'SAĞLIK' ? '#10B981' : (r.izin_turu === 'YILLIK' ? '#0284C7' : '#F59E0B');
+                        const uTur = (r.izin_turu || '').toUpperCase();
+                        let turRenk = '#10B981';
+                        if (uTur === 'YILLIK') turRenk = '#0284C7';
+                        else if (uTur === 'MAZERET') turRenk = '#F59E0B';
+                        else if (uTur === 'İDARİ' || uTur === 'IDARI') turRenk = '#8B5CF6';
+                        else if (uTur === 'AYLIKSIZ' || uTur === 'DİĞER' || uTur === 'DIGER') turRenk = '#64748B';
 
                         let detayMetni = `<div>${r.aciklama || '-'}</div>`;
                         if (r.rapor_turu) {
@@ -961,6 +1086,11 @@
                 }
                 document.getElementById('duzenle_gun').value = diffDays;
                 document.getElementById('lbl_duzenle_gun').textContent = `(${diffDays} Gün)`;
+            },
+            onClose: function(selectedDates, dateStr, instance) {
+                if (selectedDates && selectedDates.length === 1) {
+                    instance.setDate([selectedDates[0], selectedDates[0]], true);
+                }
             }
         });
 
@@ -968,33 +1098,62 @@
     };
 
     window.saglikGuncelle = async function() {
-        const id = document.getElementById('duzenle_rapor_id').value;
-        const personelAd = document.getElementById('duzenle_personel_ad').value;
-        const izinTuru = document.getElementById('duzenle_izin_turu').value;
-        const tarihDegeri = document.getElementById('duzenle_tarih_range').value;
-        const gun = document.getElementById('duzenle_gun').value;
-        const aciklama = document.getElementById('duzenle_aciklama').value;
+        const id = document.getElementById('duzenle_rapor_id')?.value;
+        const personelAd = document.getElementById('duzenle_personel_ad')?.value;
+        const izinTuru = document.getElementById('duzenle_izin_turu')?.value;
+        const tarihDegeri = document.getElementById('duzenle_tarih_range')?.value;
+        const gunInput = document.getElementById('duzenle_gun')?.value;
+        const aciklama = document.getElementById('duzenle_aciklama')?.value || '';
         const belgeNo = document.getElementById('duzenle_belge_no') ? document.getElementById('duzenle_belge_no').value : "";
         const adres = document.getElementById('duzenle_izin_adresi') ? document.getElementById('duzenle_izin_adresi').value.trim() : "";
         const raporTuru = document.getElementById('duzenle_rapor_turu') ? document.getElementById('duzenle_rapor_turu').value.trim() : "";
 
-        if (!tarihDegeri || !gun) {
-            bildirimGoster('Tarih ve Gün Sayısı zorunludur.', 'uyari');
+        if (!izinTuru) {
+            bildirimGoster('Lütfen izin türünü seçiniz.', 'uyari');
             return;
         }
 
         let bas = "";
         let bit = "";
-        if (duzenleFlatpickr && duzenleFlatpickr.selectedDates && duzenleFlatpickr.selectedDates.length > 0) {
-            const d1 = duzenleFlatpickr.selectedDates[0];
-            const d2 = duzenleFlatpickr.selectedDates.length > 1 ? duzenleFlatpickr.selectedDates[1] : d1;
+        let secilenTarihler = (duzenleFlatpickr && duzenleFlatpickr.selectedDates) ? duzenleFlatpickr.selectedDates : [];
+
+        if (secilenTarihler.length > 0) {
+            const d1 = secilenTarihler[0];
+            const d2 = secilenTarihler.length > 1 ? secilenTarihler[1] : d1;
             const pad = n => String(n).padStart(2, '0');
             bas = `${d1.getFullYear()}-${pad(d1.getMonth() + 1)}-${pad(d1.getDate())}`;
             bit = `${d2.getFullYear()}-${pad(d2.getMonth() + 1)}-${pad(d2.getDate())}`;
-        } else {
+        } else if (tarihDegeri) {
             const parcalar = tarihDegeri.split(/\s+(?:to|-|—)\s+/i);
             bas = parcalar[0].trim();
             bit = (parcalar.length > 1 ? parcalar[1] : parcalar[0]).trim();
+        }
+
+        if (window.tarihFormatlaISO) {
+            if (bas) bas = window.tarihFormatlaISO(bas);
+            if (bit) bit = window.tarihFormatlaISO(bit);
+        }
+
+        if (!bas) {
+            bildirimGoster('Lütfen izin tarihini veya tarih aralığını seçiniz.', 'uyari');
+            return;
+        }
+        if (!bit) bit = bas;
+        if (bit < bas) {
+            const tmp = bas;
+            bas = bit;
+            bit = tmp;
+        }
+
+        let gunSayisi = parseInt(gunInput, 10);
+        if (isNaN(gunSayisi) || gunSayisi <= 0) {
+            try {
+                const dt1 = new Date(bas);
+                const dt2 = new Date(bit);
+                gunSayisi = Math.ceil(Math.abs(dt2 - dt1) / (1000 * 60 * 60 * 24)) + 1;
+            } catch (err) {
+                gunSayisi = 1;
+            }
         }
 
         try {
@@ -1005,7 +1164,7 @@
                     izin_turu: izinTuru,
                     baslangic_tarihi: bas,
                     bitis_tarihi: bit,
-                    gun_sayisi: (parseInt(gun, 10) > 0 ? parseInt(gun, 10) : 1),
+                    gun_sayisi: gunSayisi,
                     aciklama: aciklama,
                     belge_no: belgeNo,
                     izin_adresi: adres,

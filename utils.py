@@ -10,7 +10,16 @@ from araclar import VeriAraclari
 MAX_IMPORT_SIZE = 25 * 1024 * 1024
 ALLOWED_IMPORT_EXTENSIONS = {".xlsx", ".xls", ".csv"}
 
-def dosyayi_otomatik_ac(dosya_yolu):
+def dosyayi_otomatik_ac(dosya_yolu, request=None, sadece_yerel=True):
+    if sadece_yerel and request is not None:
+        try:
+            from dependencies import is_yerel_istek
+            if not is_yerel_istek(request):
+                client_ip = request.client.host if request.client else "uzak"
+                logging.info(f"Uzak ağ istemcisi ({client_ip}) için ana makinede pencere açma atlandı: {dosya_yolu}")
+                return
+        except Exception:
+            pass
     """Oluşturulan PDF veya Excel dosyasını bilgisayarın varsayılan programıyla anında açar"""
     try:
         if platform.system() == 'Windows':

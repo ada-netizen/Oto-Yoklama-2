@@ -243,3 +243,205 @@ def test_frontend_terfi_bilesenleri_ve_scriptler():
     assert "bu-ay-satiri" in css
     assert "bu-ay-baslik" in css
     assert "bu-ay-rozet" in css
+
+
+def test_olagan_terfi_tarihi_oncelikli_hesaplanir():
+    """Kullanıcı Kuralı: Olağan terfi tarihi girilmişse ilk göreve başlama tarihi yerine bu tarih esas alınır."""
+    p = {
+        "ad_soyad": "Terfi Özel Tarihli Öğretmen",
+        "grup": "Kadrolu",
+        "kademe_derece": "5/2",
+        "goreve_baslama": "15.09.2018",
+        "olagan_terfi_tarihi": "01.04.2024"
+    }
+    res = hesapla_personel_terfi_durumu(p, hedef_yil=2026)
+    assert res["kapsam_ici"] is True
+    assert res["kullanilan_tarih_turu"] == "olagan_terfi_tarihi"
+    assert res["baslama_tarihi_kullanilan"] == "01.04.2024"
+    assert res["terfi_tarihi"] == "01.04.2026"
+    assert res["ay_no"] == 4
+    assert res["gun_no"] == 1
+    assert res["terfi_turu"] == "KADEME"
+    assert res["yeni_kademe_derece"] == "5/3"
+
+
+def test_olagan_terfi_bos_ise_ilk_goreve_baslama_esas_alinir():
+    """Olağan terfi tarihi boş ise standart olarak ilk göreve başlama tarihi esas alınır."""
+    p = {
+        "ad_soyad": "Standart Tarihli Personel",
+        "grup": "Kadrolu",
+        "kademe_derece": "7/1",
+        "goreve_baslama": "20.10.2020",
+        "olagan_terfi_tarihi": ""
+    }
+    res = hesapla_personel_terfi_durumu(p, hedef_yil=2026)
+    assert res["kapsam_ici"] is True
+    assert res["kullanilan_tarih_turu"] == "goreve_baslama"
+    assert res["baslama_tarihi_kullanilan"] == "20.10.2020"
+    assert res["terfi_tarihi"] == "20.10.2026"
+    assert res["ay_no"] == 10
+    assert res["gun_no"] == 20
+
+
+def test_olagan_terfi_profil_guncelleme_ve_terfi_api_entegrasyonu():
+    """Profil güncellemede olağan terfi tarihinin kaydedilmesi ve terfi endpoint'inde kullanılması testi."""
+    ad_soyad = "TEST TERFI ENT PERSONEL"
+    client.post("/personel-ekle", json={
+        "ad": ad_soyad,
+        "unvan": "Memur",
+        "brans": "-",
+        "gorev": "VHKİ"
+    })
+    
+    # Profil güncelleme ile hem goreve_baslama hem de olagan_terfi_tarihi kaydedelim
+    update_res = client.post("/personel-profil-guncelle", json={
+        "ad_soyad": ad_soyad,
+        "tc_no": "11122233344",
+        "unvan": "Memur",
+        "gorev": "VHKİ",
+        "grup": "Kadrolu",
+        "kademe_derece": "6/2",
+        "goreve_baslama": "01.09.2016",
+        "olagan_terfi_tarihi": "15.03.2022"
+    })
+    assert update_res.status_code == 200
+    assert update_res.json()["basarili"] is True
+
+    # Personeller listesinden kontrol et
+    p_res = client.get("/personeller")
+    assert p_res.status_code == 200
+    personeller = p_res.json().get("personeller", [])
+    bulunan = next((p for p in personeller if p["ad_soyad"] == ad_soyad), None)
+    assert bulunan is not None
+    assert bulunan.get("olagan_terfi_tarihi") == "15.03.2022"
+
+    # Terfi API'sinden kontrol et (2026 yılı için 15.03.2026 hesaplanmalı)
+    t_res = client.get("/personel-terfileri?yil=2026")
+    assert t_res.status_code == 200
+    terfiler = t_res.json().get("personeller", [])
+    terfi_p = next((p for p in terfiler if p["ad_soyad"] == ad_soyad), None)
+    assert terfi_p is not None
+    assert terfi_p["kullanilan_tarih_turu"] == "olagan_terfi_tarihi"
+    assert terfi_p["baslama_tarihi_kullanilan"] == "15.03.2022"
+    assert terfi_p["terfi_tarihi"] == "15.03.2026"
+    assert terfi_p["ay_no"] == 3
+    assert terfi_p["gun_no"] == 15
+
+    # Temizlik
+    client.delete(f"/personel-sil/{ad_soyad}")
+
+
+def test_terfi_tablo_sutun_yapisi_ve_excel_raporu():
+    """Kullanıcı Kuralı: Terfi tablosunda ilk başlama sütunu kaldırılmış, yerine Terfi Tarihi gelmiştir (8 sütun)."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    terfi_html_path = os.path.join(base_dir, "frontend", "components", "sekme_terfi.html")
+    with open(terfi_html_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    # Başlıklar kontrolü
+    assert "İlk Başlama" not in html, "İlk Başlama başlığı kaldırılmış olmalıdır"
+    assert "onclick=\"terfiTabloSirala('tarih')\">Terfi Tarihi" in html
+    assert "colspan=\"8\"" in html, "Boş/Yükleniyor satırları 8 sütunlu olmalıdır"
+
+    # Excel indirme endpoint kontrolü
+    resp = client.get("/personel-terfi-excel?yil=2026")
+    assert resp.status_code in (200, 400)
+
+
+def test_profil_modal_olagan_terfi_yerlesimi():
+    """Kullanıcı Kuralı: Olağan terfi tarihi Kurum/SGK Sicil No'nun yerine (2. satır 3. kolon), Kurum/SGK Sicil No ise alt satır sol başa (3. satır) yerleştirilmiştir."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    modal_path = os.path.join(base_dir, "frontend", "components", "personel_profil_modal.html")
+    with open(modal_path, "r", encoding="utf-8") as f:
+        html = f.read()
+
+    idx_gorev = html.find('id="pp_goreve_baslama_kapsayici"')
+    idx_olagan = html.find('id="pp_olagan_terfi_kapsayici"')
+    idx_sicil = html.find('id="pp_kurum_sicil_kapsayici"')
+    idx_emekli = html.find('id="pp_emekli_sicil_kapsayici"')
+
+    assert idx_gorev != -1 and idx_olagan != -1 and idx_sicil != -1 and idx_emekli != -1
+    # Sıralama: İlk Göreve Başlama < Olağan Terfi Tarihi < Kurum / SGK Sicil No < Emekli Sicil No
+    assert idx_gorev < idx_olagan < idx_sicil < idx_emekli, "Kurum ve Program Kayıtları içindeki sıralama doğru olmalıdır"
+
+
+def test_terfi_tarihleri_tek_tip_gg_aa_yyyy_ve_rozetler_temiz():
+    """Kullanıcı Kuralı: İster ISO (YYYY-MM-DD) ister GG/AA/YYYY olsun terfi tarihi GG.AA.YYYY formatında döndürülür; başka kurumda ve olağan terfi rozetleri kaldırılmıştır."""
+    # 1. ISO formatında (YYYY-MM-DD) ilk göreve başlama
+    p1 = {
+        "ad_soyad": "ISO Tarihli Personel",
+        "grup": "Kadrolu",
+        "kademe_derece": "4/1",
+        "goreve_baslama": "2018-05-12"
+    }
+    res1 = hesapla_personel_terfi_durumu(p1, hedef_yil=2026)
+    assert res1["baslama_tarihi_kullanilan"] == "12.05.2018", "ISO formatı GG.AA.YYYY formatına dönüştürülmelidir"
+
+    # 2. Slash formatında (GG/AA/YYYY)
+    p2 = {
+        "ad_soyad": "Slash Tarihli Personel",
+        "grup": "Kadrolu",
+        "kademe_derece": "3/1",
+        "goreve_baslama": "05/11/2016"
+    }
+    res2 = hesapla_personel_terfi_durumu(p2, hedef_yil=2026)
+    assert res2["baslama_tarihi_kullanilan"] == "05.11.2016", "Slash formatı GG.AA.YYYY formatına dönüştürülmelidir"
+
+    # 3. Frontend JS dosyasında Başka Kurumda ve Olağan Terfi rozetlerinin kaldırıldığı kontrolü
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    terfi_js_path = os.path.join(base_dir, "frontend", "js", "personel_terfi.js")
+    with open(terfi_js_path, "r", encoding="utf-8") as f:
+        js_content = f.read()
+
+    assert "formatTarihTr" in js_content, "formatTarihTr fonksiyonu tanımlı olmalıdır"
+    assert "Başka Kurumda" not in js_content, "Tabloda Başka Kurumda rozeti bulunmamalıdır"
+    assert "title=\"Olağan terfi tarihi baz alındı\"" not in js_content, "Olağan Terfi rozeti kaldırılmış olmalıdır"
+
+
+def test_personel_terfi_a4_pdf_cizelgesi():
+    """Kullanıcı Kuralı: Personel terfi listesi A4 yatay formatında 12 aylık çizelge olarak PDF üretilir."""
+    response = client.get("/personel-terfi-pdf?yil=2026")
+    assert response.status_code == 200, f"Hata: {response.text}"
+    data = response.json()
+    assert data["basarili"] is True, "PDF endpoint basarili donmelidir"
+    assert "dosya" in data and os.path.exists(data["dosya"]), "PDF dosyası fiziksel olarak oluşturulmalıdır"
+
+    # PDF doğrulaması
+    from PyPDF2 import PdfReader
+    reader = PdfReader(data["dosya"])
+    assert len(reader.pages) >= 1, "En az bir sayfa oluşmalıdır"
+    p1 = reader.pages[0]
+    # Landscape A4 boyutu: genişlik ~841.89, yükseklik ~595.28
+    assert abs(float(p1.mediabox.width) - 841.89) < 2.0, "Sayfa A4 Yatay (Landscape) genişliğinde olmalıdır"
+    assert abs(float(p1.mediabox.height) - 595.28) < 2.0, "Sayfa A4 Yatay (Landscape) yüksekliğinde olmalıdır"
+
+
+def test_teblig_filtreli_secim_ve_butonlar():
+    """Kullanıcı Kuralı: Tebliğde sadece filtrelenen seçili personeller alınır, üstteki iki buton kaldırılmıştır."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    core_js = os.path.join(base_dir, "frontend", "js", "core.js")
+    with open(core_js, "r", encoding="utf-8") as f:
+        core_text = f.read()
+    assert "window.sonTebligGosterilenler" in core_text, "topluTebligPdfAl fonksiyonunda filtrelenen personeller esas alınmalıdır"
+
+    html_file = os.path.join(base_dir, "frontend", "index.html")
+    with open(html_file, "r", encoding="utf-8") as f:
+        html_text = f.read()
+    assert 'onclick="personelGrupYonetimiAc()"' not in html_text, "Grupları Yönet butonu tebliğ üst barından kaldırılmış olmalıdır"
+    assert 'onclick="personelDrawerAc()"' not in html_text, "Yeni Personel butonu tebliğ üst barından kaldırılmış olmalıdır"
+
+
+def test_sidebar_rail_sifre_ve_profil_karti():
+    """Kullanıcı Kuralı: Sol menü kapalıyken şifre değiştir butonu taşmamalı, sadece avatar görünmeli, hover ile açılmalıdır."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    css_file = os.path.join(base_dir, "frontend", "style.css")
+    with open(css_file, "r", encoding="utf-8") as f:
+        css_text = f.read()
+    assert ".sidebar-user-card" in css_text
+    assert ".sidebar-user-action-buttons" in css_text
+    assert ".sidebar-rail:hover .sidebar-user-action-buttons" in css_text
+
+    sidebar_file = os.path.join(base_dir, "frontend", "components", "sidebar_rail.html")
+    with open(sidebar_file, "r", encoding="utf-8") as f:
+        sidebar_text = f.read()
+    assert 'class="sidebar-user-action-buttons"' in sidebar_text

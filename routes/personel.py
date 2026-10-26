@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -30,7 +30,8 @@ def personelleri_getir():
             SELECT rowid, ad_soyad, unvan, brans, gorev, grup, tc_no, il_ilce, kurum_adi, 
                    kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu, 
                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no, 
-                   emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif 
+                   emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif,
+                   COALESCE(olagan_terfi_tarihi, '') as olagan_terfi_tarihi
             FROM personel
         """)
         personel_listesi = []
@@ -55,6 +56,7 @@ def personelleri_getir():
                 'kan_grubu': r[15] or "",
                 'dogum_tarihi': r[16] or "",
                 'goreve_baslama': r[17] or "",
+                'olagan_terfi_tarihi': r[25] if len(r) > 25 and r[25] else "",
                 'kurum_sicil_no': r[18] or "",
                 'emekli_sicil_no': r[19] or "",
                 'arsiv_no': r[20] or "",
@@ -101,6 +103,7 @@ def _personelleri_veritabanina_kaydet(liste, kaynak_adi="Personel"):
             kan_grubu = p.get('kan_grubu', '').strip()
             dogum_tarihi = p.get('dogum_tarihi', '').strip()
             goreve_baslama = p.get('goreve_baslama', '').strip()
+            olagan_terfi_tarihi = p.get('olagan_terfi_tarihi', '').strip()
             kurum_sicil_no = p.get('kurum_sicil_no', '').strip()
             emekli_sicil_no = p.get('emekli_sicil_no', '').strip()
             arsiv_no = p.get('arsiv_no', '').strip()
@@ -141,6 +144,7 @@ def _personelleri_veritabanina_kaydet(liste, kaynak_adi="Personel"):
                         kan_grubu = COALESCE(NULLIF(?, ''), kan_grubu),
                         dogum_tarihi = COALESCE(NULLIF(?, ''), dogum_tarihi),
                         goreve_baslama = COALESCE(NULLIF(?, ''), goreve_baslama),
+                        olagan_terfi_tarihi = COALESCE(NULLIF(?, ''), olagan_terfi_tarihi),
                         kurum_sicil_no = COALESCE(NULLIF(?, ''), kurum_sicil_no),
                         emekli_sicil_no = COALESCE(NULLIF(?, ''), emekli_sicil_no),
                         arsiv_no = COALESCE(NULLIF(?, ''), arsiv_no),
@@ -159,6 +163,7 @@ def _personelleri_veritabanina_kaydet(liste, kaynak_adi="Personel"):
                     kademe_derece, kademe_derece, kademe_derece,
                     ogrenim_durumu, ogrenim_durumu, ogrenim_durumu,
                     cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama,
+                    olagan_terfi_tarihi,
                     kurum_sicil_no, emekli_sicil_no, arsiv_no,
                     telefon, eposta, notlar, aktif, mevcut_id
                 ))
@@ -168,13 +173,13 @@ def _personelleri_veritabanina_kaydet(liste, kaynak_adi="Personel"):
                     INSERT INTO personel (
                         ad_soyad, tc_no, unvan, brans, gorev, grup, il_ilce, kurum_adi,
                         kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                        cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
+                        cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, olagan_terfi_tarihi, kurum_sicil_no,
                         emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     ad, tc, unvan, brans, gorev, grup, il_ilce, kurum_adi,
                     kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
+                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, olagan_terfi_tarihi, kurum_sicil_no,
                     emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
                 ))
                 eklenen += 1
@@ -249,6 +254,7 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=None):
         kan_sutunu = _excel_sutunu_bul(df.columns, ['KAN GRUBU', 'KAN'])
         dogum_sutunu = _excel_sutunu_bul(df.columns, ['DOĞUM TARİHİ', 'DOGUM TARIHI', 'DOĞUM', 'DOGUM'])
         goreve_baslama_sutunu = _excel_sutunu_bul(df.columns, ['GÖREVE BAŞLAMA', 'GOREVE BASLAMA', 'GÖREVE BAŞLAMA TARİHİ', 'MEMURİYETE BAŞLAMA', 'İLK GÖREVE BAŞLAMA'])
+        olagan_terfi_sutunu = _excel_sutunu_bul(df.columns, ['OLAĞAN TERFİ TARİHİ', 'OLAGAN TERFI TARIHI', 'OLAĞAN TERFİ', 'OLAGAN TERFI', 'TERFİ TARİHİ', 'TERFI TARIHI'])
         kurum_adi_sutunu = _excel_sutunu_bul(df.columns, ['KURUM ADI', 'KURUM', 'OKUL ADI', 'OKUL'])
         kurum_kodu_sutunu = _excel_sutunu_bul(df.columns, ['KURUM KODU', 'OKUL KODU'])
         il_ilce_sutunu = _excel_sutunu_bul(df.columns, ['İL / İLÇE', 'İL/İLÇE', 'IL / ILCE', 'IL/ILCE', 'İLÇE', 'ILCE', 'İL', 'IL'])
@@ -306,6 +312,7 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=None):
             kan_grubu = _hucre_temizle(row[kan_sutunu]) if kan_sutunu else ""
             dogum_tarihi = _tarih_metni_temizle(row[dogum_sutunu]) if dogum_sutunu else ""
             goreve_baslama = _tarih_metni_temizle(row[goreve_baslama_sutunu]) if goreve_baslama_sutunu else ""
+            olagan_terfi_tarihi = _tarih_metni_temizle(row[olagan_terfi_sutunu]) if olagan_terfi_sutunu else ""
             kurum_adi = _hucre_temizle(row[kurum_adi_sutunu]) if kurum_adi_sutunu else ""
             kurum_kodu = _hucre_temizle(row[kurum_kodu_sutunu]) if kurum_kodu_sutunu else ""
             il_ilce = _hucre_temizle(row[il_ilce_sutunu]) if il_ilce_sutunu else ""
@@ -357,6 +364,7 @@ def _personel_excel_yukle_dogrudan(temp_yol, uzanti, yukleme_tipi=None):
                 'kan_grubu': kan_grubu,
                 'dogum_tarihi': dogum_tarihi,
                 'goreve_baslama': goreve_baslama,
+                'olagan_terfi_tarihi': olagan_terfi_tarihi,
                 'kurum_sicil_no': kurum_sicil_no,
                 'emekli_sicil_no': emekli_sicil_no,
                 'arsiv_no': arsiv_no,
@@ -616,6 +624,7 @@ def personel_profil_guncelle(veri: PersonelGuncelleRequest):
         kan_grubu = str(veri.kan_grubu or "").strip()
         dogum_tarihi = str(veri.dogum_tarihi or "").strip()
         goreve_baslama = str(veri.goreve_baslama or "").strip()
+        olagan_terfi_tarihi = str(veri.olagan_terfi_tarihi or "").strip()
         kurum_sicil_no = str(veri.kurum_sicil_no or "").strip()
         emekli_sicil_no = str(veri.emekli_sicil_no or "").strip()
         arsiv_no = str(veri.arsiv_no or "").strip()
@@ -637,13 +646,13 @@ def personel_profil_guncelle(veri: PersonelGuncelleRequest):
                 UPDATE personel SET
                     ad_soyad=?, tc_no=?, unvan=?, brans=?, gorev=?, grup=?, il_ilce=?, kurum_adi=?, 
                     kurum_kodu=?, kurumda_baslama=?, kariyer=?, kademe_derece=?, ogrenim_durumu=?, 
-                    cinsiyet=?, kan_grubu=?, dogum_tarihi=?, goreve_baslama=?, kurum_sicil_no=?, 
+                    cinsiyet=?, kan_grubu=?, dogum_tarihi=?, goreve_baslama=?, olagan_terfi_tarihi=?, kurum_sicil_no=?, 
                     emekli_sicil_no=?, arsiv_no=?, telefon=?, eposta=?, notlar=?, aktif=?
                 WHERE rowid=?
             """, (
                 ad, tc, unvan, brans, gorev, grup, il_ilce, kurum_adi,
                 kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
+                cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, olagan_terfi_tarihi, kurum_sicil_no,
                 emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif, veri.id
             ))
         else:
@@ -654,13 +663,13 @@ def personel_profil_guncelle(veri: PersonelGuncelleRequest):
                     UPDATE personel SET
                         tc_no=?, unvan=?, brans=?, gorev=?, grup=?, il_ilce=?, kurum_adi=?, 
                         kurum_kodu=?, kurumda_baslama=?, kariyer=?, kademe_derece=?, ogrenim_durumu=?, 
-                        cinsiyet=?, kan_grubu=?, dogum_tarihi=?, goreve_baslama=?, kurum_sicil_no=?, 
+                        cinsiyet=?, kan_grubu=?, dogum_tarihi=?, goreve_baslama=?, olagan_terfi_tarihi=?, kurum_sicil_no=?, 
                         emekli_sicil_no=?, arsiv_no=?, telefon=?, eposta=?, notlar=?, aktif=?
                     WHERE ad_soyad=?
                 """, (
                     tc, unvan, brans, gorev, grup, il_ilce, kurum_adi,
                     kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
+                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, olagan_terfi_tarihi, kurum_sicil_no,
                     emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif, ad
                 ))
             else:
@@ -668,13 +677,13 @@ def personel_profil_guncelle(veri: PersonelGuncelleRequest):
                     INSERT INTO personel (
                         ad_soyad, tc_no, unvan, brans, gorev, grup, il_ilce, kurum_adi, 
                         kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu, 
-                        cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no, 
+                        cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, olagan_terfi_tarihi, kurum_sicil_no, 
                         emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     ad, tc, unvan, brans, gorev, grup, il_ilce, kurum_adi,
                     kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu,
-                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no,
+                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, olagan_terfi_tarihi, kurum_sicil_no,
                     emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif
                 ))
 
@@ -698,7 +707,7 @@ def tum_mevzuat_ozeti_endpoint():
         return {"basarili": False, "mesaj": str(e)}
 
 @router.get("/personel-excel-indir")
-def personel_excel_indir(format: str = "ozet"):
+def personel_excel_indir(format: str = "ozet", request: Request = None):
     ana_klasor, ayar = pdf_klasoru_hazirla()
 
     if format == "tam":
@@ -716,6 +725,7 @@ def personel_excel_indir(format: str = "ozet"):
             ("kan_grubu", "Kan Grubu"),
             ("dogum_tarihi", "Doğum Tarihi"),
             ("goreve_baslama", "Göreve Başlama"),
+            ("olagan_terfi_tarihi", "Olağan Terfi Tarihi"),
             ("kurum_adi", "Kurum Adı"),
             ("kurum_kodu", "Kurum Kodu"),
             ("il_ilce", "İl / İlçe"),
@@ -774,12 +784,8 @@ def personel_excel_indir(format: str = "ozet"):
             logging.error(f"Excel openpyxl biçimlendirme hatası: {e}")
             df.to_excel(yol, index=False)
 
-        try:
-            os.startfile(yol)
-        except Exception:
-            pass
-
-        return {"basarili": True, "mesaj": "Veritabanı tam yedeği (24 sütun) Excel dosyası olarak oluşturuldu."}
+        dosyayi_otomatik_ac(yol, request=request)
+        return {"basarili": True, "mesaj": "Veritabanı tam yedeği (24 sütun) Excel dosyası olarak oluşturuldu.", "dosya": yol}
 
     else:
         db.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel ORDER BY ad_soyad")
@@ -793,16 +799,12 @@ def personel_excel_indir(format: str = "ozet"):
         yol = os.path.join(ana_klasor, "Personel_Listesi.xlsx")
         df.to_excel(yol, index=False)
 
-        try:
-            os.startfile(yol)
-        except Exception:
-            pass
-
-        return {"basarili": True, "mesaj": "Özet personel listesi Excel dosyası olarak oluşturuldu."}
+        dosyayi_otomatik_ac(yol, request=request)
+        return {"basarili": True, "mesaj": "Özet personel listesi Excel dosyası olarak oluşturuldu.", "dosya": yol}
 
 
 @router.get("/personel-pdf-indir")
-def personel_pdf_indir():
+def personel_pdf_indir(request: Request = None):
     db.cursor.execute("SELECT ad_soyad, brans, gorev, grup FROM personel ORDER BY ad_soyad")
     veri = [[r[0], r[1], r[2], r[3]] for r in db.cursor.fetchall()]
     
@@ -816,8 +818,8 @@ def personel_pdf_indir():
     # Yeni eklenecek PDF methodu: personel_raporu_ciz
     motor.personel_raporu_ciz(veri, yol)
     
-    os.startfile(yol)
-    return {"basarili": True, "mesaj": "PDF oluşturuldu."}
+    dosyayi_otomatik_ac(yol, request=request)
+    return {"basarili": True, "mesaj": "PDF oluşturuldu.", "dosya": yol}
 
 
 
@@ -848,7 +850,8 @@ def personel_terfileri_getir(yil: Optional[int] = None):
             SELECT rowid, ad_soyad, unvan, brans, gorev, grup, tc_no, il_ilce, kurum_adi, 
                    kurum_kodu, kurumda_baslama, kariyer, kademe_derece, ogrenim_durumu, 
                    cinsiyet, kan_grubu, dogum_tarihi, goreve_baslama, kurum_sicil_no, 
-                   emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif 
+                   emekli_sicil_no, arsiv_no, telefon, eposta, notlar, aktif,
+                   COALESCE(olagan_terfi_tarihi, '') as olagan_terfi_tarihi
             FROM personel
         """)
         satirlar = db.cursor.fetchall()
@@ -886,6 +889,7 @@ def personel_terfileri_getir(yil: Optional[int] = None):
                 'kademe_derece': r[12] or "-",
                 'ogrenim_durumu': r[13] or "-",
                 'goreve_baslama': r[17] or "",
+                'olagan_terfi_tarihi': r[25] if len(r) > 25 and r[25] else "",
                 'aktif': aktif,
                 'baska_kurumda': baska_kurumda
             }
@@ -974,6 +978,33 @@ def personel_terfileri_getir(yil: Optional[int] = None):
         }
 
 
+@router.get("/personel-terfi-pdf")
+def personel_terfi_pdf_indir(yil: Optional[int] = None, request: Request = None):
+    """
+    Hedef yıla ait kadrolu personel terfi listesini A4 Yatay Yıllık Terfi Çizelgesi
+    formatında resmi PDF olarak üretir ve döndürür.
+    """
+    try:
+        hedef_yil = yil if yil is not None else datetime.now().year
+        sonuc = personel_terfileri_getir(yil=hedef_yil)
+        if not sonuc.get("basarili", False) or not sonuc.get("personeller"):
+            return JSONResponse(status_code=400, content={"basarili": False, "mesaj": "Terfi listesi boş veya alınamadı."})
+
+        ana_klasor, ayar = pdf_klasoru_hazirla()
+        dosya_adi = f"Yillik_Terfi_Cizelgesi_{hedef_yil}.pdf"
+        yol = os.path.join(ana_klasor, dosya_adi)
+
+        motor = PDFYoneticisi(ayar)
+        motor.yillik_terfi_cizelgesi_ciz(hedef_yil, sonuc["personeller"], yol)
+
+        dosyayi_otomatik_ac(yol, request=request)
+        islem_logla("bilgi", "Yıllık Terfi Çizelgesi PDF", f"{hedef_yil} yılı terfi çizelgesi A4 PDF olarak üretildi.")
+        return {"basarili": True, "mesaj": "Yıllık terfi çizelgesi oluşturuldu.", "dosya": yol}
+    except Exception as e:
+        logging.error(f"personel_terfi_pdf_indir hatasi: {e}")
+        return JSONResponse(status_code=500, content={"basarili": False, "mesaj": str(e)})
+
+
 @router.get("/personel-terfi-excel")
 def personel_terfi_excel_indir(yil: Optional[int] = None):
     """
@@ -997,10 +1028,9 @@ def personel_terfi_excel_indir(yil: Optional[int] = None):
                 "Unvanı": p.get("unvan", "-"),
                 "Branşı": p.get("brans", "-"),
                 "Görevi": p.get("gorev", "-"),
-                "İlk Göreve Başlama": p.get("baslama_tarihi_kullanilan") or "Eksik",
+                "Terfi Tarihi": p.get("baslama_tarihi_kullanilan") or "Eksik",
                 "Mevcut D/K": p.get("mevcut_kademe_derece", "-"),
                 "Öngörülen Yeni D/K": p.get("yeni_kademe_derece", "-"),
-                "Terfi Tarihi": p.get("terfi_tarihi", "-"),
                 "Terfi Türü": p.get("terfi_baslik", "-"),
                 "Mevzuat Dayanağı": p.get("mevzuat_maddesi", "-"),
                 "Açıklama": p.get("aciklama", "-")

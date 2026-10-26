@@ -1935,6 +1935,149 @@ body.light-theme .sidebar-rail:focus-within {
     display: inline;
 }
 
+/* --- KULLANICI PROFİL KARTI (SIDEBAR FOOTER) --- */
+.sidebar-user-card {
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    padding: 6px 2px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+.sidebar-user-profile-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.sidebar-user-avatar {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #10b981, #0284c7);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    margin: 0 auto;
+    transition: margin 0.2s ease;
+    cursor: pointer;
+}
+
+.sidebar-user-text-info {
+    display: none;
+    overflow: hidden;
+    flex: 1;
+    text-align: left;
+    min-width: 0;
+}
+
+.sidebar-user-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--fg-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+    font-size: 10.5px;
+    color: var(--fg-sub);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sidebar-user-action-buttons {
+    display: none;
+    gap: 4px;
+    margin-top: 6px;
+    width: 100%;
+}
+
+.btn-sidebar-user-action {
+    flex: 1;
+    font-size: 10.5px;
+    padding: 4px 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--fg-main);
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.btn-sidebar-user-logout {
+    flex: 1;
+    font-size: 10.5px;
+    padding: 4px 6px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* Hover ve Odaklanma durumunda Genişleme */
+.sidebar-rail:hover .sidebar-user-card,
+.sidebar-rail-kapsayici:hover .sidebar-user-card,
+.sidebar-rail:focus-within .sidebar-user-card {
+    padding: 10px 8px;
+    background: rgba(0, 0, 0, 0.04);
+    border-color: var(--border);
+}
+
+body.light-theme .sidebar-rail:hover .sidebar-user-card,
+body.light-theme .sidebar-rail-kapsayici:hover .sidebar-user-card,
+body.light-theme .sidebar-rail:focus-within .sidebar-user-card {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.sidebar-rail:hover .sidebar-user-profile-row,
+.sidebar-rail-kapsayici:hover .sidebar-user-profile-row,
+.sidebar-rail:focus-within .sidebar-user-profile-row {
+    justify-content: flex-start;
+}
+
+.sidebar-rail:hover .sidebar-user-avatar,
+.sidebar-rail-kapsayici:hover .sidebar-user-avatar,
+.sidebar-rail:focus-within .sidebar-user-avatar {
+    margin: 0;
+}
+
+.sidebar-rail:hover .sidebar-user-text-info,
+.sidebar-rail-kapsayici:hover .sidebar-user-text-info,
+.sidebar-rail:focus-within .sidebar-user-text-info {
+    display: block;
+}
+
+.sidebar-rail:hover .sidebar-user-action-buttons,
+.sidebar-rail-kapsayici:hover .sidebar-user-action-buttons,
+.sidebar-rail:focus-within .sidebar-user-action-buttons {
+    display: flex;
+}
+
 /* --- 2. SOL PANEL: SABİT 380PX VE AÇILIR EŞİK/ROZET FİLTRE MENÜSÜ --- */
 #sol_panel_ana {
     flex: 0 0 380px !important;

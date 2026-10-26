@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel
 from typing import List, Optional
@@ -18,7 +18,7 @@ from utils import _rapor_verisi_hazirla
 router = APIRouter()
 
 @router.get("/rapor-esik-siniflar/{format_tipi}")
-def rapor_esik_siniflar(format_tipi: str, background_tasks: BackgroundTasks):
+def rapor_esik_siniflar(format_tipi: str, background_tasks: BackgroundTasks, request: Request = None):
     try:
         # Tüm öğrencileri al
         db.cursor.execute("SELECT no, ad_soyad, sube FROM ogrenciler")
@@ -135,7 +135,7 @@ def rapor_esik_siniflar(format_tipi: str, background_tasks: BackgroundTasks):
                     yol = os.path.join(rapor_klasoru, f"{otomatik_isim}.pdf")
                     motor = PDFYoneticisi(ayar)
                     motor.esik_raporu_pdf_ciz(veri_listesi, yol)
-                dosyayi_otomatik_ac(yol)
+                dosyayi_otomatik_ac(yol, request=request)
             except Exception as e:
                 logging.error(f"Esik raporu cizim hatasi: {e}")
 
@@ -146,7 +146,7 @@ def rapor_esik_siniflar(format_tipi: str, background_tasks: BackgroundTasks):
 
 
 @router.post("/rapor-al")
-def rapor_al(veri: RaporAlRequest, background_tasks: BackgroundTasks):
+def rapor_al(veri: RaporAlRequest, background_tasks: BackgroundTasks, request: Request = None):
     tur = veri.tur
     format_tipi = veri.format  # "excel" | "pdf"
     ozel_deger = veri.ozel_deger
@@ -200,7 +200,7 @@ def rapor_al(veri: RaporAlRequest, background_tasks: BackgroundTasks):
                     motor = PDFYoneticisi(ayar)
                     motor.rapor_ciz(baslik, kolon4_adi, veri_listesi, yol)
                         
-                dosyayi_otomatik_ac(yol)
+                dosyayi_otomatik_ac(yol, request=request)
             except Exception as e:
                 logging.error(f"Rapor cizim hatasi: {e}")
 
@@ -221,7 +221,7 @@ def gec_bugun_sayisi():
         return {"basarili": False, "sayi": 0, "mesaj": str(e)}
 
 @router.get("/rapor-gec-bugun")
-def rapor_gec_bugun(background_tasks: BackgroundTasks):
+def rapor_gec_bugun(background_tasks: BackgroundTasks, request: Request = None):
     try:
         ayar = ayarlari_al()
         bugun = datetime.now().strftime("%d/%m/%Y")
@@ -245,7 +245,7 @@ def rapor_gec_bugun(background_tasks: BackgroundTasks):
             try:
                 motor = PDFYoneticisi(ayar)
                 motor.gec_kalanlar_pdf_ciz(liste, bugun, kayit_yeri)
-                dosyayi_otomatik_ac(kayit_yeri)
+                dosyayi_otomatik_ac(kayit_yeri, request=request)
             except Exception as e:
                 logging.error(f"PDF olusturma hatasi: {e}")
             

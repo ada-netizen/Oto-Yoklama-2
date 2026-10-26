@@ -837,12 +837,18 @@ def hesapla_personel_terfi_durumu(personel: Dict[str, Any], hedef_yil: Optional[
             "terfi_turu": "KAPSAM_DISI"
         }
 
-    # Tarih Çözümleme: İlk göreve başlama tarihi esas alınır, yoksa kurumda başlama kontrol edilir
-    baslama_str = str(personel.get("goreve_baslama") or "").strip()
-    kullanilan_tarih_turu = "goreve_baslama"
-    if not baslama_str:
-        baslama_str = str(personel.get("kurumda_baslama") or "").strip()
-        kullanilan_tarih_turu = "kurumda_baslama"
+    # Tarih Çözümleme: Olağan terfi tarihi girilmişse öncelikle o esas alınır,
+    # girilmemişse standart olarak ilk göreve başlama tarihi, o da yoksa kurumda başlama kontrol edilir.
+    olagan_terfi_str = str(personel.get("olagan_terfi_tarihi") or "").strip()
+    if olagan_terfi_str and olagan_terfi_str != "-":
+        baslama_str = olagan_terfi_str
+        kullanilan_tarih_turu = "olagan_terfi_tarihi"
+    else:
+        baslama_str = str(personel.get("goreve_baslama") or "").strip()
+        kullanilan_tarih_turu = "goreve_baslama"
+        if not baslama_str or baslama_str == "-":
+            baslama_str = str(personel.get("kurumda_baslama") or "").strip()
+            kullanilan_tarih_turu = "kurumda_baslama"
 
     baslama_dt = _tarih_cozumle(baslama_str)
     
@@ -925,7 +931,9 @@ def hesapla_personel_terfi_durumu(personel: Dict[str, Any], hedef_yil: Optional[
     yaklasan_mi = False
     bu_yil_terfi_var_mi = False
 
+    baslama_tarihi_gosterim = ""
     if not tarih_eksik and baslama_dt:
+        baslama_tarihi_gosterim = baslama_dt.strftime("%d.%m.%Y")
         ay_no = baslama_dt.month
         gun_no = baslama_dt.day
 
@@ -967,7 +975,7 @@ def hesapla_personel_terfi_durumu(personel: Dict[str, Any], hedef_yil: Optional[
         "aciklama": aciklama,
         "tavan_mi": tavan_mi,
         "tarih_eksik": tarih_eksik,
-        "baslama_tarihi_kullanilan": baslama_str if not tarih_eksik else "",
+        "baslama_tarihi_kullanilan": baslama_tarihi_gosterim if not tarih_eksik else "",
         "kullanilan_tarih_turu": kullanilan_tarih_turu,
         "hedef_yil": hedef_yil,
         "terfi_tarihi": terfi_tarihi_str,
