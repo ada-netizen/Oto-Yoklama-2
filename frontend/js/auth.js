@@ -19,22 +19,41 @@
 
     // --- YARDIMCI: TOKEN OKU / YAZ / SİL ---
     function tokenAl() {
-        return window.sessionStorage.getItem('oturum_token') || window.localStorage.getItem('oturum_token');
+        return window.sessionStorage.getItem('oturum_token') || 
+               window.localStorage.getItem('oturum_token') || 
+               window.sessionStorage.getItem('auth_token') || 
+               window.localStorage.getItem('auth_token') || '';
     }
+    window.tokenAl = tokenAl;
 
     function tokenKaydet(token, kalici) {
         if (kalici) {
             window.localStorage.setItem('oturum_token', token);
+            window.localStorage.setItem('auth_token', token);
             window.sessionStorage.removeItem('oturum_token');
+            window.sessionStorage.removeItem('auth_token');
+            try {
+                document.cookie = `session_token=${token}; path=/; max-age=${30 * 24 * 3600}; SameSite=Lax`;
+            } catch (e) {}
         } else {
             window.sessionStorage.setItem('oturum_token', token);
+            window.sessionStorage.setItem('auth_token', token);
             window.localStorage.removeItem('oturum_token');
+            window.localStorage.removeItem('auth_token');
+            try {
+                document.cookie = `session_token=${token}; path=/; SameSite=Lax`;
+            } catch (e) {}
         }
     }
 
     function tokenTemizle() {
         window.sessionStorage.removeItem('oturum_token');
+        window.sessionStorage.removeItem('auth_token');
         window.localStorage.removeItem('oturum_token');
+        window.localStorage.removeItem('auth_token');
+        try {
+            document.cookie = "session_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+        } catch (e) {}
         window.aktifKullanici = null;
     }
 
@@ -57,6 +76,11 @@
                 authGirisModaliGoster();
                 return;
             }
+            try {
+                if (token && !document.cookie.includes('session_token=')) {
+                    document.cookie = `session_token=${token}; path=/; SameSite=Lax`;
+                }
+            } catch (e) {}
 
             // 3. Token'ı sunucuda doğrula (/auth/ben)
             try {

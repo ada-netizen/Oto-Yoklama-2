@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from pydantic import BaseModel
-from fastapi import APIRouter, Request, HTTPException, Depends
+from fastapi import APIRouter, Request, Response, HTTPException, Depends
 
 from dependencies import db, get_aktif_kullanici, denetim_kaydi_ekle
 from veritabani import sifre_hashle, sifre_dogrula
@@ -97,7 +97,7 @@ def personeller_ozet():
         return {"basarili": False, "mesaj": str(e), "personeller": []}
 
 @router.post("/auth/ilk-kurulum")
-def ilk_kurulum(veri: IlkKurulumRequest, request: Request):
+def ilk_kurulum(veri: IlkKurulumRequest, request: Request, response: Response):
     """Sistemin ilk dokunulmaz Süper Yöneticisini tanımlar."""
     try:
         db.cursor.execute("SELECT COUNT(*) FROM kullanicilar WHERE super_admin_mi = 1 AND aktif = 1")
@@ -163,6 +163,8 @@ def ilk_kurulum(veri: IlkKurulumRequest, request: Request):
         db.conn.commit()
 
         denetim_kaydi_ekle(yeni_id, k_adi, ad_soyad, "Güvenlik", "İlk Kurulum", "Sistemin ilk Süper Yöneticisi oluşturuldu.", client_ip)
+        response.set_cookie(key="session_token", value=token, max_age=30*24*3600, path="/", samesite="lax", httponly=False)
+
 
         return {
             "basarili": True,
@@ -185,7 +187,7 @@ def ilk_kurulum(veri: IlkKurulumRequest, request: Request):
         return {"basarili": False, "mesaj": f"Kurulum hatası: {str(e)}"}
 
 @router.post("/auth/giris")
-def giris(veri: GirisRequest, request: Request):
+def giris(veri: GirisRequest, request: Request, response: Response):
     """Kullanıcı adı ve şifre ile sisteme giriş yapar ve oturum token'ı üretir."""
     k_adi = veri.kullanici_adi.strip().lower()
     sifre = veri.sifre.strip()
@@ -248,6 +250,9 @@ def giris(veri: GirisRequest, request: Request):
                 pass
 
         denetim_kaydi_ekle(k_id, db_k_adi, ad_soyad, "Güvenlik", "Giriş Yapıldı", f"Sisteme giriş yapıldı (Beni Hatırla: {'Evet' if veri.beni_hatirla else 'Hayır'}).", client_ip)
+        max_yas = 30 * 24 * 3600 if veri.beni_hatirla else 24 * 3600
+        response.set_cookie(key="session_token", value=token, max_age=max_yas, path="/", samesite="lax", httponly=False)
+
 
         return {
             "basarili": True,
@@ -271,7 +276,7 @@ def giris(veri: GirisRequest, request: Request):
         return {"basarili": False, "mesaj": f"Giriş sırasında bir hata oluştu: {str(e)}"}
 
 @router.post("/auth/cikis")
-def cikis(request: Request, aktif_kullanici = Depends(get_aktif_kullanici)):
+def cikis(request: Request, response: Response, aktif_kullanici = Depends(get_aktif_kullanici)):
     """Aktif oturum anahtarını sonlandırır."""
     try:
         token = aktif_kullanici.get("token")
@@ -287,6 +292,7 @@ def cikis(request: Request, aktif_kullanici = Depends(get_aktif_kullanici)):
                 "Oturum güvenli şekilde kapatıldı.", 
                 request.client.host if request.client else ""
             )
+        response.delete_cookie(key="session_token", path="/")
         return {"basarili": True, "mesaj": "Oturum başarıyla kapatıldı."}
     except Exception as e:
         return {"basarili": False, "mesaj": str(e)}

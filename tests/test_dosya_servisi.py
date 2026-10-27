@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import tempfile
 import pytest
 from unittest.mock import MagicMock
@@ -56,6 +57,7 @@ def auth_token_ve_dosya(auth_test_ortami, tmp_path):
 def test_dosya_indir_yetkisiz_erisim_engeli(auth_token_ve_dosya):
     """Oturum token'ı olmadan dosya indirme/görüntüleme isteğinin 401 ile reddedildiğini doğrular."""
     _, test_pdf, _ = auth_token_ve_dosya
+    client.cookies.clear()
     res = client.get(f"/dosya/indir?yol={test_pdf}")
     assert res.status_code == 401
 
@@ -132,3 +134,35 @@ def test_is_yerel_istek_ve_dosyayi_otomatik_ac_filtresi(monkeypatch):
     assert len(startfile_cagirildi) == 1
     assert "test_dosya.pdf" in startfile_cagirildi[0]
 
+def test_dosya_indir_cookie_ile_yetkilendirme(auth_token_ve_dosya):
+    """Tarayıcı sekmesinde açılan dosyalarda cookie (session_token) ile otomatik yetkilendirme doğrulanır."""
+    token, test_pdf, _ = auth_token_ve_dosya
+    res = client.get(f"/dosya/indir?yol={test_pdf}", cookies={"session_token": token})
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/pdf"
+    assert res.content == b"%PDF-1.4 test pdf content"
+
+
+def test_dosya_indir_oturum_token_query_ile_yetkilendirme(auth_token_ve_dosya):
+    """URL parametresi ?oturum_token=... veya ?token=... ile dosya indirme/görüntüleme doğrulanır."""
+    token, test_pdf, _ = auth_token_ve_dosya
+    res = client.get(f"/dosya/indir?yol={test_pdf}&oturum_token={token}")
+    assert res.status_code == 200
+    assert res.headers["content-type"] == "application/pdf"
+
+
+def test_frontend_dosyaindirurl_oturum_token_uyumu():
+    """Frontend tarafında dosyaIndirUrl'in oturum_token değerini okuduğu ve tokenAl ile uyumlu olduğu doğrulanır."""
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    core_path = os.path.join(base_dir, "frontend", "js", "core.js")
+    with open(core_path, "r", encoding="utf-8") as f:
+        core_js = f.read()
+
+    assert "oturum_token" in core_js, "core.js içindeki dosyaIndirUrl oturum_token değerini okumalıdır"
+
+    auth_path = os.path.join(base_dir, "frontend", "js", "auth.js")
+    with open(auth_path, "r", encoding="utf-8") as f:
+        auth_js = f.read()
+
+    assert "window.tokenAl = tokenAl" in auth_js, "auth.js tokenAl fonksiyonunu dışa açmalıdır"
+    assert "session_token=" in auth_js, "auth.js giriş ve kurulum esnasında session_token çerezini ayarlamalıdır"

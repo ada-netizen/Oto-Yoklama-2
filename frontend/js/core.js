@@ -42,7 +42,11 @@ window.API = API;
 
 // --- EVRENSEL DOSYA AÇMA & İNDİRME YARDIMCILARI (KURUMSAL AĞ UYUMLU) ---
 window.dosyaIndirUrl = function(dosyaYolu, indir = false) {
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token') || '';
+    const token = (typeof window.tokenAl === 'function' ? window.tokenAl() : '') ||
+                  window.sessionStorage.getItem('oturum_token') || 
+                  window.localStorage.getItem('oturum_token') || 
+                  window.sessionStorage.getItem('auth_token') || 
+                  window.localStorage.getItem('auth_token') || '';
     const cleanYol = encodeURIComponent(dosyaYolu || '');
     return `${window.API || ''}/dosya/indir?yol=${cleanYol}&indir=${indir ? 1 : 0}&token=${encodeURIComponent(token)}`;
 };
@@ -1978,9 +1982,9 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : "", // YENİ EKLENDİ
                 personeller: seciliPersoneller 
             };
-            fetch(`${API}/teblig-toplu-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
-                if(v.basarili && v.job_id) ilerlemeTakipEt(v.job_id);
-                else bildirimGoster(v.mesaj, "hata");
+            apiFetch('/teblig-toplu-pdf', { method: 'POST', body: veri }).then(v => {
+                if(v && v.basarili && v.job_id) ilerlemeTakipEt(v.job_id);
+                else bildirimGoster(v ? v.mesaj : "Hata oluştu", "hata");
             });
         }
         
@@ -2010,9 +2014,9 @@ function modalKapat(id) { document.getElementById(id).style.display = 'none'; }
                 teblig_saati: document.getElementById('b-saat') ? document.getElementById('b-saat').value : null,
                 gecici_pdf_yolu: document.getElementById('t-pdf-yol') ? document.getElementById('t-pdf-yol').value : ""
             };
-            fetch(`${API}/teblig-bireysel-pdf`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(veri) }).then(r => r.json()).then(v => {
-                if(v.basarili && v.job_id) ilerlemeTakipEt(v.job_id);
-                else bildirimGoster(v.mesaj, "hata");
+            apiFetch('/teblig-bireysel-pdf', { method: 'POST', body: veri }).then(v => {
+                if(v && v.basarili && v.job_id) ilerlemeTakipEt(v.job_id);
+                else bildirimGoster(v ? v.mesaj : "Hata oluştu", "hata");
             });
         }
         

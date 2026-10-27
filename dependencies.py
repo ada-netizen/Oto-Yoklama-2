@@ -134,12 +134,18 @@ def get_aktif_kullanici(request: Request):
     token = ""
     if auth_header.startswith("Bearer "):
         token = auth_header[7:].strip()
-    elif request.headers.get("X-Session-Token"):
+    if not token and request.headers.get("X-Session-Token"):
         token = request.headers.get("X-Session-Token").strip()
-    elif request.cookies.get("session_token"):
+    if not token and request.cookies.get("session_token"):
         token = request.cookies.get("session_token").strip()
-    elif request.query_params.get("token"):
+    if not token and request.cookies.get("oturum_token"):
+        token = request.cookies.get("oturum_token").strip()
+    if not token and request.query_params.get("token"):
         token = request.query_params.get("token").strip()
+    if not token and request.query_params.get("oturum_token"):
+        token = request.query_params.get("oturum_token").strip()
+    if not token and request.query_params.get("auth_token"):
+        token = request.query_params.get("auth_token").strip()
 
     if not token:
         raise HTTPException(status_code=401, detail="Oturum açmanız gerekmektedir.")
